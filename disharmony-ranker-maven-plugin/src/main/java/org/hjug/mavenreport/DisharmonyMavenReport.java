@@ -95,11 +95,9 @@ public class DisharmonyMavenReport extends AbstractMavenReport {
         mainSink.head();
         mainSink.title();
         mainSink.text("Code Disharmony Report for " + project.getName() + " " + project.getVersion());
-
-
         mainSink.title_();
 
-        //generateChart(graphDataGenerator, mainSink);
+        generateChart(graphDataGenerator, mainSink);
 
         mainSink.head_();
 
@@ -113,12 +111,10 @@ public class DisharmonyMavenReport extends AbstractMavenReport {
 
         // Content
 
-        //chart is covering up table somehow...
-        /*SinkEventAttributeSet atts = new SinkEventAttributeSet();
-        atts.addAttribute( SinkEventAttributes.ID, "series_chart_div" );
-        atts.addAttribute( SinkEventAttributes.WIDTH, "1200px" );
-        atts.addAttribute( SinkEventAttributes.HEIGHT, "800px" );
-        mainSink.unknown( "div", new Object[]{new Integer( HtmlMarkup.TAG_TYPE_SIMPLE )}, atts );*/
+        SinkEventAttributeSet divAttrs = new SinkEventAttributeSet();
+        divAttrs.addAttribute( SinkEventAttributes.ID, "series_chart_div" );
+        mainSink.unknown( "div", new Object[]{new Integer( HtmlMarkup.TAG_TYPE_START )}, divAttrs );
+        mainSink.unknown( "div", new Object[]{new Integer( HtmlMarkup.TAG_TYPE_END )}, null );
 
         SinkEventAttributes tableAttributes = new SinkEventAttributeSet();
         tableAttributes.addAttribute(SinkEventAttributes.BORDER, "5px");
@@ -268,15 +264,19 @@ public class DisharmonyMavenReport extends AbstractMavenReport {
         String scriptEnd = graphDataGenerator.getScriptEnd();
 
         String javascriptCode = scriptStart + bubbleChartData + scriptEnd;
+
         String reportOutputDirectory = project.getReporting().getOutputDirectory();
+        File reportOutputDir = new File(reportOutputDirectory);
+        if(!reportOutputDir.exists()) {
+            System.out.println("Creating report directory");
+            reportOutputDir.mkdirs();
+        }
         String pathname = reportOutputDirectory + File.separator + "gchart.js";
         System.out.println("Path: " + pathname);
 
-        File reportOutputDir = new File(reportOutputDirectory);
         File script = new File(pathname);
         try {
-            System.out.println("File exists: " + reportOutputDir.createNewFile());
-            System.out.println("File exists: " + script.createNewFile());
+            System.out.println("File created: " + script.createNewFile());
         } catch (IOException e) {
             e.printStackTrace();
         }
