@@ -66,7 +66,7 @@ public class GraphDataGenerator {
                 "        title: 'Priority Ranking for Refactoring God Classes - ' +\n" +
                 "               'Fix Higher Priority Classes First',\n" +
                 "        height: 900, " +
-                "        width: 1600, " +
+                "        width: 1200, " +
                 "        hAxis: {title: 'Effort'},\n" +
                 "        vAxis: {title: 'Change Proneness'},\n" +
                 "        colorAxis: {colors: ['blue', 'green']},\n" +
