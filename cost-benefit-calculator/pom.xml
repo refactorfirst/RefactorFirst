@@ -5,27 +5,27 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.hjug.disharmonyranker</groupId>
-        <artifactId>disharmony-ranker</artifactId>
+        <groupId>org.hjug.refactorfirst</groupId>
+        <artifactId>refactor-first</artifactId>
         <version>0.1.0-SNAPSHOT</version>
     </parent>
 
-    <groupId>org.hjug.disharmonyranker.costbenefitcalculator</groupId>
+    <groupId>org.hjug.refactorfirst.costbenefitcalculator</groupId>
     <artifactId>cost-benefit-calculator</artifactId>
 
     <dependencies>
         <dependency>
-            <groupId>org.hjug.disharmonyranker.changepronenessranker</groupId>
+            <groupId>org.hjug.refactorfirst.changepronenessranker</groupId>
             <artifactId>change-proneness-ranker</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>org.hjug.disharmonyranker.effortranker</groupId>
+            <groupId>org.hjug.refactorfirst.effortranker</groupId>
             <artifactId>effort-ranker</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>org.hjug.disharmonyranker.testresources</groupId>
+            <groupId>org.hjug.refactorfirst.testresources</groupId>
             <artifactId>test-resources</artifactId>
         </dependency>
 

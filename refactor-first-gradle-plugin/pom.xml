@@ -5,13 +5,13 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.hjug.disharmonyranker</groupId>
-        <artifactId>disharmony-ranker</artifactId>
+        <groupId>org.hjug.refactorfirst</groupId>
+        <artifactId>refactor-first</artifactId>
         <version>0.1.0-SNAPSHOT</version>
     </parent>
 
-    <groupId>org.hjug.disharmonyranker.plugin</groupId>
-    <artifactId>disharmony-ranker-gradle-report</artifactId>
+    <groupId>org.hjug.refactorfirst.plugin</groupId>
+    <artifactId>refactor-first-gradle-report</artifactId>
 
     
 </project>

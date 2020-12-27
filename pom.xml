@@ -4,8 +4,8 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>org.hjug.disharmonyranker</groupId>
-    <artifactId>disharmony-ranker</artifactId>
+    <groupId>org.hjug.refactorfirst</groupId>
+    <artifactId>refactor-first</artifactId>
     <version>0.1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
@@ -31,39 +31,39 @@
         <module>effort-ranker</module>
         <module>cost-benefit-calculator</module>
         <module>graph-data-generator</module>
-        <module>disharmony-ranker-maven-plugin</module>
-        <module>disharmony-ranker-gradle-plugin</module>
+        <module>refactor-first-maven-plugin</module>
+        <!--<module>refactor-first-gradle-plugin</module>-->
     </modules>
 
     <dependencyManagement>
         <dependencies>
 
             <dependency>
-                <groupId>org.hjug.disharmonyranker.changepronenessranker</groupId>
+                <groupId>org.hjug.refactorfirst.changepronenessranker</groupId>
                 <artifactId>change-proneness-ranker</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <dependency>
-                <groupId>org.hjug.disharmonyranker.effortranker</groupId>
+                <groupId>org.hjug.refactorfirst.effortranker</groupId>
                 <artifactId>effort-ranker</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <dependency>
-                <groupId>org.hjug.disharmonyranker.costbenefitcalculator</groupId>
+                <groupId>org.hjug.refactorfirst.costbenefitcalculator</groupId>
                 <artifactId>cost-benefit-calculator</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <dependency>
-                <groupId>org.hjug.disharmonyranker.graphdatagenerator</groupId>
+                <groupId>org.hjug.refactorfirst.graphdatagenerator</groupId>
                 <artifactId>graph-data-generator</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <dependency>
-                <groupId>org.hjug.disharmonyranker.testresources</groupId>
+                <groupId>org.hjug.refactorfirst.testresources</groupId>
                 <artifactId>test-resources</artifactId>
                 <version>${project.version}</version>
                 <scope>test</scope>
@@ -155,7 +155,6 @@
                     </annotationProcessorPaths>
                 </configuration>
             </plugin>
-
         </plugins>
     </build>
 
