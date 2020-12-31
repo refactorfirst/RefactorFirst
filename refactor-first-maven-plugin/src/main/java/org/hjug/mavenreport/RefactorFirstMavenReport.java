@@ -48,7 +48,7 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
 
     public String getDescription(Locale locale) {
         // Description of the report when listed in the project-reports.html page of a project
-        return "Ranks the Disharmonies in a codebase.  The classes that should be fixed first "
+        return "Ranks the disharmonies in a codebase.  The classes that should be refactored first "
                 + " have the highest priority values.";
     }
 
