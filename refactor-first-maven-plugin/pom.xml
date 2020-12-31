@@ -69,7 +69,7 @@
                 <artifactId>maven-plugin-plugin</artifactId>
                 <version>3.5.1</version>
                 <configuration>
-                    <goalPrefix>disharmony-ranker</goalPrefix>
+                    <goalPrefix>refactor-first</goalPrefix>
                 </configuration>
                 <executions>
                     <execution>

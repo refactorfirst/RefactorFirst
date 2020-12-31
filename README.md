@@ -7,8 +7,8 @@ To use the plugin, first clone this project and perform a `mvn clean install` lo
 <build>
     <plugins>
         <plugin>
-            <groupId>org.hjug.disharmonyranker.plugin</groupId>
-            <artifactId>disharmony-ranker-maven-plugin</artifactId>
+            <groupId>org.hjug.refactorfirst.plugin</groupId>
+            <artifactId>refactor-first-maven-plugin</artifactId>
             <version>0.1.0-SNAPSHOT</version>       
         </plugin>
     </plugins>
@@ -18,7 +18,7 @@ To use the plugin, first clone this project and perform a `mvn clean install` lo
 Then run the following command from the root of your project (the source code does not need to be built):
 
 ```bash
-mvn org.hjug.disharmonyranker.plugin:disharmony-ranker-maven-plugin:0.1.0-SNAPSHOT:report
+mvn org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.1.0-SNAPSHOT:report
 ```
 
 Once the report is generated, you will find a table with the output in **target/site/disharmony-ranker-report.html**.  The classes you should refactor first are at the top.

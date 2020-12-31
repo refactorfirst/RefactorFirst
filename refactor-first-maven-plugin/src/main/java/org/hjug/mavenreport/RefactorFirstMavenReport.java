@@ -34,16 +34,16 @@ import java.util.Locale;
         threadSafe = true,
         inheritByDefault = false
 )
-public class DisharmonyMavenReport extends AbstractMavenReport {
+public class RefactorFirstMavenReport extends AbstractMavenReport {
 
     public String getOutputName() {
         // This report will generate simple-report.html when invoked in a project with `mvn site`
-        return "disharmony-ranker-report";
+        return "refactor-first-report";
     }
 
     public String getName(Locale locale) {
         // Name of the report when listed in the project-reports.html page of a project
-        return "Disharmony Ranker Report";
+        return "Refactor First Report";
     }
 
     public String getDescription(Locale locale) {
@@ -93,7 +93,7 @@ public class DisharmonyMavenReport extends AbstractMavenReport {
         // Page head
         mainSink.head();
         mainSink.title();
-        mainSink.text("Code Disharmony Report for " + project.getName() + " " + project.getVersion());
+        mainSink.text("Refactor First Report for " + project.getName() + " " + project.getVersion());
         mainSink.title_();
 
         generateChart(graphDataGenerator, mainSink);
