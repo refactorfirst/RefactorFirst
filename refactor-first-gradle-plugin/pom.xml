@@ -11,7 +11,7 @@
     </parent>
 
     <groupId>org.hjug.refactorfirst.plugin</groupId>
-    <artifactId>refactor-first-gradle-report</artifactId>
+    <artifactId>refactor-first-gradle-plugin</artifactId>
 
     
 </project>
