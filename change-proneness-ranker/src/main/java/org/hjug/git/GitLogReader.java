@@ -106,7 +106,16 @@ public class GitLogReader implements RepositoryLogReader {
             commitCount++;
         }
 
-        return new ScmLogInfo(path, earliestCommit, commitCount);
+        //based on https://stackoverflow.com/a/59274329/346247
+        int mostRecentCommit =
+                new Git(repository).log()
+                        .add(branchId)
+                        .addPath(path)
+                        .setMaxCount(1)
+                        .call().iterator().next()
+                        .getCommitTime();
+
+        return new ScmLogInfo(path, earliestCommit, mostRecentCommit, commitCount);
     }
 
     //based on https://stackoverflow.com/questions/27361538/how-to-show-changes-between-commits-with-jgit

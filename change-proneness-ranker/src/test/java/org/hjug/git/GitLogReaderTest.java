@@ -56,12 +56,13 @@ public class GitLogReaderTest {
         writeFile(attributeHandler, convertInputStreamToString(resourceAsStream2));
 
         git.add().addFilepattern(".").call();
-        git.commit().setMessage("message").call();
+        RevCommit secondCommit = git.commit().setMessage("message").call();
 
         ScmLogInfo scmLogInfo = gitLogReader.fileLog(repository, attributeHandler);
 
         Assert.assertEquals(2, scmLogInfo.getCommitCount());
         Assert.assertEquals(firstCommit.getCommitTime(), scmLogInfo.getEarliestCommit());
+        Assert.assertEquals(secondCommit.getCommitTime(), scmLogInfo.getMostRecentCommit());
     }
 
     @Test

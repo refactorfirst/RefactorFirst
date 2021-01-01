@@ -166,6 +166,10 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
         mainSink.tableHeaderCell_();
 
         mainSink.tableHeaderCell();
+        mainSink.text("Date of Most Recent Commit");
+        mainSink.tableHeaderCell_();
+
+        mainSink.tableHeaderCell();
         mainSink.text("Commit Count");
         mainSink.tableHeaderCell_();
 
@@ -225,6 +229,10 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
 
             mainSink.tableCell();
             mainSink.text(formatter.format(rankedDisharmony.getFirstCommitTime()));
+            mainSink.tableCell_();
+
+            mainSink.tableCell();
+            mainSink.text(formatter.format(rankedDisharmony.getMostRecentCommitTime()));
             mainSink.tableCell_();
 
             mainSink.tableCell();

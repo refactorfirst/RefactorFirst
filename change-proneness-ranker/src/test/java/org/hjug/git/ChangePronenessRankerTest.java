@@ -27,7 +27,7 @@ public class ChangePronenessRankerTest {
     //TODO: this should probably be a cucumber test
     @Test
     public void testChangePronenessCalculation() throws IOException, GitAPIException {
-        ScmLogInfo scmLogInfo = new ScmLogInfo("path", 1595275997, 1);
+        ScmLogInfo scmLogInfo = new ScmLogInfo("path", 1595275997, 0, 1);
 
         TreeMap<Integer, Integer> commitsWithChangeCounts = new TreeMap<>();
         commitsWithChangeCounts.put(scmLogInfo.getEarliestCommit(), scmLogInfo.getCommitCount());
@@ -46,14 +46,14 @@ public class ChangePronenessRankerTest {
 
     @Test
     public void testRankChangeProneness() throws IOException, GitAPIException {
-        ScmLogInfo scmLogInfo = new ScmLogInfo("file1", 1595275997, 1);
+        ScmLogInfo scmLogInfo = new ScmLogInfo("file1", 1595275997, 0, 1);
 
         TreeMap<Integer, Integer> commitsWithChangeCounts = new TreeMap<>();
         commitsWithChangeCounts.put(scmLogInfo.getEarliestCommit(), scmLogInfo.getCommitCount());
         commitsWithChangeCounts.put(scmLogInfo.getEarliestCommit() + 5*60, 3);
         commitsWithChangeCounts.put(scmLogInfo.getEarliestCommit() + 10*60, 3);
 
-        ScmLogInfo scmLogInfo2 = new ScmLogInfo("file2", 1595175997, 1);
+        ScmLogInfo scmLogInfo2 = new ScmLogInfo("file2", 1595175997, 0, 1);
 
         commitsWithChangeCounts.put(scmLogInfo2.getEarliestCommit(), scmLogInfo2.getCommitCount());
         commitsWithChangeCounts.put(scmLogInfo2.getEarliestCommit() + 5*60, 5);

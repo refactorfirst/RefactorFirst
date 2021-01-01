@@ -24,6 +24,7 @@ public class RankedDisharmony {
     private final Integer tccRank;
 
     private final Instant firstCommitTime;
+    private final Instant mostRecentCommitTime;
     private final Integer commitCount;
 
     //private final String message;
@@ -44,6 +45,7 @@ public class RankedDisharmony {
         tccRank = godClass.getTccRank();
 
         firstCommitTime = Instant.ofEpochSecond(scmLogInfo.getEarliestCommit());
+        mostRecentCommitTime = Instant.ofEpochSecond(scmLogInfo.getMostRecentCommit());
         commitCount = scmLogInfo.getCommitCount();
     }
 }
