@@ -31,3 +31,4 @@ jobs:
           nexus_password: ${{ secrets.nexus_password }}
           server_id: https://oss.sonatype.org/content/repositories/snapshots/
           maven_profiles: snapshot-release
+          maven_args: -X -e
