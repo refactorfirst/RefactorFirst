@@ -22,11 +22,12 @@ jobs:
         with:
           java-version: 1.8
 
-      - name: Release Maven package
-        uses: samuelmeuli/action-maven-publish@v1
-        with:
-          gpg_private_key: ${{ secrets.gpg_private_key }}
-          gpg_passphrase: ${{ secrets.gpg_passphrase }}
-          nexus_username: ${{ secrets.nexus_username }}
-          nexus_password: ${{ secrets.nexus_password }}
-          maven_profiles: snapshot-release
+#      Uncomment the below when you want a snapshot build to be deployed
+#      - name: Publish Maven snapshot
+#        uses: samuelmeuli/action-maven-publish@v1
+#        with:
+#          gpg_private_key: ${{ secrets.gpg_private_key }}
+#          gpg_passphrase: ${{ secrets.gpg_passphrase }}
+#          nexus_username: ${{ secrets.nexus_username }}
+#          nexus_password: ${{ secrets.nexus_password }}
+#          maven_profiles: snapshot-release
