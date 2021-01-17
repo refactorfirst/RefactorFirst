@@ -27,8 +27,6 @@ public class RankedDisharmony {
     private final Instant mostRecentCommitTime;
     private final Integer commitCount;
 
-    //private final String message;
-
     public RankedDisharmony(GodClass godClass, ScmLogInfo scmLogInfo) {
         path = scmLogInfo.getPath();
         //from https://stackoverflow.com/questions/1011287/get-file-name-from-a-file-location-in-java

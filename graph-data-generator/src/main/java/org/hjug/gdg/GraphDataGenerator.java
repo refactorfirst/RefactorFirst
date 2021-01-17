@@ -3,51 +3,13 @@ package org.hjug.gdg;
 import org.hjug.cbc.CostBenefitCalculator;
 import org.hjug.cbc.RankedDisharmony;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
 public class GraphDataGenerator {
 
-    private CostBenefitCalculator costBenefitCalculator = new CostBenefitCalculator();
-    private List<RankedDisharmony> calculateCostBenefitValues = new ArrayList<>();
-
-    public static void main(String[] args) throws IOException {
-        String path = "C:\\Code\\myfaces-tobago";
-        GraphDataGenerator graphDataGenerator = new GraphDataGenerator();
-
-        List<String> output = new ArrayList<>();
-        output.add(graphDataGenerator.generateJavaScript(path));
-
-        Files.write(Paths.get("chart.html"), output, StandardCharsets.UTF_8);
-    }
-
-    public String generateJavaScript(String repositoryPath) {
-        String open = "<html>\n" +
-                "  <head>\n" +
-                "    <script type=\"text/javascript\" src=\"https://www.gstatic.com/charts/loader.js\"></script>\n" +
-                "    <script type=\"text/javascript\">\n";
-
-        String scriptStart = getScriptStart();
-
-        String middle = generateBubbleChartData(repositoryPath);
-
-        String scriptEnd =
-                getScriptEnd();
-        String endHead = "</script>" +
-                        "  </head>\n" +
-                        "  <body>\n" ;
-        String chartDiv = getChartDiv();
-
-        String close =
-                        "  </body>\n" +
-                        "</html>";
-
-        return open + scriptStart + middle + scriptEnd + endHead + chartDiv + close;
-    }
+    private final CostBenefitCalculator costBenefitCalculator = new CostBenefitCalculator();
+    private final List<RankedDisharmony> calculateCostBenefitValues = new ArrayList<>();
 
     public String getScriptStart() {
         return
@@ -77,9 +39,9 @@ public class GraphDataGenerator {
                 "    }\n";
     }
 
-    public String getChartDiv() {
+/*    public String getChartDiv() {
         return "    <div id=\"series_chart_div\" style=\"width: 900px; height: 500px;\"></div>\n";
-    }
+    }*/
 
 
     public String generateBubbleChartData(String repositoryPath) {

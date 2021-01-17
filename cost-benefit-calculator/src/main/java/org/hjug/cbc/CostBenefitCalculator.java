@@ -21,17 +21,6 @@ import java.util.stream.Collectors;
 @Slf4j
 public class CostBenefitCalculator {
 
-    public static void main(String[] args) {
-        CostBenefitCalculator costBenefitCalculator = new CostBenefitCalculator();
-        String path = "C:\\Code\\myfaces-tobago";
-        List<RankedDisharmony> rankedDisharmonies = costBenefitCalculator.calculateCostBenefitValues(path);
-        rankedDisharmonies.sort(Comparator.comparing(RankedDisharmony::getPriority).reversed());
-        for (RankedDisharmony disharmony : rankedDisharmonies) {
-            System.out.println("Priority: " + disharmony.getPriority() + "\t path: " + disharmony.getPath());
-        }
-    }
-
-
     public List<RankedDisharmony> calculateCostBenefitValues(String repositoryPath) {
 
         RepositoryLogReader repositoryLogReader = new GitLogReader();
@@ -79,7 +68,7 @@ public class CostBenefitCalculator {
     }
 
     private List<GodClass> getGodClasses(RepositoryLogReader repositoryLogReader, Repository repository) {
-        Map<String, ByteArrayOutputStream> filesToScan = null;
+        Map<String, ByteArrayOutputStream> filesToScan = new HashMap<>();
         try {
             filesToScan = repositoryLogReader.listRepositoryContentsAtHEAD(repository);
         } catch (IOException e) {
@@ -90,8 +79,11 @@ public class CostBenefitCalculator {
         PMDGodClassRuleRunner ruleRunner = new PMDGodClassRuleRunner();
 
         List<GodClass> godClasses = new ArrayList<>();
-        for (String filePath : filesToScan.keySet()) {
-            ByteArrayInputStream inputStream = new ByteArrayInputStream(filesToScan.get(filePath).toByteArray());
+        for (Map.Entry<String, ByteArrayOutputStream> entry : filesToScan.entrySet()) {
+            String filePath = entry.getKey();
+            ByteArrayOutputStream value = entry.getValue();
+
+            ByteArrayInputStream inputStream = new ByteArrayInputStream(value.toByteArray());
             Optional<GodClass> godClassOptional = ruleRunner.runGodClassRule(filePath, inputStream);
             godClassOptional.ifPresent(godClasses::add);
         }

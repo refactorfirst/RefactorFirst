@@ -2,9 +2,7 @@ package org.hjug.metrics;
 
 import java.util.Comparator;
 import java.util.List;
-import java.util.function.BiConsumer;
 import java.util.function.Function;
-import java.util.function.ObjIntConsumer;
 import java.util.function.ObjIntConsumer;
 
 /**

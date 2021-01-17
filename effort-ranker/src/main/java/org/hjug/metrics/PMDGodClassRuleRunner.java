@@ -59,7 +59,7 @@ public class PMDGodClassRuleRunner {
 
         RuleSets ruleSets = new RuleSets(ruleSet);
 
-        //List<String> ruleViolationMsgs = new ArrayList<String>();
+        GodClass godClass = null;
         try{
             //Set the javaVersion you are using. (*1)
             //pmd.setJavaVersion(SourceType.JAVA_16); -- MAY NEED TO SPECIFY THIS...
@@ -74,13 +74,12 @@ public class PMDGodClassRuleRunner {
             //write results
             if (!ctx.getReport().isEmpty()) {
                 for (final RuleViolation violation : ctx.getReport()) {
-                    GodClass godClass = new GodClass(sourceCodeFileName, violation.getPackageName(), violation.getDescription());
-                    return Optional.of(godClass);
+                    godClass = new GodClass(sourceCodeFileName, violation.getPackageName(), violation.getDescription());
                 }
             }
-        } catch (PMDException e) {
-            //e.printStackTrace();
+        } catch (PMDException ignore) {
+            //ignore
         }
-        return Optional.empty();
+        return Optional.ofNullable(godClass);
     }
 }

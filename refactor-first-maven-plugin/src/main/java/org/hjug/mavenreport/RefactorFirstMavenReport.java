@@ -112,8 +112,8 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
 
         SinkEventAttributeSet divAttrs = new SinkEventAttributeSet();
         divAttrs.addAttribute( SinkEventAttributes.ID, "series_chart_div" );
-        mainSink.unknown( "div", new Object[]{new Integer( HtmlMarkup.TAG_TYPE_START )}, divAttrs );
-        mainSink.unknown( "div", new Object[]{new Integer( HtmlMarkup.TAG_TYPE_END )}, null );
+        mainSink.unknown( "div", new Object[]{HtmlMarkup.TAG_TYPE_START}, divAttrs );
+        mainSink.unknown( "div", new Object[]{HtmlMarkup.TAG_TYPE_END}, null );
 
         SinkEventAttributes tableAttributes = new SinkEventAttributeSet();
         tableAttributes.addAttribute(SinkEventAttributes.BORDER, "5px");
@@ -260,35 +260,35 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
      * @See https://maven.apache.org/doxia/developers/sink.html#How_to_inject_javascript_code_into_HTML
      */
     private void generateChart(GraphDataGenerator graphDataGenerator, Sink mainSink) {
+
         SinkEventAttributeSet googleChartImport = new SinkEventAttributeSet();
         googleChartImport.addAttribute( SinkEventAttributes.TYPE, "text/javascript" );
         googleChartImport.addAttribute( SinkEventAttributes.SRC, "https://www.gstatic.com/charts/loader.js" );
 
-        mainSink.unknown( "script", new Object[]{new Integer( HtmlMarkup.TAG_TYPE_START )}, googleChartImport);
-        mainSink.unknown( "script", new Object[]{new Integer( HtmlMarkup.TAG_TYPE_END )}, null);
+        String script = "script";
+        mainSink.unknown(script, new Object[]{HtmlMarkup.TAG_TYPE_START}, googleChartImport);
+        mainSink.unknown(script, new Object[]{HtmlMarkup.TAG_TYPE_END}, null);
         String scriptStart = graphDataGenerator.getScriptStart();
         String bubbleChartData = graphDataGenerator.generateBubbleChartData(project.getBasedir().getPath());
         String scriptEnd = graphDataGenerator.getScriptEnd();
 
         String javascriptCode = scriptStart + bubbleChartData + scriptEnd;
 
-        String reportOutputDirectory = project.getReporting().getOutputDirectory();
+        String reportOutputDirectory = project.getModel().getReporting().getOutputDirectory();
         File reportOutputDir = new File(reportOutputDirectory);
         if(!reportOutputDir.exists()) {
-            System.out.println("Creating report directory");
             reportOutputDir.mkdirs();
         }
         String pathname = reportOutputDirectory + File.separator + "gchart.js";
-        System.out.println("Path: " + pathname);
 
-        File script = new File(pathname);
+        File scriptFile = new File(pathname);
         try {
-            System.out.println("File created: " + script.createNewFile());
+            scriptFile.createNewFile();
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-        try(BufferedWriter writer = new BufferedWriter(new FileWriter(script))) {
+        try(BufferedWriter writer = new BufferedWriter(new FileWriter(scriptFile))) {
             writer.write(javascriptCode);
         } catch (IOException e) {
             e.printStackTrace();
@@ -298,7 +298,7 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
         javascript.addAttribute( SinkEventAttributes.TYPE, "text/javascript");
         javascript.addAttribute( SinkEventAttributes.SRC, "./gchart.js");
 
-        mainSink.unknown( "script", new Object[]{new Integer( HtmlMarkup.TAG_TYPE_START )}, javascript );
-        mainSink.unknown( "script", new Object[]{new Integer( HtmlMarkup.TAG_TYPE_END )}, null );
+        mainSink.unknown(script, new Object[]{HtmlMarkup.TAG_TYPE_START }, javascript );
+        mainSink.unknown(script, new Object[]{HtmlMarkup.TAG_TYPE_END}, null );
     }
 }
