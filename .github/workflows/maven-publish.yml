@@ -25,6 +25,10 @@ jobs:
           git config user.email "actions@github.com"
           git config user.name "GitHub Actions"
 
+      - if: github.event.release
+        name: Update version in pom.xml (Release only)
+        run: mvn -B versions:set -DnewVersion=${{ github.event.release.tag_name }}-SNAPSHOT
+
       - name: Release Maven package
         uses: samuelmeuli/action-maven-publish@v1
         with:
@@ -34,3 +38,4 @@ jobs:
           nexus_password: ${{ secrets.nexus_password }}
           maven_profiles: publish
           maven_goals_phases: release:prepare release:perform
+          maven_args: -B
