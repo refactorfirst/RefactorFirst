@@ -42,8 +42,8 @@ public class PMDGodClassRuleRunner {
         FileInputStream fis = null;
         try {
             fis = new FileInputStream(file);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
+        } catch (FileNotFoundException ignore) {
+            //ignore
         }
 
         return runPMD(file.getName(), fis);

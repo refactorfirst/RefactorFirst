@@ -285,13 +285,13 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
         try {
             scriptFile.createNewFile();
         } catch (IOException e) {
-            e.printStackTrace();
+            getLog().error("Failure creating chart script file", e);
         }
 
         try(BufferedWriter writer = new BufferedWriter(new FileWriter(scriptFile))) {
             writer.write(javascriptCode);
         } catch (IOException e) {
-            e.printStackTrace();
+            getLog().error("Error writing chart script file",e);
         }
 
         SinkEventAttributeSet javascript = new SinkEventAttributeSet();
