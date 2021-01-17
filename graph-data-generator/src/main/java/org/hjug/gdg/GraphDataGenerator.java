@@ -39,11 +39,6 @@ public class GraphDataGenerator {
                 "    }\n";
     }
 
-/*    public String getChartDiv() {
-        return "    <div id=\"series_chart_div\" style=\"width: 900px; height: 500px;\"></div>\n";
-    }*/
-
-
     public String generateBubbleChartData(String repositoryPath) {
 
         List<RankedDisharmony> rankedDisharmonies = getRankedDisharmonies(repositoryPath);
