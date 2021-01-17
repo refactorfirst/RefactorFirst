@@ -54,6 +54,10 @@
         <!--Compiler plugins-->
         <errorprone.version>2.4.0</errorprone.version>
         <lombok.version>1.18.12</lombok.version>
+
+        <sonar.projectKey>jimbethancourt_RefactorFirst</sonar.projectKey>
+        <sonar.organization>jimbethancourt-github</sonar.organization>
+        <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     </properties>
 
     <modules>
