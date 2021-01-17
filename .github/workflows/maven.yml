@@ -32,6 +32,7 @@ jobs:
 
 
 #      Comment "Build With Maven" and uncomment the below when you want a snapshot build to be deployed
+#      *********Don't forget to switch to Java 1.8 as well********
 #      - name: Publish Maven snapshot
 #        uses: samuelmeuli/action-maven-publish@v1
 #        with:
