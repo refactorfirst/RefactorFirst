@@ -9,7 +9,14 @@
     <version>0.1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
-    <url>https://github.com/jimbethancourt/disharmony-ranker</url>
+    <url>https://github.com/jimbethancourt/RefactorFirst</url>
+
+    <name>RefactorFirst</name>
+    <description>
+        Plugin that identifies God classes in a codebase and suggests which classes should be refactored first.
+        Generates a graph and a table providing (hopefully) easy to understand guidance.
+        Can be used via command line, as a build plugin, or as a report plugin.
+    </description>
 
     <licenses>
         <license>
