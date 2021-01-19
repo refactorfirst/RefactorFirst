@@ -6,7 +6,7 @@ This is a tool for Java codebases that will help you identify the God Classes yo
 
 Once the report is generated, you will find a table with the output in **target/site/refactor-first-report.html**.  The classes you should refactor first are at the top.
 
-###From The Command Line
+### From The Command Line
 Run the following command from the root of your project (the source code does not need to be built):
 
 ```bash
