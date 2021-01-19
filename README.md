@@ -1,4 +1,4 @@
-# Disharmony Ranker
+# RefactorFirst
 
 This tool for Java codebases will help you identify the God Classes you should refactor first.
 The graph generated in the report will look similar to this one:
