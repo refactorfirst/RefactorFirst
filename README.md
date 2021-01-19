@@ -49,7 +49,7 @@ This plugin will work on both single module and multi-module Maven projects.
  
 This tool is based on the paper **[Prioritizing Design Debt Investment Opportunities](https://dl.acm.org/doi/10.1145/1985362.1985372)** by Nico Zazworka, Carolyn Seaman, and Forrest Shull
 
-There is still much to be done.  I hope to publish this proof of concept to maven.org soon to make it easier to use.  In the meantime, your feedback would be greatly appreciated.
+There is still much to be done.  Your feedback would be greatly appreciated.
 
 ## Limitations
 * This plugin only works with Java 8 projects at this time
