@@ -10,7 +10,7 @@ Once the report is generated, you will find a table with the output in **target/
 Run the following command from the root of your project (the source code does not need to be built):
 
 ```bash
-mvn org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.1.0-SNAPSHOT:report
+mvn org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.1.0:report
 ```
 
 ### As Part of a Build
