@@ -46,7 +46,7 @@ Add the following to your project in the reports section:
 ```
 
 ## Viewing the Report
-Once the plugin is finished executing (it may take a while for a large / old codebase), open the file **target/site/refactor-first-report.html** in the root of the project.  It will contain a graph similar to the one above, and a table that lists God classes in the recommended order that they should be refactored.  These are the clasess that are the easiest to refactor while also having the biggest positive impact to team productivity.
+Once the plugin is finished executing (it may take a while for a large / old codebase), open the file **target/site/refactor-first-report.html** in the root of the project.  It will contain a graph similar to the one above, and a table that lists God classes in the recommended order that they should be refactored.  The classes at the top are the easiest to refactor while also having the biggest positive impact to team productivity.
 
 
 ## Additional Details
