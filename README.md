@@ -30,7 +30,6 @@ Add the following to your project in the build section:
 ```
 
 ### As a Report
-### As Part of a Build
 Add the following to your project in the reports section:
 ```xml
 <reporting>
