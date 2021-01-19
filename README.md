@@ -68,6 +68,7 @@ If you find this plugin useful, please star this repository and share with your 
 * Move from JUnit 4 to Junit 5.  Junit 5 is lacking the support for temporary files that JUnit 4 provides.
 * Use Maven's Guice to autowire dependencies.
 * Add a Gradle plugin.
+* Incorporate Unit Test coverage metrics to quickly identify the safety of refactoring a God class.
 * Incorporate bug counts per God class to the Impact (Y-Axis) calculation.
 * Incorporate more disharmonies from Object Oriented Metrics In Practice (Lanza and Marinescu, 2004).
 * Support Java 11
