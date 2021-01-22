@@ -7,11 +7,12 @@
     <parent>
         <groupId>org.hjug.refactorfirst</groupId>
         <artifactId>refactor-first</artifactId>
-        <version>0.1.1-SNAPSHOT</version>
+        <version>0.1.2-SNAPSHOT</version>
     </parent>
 
     <groupId>org.hjug.refactorfirst.plugin</groupId>
     <artifactId>refactor-first-gradle-plugin</artifactId>
+    <type>pom</type>
 
     <properties>
         <gradle.executable>./gradlew</gradle.executable>
