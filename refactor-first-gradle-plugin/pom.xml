@@ -12,7 +12,7 @@
 
     <groupId>org.hjug.refactorfirst.plugin</groupId>
     <artifactId>refactor-first-gradle-plugin</artifactId>
-    <type>pom</type>
+    <packaging>pom</packaging>
 
     <properties>
         <gradle.executable>./gradlew</gradle.executable>
