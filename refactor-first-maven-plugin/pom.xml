@@ -18,6 +18,16 @@
             <artifactId>graph-data-generator</artifactId>
         </dependency>
 
+        <!--
+        Added to address https://snyk.io/vuln/SNYK-JAVA-COMMONSCOLLECTIONS-30078
+        Commons collections is used in maven-reporting-impl
+        -->
+        <dependency>
+            <groupId>commons-collections</groupId>
+            <artifactId>commons-collections</artifactId>
+            <version>3.2.2</version>
+        </dependency>
+
         <dependency>
             <groupId>org.apache.maven.reporting</groupId>
             <artifactId>maven-reporting-impl</artifactId>
@@ -44,7 +54,7 @@
         <dependency>
             <groupId>org.apache.maven.shared</groupId>
             <artifactId>maven-shared-utils</artifactId>
-            <version>3.2.0</version>
+            <version>3.3.3</version>
         </dependency>
 
         <dependency>
