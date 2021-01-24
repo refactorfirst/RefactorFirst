@@ -13,7 +13,6 @@ import lombok.extern.slf4j.Slf4j;
 public class GodClassRanker {
 
     public void rankGodClasses(List<GodClass> godClasses) {
-        log.info("Initiate ranking of God Classes");
         rankWmc(godClasses);
         rankAtfd(godClasses);
         rankTcc(godClasses);
@@ -34,7 +33,7 @@ public class GodClassRanker {
     }
 
     void rankWmc(List<GodClass> godClasses) {
-        log.info("Ranking Weighted Method per Class");
+        log.info("Calculating Weighted Method per Class (WMC) Rank");
         godClasses.sort(Comparator.comparing(GodClass::getWmc));
 
         Function<GodClass, Integer> getWmc = GodClass::getWmc;
@@ -44,7 +43,7 @@ public class GodClassRanker {
     }
 
     void rankAtfd(List<GodClass> godClasses) {
-        log.info("Ranking Access to Foreign Data");
+        log.info("Calculating Access to Foreign Data (ATFD) Rank");
         godClasses.sort(Comparator.comparing(GodClass::getAtfd));
 
         Function<GodClass, Integer> getAtfd = GodClass::getAtfd;
@@ -54,7 +53,7 @@ public class GodClassRanker {
     }
 
     void rankTcc(List<GodClass> godClasses) {
-        log.info("Ranking Total Cyclomatic Complexity");
+        log.info("Calculating Total Cyclomatic Complexity (TCC) Rank");
         godClasses.sort(Comparator.comparing(GodClass::getTcc));
 
         Function<GodClass, Float> getTcc = GodClass::getTcc;

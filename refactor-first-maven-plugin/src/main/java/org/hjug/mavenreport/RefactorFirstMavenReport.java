@@ -184,7 +184,7 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
         // Close
         mainSink.section1_();
         mainSink.body_();
-        log.info("Find the report at target/site/{}", filename);
+        log.info("Done! View the report at target/site/{}", filename);
     }
 
     private void drawTableHeaderCell(String cellText, Sink mainSink) {

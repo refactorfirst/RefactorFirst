@@ -1,13 +1,11 @@
 package org.hjug.gdg;
 
-import lombok.extern.slf4j.Slf4j;
 import org.hjug.cbc.CostBenefitCalculator;
 import org.hjug.cbc.RankedDisharmony;
 
 import java.util.ArrayList;
 import java.util.List;
 
-@Slf4j
 public class GraphDataGenerator {
 
     private final CostBenefitCalculator costBenefitCalculator = new CostBenefitCalculator();
@@ -48,7 +46,6 @@ public class GraphDataGenerator {
         StringBuilder chartData = new StringBuilder();
         chartData.append("[ 'ID', 'Effort', 'Change Proneness', 'Priority', 'Weighted Method Count'], ");
 
-        log.info("Generating bubble chart data of disharmonies");
         for (int i = 0; i < rankedDisharmonies.size(); i++) {
             RankedDisharmony rankedDisharmony = rankedDisharmonies.get(i);
             chartData.append("[");

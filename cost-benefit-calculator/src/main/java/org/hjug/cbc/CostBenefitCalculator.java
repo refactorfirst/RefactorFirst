@@ -50,7 +50,7 @@ public class CostBenefitCalculator {
 
     List<ScmLogInfo> getRankedChangeProneness(RepositoryLogReader repositoryLogReader, Repository repository, List<GodClass> godClasses) {
         List<ScmLogInfo> scmLogInfos = new ArrayList<>();
-        log.info("Ranking Change Proneness for each God Class");
+        log.info("Calculating Change Proneness for each God Class");
         for (GodClass godClass : godClasses) {
             String path = godClass.getFileName();
             ScmLogInfo scmLogInfo = null;
