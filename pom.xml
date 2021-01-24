@@ -75,7 +75,7 @@
         <module>cost-benefit-calculator</module>
         <module>graph-data-generator</module>
         <module>refactor-first-maven-plugin</module>
-        <!--<module>refactor-first-gradle-plugin</module>-->
+        <module>refactor-first-gradle-plugin</module>
     </modules>
 
     <dependencyManagement>

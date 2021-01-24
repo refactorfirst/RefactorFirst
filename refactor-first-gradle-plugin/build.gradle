@@ -1,0 +1,33 @@
+plugins {
+    id 'java-gradle-plugin'
+    id 'maven-publish'
+    id 'com.gradle.plugin-publish' version '0.12.0'
+}
+
+repositories {
+    mavenCentral()
+    maven { url 'target/dependencies' }
+    mavenLocal()
+}
+
+dependencies {
+    compileOnly gradleApi()
+    api "org.hjug.refactorfirst.graphdatagenerator:graph-data-generator:${version}"
+}
+
+pluginBundle {
+    website = 'https://github.com/jimbethancourt/RefactorFirst' 
+    vcsUrl = 'https://github.com/jimbethancourt/RefactorFirst.git' 
+    tags = ['refactor', 'report']     
+}
+
+gradlePlugin {
+    plugins { 
+        refactorFirstPlugin { 
+            id = 'org.hjug.refactor-first' 
+            displayName = 'RefactorFirst' 
+            description = 'Plugin that identifies God classes in a codebase and suggests which classes should be refactored first.' 
+            implementationClass = 'org.hjug.gradlereport.RefactorFirstPlugin'
+        }
+    }
+}
