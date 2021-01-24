@@ -1,10 +1,10 @@
 package org.hjug.mavenreport;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.maven.doxia.markup.HtmlMarkup;
 import org.apache.maven.doxia.sink.Sink;
 import org.apache.maven.doxia.sink.SinkEventAttributes;
 import org.apache.maven.doxia.sink.impl.SinkEventAttributeSet;
-import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.ResolutionScope;
@@ -25,7 +25,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 
-
+@Slf4j
 @Mojo(
         name = "report",
         defaultPhase = LifecyclePhase.SITE,
@@ -56,12 +56,32 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
     protected void executeReport(Locale locale) throws MavenReportException {
 
         GitLogReader gitLogReader = new GitLogReader();
-        getLog().info("Project Basedir: " + project.getBasedir().getPath());
-        getLog().info("Parent of Git Dir: " + gitLogReader.getGitDir(project.getBasedir()).getParentFile().getPath());
-        if(!project.getBasedir().getPath().equals(gitLogReader.getGitDir(project.getBasedir()).getParentFile().getPath())) {
+        String projectBaseDir = project.getBasedir().getPath();
+        String parentOfGitDir = gitLogReader.getGitDir(project.getBasedir()).getParentFile().getPath();
+
+        final String[] tableHeadings = {"Class",
+                                        "Priority",
+                                        "Change Proneness Rank",
+                                        "Effort Rank",
+                                        "WMC",
+                                        "WMC Rank",
+                                        "ATFD",
+                                        "ATFD Rank",
+                                        "TCC",
+                                        "TCC Rank",
+                                        "Date of First Commit",
+                                        "Date of Most Recent Commit",
+                                        "Commit Count",
+                                        "Full Path"};
+
+        log.info("Project Base Dir: {} ", projectBaseDir);
+        log.info("Parent of Git Dir: {}", parentOfGitDir);
+
+        if(!projectBaseDir.equals(parentOfGitDir)) {
+            log.warn("Project Base Directory does not match Git Parent Directory");
             Sink mainSink = getSink();
             mainSink.paragraph();
-            mainSink.text("Please refer to this report in the base of the project");
+            mainSink.text("Data could not be captured. Please ensure to refer to this report from the base of the project");
             mainSink.paragraph_();
             return;
         }
@@ -70,16 +90,16 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
 
 
         List<RankedDisharmony> rankedDisharmonies =
-                graphDataGenerator.getRankedDisharmonies(project.getBasedir().getPath());
+                graphDataGenerator.getRankedDisharmonies(projectBaseDir);
 
         rankedDisharmonies.sort(Comparator.comparing(RankedDisharmony::getPriority).reversed());
 
-        // Get the logger
-        Log logger = getLog();
+        String filename = getOutputName() + ".html";
+        String projectName = project.getName();
+        String projectVersion = project.getVersion();
 
         // Some info
-        logger.info("Generating " + getOutputName() + ".html"
-                + " for " + project.getName() + " " + project.getVersion());
+        log.info("Generating {} for {} - {}", filename, projectName, projectVersion);
 
         // Get the Maven Doxia Sink, which will be used to generate the
         // various elements of the document
@@ -93,7 +113,7 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
         // Page head
         mainSink.head();
         mainSink.title();
-        mainSink.text("Refactor First Report for " + project.getName() + " " + project.getVersion());
+        mainSink.text("Refactor First Report for " + projectName + " " + projectVersion);
         mainSink.title_();
 
         generateChart(graphDataGenerator, mainSink);
@@ -105,7 +125,7 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
         // Heading 1
         mainSink.section1();
         mainSink.sectionTitle1();
-        mainSink.text("God Class Report for " + project.getName() + " " + project.getVersion());
+        mainSink.text("God Class Report for " + projectName + " " + projectVersion);
         mainSink.sectionTitle1_();
 
         // Content
@@ -121,61 +141,9 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
         mainSink.table(tableAttributes);
         mainSink.tableRow();
 
-        mainSink.tableHeaderCell();
-        mainSink.text("Class");
-        mainSink.tableHeaderCell_();
-
-        mainSink.tableHeaderCell();
-        mainSink.text("Priority");
-        mainSink.tableHeaderCell_();
-
-        mainSink.tableHeaderCell();
-        mainSink.text("Change Proneness Rank");
-        mainSink.tableHeaderCell_();
-
-        mainSink.tableHeaderCell();
-        mainSink.text("Effort Rank");
-        mainSink.tableHeaderCell_();
-
-        mainSink.tableHeaderCell();
-        mainSink.text("WMC");
-        mainSink.tableHeaderCell_();
-
-        mainSink.tableHeaderCell();
-        mainSink.text("WMC Rank");
-        mainSink.tableHeaderCell_();
-
-        mainSink.tableHeaderCell();
-        mainSink.text("ATFD");
-        mainSink.tableHeaderCell_();
-
-        mainSink.tableHeaderCell();
-        mainSink.text("ATFD Rank");
-        mainSink.tableHeaderCell_();
-
-        mainSink.tableHeaderCell();
-        mainSink.text("TCC");
-        mainSink.tableHeaderCell_();
-
-        mainSink.tableHeaderCell();
-        mainSink.text("TCC Rank");
-        mainSink.tableHeaderCell_();
-
-        mainSink.tableHeaderCell();
-        mainSink.text("Date of First Commit");
-        mainSink.tableHeaderCell_();
-
-        mainSink.tableHeaderCell();
-        mainSink.text("Date of Most Recent Commit");
-        mainSink.tableHeaderCell_();
-
-        mainSink.tableHeaderCell();
-        mainSink.text("Commit Count");
-        mainSink.tableHeaderCell_();
-
-        mainSink.tableHeaderCell();
-        mainSink.text("Full Path");
-        mainSink.tableHeaderCell_();
+        for (String heading : tableHeadings) {
+            drawTableHeaderCell(heading, mainSink);
+        }
 
         mainSink.tableRow_();
 
@@ -187,61 +155,24 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
         for (RankedDisharmony rankedDisharmony : rankedDisharmonies) {
             mainSink.tableRow();
 
-            mainSink.tableCell();
-            mainSink.text(rankedDisharmony.getClassName());
-            mainSink.tableCell_();
+            final String[] rankedDisharmonyData = {rankedDisharmony.getClassName(),
+                                                   rankedDisharmony.getPriority().toString(),
+                                                   rankedDisharmony.getChangePronenessRank().toString(),
+                                                   rankedDisharmony.getEffortRank().toString(),
+                                                   rankedDisharmony.getWmc().toString(),
+                                                   rankedDisharmony.getWmcRank().toString(),
+                                                   rankedDisharmony.getAtfd().toString(),
+                                                   rankedDisharmony.getAtfdRank().toString(),
+                                                   rankedDisharmony.getTcc().toString(),
+                                                   rankedDisharmony.getTccRank().toString(),
+                                                   formatter.format(rankedDisharmony.getFirstCommitTime()),
+                                                   formatter.format(rankedDisharmony.getMostRecentCommitTime()),
+                                                   rankedDisharmony.getCommitCount().toString(),
+                                                   rankedDisharmony.getPath()};
 
-            mainSink.tableCell();
-            mainSink.text(rankedDisharmony.getPriority().toString());
-            mainSink.tableCell_();
-
-            mainSink.tableCell();
-            mainSink.text(rankedDisharmony.getChangePronenessRank().toString());
-            mainSink.tableCell_();
-
-            mainSink.tableCell();
-            mainSink.text(rankedDisharmony.getEffortRank().toString());
-            mainSink.tableCell_();
-
-            mainSink.tableCell();
-            mainSink.text(rankedDisharmony.getWmc().toString());
-            mainSink.tableCell_();
-
-            mainSink.tableCell();
-            mainSink.text(rankedDisharmony.getWmcRank().toString());
-            mainSink.tableCell_();
-
-            mainSink.tableCell();
-            mainSink.text(rankedDisharmony.getAtfd().toString());
-            mainSink.tableCell_();
-
-            mainSink.tableCell();
-            mainSink.text(rankedDisharmony.getAtfdRank().toString());
-            mainSink.tableCell_();
-
-            mainSink.tableCell();
-            mainSink.text(rankedDisharmony.getTcc().toString());
-            mainSink.tableCell_();
-
-            mainSink.tableCell();
-            mainSink.text(rankedDisharmony.getTccRank().toString());
-            mainSink.tableCell_();
-
-            mainSink.tableCell();
-            mainSink.text(formatter.format(rankedDisharmony.getFirstCommitTime()));
-            mainSink.tableCell_();
-
-            mainSink.tableCell();
-            mainSink.text(formatter.format(rankedDisharmony.getMostRecentCommitTime()));
-            mainSink.tableCell_();
-
-            mainSink.tableCell();
-            mainSink.text(rankedDisharmony.getCommitCount().toString());
-            mainSink.tableCell_();
-
-            mainSink.tableCell();
-            mainSink.text(rankedDisharmony.getPath());
-            mainSink.tableCell_();
+            for (String rowData : rankedDisharmonyData) {
+                drawTableCell(rowData, mainSink);
+            }
 
             mainSink.tableRow_();
         }
@@ -253,7 +184,19 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
         // Close
         mainSink.section1_();
         mainSink.body_();
+        log.info("Find the report at target/site/{}", filename);
+    }
 
+    private void drawTableHeaderCell(String cellText, Sink mainSink) {
+        mainSink.tableHeaderCell();
+        mainSink.text(cellText);
+        mainSink.tableHeaderCell_();
+    }
+
+    private void drawTableCell(String cellText, Sink mainSink) {
+        mainSink.tableCell();
+        mainSink.text(cellText);
+        mainSink.tableCell_();
     }
 
     /**
@@ -285,13 +228,13 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
         try {
             scriptFile.createNewFile();
         } catch (IOException e) {
-            getLog().error("Failure creating chart script file", e);
+            log.error("Failure creating chart script file", e);
         }
 
         try(BufferedWriter writer = new BufferedWriter(new FileWriter(scriptFile))) {
             writer.write(javascriptCode);
         } catch (IOException e) {
-            getLog().error("Error writing chart script file",e);
+            log.error("Error writing chart script file", e);
         }
 
         SinkEventAttributeSet javascript = new SinkEventAttributeSet();

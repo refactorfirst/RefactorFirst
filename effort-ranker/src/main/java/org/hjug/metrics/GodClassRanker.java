@@ -4,13 +4,16 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.ObjIntConsumer;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Created by Wendy on 11/16/2016.
  */
+@Slf4j
 public class GodClassRanker {
 
     public void rankGodClasses(List<GodClass> godClasses) {
+        log.info("Initiate ranking of God Classes");
         rankWmc(godClasses);
         rankAtfd(godClasses);
         rankTcc(godClasses);
@@ -31,6 +34,7 @@ public class GodClassRanker {
     }
 
     void rankWmc(List<GodClass> godClasses) {
+        log.info("Ranking Weighted Method per Class");
         godClasses.sort(Comparator.comparing(GodClass::getWmc));
 
         Function<GodClass, Integer> getWmc = GodClass::getWmc;
@@ -40,6 +44,7 @@ public class GodClassRanker {
     }
 
     void rankAtfd(List<GodClass> godClasses) {
+        log.info("Ranking Access to Foreign Data");
         godClasses.sort(Comparator.comparing(GodClass::getAtfd));
 
         Function<GodClass, Integer> getAtfd = GodClass::getAtfd;
@@ -49,6 +54,7 @@ public class GodClassRanker {
     }
 
     void rankTcc(List<GodClass> godClasses) {
+        log.info("Ranking Total Cyclomatic Complexity");
         godClasses.sort(Comparator.comparing(GodClass::getTcc));
 
         Function<GodClass, Float> getTcc = GodClass::getTcc;
@@ -60,17 +66,17 @@ public class GodClassRanker {
     <T extends Number & Comparable<? super T>> void setRank(List<GodClass> godClasses,
                                                                    Function<GodClass, T> getter, ObjIntConsumer<GodClass> setter) {
         int rank = 1;
-        T prevousValue = null;
+        T previousValue = null;
 
         for (GodClass godClass : godClasses) {
             T value = getter.apply(godClass);
-            if (null == prevousValue) {
-                prevousValue = value;
+            if (null == previousValue) {
+                previousValue = value;
             }
 
-            if (value.compareTo(prevousValue) > 0) {
+            if (value.compareTo(previousValue) > 0) {
                 setter.accept(godClass, ++rank);
-                prevousValue = value;
+                previousValue = value;
             } else {
                 setter.accept(godClass, rank);
             }

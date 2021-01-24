@@ -25,6 +25,7 @@ public class CostBenefitCalculator {
 
         RepositoryLogReader repositoryLogReader = new GitLogReader();
         Repository repository = null;
+        log.info("Initiating Cost Benefit calculation");
         try {
             repository = repositoryLogReader.gitRepository(new File(repositoryPath));
         } catch (IOException e) {
@@ -49,6 +50,7 @@ public class CostBenefitCalculator {
 
     List<ScmLogInfo> getRankedChangeProneness(RepositoryLogReader repositoryLogReader, Repository repository, List<GodClass> godClasses) {
         List<ScmLogInfo> scmLogInfos = new ArrayList<>();
+        log.info("Ranking Change Proneness for each God Class");
         for (GodClass godClass : godClasses) {
             String path = godClass.getFileName();
             ScmLogInfo scmLogInfo = null;
@@ -69,6 +71,7 @@ public class CostBenefitCalculator {
 
     private List<GodClass> getGodClasses(RepositoryLogReader repositoryLogReader, Repository repository) {
         Map<String, ByteArrayOutputStream> filesToScan = new HashMap<>();
+        log.info("Identifying God Classes from files in repository");
         try {
             filesToScan = repositoryLogReader.listRepositoryContentsAtHEAD(repository);
         } catch (IOException e) {

@@ -34,7 +34,7 @@ public class ChangePronenessRankerTest {
         commitsWithChangeCounts.put(scmLogInfo.getEarliestCommit() + 5*60, 3);
         commitsWithChangeCounts.put(scmLogInfo.getEarliestCommit() + 10*60, 3);
 
-        when(repositoryLogReader.captureChangCountByCommitTimestamp(any())).thenReturn(commitsWithChangeCounts);
+        when(repositoryLogReader.captureChangeCountByCommitTimestamp(any())).thenReturn(commitsWithChangeCounts);
 
         List<ScmLogInfo> scmLogInfos = new ArrayList<>();
         scmLogInfos.add(scmLogInfo);
@@ -59,7 +59,7 @@ public class ChangePronenessRankerTest {
         commitsWithChangeCounts.put(scmLogInfo2.getEarliestCommit() + 5*60, 5);
         commitsWithChangeCounts.put(scmLogInfo2.getEarliestCommit() + 10*60, 5);
 
-        when(repositoryLogReader.captureChangCountByCommitTimestamp(any())).thenReturn(commitsWithChangeCounts);
+        when(repositoryLogReader.captureChangeCountByCommitTimestamp(any())).thenReturn(commitsWithChangeCounts);
 
         List<ScmLogInfo> scmLogInfos = new ArrayList<>();
         scmLogInfos.add(scmLogInfo);
