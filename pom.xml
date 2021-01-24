@@ -5,7 +5,7 @@
 
     <groupId>org.hjug.refactorfirst</groupId>
     <artifactId>refactor-first</artifactId>
-    <version>0.1.1-SNAPSHOT</version>
+    <version>0.1.2-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <url>https://github.com/jimbethancourt/RefactorFirst</url>
