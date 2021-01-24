@@ -4,7 +4,7 @@
 name: Java CI with Maven
 
 on:
-  push:
+  pull_request:
     branches: [ main ]
 
 jobs:
@@ -21,10 +21,7 @@ jobs:
           java-version: 11
 
       - name: Build With Maven
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
+        run: mvn -B verify
 
 
 #      Comment "Build With Maven" and uncomment the below when you want a snapshot build to be deployed
