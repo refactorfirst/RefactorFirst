@@ -1,5 +1,6 @@
 package org.hjug.metrics;
 
+import lombok.extern.slf4j.Slf4j;
 import net.sourceforge.pmd.*;
 import net.sourceforge.pmd.lang.Language;
 import net.sourceforge.pmd.lang.LanguageRegistry;
@@ -13,6 +14,7 @@ import java.io.InputStream;
 import java.util.Optional;
 
 //based on http://sdoulger.blogspot.com/2010/12/call-pmd-from-your-code-with-you-custom.html
+@Slf4j
 public class PMDGodClassRuleRunner {
 
     private SourceCodeProcessor sourceCodeProcessor;
@@ -43,7 +45,7 @@ public class PMDGodClassRuleRunner {
         try {
             fis = new FileInputStream(file);
         } catch (FileNotFoundException ignore) {
-            //ignore
+            log.warn("{} was not found", file.getName());
         }
 
         return runPMD(file.getName(), fis);
@@ -78,7 +80,7 @@ public class PMDGodClassRuleRunner {
                 }
             }
         } catch (PMDException ignore) {
-            //ignore
+           log.warn("runPMD failed", ignore);
         }
         return Optional.ofNullable(godClass);
     }

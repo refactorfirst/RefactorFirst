@@ -24,9 +24,10 @@ public class ChangePronenessRanker {
         TreeMap<Integer, Integer> changeCountsByTimeStamps = new TreeMap<>();
 
         try {
-            changeCountsByTimeStamps.putAll(repositoryLogReader.captureChangCountByCommitTimestamp(repository));
+            log.info("Capturing change count based on commit timestamps");
+            changeCountsByTimeStamps.putAll(repositoryLogReader.captureChangeCountByCommitTimestamp(repository));
         } catch (IOException | GitAPIException e) {
-            log.error("Error reading from repository");
+            log.error("Error reading from repository: {}", e.getMessage());
         }
 
         for (ScmLogInfo scmLogInfo : scmLogInfos) {

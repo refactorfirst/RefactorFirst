@@ -32,6 +32,7 @@ public class GitLogReader implements RepositoryLogReader {
                 new FileRepositoryBuilder().findGitDir(basedir);
         String gitIndexFileEnvVariable = System.getenv("GIT_INDEX_FILE");
         if (StringUtils.isNotBlank(gitIndexFileEnvVariable)) {
+            log.debug("Setting Index File based on Env Variable GIT_INDEX_FILE {}", gitIndexFileEnvVariable);
             repositoryBuilder = repositoryBuilder.setIndexFile(new File(gitIndexFileEnvVariable));
         }
         gitRepository = repositoryBuilder.build();
@@ -120,7 +121,7 @@ public class GitLogReader implements RepositoryLogReader {
 
     //based on https://stackoverflow.com/questions/27361538/how-to-show-changes-between-commits-with-jgit
     @Override
-    public TreeMap<Integer, Integer> captureChangCountByCommitTimestamp(Repository repository) throws IOException, GitAPIException {
+    public TreeMap<Integer, Integer> captureChangeCountByCommitTimestamp(Repository repository) throws IOException, GitAPIException {
 
         TreeMap<Integer, Integer> changesByCommitTimestamp = new TreeMap<>();
 

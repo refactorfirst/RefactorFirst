@@ -105,7 +105,7 @@ public class GitLogReaderTest {
         git.add().addFilepattern(".").call();
         RevCommit secondCommit = git.commit().setMessage("message").call();
 
-        Map<Integer, Integer> commitCounts = gitLogReader.captureChangCountByCommitTimestamp(repository);
+        Map<Integer, Integer> commitCounts = gitLogReader.captureChangeCountByCommitTimestamp(repository);
 
         Assert.assertEquals(1, commitCounts.get(firstCommit.getCommitTime()).intValue());
         Assert.assertEquals(2, commitCounts.get(secondCommit.getCommitTime()).intValue());
