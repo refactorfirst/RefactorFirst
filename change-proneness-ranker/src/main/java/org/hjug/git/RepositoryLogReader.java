@@ -17,5 +17,5 @@ public interface RepositoryLogReader {
 
     ScmLogInfo fileLog(Repository repository, String path) throws GitAPIException, IOException;
 
-    TreeMap<Integer, Integer> captureChangCountByCommitTimestamp(Repository repository) throws IOException, GitAPIException;
+    TreeMap<Integer, Integer> captureChangeCountByCommitTimestamp(Repository repository) throws IOException, GitAPIException;
 }

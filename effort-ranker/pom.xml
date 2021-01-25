@@ -33,6 +33,13 @@
             <version>0.1.2-SNAPSHOT</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <type>jar</type>
+            <version>1.7.2</version>
+        </dependency>
+
     </dependencies>
 
     
