@@ -28,6 +28,7 @@
         </dependency>
     </dependencies>
 
+    <!-- See http://andresalmiray.com/running-gradle-inside-maven/ for how this works -->
     <build>
         <plugins>
             <!-- copy all dependencies to target/dependencies -->
