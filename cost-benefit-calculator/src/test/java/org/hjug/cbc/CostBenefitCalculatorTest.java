@@ -60,8 +60,8 @@ public class CostBenefitCalculatorTest {
         List<RankedDisharmony> disharmonies =
                 costBenefitCalculator.calculateCostBenefitValues(git.getRepository().getDirectory().getPath());
 
-        Assert.assertEquals(1, disharmonies.get(0).getPriority().intValue());
-        Assert.assertEquals(-1, disharmonies.get(1).getPriority().intValue());
+        Assert.assertEquals(0, disharmonies.get(0).getPriority().intValue());
+        Assert.assertEquals(0, disharmonies.get(1).getPriority().intValue());
     }
 
 

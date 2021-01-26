@@ -27,9 +27,9 @@ public class PMDGodClassRuleRunnerTest {
         
         Assert.assertEquals("AttributeHandler.java", result.getFileName());
         Assert.assertEquals("org.apache.myfaces.tobago.facelets", result.getPackageName());
-        Assert.assertEquals(79, result.getWmc().longValue());
-        Assert.assertEquals(79, result.getAtfd().longValue());
-        Assert.assertEquals(0.027777777777777776, result.getTcc(), 0.001);
+        Assert.assertEquals(77, result.getWmc().longValue());
+        Assert.assertEquals(105, result.getAtfd().longValue());
+        Assert.assertEquals(15.555999755859375, result.getTcc(), 0.001);
     }
 
     @Test

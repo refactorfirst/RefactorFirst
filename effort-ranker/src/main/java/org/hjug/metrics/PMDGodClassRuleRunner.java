@@ -52,14 +52,14 @@ public class PMDGodClassRuleRunner {
     }
 
     public Optional<GodClass> runPMD(String sourceCodeFileName, InputStream inputStream) {
-        GodClassRule godClassRule = new GodClassRule();
+        RuleSet ruleSet = new RuleSetLoader().loadFromResource("category/java/design.xml");
+        Rule godClassRule = ruleSet.getRuleByName("GodClass");
         godClassRule.setLanguage(java);
 
         //add your rule to the ruleset
         RuleSetFactory ruleSetFactory = new RuleSetFactory();
-        RuleSet ruleSet = ruleSetFactory.createSingleRuleRuleSet(godClassRule);
-
-        RuleSets ruleSets = new RuleSets(ruleSet);
+        RuleSet ruleSet2 = ruleSetFactory.createSingleRuleRuleSet(godClassRule);
+        RuleSets ruleSets = new RuleSets(ruleSet2);
 
         GodClass godClass = null;
         try{

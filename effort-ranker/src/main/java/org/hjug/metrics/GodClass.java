@@ -28,6 +28,7 @@ public class GodClass {
         String [] values = result.substring(result.indexOf("(") + 1, result.indexOf(")")).split(", ");
         wmc = Integer.valueOf(values[0].split("=")[1]);
         atfd = Integer.valueOf(values[1].split("=")[1]);
-        tcc = Float.valueOf(values[2].split("=")[1]);
+        String rawTcc = values[2].split("=")[1];
+        tcc = Float.valueOf(rawTcc.replace("%", ""));
     }
 }
