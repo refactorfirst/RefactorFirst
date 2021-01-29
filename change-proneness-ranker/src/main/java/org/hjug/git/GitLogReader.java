@@ -1,7 +1,6 @@
 package org.hjug.git;
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.diff.DiffEntry;
@@ -31,7 +30,7 @@ public class GitLogReader implements RepositoryLogReader {
         FileRepositoryBuilder repositoryBuilder =
                 new FileRepositoryBuilder().findGitDir(basedir);
         String gitIndexFileEnvVariable = System.getenv("GIT_INDEX_FILE");
-        if (StringUtils.isNotBlank(gitIndexFileEnvVariable)) {
+        if (Objects.nonNull(gitIndexFileEnvVariable) && !gitIndexFileEnvVariable.trim().isEmpty()) {
             log.debug("Setting Index File based on Env Variable GIT_INDEX_FILE {}", gitIndexFileEnvVariable);
             repositoryBuilder = repositoryBuilder.setIndexFile(new File(gitIndexFileEnvVariable));
         }

@@ -120,13 +120,6 @@
             </dependency>
 
             <dependency>
-                <groupId>org.apache.commons</groupId>
-                <artifactId>commons-lang3</artifactId>
-                <version>3.4</version>
-                <scope>compile</scope>
-            </dependency>
-
-            <dependency>
                 <groupId>net.sourceforge.pmd</groupId>
                 <artifactId>pmd-java</artifactId>
                 <!--works - stops working with 6.0.0-->
