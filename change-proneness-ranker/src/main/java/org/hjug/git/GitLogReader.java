@@ -30,7 +30,7 @@ public class GitLogReader implements RepositoryLogReader {
         FileRepositoryBuilder repositoryBuilder =
                 new FileRepositoryBuilder().findGitDir(basedir);
         String gitIndexFileEnvVariable = System.getenv("GIT_INDEX_FILE");
-        if (Objects.nonNull(gitIndexFileEnvVariable) && !gitIndexFileEnvVariable.isEmpty()) {
+        if (Objects.nonNull(gitIndexFileEnvVariable) && !gitIndexFileEnvVariable.trim().isEmpty()) {
             log.debug("Setting Index File based on Env Variable GIT_INDEX_FILE {}", gitIndexFileEnvVariable);
             repositoryBuilder = repositoryBuilder.setIndexFile(new File(gitIndexFileEnvVariable));
         }
