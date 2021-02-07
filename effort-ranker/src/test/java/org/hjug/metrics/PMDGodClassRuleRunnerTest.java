@@ -33,6 +33,23 @@ public class PMDGodClassRuleRunnerTest {
     }
 
     @Test
+    public void testRuleRunnerExpectJavaElevenClass() throws Exception {
+        String attributeHandler = "AttributeHandlerJavaEleven.java";
+        Optional<GodClass> optionalResult =
+                PMDGodClassRuleRunner.runGodClassRule(
+                        attributeHandler, getClass().getClassLoader().getResourceAsStream(attributeHandler));
+
+        GodClass result = optionalResult.get();
+
+
+        Assert.assertEquals("AttributeHandlerJavaEleven.java", result.getFileName());
+        Assert.assertEquals("org.apache.myfaces.tobago.facelets", result.getPackageName());
+        Assert.assertEquals(77, result.getWmc().longValue());
+        Assert.assertEquals(105, result.getAtfd().longValue());
+        Assert.assertEquals(15.555999755859375, result.getTcc(), 0.001);
+    }
+
+    @Test
     public void testRuleRunnerExpectNoResults() throws Exception {
         String attributeHandler = "Attributes.java";
         Optional<GodClass> result =
