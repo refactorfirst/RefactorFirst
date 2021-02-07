@@ -128,6 +128,14 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
         mainSink.text("God Class Report for " + projectName + " " + projectVersion);
         mainSink.sectionTitle1_();
 
+        if(rankedDisharmonies.isEmpty()) {
+            mainSink.text("Contratulations!  " + projectName + " " + projectVersion + " has no God classes!");
+            mainSink.section1_();
+            mainSink.body_();
+            log.info("Done! No God classes found!");
+            return;
+        }
+
         // Content
 
         SinkEventAttributeSet divAttrs = new SinkEventAttributeSet();
