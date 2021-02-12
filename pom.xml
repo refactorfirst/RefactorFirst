@@ -62,10 +62,21 @@
         <errorprone.version>2.4.0</errorprone.version>
         <lombok.version>1.18.12</lombok.version>
 
+        <spotbugs.maven.plugin.version>4.0.0</spotbugs.maven.plugin.version>
+        <spotbugs.version>4.0.3</spotbugs.version>
+        <findsecbugs.plugin.version>1.10.1</findsecbugs.plugin.version>
+
+
+
         <sonar.projectKey>jimbethancourt_RefactorFirst</sonar.projectKey>
         <sonar.moduleKey>${project.artifactId}</sonar.moduleKey>
         <sonar.organization>jimbethancourt-github</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
+
+        <!-- Transitive dependency version overrides -->
+        <!-- Needed to address Struts 1.3.8 vulnerabilities brought in by maven-reporting-impl -->
+        <doxiaVersion>1.9.1</doxiaVersion>
+        <doxiaSitetoolsVersion>1.9.2</doxiaSitetoolsVersion>
     </properties>
 
     <modules>
@@ -189,6 +200,59 @@
                         </pathe>
                     </annotationProcessorPaths>
                 </configuration>
+            </plugin>
+            <!-- Security checks -->
+            <plugin>
+                <groupId>com.github.spotbugs</groupId>
+                <artifactId>spotbugs-maven-plugin</artifactId>
+                <version>${spotbugs.maven.plugin.version}</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>com.github.spotbugs</groupId>
+                        <artifactId>spotbugs</artifactId>
+                        <version>${spotbugs.version}</version>
+                    </dependency>
+                </dependencies>
+                <configuration>
+                    <effort>Max</effort>
+                    <threshold>Low</threshold>
+                    <failOnError>true</failOnError>
+                    <!--<includeFilterFile>${session.executionRootDirectory}/spotbugs-security-include.xml</includeFilterFile>
+                    <excludeFilterFile>${session.executionRootDirectory}/spotbugs-security-exclude.xml</excludeFilterFile>-->
+                    <plugins>
+                        <plugin>
+                            <groupId>com.h3xstream.findsecbugs</groupId>
+                            <artifactId>findsecbugs-plugin</artifactId>
+                            <version>${findsecbugs.plugin.version}</version>
+                        </plugin>
+                    </plugins>
+                </configuration>
+                <!-- Uncomment the executions declaration below
+                to fail the build when violations are found-->
+                <!--
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                -->
+            </plugin>
+            <plugin>
+                <groupId>org.owasp</groupId>
+                <artifactId>dependency-check-maven</artifactId>
+                <version>6.1.0</version>
+                <configuration>
+                    <failBuildOnCVSS>8</failBuildOnCVSS>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
