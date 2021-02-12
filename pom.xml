@@ -134,6 +134,21 @@
                 <artifactId>pmd-java</artifactId>
                 <version>6.30.0</version>
                 <scope>compile</scope>
+
+                <exclusions>
+                    <exclusion>
+                        <groupId>com.beust</groupId>
+                        <artifactId>jcommander</artifactId>
+                    </exclusion>
+                    <!--
+                    Done to accommodate unknown license issue specified in
+                    https://github.com/jimbethancourt/RefactorFirst/issues/2
+                    -->
+                    <exclusion>
+                        <groupId>net.sourceforge.saxon</groupId>
+                        <artifactId>saxon</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <!--
             <dependency>

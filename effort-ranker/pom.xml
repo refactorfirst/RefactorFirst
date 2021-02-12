@@ -15,16 +15,6 @@
         <dependency>
             <groupId>net.sourceforge.pmd</groupId>
             <artifactId>pmd-java</artifactId>
-            <!--
-            Done to accommodate unknown license issue specified in
-            https://github.com/jimbethancourt/RefactorFirst/issues/2
-            -->
-            <exclusions>
-                <exclusion>
-                    <groupId>net.sourceforge.saxon</groupId>
-                    <artifactId>saxon</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
 
         <dependency>
