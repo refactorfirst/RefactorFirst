@@ -28,7 +28,12 @@
             <version>3.2.2</version>
         </dependency>
 
-
+        <!-- Needed since Doxia 1.9.2 uses an insecure version -->
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+            <version>4.5.13</version>
+        </dependency>
 
         <!-- Doxia -->
         <!-- Needed since maven-reporting-impl brings in Strust 1.3.8 jars that have CVSS > 8 -->
