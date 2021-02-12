@@ -91,7 +91,6 @@
 
     <dependencyManagement>
         <dependencies>
-
             <dependency>
                 <groupId>org.hjug.refactorfirst.changepronenessranker</groupId>
                 <artifactId>change-proneness-ranker</artifactId>
@@ -201,6 +200,21 @@
                     </annotationProcessorPaths>
                 </configuration>
             </plugin>
+
+            <!-- From https://mkyong.com/maven/mvn-site-java-lang-classnotfoundexception-org-apache-maven-doxia-siterenderer-documentcontent/-->
+            <!--Needed to allow mvn site to work-->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-site-plugin</artifactId>
+                <version>3.7.1</version>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-project-info-reports-plugin</artifactId>
+                <version>3.0.0</version>
+            </plugin>
+
             <!-- Security checks -->
             <plugin>
                 <groupId>com.github.spotbugs</groupId>
