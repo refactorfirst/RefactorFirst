@@ -28,11 +28,25 @@
             <version>3.2.2</version>
         </dependency>
 
+        <!-- Needed since Doxia 1.9.2 and httpclient use     an insecure version -->
+        <dependency>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
+            <version>1.15</version>
+        </dependency>
+
         <!-- Needed since Doxia 1.9.2 uses an insecure version -->
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpclient</artifactId>
             <version>4.5.13</version>
+        </dependency>
+
+        <!-- Needed since Doxia 1.9.2 uses an insecure version -->
+        <dependency>
+            <groupId>org.codehaus.plexus</groupId>
+            <artifactId>plexus-utils</artifactId>
+            <version>3.3.0</version>
         </dependency>
 
         <!-- Doxia -->
@@ -91,7 +105,7 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.11</version>
+            <version>4.13.2</version>
             <scope>test</scope>
         </dependency>
 
