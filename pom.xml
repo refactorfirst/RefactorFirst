@@ -87,6 +87,7 @@
         <module>graph-data-generator</module>
         <module>refactor-first-maven-plugin</module>
         <module>refactor-first-gradle-plugin</module>
+        <module>coverage</module>
     </modules>
 
     <dependencyManagement>
@@ -112,6 +113,12 @@
             <dependency>
                 <groupId>org.hjug.refactorfirst.graphdatagenerator</groupId>
                 <artifactId>graph-data-generator</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.hjug.refactorfirst.plugin</groupId>
+                <artifactId>refactor-first-maven-plugin</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -214,6 +221,30 @@
                         </pathe>
                     </annotationProcessorPaths>
                 </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.6</version>
+                <executions>
+                    <!-- to avoid bugs in some situations -->
+                    <execution>
+                        <id>default-prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+
+                    <!-- create report during maven verify phase -->
+                    <execution>
+                        <id>report</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
 
             <!-- From https://mkyong.com/maven/mvn-site-java-lang-classnotfoundexception-org-apache-maven-doxia-siterenderer-documentcontent/-->
