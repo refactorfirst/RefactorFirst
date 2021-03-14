@@ -15,7 +15,6 @@ import org.eclipse.jgit.util.io.NullOutputStream;
 import java.io.*;
 import java.util.*;
 
-@SuppressWarnings("UnusedVariable") //suppressing due to Errorprone issue in version 2.4.0
 @Slf4j
 public class GitLogReader implements RepositoryLogReader {
 

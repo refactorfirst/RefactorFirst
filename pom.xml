@@ -59,7 +59,7 @@
         <javac.version>9+181-r4173-1</javac.version>
 
         <!--Compiler plugins-->
-        <errorprone.version>2.4.0</errorprone.version>
+        <errorprone.version>2.5.1</errorprone.version>
         <lombok.version>1.18.12</lombok.version>
 
         <spotbugs.maven.plugin.version>4.0.0</spotbugs.maven.plugin.version>
