@@ -7,6 +7,7 @@ import org.apache.maven.doxia.sink.SinkEventAttributes;
 import org.apache.maven.doxia.sink.impl.SinkEventAttributeSet;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.reporting.AbstractMavenReport;
 import org.apache.maven.reporting.MavenReportException;
@@ -36,6 +37,9 @@ import java.util.Locale;
 )
 public class RefactorFirstMavenReport extends AbstractMavenReport {
 
+    @Parameter(property = "showDetails")
+    private boolean showDetails = false;
+
     public String getOutputName() {
         // This report will generate simple-report.html when invoked in a project with `mvn site`
         return "refactor-first-report";
@@ -59,20 +63,30 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
         String projectBaseDir = project.getBasedir().getPath();
         String parentOfGitDir = gitLogReader.getGitDir(project.getBasedir()).getParentFile().getPath();
 
-        final String[] tableHeadings = {"Class",
-                                        "Priority",
-                                        "Change Proneness Rank",
-                                        "Effort Rank",
-                                        "WMC",
-                                        "WMC Rank",
-                                        "ATFD",
-                                        "ATFD Rank",
-                                        "TCC",
-                                        "TCC Rank",
-                                        "Date of First Commit",
-                                        "Date of Most Recent Commit",
-                                        "Commit Count",
-                                        "Full Path"};
+        final String[] simpleTableHeadings = {  "Class",
+                                                "Priority",
+                                                "Change Proneness Rank",
+                                                "Effort Rank",
+                                                "Method Count",
+                                                "Most Recent Commit Date",
+                                                "Commit Count"};
+
+        final String[] detailedTableHeadings = {"Class",
+                                                "Priority",
+                                                "Change Proneness Rank",
+                                                "Effort Rank",
+                                                "WMC",
+                                                "WMC Rank",
+                                                "ATFD",
+                                                "ATFD Rank",
+                                                "TCC",
+                                                "TCC Rank",
+                                                "Date of First Commit",
+                                                "Date of Most Recent Commit",
+                                                "Commit Count",
+                                                "Full Path"};
+
+        final String[] tableHeadings = showDetails ? detailedTableHeadings: simpleTableHeadings;
 
         log.info("Project Base Dir: {} ", projectBaseDir);
         log.info("Parent of Git Dir: {}", parentOfGitDir);
@@ -163,20 +177,31 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
         for (RankedDisharmony rankedDisharmony : rankedDisharmonies) {
             mainSink.tableRow();
 
-            final String[] rankedDisharmonyData = {rankedDisharmony.getClassName(),
-                                                   rankedDisharmony.getPriority().toString(),
-                                                   rankedDisharmony.getChangePronenessRank().toString(),
-                                                   rankedDisharmony.getEffortRank().toString(),
-                                                   rankedDisharmony.getWmc().toString(),
-                                                   rankedDisharmony.getWmcRank().toString(),
-                                                   rankedDisharmony.getAtfd().toString(),
-                                                   rankedDisharmony.getAtfdRank().toString(),
-                                                   rankedDisharmony.getTcc().toString(),
-                                                   rankedDisharmony.getTccRank().toString(),
-                                                   formatter.format(rankedDisharmony.getFirstCommitTime()),
-                                                   formatter.format(rankedDisharmony.getMostRecentCommitTime()),
-                                                   rankedDisharmony.getCommitCount().toString(),
-                                                   rankedDisharmony.getPath()};
+            String[] simpleRankedDisharmonyData = { rankedDisharmony.getClassName(),
+                                                    rankedDisharmony.getPriority().toString(),
+                                                    rankedDisharmony.getChangePronenessRank().toString(),
+                                                    rankedDisharmony.getEffortRank().toString(),
+                                                    rankedDisharmony.getWmc().toString(),
+                                                    formatter.format(rankedDisharmony.getMostRecentCommitTime()),
+                                                    rankedDisharmony.getCommitCount().toString()};
+
+            String[] detailedRankedDisharmonyData = {  rankedDisharmony.getClassName(),
+                                                       rankedDisharmony.getPriority().toString(),
+                                                       rankedDisharmony.getChangePronenessRank().toString(),
+                                                       rankedDisharmony.getEffortRank().toString(),
+                                                       rankedDisharmony.getWmc().toString(),
+                                                       rankedDisharmony.getWmcRank().toString(),
+                                                       rankedDisharmony.getAtfd().toString(),
+                                                       rankedDisharmony.getAtfdRank().toString(),
+                                                       rankedDisharmony.getTcc().toString(),
+                                                       rankedDisharmony.getTccRank().toString(),
+                                                       formatter.format(rankedDisharmony.getFirstCommitTime()),
+                                                       formatter.format(rankedDisharmony.getMostRecentCommitTime()),
+                                                       rankedDisharmony.getCommitCount().toString(),
+                                                       rankedDisharmony.getPath()};
+
+            final String [] rankedDisharmonyData =
+                    showDetails ? detailedRankedDisharmonyData : simpleRankedDisharmonyData;
 
             for (String rowData : rankedDisharmonyData) {
                 drawTableCell(rowData, mainSink);

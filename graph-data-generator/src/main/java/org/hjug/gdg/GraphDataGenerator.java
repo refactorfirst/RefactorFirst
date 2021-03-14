@@ -44,7 +44,7 @@ public class GraphDataGenerator {
         List<RankedDisharmony> rankedDisharmonies = getRankedDisharmonies(repositoryPath);
 
         StringBuilder chartData = new StringBuilder();
-        chartData.append("[ 'ID', 'Effort', 'Change Proneness', 'Priority', 'Weighted Method Count'], ");
+        chartData.append("[ 'ID', 'Effort', 'Change Proneness', 'Priority', 'Method Count'], ");
 
         for (int i = 0; i < rankedDisharmonies.size(); i++) {
             RankedDisharmony rankedDisharmony = rankedDisharmonies.get(i);
