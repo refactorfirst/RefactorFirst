@@ -11,6 +11,7 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.reporting.AbstractMavenReport;
 import org.apache.maven.reporting.MavenReportException;
+import org.hjug.cbc.CostBenefitCalculator;
 import org.hjug.cbc.RankedDisharmony;
 import org.hjug.gdg.GraphDataGenerator;
 import org.hjug.git.GitLogReader;
@@ -100,8 +101,8 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
             return;
         }
 
-        GraphDataGenerator graphDataGenerator = new GraphDataGenerator();
-
+        CostBenefitCalculator costBenefitCalculator = new CostBenefitCalculator();
+        GraphDataGenerator graphDataGenerator = new GraphDataGenerator(costBenefitCalculator);
 
         List<RankedDisharmony> rankedDisharmonies =
                 graphDataGenerator.getRankedDisharmonies(projectBaseDir);
@@ -130,7 +131,7 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
         mainSink.text("Refactor First Report for " + projectName + " " + projectVersion);
         mainSink.title_();
 
-        generateChart(graphDataGenerator, mainSink);
+        generateChart(graphDataGenerator, rankedDisharmonies, mainSink);
 
         mainSink.head_();
 
@@ -235,7 +236,7 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
     /**
      * @See https://maven.apache.org/doxia/developers/sink.html#How_to_inject_javascript_code_into_HTML
      */
-    private void generateChart(GraphDataGenerator graphDataGenerator, Sink mainSink) {
+    private void generateChart(GraphDataGenerator graphDataGenerator, List<RankedDisharmony> rankedDisharmonies, Sink mainSink) {
 
         SinkEventAttributeSet googleChartImport = new SinkEventAttributeSet();
         googleChartImport.addAttribute( SinkEventAttributes.TYPE, "text/javascript" );
@@ -245,7 +246,7 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
         mainSink.unknown(script, new Object[]{HtmlMarkup.TAG_TYPE_START}, googleChartImport);
         mainSink.unknown(script, new Object[]{HtmlMarkup.TAG_TYPE_END}, null);
         String scriptStart = graphDataGenerator.getScriptStart();
-        String bubbleChartData = graphDataGenerator.generateBubbleChartData(project.getBasedir().getPath());
+        String bubbleChartData = graphDataGenerator.generateBubbleChartData(rankedDisharmonies);
         String scriptEnd = graphDataGenerator.getScriptEnd();
 
         String javascriptCode = scriptStart + bubbleChartData + scriptEnd;

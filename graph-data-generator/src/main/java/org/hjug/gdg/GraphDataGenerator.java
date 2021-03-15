@@ -8,8 +8,12 @@ import java.util.List;
 
 public class GraphDataGenerator {
 
-    private final CostBenefitCalculator costBenefitCalculator = new CostBenefitCalculator();
+    private final CostBenefitCalculator costBenefitCalculator;
     private final List<RankedDisharmony> calculateCostBenefitValues = new ArrayList<>();
+
+    public GraphDataGenerator(CostBenefitCalculator costBenefitCalculator) {
+        this.costBenefitCalculator = costBenefitCalculator;
+    }
 
     public String getScriptStart() {
         return
@@ -39,9 +43,7 @@ public class GraphDataGenerator {
                 "    }\n";
     }
 
-    public String generateBubbleChartData(String repositoryPath) {
-
-        List<RankedDisharmony> rankedDisharmonies = getRankedDisharmonies(repositoryPath);
+    public String generateBubbleChartData(List<RankedDisharmony> rankedDisharmonies) {
 
         StringBuilder chartData = new StringBuilder();
         chartData.append("[ 'ID', 'Effort', 'Change Proneness', 'Priority', 'Method Count'], ");
