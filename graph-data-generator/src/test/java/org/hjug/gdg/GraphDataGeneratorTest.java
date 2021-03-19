@@ -68,21 +68,33 @@ public class GraphDataGeneratorTest {
         RankedDisharmony rankedDisharmony = new RankedDisharmony(godClass, scmLogInfo);
 
         List<RankedDisharmony> rankedDisharmonies = new ArrayList<>();
-
         rankedDisharmonies.add(rankedDisharmony);
 
-        StringBuilder chartData = new StringBuilder();
-        chartData.append("[ 'ID', 'Effort', 'Change Proneness', 'Priority', 'Method Count'], ");
-        chartData.append("['AttributeHandler.java',0,0,0,77]");
-
-        Assert.assertEquals(chartData.toString(), graphDataGenerator.generateBubbleChartData(rankedDisharmonies));
+        String chartData = "[ 'ID', 'Effort', 'Change Proneness', 'Priority', 'Method Count'], " +
+                "['AttributeHandler.java',0,0,0,77]";
+        Assert.assertEquals(chartData, graphDataGenerator.generateBubbleChartData(rankedDisharmonies));
 
     }
 
+    //Only testing correct string formatting, not data correctness
     @Test
     public void generateBubbleChartDataTwoDataPoints() {
-        StringBuilder chartData = new StringBuilder();
-        chartData.append("[ 'ID', 'Effort', 'Change Proneness', 'Priority', 'Method Count'], ");
+        GodClass godClass = new GodClass("AttributeHandler.java",
+                "org.apache.myfaces.tobago.facelets",
+                "(WMC=77, ATFD=105, TCC=15.555999755859375)");
+        godClass.setOverallRank(0);
+        ScmLogInfo scmLogInfo = new ScmLogInfo("org/apache/myfaces/tobago/facelets/AttributeHandler.java", 1595275997, 0, 1);
+        scmLogInfo.setChangePronenessRank(0);
+        RankedDisharmony rankedDisharmony = new RankedDisharmony(godClass, scmLogInfo);
+        RankedDisharmony rankedDisharmony2 = new RankedDisharmony(godClass, scmLogInfo);
 
+        List<RankedDisharmony> rankedDisharmonies = new ArrayList<>();
+        rankedDisharmonies.add(rankedDisharmony);
+        rankedDisharmonies.add(rankedDisharmony2);
+
+        String chartData = "[ 'ID', 'Effort', 'Change Proneness', 'Priority', 'Method Count'], " +
+                "['AttributeHandler.java',0,0,0,77]," +
+                "['AttributeHandler.java',0,0,0,77]";
+        Assert.assertEquals(chartData, graphDataGenerator.generateBubbleChartData(rankedDisharmonies));
     }
 }
