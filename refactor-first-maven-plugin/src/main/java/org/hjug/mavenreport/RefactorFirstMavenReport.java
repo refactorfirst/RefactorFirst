@@ -102,10 +102,7 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
         }
 
         CostBenefitCalculator costBenefitCalculator = new CostBenefitCalculator();
-        GraphDataGenerator graphDataGenerator = new GraphDataGenerator(costBenefitCalculator);
-
-        List<RankedDisharmony> rankedDisharmonies =
-                graphDataGenerator.getRankedDisharmonies(projectBaseDir);
+        List<RankedDisharmony> rankedDisharmonies = costBenefitCalculator.calculateCostBenefitValues(projectBaseDir);
 
         rankedDisharmonies.sort(Comparator.comparing(RankedDisharmony::getPriority).reversed());
 
@@ -131,7 +128,7 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
         mainSink.text("Refactor First Report for " + projectName + " " + projectVersion);
         mainSink.title_();
 
-        generateChart(graphDataGenerator, rankedDisharmonies, mainSink);
+        generateChart(rankedDisharmonies, mainSink);
 
         mainSink.head_();
 
@@ -236,8 +233,7 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
     /**
      * @See https://maven.apache.org/doxia/developers/sink.html#How_to_inject_javascript_code_into_HTML
      */
-    private void generateChart(GraphDataGenerator graphDataGenerator, List<RankedDisharmony> rankedDisharmonies, Sink mainSink) {
-
+    private void generateChart(List<RankedDisharmony> rankedDisharmonies, Sink mainSink) {
         SinkEventAttributeSet googleChartImport = new SinkEventAttributeSet();
         googleChartImport.addAttribute( SinkEventAttributes.TYPE, "text/javascript" );
         googleChartImport.addAttribute( SinkEventAttributes.SRC, "https://www.gstatic.com/charts/loader.js" );
@@ -245,6 +241,8 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
         String script = "script";
         mainSink.unknown(script, new Object[]{HtmlMarkup.TAG_TYPE_START}, googleChartImport);
         mainSink.unknown(script, new Object[]{HtmlMarkup.TAG_TYPE_END}, null);
+
+        GraphDataGenerator graphDataGenerator = new GraphDataGenerator();
         String scriptStart = graphDataGenerator.getScriptStart();
         String bubbleChartData = graphDataGenerator.generateBubbleChartData(rankedDisharmonies);
         String scriptEnd = graphDataGenerator.getScriptEnd();

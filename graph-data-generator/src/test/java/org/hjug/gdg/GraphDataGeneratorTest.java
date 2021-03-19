@@ -1,8 +1,15 @@
 package org.hjug.gdg;
 
 import org.hjug.cbc.CostBenefitCalculator;
+import org.hjug.cbc.RankedDisharmony;
+import org.hjug.git.ScmLogInfo;
+import org.hjug.metrics.GodClass;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
@@ -10,11 +17,10 @@ import static org.mockito.Mockito.mock;
 public class GraphDataGeneratorTest {
 
     private GraphDataGenerator graphDataGenerator;
-    private CostBenefitCalculator costBenefitCalculator = mock(CostBenefitCalculator.class);
 
     @Before
     public void setUp() {
-        graphDataGenerator = new GraphDataGenerator(costBenefitCalculator);
+        graphDataGenerator = new GraphDataGenerator();
     }
 
     @Test
@@ -52,10 +58,31 @@ public class GraphDataGeneratorTest {
     }
 
     @Test
-    public void generateBubbleChartData() {
+    public void generateBubbleChartDataOneDataPoint() {
+        GodClass godClass = new GodClass("AttributeHandler.java",
+                                    "org.apache.myfaces.tobago.facelets",
+                                    "(WMC=77, ATFD=105, TCC=15.555999755859375)");
+        godClass.setOverallRank(0);
+        ScmLogInfo scmLogInfo = new ScmLogInfo("org/apache/myfaces/tobago/facelets/AttributeHandler.java", 1595275997, 0, 1);
+        scmLogInfo.setChangePronenessRank(0);
+        RankedDisharmony rankedDisharmony = new RankedDisharmony(godClass, scmLogInfo);
+
+        List<RankedDisharmony> rankedDisharmonies = new ArrayList<>();
+
+        rankedDisharmonies.add(rankedDisharmony);
+
+        StringBuilder chartData = new StringBuilder();
+        chartData.append("[ 'ID', 'Effort', 'Change Proneness', 'Priority', 'Method Count'], ");
+        chartData.append("['AttributeHandler.java',0,0,0,77]");
+
+        Assert.assertEquals(chartData.toString(), graphDataGenerator.generateBubbleChartData(rankedDisharmonies));
+
     }
 
     @Test
-    public void getRankedDisharmonies() {
+    public void generateBubbleChartDataTwoDataPoints() {
+        StringBuilder chartData = new StringBuilder();
+        chartData.append("[ 'ID', 'Effort', 'Change Proneness', 'Priority', 'Method Count'], ");
+
     }
 }

@@ -34,7 +34,7 @@ public class CostBenefitCalculatorTest {
         repository.close();
     }
 
-    @Test//TODO: failing
+    @Test
     public void testCostBenefitCalculation() throws IOException, GitAPIException, InterruptedException {
         String attributeHandler = "AttributeHandler.java";
         InputStream resourceAsStream = getClass().getClassLoader().getResourceAsStream(attributeHandler);

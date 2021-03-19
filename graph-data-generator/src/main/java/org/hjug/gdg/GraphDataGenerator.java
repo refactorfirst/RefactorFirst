@@ -8,13 +8,6 @@ import java.util.List;
 
 public class GraphDataGenerator {
 
-    private final CostBenefitCalculator costBenefitCalculator;
-    private final List<RankedDisharmony> calculateCostBenefitValues = new ArrayList<>();
-
-    public GraphDataGenerator(CostBenefitCalculator costBenefitCalculator) {
-        this.costBenefitCalculator = costBenefitCalculator;
-    }
-
     public String getScriptStart() {
         return
                 "      google.charts.load('current', {'packages':['corechart']});\n" +
@@ -62,18 +55,10 @@ public class GraphDataGenerator {
             chartData.append(",");
             chartData.append(rankedDisharmony.getWmc());
             chartData.append("]");
-            if (i < rankedDisharmonies.size()) {
+            if (i+1 < rankedDisharmonies.size()) {
                 chartData.append(",");
             }
         }
         return chartData.toString();
-    }
-
-    public List<RankedDisharmony> getRankedDisharmonies(String repositoryPath) {
-        if(calculateCostBenefitValues.isEmpty()){
-            calculateCostBenefitValues.addAll(costBenefitCalculator.calculateCostBenefitValues(repositoryPath));
-        }
-
-        return calculateCostBenefitValues;
     }
 }
