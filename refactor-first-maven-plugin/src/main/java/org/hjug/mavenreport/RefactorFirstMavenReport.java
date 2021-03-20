@@ -60,10 +60,6 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
     @Override
     protected void executeReport(Locale locale) throws MavenReportException {
 
-        GitLogReader gitLogReader = new GitLogReader();
-        String projectBaseDir = project.getBasedir().getPath();
-        String parentOfGitDir = gitLogReader.getGitDir(project.getBasedir()).getParentFile().getPath();
-
         final String[] simpleTableHeadings = {  "Class",
                                                 "Priority",
                                                 "Change Proneness Rank",
@@ -89,6 +85,9 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
 
         final String[] tableHeadings = showDetails ? detailedTableHeadings: simpleTableHeadings;
 
+        GitLogReader gitLogReader = new GitLogReader();
+        String projectBaseDir = project.getBasedir().getPath();
+        String parentOfGitDir = gitLogReader.getGitDir(project.getBasedir()).getParentFile().getPath();
         log.info("Project Base Dir: {} ", projectBaseDir);
         log.info("Parent of Git Dir: {}", parentOfGitDir);
 
@@ -218,13 +217,13 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
         log.info("Done! View the report at target/site/{}", filename);
     }
 
-    private void drawTableHeaderCell(String cellText, Sink mainSink) {
+    void drawTableHeaderCell(String cellText, Sink mainSink) {
         mainSink.tableHeaderCell();
         mainSink.text(cellText);
         mainSink.tableHeaderCell_();
     }
 
-    private void drawTableCell(String cellText, Sink mainSink) {
+    void drawTableCell(String cellText, Sink mainSink) {
         mainSink.tableCell();
         mainSink.text(cellText);
         mainSink.tableCell_();
@@ -233,7 +232,7 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
     /**
      * @See https://maven.apache.org/doxia/developers/sink.html#How_to_inject_javascript_code_into_HTML
      */
-    private void generateChart(List<RankedDisharmony> rankedDisharmonies, Sink mainSink) {
+    void generateChart(List<RankedDisharmony> rankedDisharmonies, Sink mainSink) {
         SinkEventAttributeSet googleChartImport = new SinkEventAttributeSet();
         googleChartImport.addAttribute( SinkEventAttributes.TYPE, "text/javascript" );
         googleChartImport.addAttribute( SinkEventAttributes.SRC, "https://www.gstatic.com/charts/loader.js" );
@@ -242,6 +241,18 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
         mainSink.unknown(script, new Object[]{HtmlMarkup.TAG_TYPE_START}, googleChartImport);
         mainSink.unknown(script, new Object[]{HtmlMarkup.TAG_TYPE_END}, null);
 
+        writeGchartJs(rankedDisharmonies);
+
+        SinkEventAttributeSet javascript = new SinkEventAttributeSet();
+        javascript.addAttribute( SinkEventAttributes.TYPE, "text/javascript");
+        javascript.addAttribute( SinkEventAttributes.SRC, "./gchart.js");
+
+        mainSink.unknown(script, new Object[]{HtmlMarkup.TAG_TYPE_START }, javascript );
+        mainSink.unknown(script, new Object[]{HtmlMarkup.TAG_TYPE_END}, null );
+    }
+
+    //TODO: Move to another class to allow use by Gradle plugin
+    void writeGchartJs(List<RankedDisharmony> rankedDisharmonies) {
         GraphDataGenerator graphDataGenerator = new GraphDataGenerator();
         String scriptStart = graphDataGenerator.getScriptStart();
         String bubbleChartData = graphDataGenerator.generateBubbleChartData(rankedDisharmonies);
@@ -268,12 +279,5 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
         } catch (IOException e) {
             log.error("Error writing chart script file", e);
         }
-
-        SinkEventAttributeSet javascript = new SinkEventAttributeSet();
-        javascript.addAttribute( SinkEventAttributes.TYPE, "text/javascript");
-        javascript.addAttribute( SinkEventAttributes.SRC, "./gchart.js");
-
-        mainSink.unknown(script, new Object[]{HtmlMarkup.TAG_TYPE_START }, javascript );
-        mainSink.unknown(script, new Object[]{HtmlMarkup.TAG_TYPE_END}, null );
     }
 }
