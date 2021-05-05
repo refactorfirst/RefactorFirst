@@ -77,6 +77,8 @@
         <!-- Needed to address Struts 1.3.8 vulnerabilities brought in by maven-reporting-impl -->
         <doxiaVersion>1.9.1</doxiaVersion>
         <doxiaSitetoolsVersion>1.9.2</doxiaSitetoolsVersion>
+
+        <maven.core.version>3.8.1</maven.core.version>
     </properties>
 
     <modules>
@@ -304,7 +306,7 @@
                 <artifactId>dependency-check-maven</artifactId>
                 <version>6.1.0</version>
                 <configuration>
-                    <failBuildOnCVSS>9.1</failBuildOnCVSS>
+                    <failBuildOnCVSS>8.0</failBuildOnCVSS>
                 </configuration>
                 <executions>
                     <execution>
