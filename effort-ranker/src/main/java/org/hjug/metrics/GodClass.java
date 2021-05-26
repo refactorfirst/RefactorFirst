@@ -2,6 +2,9 @@ package org.hjug.metrics;
 
 import lombok.Data;
 
+import java.text.NumberFormat;
+import java.text.ParseException;
+
 /**
  * Created by Jim on 11/16/2016.
  */
@@ -24,11 +27,20 @@ public class GodClass {
         this.fileName = fileName;
         this.packageName = packageName;
 
-        //null (WMC=79, ATFD=79, TCC=0.027777777777777776)
+        NumberFormat integerFormat = NumberFormat.getIntegerInstance();
+
         String [] values = result.substring(result.indexOf("(") + 1, result.indexOf(")")).split(", ");
-        wmc = Integer.valueOf(values[0].split("=")[1]);
-        atfd = Integer.valueOf(values[1].split("=")[1]);
-        String rawTcc = values[2].split("=")[1];
+        try {
+            wmc = (int) (long) integerFormat.parse(extractValue(values[0]));
+            atfd = (int) (long)  integerFormat.parse(extractValue(values[1]));
+        } catch (ParseException e) {
+            throw new RuntimeException(e);
+        }
+        String rawTcc = extractValue(values[2]);
         tcc = Float.valueOf(rawTcc.replace("%", ""));
+    }
+
+    private String extractValue(String value) {
+        return value.split("=")[1];
     }
 }
