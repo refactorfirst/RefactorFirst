@@ -18,76 +18,11 @@
             <artifactId>graph-data-generator</artifactId>
         </dependency>
 
-        <!--
-        Added to address https://snyk.io/vuln/SNYK-JAVA-COMMONSCOLLECTIONS-30078
-        Commons collections is used in maven-reporting-impl
-        -->
-        <dependency>
-            <groupId>commons-collections</groupId>
-            <artifactId>commons-collections</artifactId>
-            <version>3.2.2</version>
-        </dependency>
-
-        <!-- Needed since Doxia 1.9.2 and httpclient use     an insecure version -->
-        <dependency>
-            <groupId>commons-codec</groupId>
-            <artifactId>commons-codec</artifactId>
-            <version>1.15</version>
-        </dependency>
-
-        <!-- Needed since Doxia 1.9.2 uses an insecure version -->
-        <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpclient</artifactId>
-            <version>4.5.13</version>
-        </dependency>
-
-        <!-- Needed since Doxia 1.9.2 uses an insecure version -->
-        <dependency>
-            <groupId>org.codehaus.plexus</groupId>
-            <artifactId>plexus-utils</artifactId>
-            <version>3.3.0</version>
-        </dependency>
-
-        <!-- Doxia -->
-        <!-- Needed since maven-reporting-impl brings in Struts 1.3.8 jars that have CVSS > 8 -->
-        <dependency>
-            <groupId>org.apache.maven.doxia</groupId>
-            <artifactId>doxia-sink-api</artifactId>
-            <version>${doxiaVersion}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.maven.doxia</groupId>
-            <artifactId>doxia-decoration-model</artifactId>
-            <version>${doxiaSitetoolsVersion}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.maven.doxia</groupId>
-            <artifactId>doxia-core</artifactId>
-            <version>${doxiaVersion}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.maven.doxia</groupId>
-            <artifactId>doxia-site-renderer</artifactId>
-            <version>${doxiaSitetoolsVersion}</version>
-        </dependency>
-
+        <!-- Maven Reporting -->
         <dependency>
             <groupId>org.apache.maven</groupId>
             <artifactId>maven-core</artifactId>
             <version>${maven.core.version}</version>
-        </dependency>
-
-        <!-- Maven Reporting -->
-        <dependency>
-            <groupId>org.apache.maven.reporting</groupId>
-            <artifactId>maven-reporting-impl</artifactId>
-            <version>3.0.0</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.maven.reporting</groupId>
-            <artifactId>maven-reporting-api</artifactId>
-            <version>3.0</version>
         </dependency>
 
         <!-- plugin API and plugin-tools -->

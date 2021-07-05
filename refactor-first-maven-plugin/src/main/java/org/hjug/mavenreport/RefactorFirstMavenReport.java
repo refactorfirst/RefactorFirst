@@ -1,16 +1,12 @@
 package org.hjug.mavenreport;
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.maven.doxia.markup.HtmlMarkup;
-import org.apache.maven.doxia.sink.Sink;
-import org.apache.maven.doxia.sink.SinkEventAttributes;
-import org.apache.maven.doxia.sink.impl.SinkEventAttributeSet;
+import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
-import org.apache.maven.reporting.AbstractMavenReport;
-import org.apache.maven.reporting.MavenReportException;
+import org.apache.maven.project.MavenProject;
 import org.hjug.cbc.CostBenefitCalculator;
 import org.hjug.cbc.RankedDisharmony;
 import org.hjug.gdg.GraphDataGenerator;
@@ -20,6 +16,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
@@ -36,10 +33,22 @@ import java.util.Locale;
         threadSafe = true,
         inheritByDefault = false
 )
-public class RefactorFirstMavenReport extends AbstractMavenReport {
+public class RefactorFirstMavenReport extends AbstractMojo {
 
     @Parameter(property = "showDetails")
     private boolean showDetails = false;
+
+    @Parameter(defaultValue = "${project.name}")
+    private String projectName;
+
+    @Parameter(defaultValue = "${project.version}")
+    private String projectVersion;
+
+    @Parameter(readonly = true, defaultValue = "${project}")
+    private MavenProject project;
+
+    @Parameter(property = "project.build.directory")
+    protected File outputDirectory;
 
     public String getOutputName() {
         // This report will generate simple-report.html when invoked in a project with `mvn site`
@@ -58,7 +67,7 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
     }
 
     @Override
-    protected void executeReport(Locale locale) throws MavenReportException {
+    public void execute() {
 
         final String[] simpleTableHeadings = {  "Class",
                                                 "Priority",
@@ -93,10 +102,6 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
 
         if(!projectBaseDir.equals(parentOfGitDir)) {
             log.warn("Project Base Directory does not match Git Parent Directory");
-            Sink mainSink = getSink();
-            mainSink.paragraph();
-            mainSink.text("Data could not be captured. Please ensure to refer to this report from the base of the project");
-            mainSink.paragraph_();
             return;
         }
 
@@ -106,73 +111,97 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
         rankedDisharmonies.sort(Comparator.comparing(RankedDisharmony::getPriority).reversed());
 
         String filename = getOutputName() + ".html";
-        String projectName = project.getName();
-        String projectVersion = project.getVersion();
 
-        // Some info
         log.info("Generating {} for {} - {}", filename, projectName, projectVersion);
-
-        // Get the Maven Doxia Sink, which will be used to generate the
-        // various elements of the document
-        Sink mainSink = getSink();
-        if (mainSink == null) {
-            throw new MavenReportException("Could not get the Doxia sink");
-        }
-
-
-
-        // Page head
-        mainSink.head();
-        mainSink.title();
-        mainSink.text("Refactor First Report for " + projectName + " " + projectVersion);
-        mainSink.title_();
-
-        generateChart(rankedDisharmonies, mainSink);
-
-        mainSink.head_();
-
-        mainSink.body();
-
-        // Heading 1
-        mainSink.section1();
-        mainSink.sectionTitle1();
-        mainSink.text("God Class Report for " + projectName + " " + projectVersion);
-        mainSink.sectionTitle1_();
-
-        if(rankedDisharmonies.isEmpty()) {
-            mainSink.text("Contratulations!  " + projectName + " " + projectVersion + " has no God classes!");
-            mainSink.section1_();
-            mainSink.body_();
-            log.info("Done! No God classes found!");
-            return;
-        }
-
-        // Content
-
-        SinkEventAttributeSet divAttrs = new SinkEventAttributeSet();
-        divAttrs.addAttribute( SinkEventAttributes.ID, "series_chart_div" );
-        mainSink.unknown( "div", new Object[]{HtmlMarkup.TAG_TYPE_START}, divAttrs );
-        mainSink.unknown( "div", new Object[]{HtmlMarkup.TAG_TYPE_END}, null );
-
-        SinkEventAttributes tableAttributes = new SinkEventAttributeSet();
-        tableAttributes.addAttribute(SinkEventAttributes.BORDER, "5px");
-        tableAttributes.addAttribute(SinkEventAttributes.CLASS, "table table-striped");
-        mainSink.table(tableAttributes);
-        mainSink.tableRow();
-
-        for (String heading : tableHeadings) {
-            drawTableHeaderCell(heading, mainSink);
-        }
-
-        mainSink.tableRow_();
 
         DateTimeFormatter formatter =
                 DateTimeFormatter.ofLocalizedDateTime( FormatStyle.SHORT )
                         .withLocale( Locale.getDefault() )
                         .withZone( ZoneId.systemDefault() );
 
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append(
+                "<html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\">\n" +
+                "  <head>\n" +
+                "    <meta charset=\"UTF-8\" />\n" +
+                "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n" +
+                "    <meta name=\"generator\" content=\"Apache Maven Doxia Site Renderer 1.9.2\" />");
+
+
+        stringBuilder.append("<title>Refactor First Report for ").append(projectName).append(" ").append(projectVersion).append(" </title>");
+
+        stringBuilder.append("    <link rel=\"stylesheet\" href=\"./css/maven-base.css\" />\n" +
+                "    <link rel=\"stylesheet\" href=\"./css/maven-theme.css\" />\n" +
+                "    <link rel=\"stylesheet\" href=\"./css/site.css\" />\n" +
+                "    <link rel=\"stylesheet\" href=\"./css/print.css\" media=\"print\" />\n" +
+                "<script type=\"text/javascript\" src=\"https://www.gstatic.com/charts/loader.js\"></script><script type=\"text/javascript\" src=\"./gchart.js\"></script>  </head>\n" +
+                "  <body class=\"composite\">\n" +
+                "    <div id=\"banner\">\n" +
+                "      <div class=\"clear\">\n" +
+                "        <hr/>\n" +
+                "      </div>\n" +
+                "    </div>\n" +
+                "    <div id=\"breadcrumbs\">\n" +
+                "      <div class=\"xleft\">");
+
+        stringBuilder.append("<span id=\"publishDate\">Last Published: ").append(formatter.format(Instant.now())).append("</span>");
+        stringBuilder.append("<span id=\"projectVersion\">Version: ").append(projectVersion).append("</span>");
+
+        stringBuilder.append("/div>\n" +
+                "      <div class=\"xright\">      </div>\n" +
+                "      <div class=\"clear\">\n" +
+                "        <hr/>\n" +
+                "      </div>\n" +
+                "    </div>\n" +
+                "    <div id=\"leftColumn\">\n" +
+                "      <div id=\"navcolumn\">\n" +
+                "      <a href=\"http://maven.apache.org/\" title=\"Built by Maven\" class=\"poweredBy\">\n" +
+                "        <img class=\"poweredBy\" alt=\"Built by Maven\" src=\"./images/logos/maven-feather.png\" />\n" +
+                "      </a>\n" +
+                "      </div>\n" +
+                "    </div>\n" +
+                "    <div id=\"bodyColumn\">\n" +
+                "      <div id=\"contentBox\">");
+
+        stringBuilder.append("<section>\n" + "<h2><a name=\"God_Class_Report_for_Apache_Tobago_5.0.0-SNAPSHOT\"></a>God Class Report for ")
+                .append(projectName).append(" ").append(projectVersion).append("</h2>\n").append("<div id=\"series_chart_div\"></div>");
+
+        if(rankedDisharmonies.isEmpty()) {
+            stringBuilder.append("Congratulations!  ").append(projectName).append(" ").append(projectVersion).append(" has no God classes!");
+            log.info("Done! No God classes found!");
+            stringBuilder.append("</div>\n" +
+                    "    </div>\n" +
+                    "    <div class=\"clear\">\n" +
+                    "      <hr/>\n" +
+                    "    </div>\n" +
+                    "    <div id=\"footer\">\n" +
+                    "      <div class=\"xright\">\n" +
+                    "        Copyright &#169;      2002&#x2013;2021<a href=\"https://www.apache.org/\">The Apache Software Foundation</a>.\n" +
+                    ".      </div>\n" +
+                    "      <div class=\"clear\">\n" +
+                    "        <hr/>\n" +
+                    "      </div>\n" +
+                    "    </div>\n" +
+                    "  </body>\n" +
+                    "</html>\n");
+            return;
+        }
+
+        writeGchartJs(rankedDisharmonies);
+
+        stringBuilder.append("<table border=\"5px\" class=\"table table-striped\">");
+
+        // Content
+        stringBuilder.append("<thead><tr>");
+        for (String heading : tableHeadings) {
+            stringBuilder.append("<th>").append(heading).append("</th>");
+        }
+        stringBuilder.append("</tr></thead>");
+
+
+        stringBuilder.append("<tbody>");
         for (RankedDisharmony rankedDisharmony : rankedDisharmonies) {
-            mainSink.tableRow();
+            stringBuilder.append("<tr>");
 
             String[] simpleRankedDisharmonyData = { rankedDisharmony.getClassName(),
                                                     rankedDisharmony.getPriority().toString(),
@@ -201,54 +230,57 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
                     showDetails ? detailedRankedDisharmonyData : simpleRankedDisharmonyData;
 
             for (String rowData : rankedDisharmonyData) {
-                drawTableCell(rowData, mainSink);
+                stringBuilder.append("<td>").append(rowData).append("</td>");
             }
 
-            mainSink.tableRow_();
+            stringBuilder.append("</tr>");
         }
 
+        stringBuilder.append("/<tbody>");
 
-        mainSink.table_();
-        mainSink.paragraph_();
-
-        // Close
-        mainSink.section1_();
-        mainSink.body_();
         log.info("Done! View the report at target/site/{}", filename);
-    }
 
-    void drawTableHeaderCell(String cellText, Sink mainSink) {
-        mainSink.tableHeaderCell();
-        mainSink.text(cellText);
-        mainSink.tableHeaderCell_();
-    }
+        stringBuilder.append(
+                "</table></section>" +
+                "</div>\n" +
+                "    </div>\n" +
+                "    <div class=\"clear\">\n" +
+                "      <hr/>\n" +
+                "    </div>\n" +
+                "    <div id=\"footer\">\n" +
+                "      <div class=\"xright\">\n" +
+                "        Copyright &#169;      2002&#x2013;2021<a href=\"https://www.apache.org/\">The Apache Software Foundation</a>.\n" +
+                ".      </div>\n" +
+                "      <div class=\"clear\">\n" +
+                "        <hr/>\n" +
+                "      </div>\n" +
+                "    </div>\n" +
+                "  </body>\n" +
+                "</html>\n");
 
-    void drawTableCell(String cellText, Sink mainSink) {
-        mainSink.tableCell();
-        mainSink.text(cellText);
-        mainSink.tableCell_();
-    }
+        log.info(stringBuilder.toString());
 
-    /**
-     * @See https://maven.apache.org/doxia/developers/sink.html#How_to_inject_javascript_code_into_HTML
-     */
-    void generateChart(List<RankedDisharmony> rankedDisharmonies, Sink mainSink) {
-        SinkEventAttributeSet googleChartImport = new SinkEventAttributeSet();
-        googleChartImport.addAttribute( SinkEventAttributes.TYPE, "text/javascript" );
-        googleChartImport.addAttribute( SinkEventAttributes.SRC, "https://www.gstatic.com/charts/loader.js" );
+        String reportOutputDirectory = project.getModel().getReporting().getOutputDirectory();
+        File reportOutputDir = new File(reportOutputDirectory);
+        if(!reportOutputDir.exists()) {
+            reportOutputDir.mkdirs();
+        }
+        String pathname = reportOutputDirectory + File.separator + "refactor-first-report.html";
 
-        String script = "script";
-        mainSink.unknown(script, new Object[]{HtmlMarkup.TAG_TYPE_START}, googleChartImport);
-        mainSink.unknown(script, new Object[]{HtmlMarkup.TAG_TYPE_END}, null);
+        File reportFile = new File(pathname);
+        try {
+            reportFile.createNewFile();
+        } catch (IOException e) {
+            log.error("Failure creating chart script file", e);
+        }
 
-        writeGchartJs(rankedDisharmonies);
+        try(BufferedWriter writer = new BufferedWriter(new FileWriter(reportFile))) {
+            writer.write(stringBuilder.toString());
+        } catch (IOException e) {
+            log.error("Error writing chart script file", e);
+        }
 
-        SinkEventAttributeSet javascript = new SinkEventAttributeSet();
-        javascript.addAttribute( SinkEventAttributes.TYPE, "text/javascript");
-        javascript.addAttribute( SinkEventAttributes.SRC, "./gchart.js");
-
-        mainSink.unknown(script, new Object[]{HtmlMarkup.TAG_TYPE_START }, javascript );
-        mainSink.unknown(script, new Object[]{HtmlMarkup.TAG_TYPE_END}, null );
+        log.info("Done! View the report at target/site/{}", filename);
     }
 
     //TODO: Move to another class to allow use by Gradle plugin
