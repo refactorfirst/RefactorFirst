@@ -184,6 +184,7 @@ public class RefactorFirstMavenReport extends AbstractMojo {
                     "    </div>\n" +
                     "  </body>\n" +
                     "</html>\n");
+            writeReportToDisk(filename, stringBuilder);
             return;
         }
 
@@ -260,6 +261,10 @@ public class RefactorFirstMavenReport extends AbstractMojo {
 
         log.info(stringBuilder.toString());
 
+        writeReportToDisk(filename, stringBuilder);
+    }
+
+    private void writeReportToDisk(String filename, StringBuilder stringBuilder) {
         String reportOutputDirectory = project.getModel().getReporting().getOutputDirectory();
         File reportOutputDir = new File(reportOutputDirectory);
         if(!reportOutputDir.exists()) {
