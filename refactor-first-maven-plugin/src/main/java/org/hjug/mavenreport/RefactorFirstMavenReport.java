@@ -23,6 +23,7 @@ import java.time.format.FormatStyle;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 
 @Slf4j
 @Mojo(
@@ -94,22 +95,6 @@ public class RefactorFirstMavenReport extends AbstractMojo {
 
         final String[] tableHeadings = showDetails ? detailedTableHeadings: simpleTableHeadings;
 
-        GitLogReader gitLogReader = new GitLogReader();
-        String projectBaseDir = project.getBasedir().getPath();
-        String parentOfGitDir = gitLogReader.getGitDir(project.getBasedir()).getParentFile().getPath();
-        log.info("Project Base Dir: {} ", projectBaseDir);
-        log.info("Parent of Git Dir: {}", parentOfGitDir);
-
-        if(!projectBaseDir.equals(parentOfGitDir)) {
-            log.warn("Project Base Directory does not match Git Parent Directory");
-            return;
-        }
-
-        CostBenefitCalculator costBenefitCalculator = new CostBenefitCalculator();
-        List<RankedDisharmony> rankedDisharmonies = costBenefitCalculator.calculateCostBenefitValues(projectBaseDir);
-
-        rankedDisharmonies.sort(Comparator.comparing(RankedDisharmony::getPriority).reversed());
-
         String filename = getOutputName() + ".html";
 
         log.info("Generating {} for {} - {}", filename, projectName, projectVersion);
@@ -122,10 +107,10 @@ public class RefactorFirstMavenReport extends AbstractMojo {
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append(
                 "<html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\">\n" +
-                "  <head>\n" +
-                "    <meta charset=\"UTF-8\" />\n" +
-                "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n" +
-                "    <meta name=\"generator\" content=\"Apache Maven Doxia Site Renderer 1.9.2\" />");
+                        "  <head>\n" +
+                        "    <meta charset=\"UTF-8\" />\n" +
+                        "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n" +
+                        "    <meta name=\"generator\" content=\"Apache Maven Doxia Site Renderer 1.9.2\" />");
 
 
         stringBuilder.append("<title>Refactor First Report for ").append(projectName).append(" ").append(projectVersion).append(" </title>");
@@ -165,6 +150,66 @@ public class RefactorFirstMavenReport extends AbstractMojo {
 
         stringBuilder.append("<section>\n" + "<h2><a name=\"God_Class_Report_for_Apache_Tobago_5.0.0-SNAPSHOT\"></a>God Class Report for ")
                 .append(projectName).append(" ").append(projectVersion).append("</h2>\n").append("<div id=\"series_chart_div\"></div>");
+
+        GitLogReader gitLogReader = new GitLogReader();
+        String projectBaseDir = project.getBasedir().getPath();
+        Optional<File> optionalGitDir = Optional.ofNullable(gitLogReader.getGitDir(project.getBasedir()));
+        File gitDir;
+
+        if (optionalGitDir.isPresent()) {
+            gitDir = optionalGitDir.get();
+        } else {
+            log.info("Done! No Git repository found!  Please initialize a Git repository and perform an initial commit.");
+            stringBuilder.append("No Git repository found in project ").append(projectName).append(" ").append(projectVersion).append(".  ");
+            stringBuilder.append("Please initialize a Git repository and perform an initial commit.");
+            stringBuilder.append("</div>\n" +
+                    "    </div>\n" +
+                    "    <div class=\"clear\">\n" +
+                    "      <hr/>\n" +
+                    "    </div>\n" +
+                    "    <div id=\"footer\">\n" +
+                    "      <div class=\"xright\">\n" +
+                    "        Copyright &#169;      2002&#x2013;2021<a href=\"https://www.apache.org/\">The Apache Software Foundation</a>.\n" +
+                    ".      </div>\n" +
+                    "      <div class=\"clear\">\n" +
+                    "        <hr/>\n" +
+                    "      </div>\n" +
+                    "    </div>\n" +
+                    "  </body>\n" +
+                    "</html>\n");
+            writeReportToDisk(filename, stringBuilder);
+            return;
+        }
+
+        String parentOfGitDir = gitDir.getParentFile().getPath();
+        log.info("Project Base Dir: {} ", projectBaseDir);
+        log.info("Parent of Git Dir: {}", parentOfGitDir);
+
+        if(!projectBaseDir.equals(parentOfGitDir)) {
+            log.warn("Project Base Directory does not match Git Parent Directory");
+            stringBuilder.append("Project Base Directory does not match Git Parent Directory.  Please refer to the report at the root of the site directory.");
+            stringBuilder.append("</div>\n" +
+                    "    </div>\n" +
+                    "    <div class=\"clear\">\n" +
+                    "      <hr/>\n" +
+                    "    </div>\n" +
+                    "    <div id=\"footer\">\n" +
+                    "      <div class=\"xright\">\n" +
+                    "        Copyright &#169;      2002&#x2013;2021<a href=\"https://www.apache.org/\">The Apache Software Foundation</a>.\n" +
+                    ".      </div>\n" +
+                    "      <div class=\"clear\">\n" +
+                    "        <hr/>\n" +
+                    "      </div>\n" +
+                    "    </div>\n" +
+                    "  </body>\n" +
+                    "</html>\n");
+            return;
+        }
+
+        CostBenefitCalculator costBenefitCalculator = new CostBenefitCalculator();
+        List<RankedDisharmony> rankedDisharmonies = costBenefitCalculator.calculateCostBenefitValues(projectBaseDir);
+
+        rankedDisharmonies.sort(Comparator.comparing(RankedDisharmony::getPriority).reversed());
 
         if(rankedDisharmonies.isEmpty()) {
             stringBuilder.append("Congratulations!  ").append(projectName).append(" ").append(projectVersion).append(" has no God classes!");
