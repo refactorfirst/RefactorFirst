@@ -43,6 +43,18 @@ public class RefactorFirstMavenReport extends AbstractMojo {
             "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n" +
             "    <meta name=\"generator\" content=\"Apache Maven Doxia Site Renderer 1.9.2\" />";
 
+    private static final String LEGEND =
+            "       <h2>Chart Legend:</h2>" +
+            "       <table border=\"5px\">\n" +
+            "          <tbody>\n" +
+            "            <tr><td><strong>X-Axis:</strong> Effort to refactor to a non-God class</td></tr>\n" +
+            "            <tr><td><strong>Y-Axis:</strong> Relative churn</td></tr>\n" +
+            "            <tr><td><strong>Color:</strong> Rank of what to fix first</td></tr>\n" +
+            "            <tr><td><strong>Circle size:</strong> Number of simple non-getter/setter methods</td></tr>\n" +
+            "          </tbody>\n" +
+            "        </table>" +
+            "        <br/>";
+
     private static final String THE_END =
             "</div>\n" +
             "    </div>\n" +
@@ -213,7 +225,10 @@ public class RefactorFirstMavenReport extends AbstractMojo {
         }
 
         writeGchartJs(rankedDisharmonies);
+        stringBuilder.append(LEGEND);
 
+
+        stringBuilder.append("<h2>God classes by the numbers:</h2>");
         stringBuilder.append("<table border=\"5px\" class=\"table table-striped\">");
 
         // Content
