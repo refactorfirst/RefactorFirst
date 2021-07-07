@@ -36,6 +36,30 @@ import java.util.Optional;
 )
 public class RefactorFirstMavenReport extends AbstractMojo {
 
+    private static final String THE_BEGINNING =
+            "<html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\">\n" +
+            "  <head>\n" +
+            "    <meta charset=\"UTF-8\" />\n" +
+            "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n" +
+            "    <meta name=\"generator\" content=\"Apache Maven Doxia Site Renderer 1.9.2\" />";
+
+    private static final String THE_END =
+            "</div>\n" +
+            "    </div>\n" +
+            "    <div class=\"clear\">\n" +
+            "      <hr/>\n" +
+            "    </div>\n" +
+            "    <div id=\"footer\">\n" +
+            "      <div class=\"xright\">\n" +
+            "        Copyright &#169;      2002&#x2013;2021<a href=\"https://www.apache.org/\">The Apache Software Foundation</a>.\n" +
+            ".      </div>\n" +
+            "      <div class=\"clear\">\n" +
+            "        <hr/>\n" +
+            "      </div>\n" +
+            "    </div>\n" +
+            "  </body>\n" +
+            "</html>\n";
+
     @Parameter(property = "showDetails")
     private boolean showDetails = false;
 
@@ -105,17 +129,13 @@ public class RefactorFirstMavenReport extends AbstractMojo {
                         .withZone( ZoneId.systemDefault() );
 
         StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append(
-                "<html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\">\n" +
-                        "  <head>\n" +
-                        "    <meta charset=\"UTF-8\" />\n" +
-                        "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n" +
-                        "    <meta name=\"generator\" content=\"Apache Maven Doxia Site Renderer 1.9.2\" />");
+
+        stringBuilder.append(THE_BEGINNING);
 
 
         stringBuilder.append("<title>Refactor First Report for ").append(projectName).append(" ").append(projectVersion).append(" </title>");
 
-        stringBuilder.append("    <link rel=\"stylesheet\" href=\"./css/maven-base.css\" />\n" +
+        stringBuilder.append("<link rel=\"stylesheet\" href=\"./css/maven-base.css\" />\n" +
                 "    <link rel=\"stylesheet\" href=\"./css/maven-theme.css\" />\n" +
                 "    <link rel=\"stylesheet\" href=\"./css/site.css\" />\n" +
                 "    <link rel=\"stylesheet\" href=\"./css/print.css\" media=\"print\" />\n" +
@@ -130,9 +150,9 @@ public class RefactorFirstMavenReport extends AbstractMojo {
                 "      <div class=\"xleft\">");
 
         stringBuilder.append("<span id=\"publishDate\">Last Published: ").append(formatter.format(Instant.now())).append("</span>");
-        stringBuilder.append("<span id=\"projectVersion\">Version: ").append(projectVersion).append("</span>");
+        stringBuilder.append("<span id=\"projectVersion\"> Version: ").append(projectVersion).append("</span>");
 
-        stringBuilder.append("/div>\n" +
+        stringBuilder.append("</div>\n" +
                 "      <div class=\"xright\">      </div>\n" +
                 "      <div class=\"clear\">\n" +
                 "        <hr/>\n" +
@@ -156,27 +176,14 @@ public class RefactorFirstMavenReport extends AbstractMojo {
         Optional<File> optionalGitDir = Optional.ofNullable(gitLogReader.getGitDir(project.getBasedir()));
         File gitDir;
 
+
         if (optionalGitDir.isPresent()) {
             gitDir = optionalGitDir.get();
         } else {
             log.info("Done! No Git repository found!  Please initialize a Git repository and perform an initial commit.");
             stringBuilder.append("No Git repository found in project ").append(projectName).append(" ").append(projectVersion).append(".  ");
             stringBuilder.append("Please initialize a Git repository and perform an initial commit.");
-            stringBuilder.append("</div>\n" +
-                    "    </div>\n" +
-                    "    <div class=\"clear\">\n" +
-                    "      <hr/>\n" +
-                    "    </div>\n" +
-                    "    <div id=\"footer\">\n" +
-                    "      <div class=\"xright\">\n" +
-                    "        Copyright &#169;      2002&#x2013;2021<a href=\"https://www.apache.org/\">The Apache Software Foundation</a>.\n" +
-                    ".      </div>\n" +
-                    "      <div class=\"clear\">\n" +
-                    "        <hr/>\n" +
-                    "      </div>\n" +
-                    "    </div>\n" +
-                    "  </body>\n" +
-                    "</html>\n");
+            stringBuilder.append(THE_END);
             writeReportToDisk(filename, stringBuilder);
             return;
         }
@@ -188,21 +195,7 @@ public class RefactorFirstMavenReport extends AbstractMojo {
         if(!projectBaseDir.equals(parentOfGitDir)) {
             log.warn("Project Base Directory does not match Git Parent Directory");
             stringBuilder.append("Project Base Directory does not match Git Parent Directory.  Please refer to the report at the root of the site directory.");
-            stringBuilder.append("</div>\n" +
-                    "    </div>\n" +
-                    "    <div class=\"clear\">\n" +
-                    "      <hr/>\n" +
-                    "    </div>\n" +
-                    "    <div id=\"footer\">\n" +
-                    "      <div class=\"xright\">\n" +
-                    "        Copyright &#169;      2002&#x2013;2021<a href=\"https://www.apache.org/\">The Apache Software Foundation</a>.\n" +
-                    ".      </div>\n" +
-                    "      <div class=\"clear\">\n" +
-                    "        <hr/>\n" +
-                    "      </div>\n" +
-                    "    </div>\n" +
-                    "  </body>\n" +
-                    "</html>\n");
+            stringBuilder.append(THE_END);
             return;
         }
 
@@ -214,21 +207,7 @@ public class RefactorFirstMavenReport extends AbstractMojo {
         if(rankedDisharmonies.isEmpty()) {
             stringBuilder.append("Congratulations!  ").append(projectName).append(" ").append(projectVersion).append(" has no God classes!");
             log.info("Done! No God classes found!");
-            stringBuilder.append("</div>\n" +
-                    "    </div>\n" +
-                    "    <div class=\"clear\">\n" +
-                    "      <hr/>\n" +
-                    "    </div>\n" +
-                    "    <div id=\"footer\">\n" +
-                    "      <div class=\"xright\">\n" +
-                    "        Copyright &#169;      2002&#x2013;2021<a href=\"https://www.apache.org/\">The Apache Software Foundation</a>.\n" +
-                    ".      </div>\n" +
-                    "      <div class=\"clear\">\n" +
-                    "        <hr/>\n" +
-                    "      </div>\n" +
-                    "    </div>\n" +
-                    "  </body>\n" +
-                    "</html>\n");
+            stringBuilder.append(THE_END);
             writeReportToDisk(filename, stringBuilder);
             return;
         }
@@ -282,27 +261,12 @@ public class RefactorFirstMavenReport extends AbstractMojo {
             stringBuilder.append("</tr>");
         }
 
-        stringBuilder.append("/<tbody>");
+        stringBuilder.append("</tbody>");
 
         log.info("Done! View the report at target/site/{}", filename);
 
-        stringBuilder.append(
-                "</table></section>" +
-                "</div>\n" +
-                "    </div>\n" +
-                "    <div class=\"clear\">\n" +
-                "      <hr/>\n" +
-                "    </div>\n" +
-                "    <div id=\"footer\">\n" +
-                "      <div class=\"xright\">\n" +
-                "        Copyright &#169;      2002&#x2013;2021<a href=\"https://www.apache.org/\">The Apache Software Foundation</a>.\n" +
-                ".      </div>\n" +
-                "      <div class=\"clear\">\n" +
-                "        <hr/>\n" +
-                "      </div>\n" +
-                "    </div>\n" +
-                "  </body>\n" +
-                "</html>\n");
+        stringBuilder.append("</table></section>");
+        stringBuilder.append(THE_END);
 
         log.info(stringBuilder.toString());
 
