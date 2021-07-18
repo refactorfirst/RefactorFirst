@@ -50,7 +50,7 @@ public class RefactorFirstMavenReport extends AbstractMojo {
             "            <tr><td><strong>X-Axis:</strong> Effort to refactor to a non-God class</td></tr>\n" +
             "            <tr><td><strong>Y-Axis:</strong> Relative churn</td></tr>\n" +
             "            <tr><td><strong>Color:</strong> Rank of what to fix first</td></tr>\n" +
-            "            <tr><td><strong>Circle size:</strong> Number of simple non-getter/setter methods</td></tr>\n" +
+            "            <tr><td><strong>Circle size:</strong> Number of non-getter/setter methods</td></tr>\n" +
             "          </tbody>\n" +
             "        </table>" +
             "        <br/>";
@@ -228,7 +228,7 @@ public class RefactorFirstMavenReport extends AbstractMojo {
         stringBuilder.append(LEGEND);
 
 
-        stringBuilder.append("<h2>God classes by the numbers:</h2>");
+        stringBuilder.append("<h2>God classes by the numbers: (Refactor higher priority classes first)</h2>");
         stringBuilder.append("<table border=\"5px\" class=\"table table-striped\">");
 
         // Content
