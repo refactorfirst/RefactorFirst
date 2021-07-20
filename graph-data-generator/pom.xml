@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.hjug.refactorfirst</groupId>
         <artifactId>refactor-first</artifactId>
-        <version>0.2.0-SNAPSHOT</version>
+        <version>0.2.1-SNAPSHOT</version>
     </parent>
 
     <groupId>org.hjug.refactorfirst.graphdatagenerator</groupId>
@@ -15,7 +15,7 @@
         <dependency>
             <groupId>org.hjug.refactorfirst.costbenefitcalculator</groupId>
             <artifactId>cost-benefit-calculator</artifactId>
-            <version>0.2.0-SNAPSHOT</version>
+            <version>0.2.1-SNAPSHOT</version>
         </dependency>
     </dependencies>
 
