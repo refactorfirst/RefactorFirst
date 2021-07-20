@@ -180,7 +180,7 @@ public class RefactorFirstMavenReport extends AbstractMojo {
                 "    <div id=\"bodyColumn\">\n" +
                 "      <div id=\"contentBox\">");
 
-        stringBuilder.append("<section>\n" + "<h2><a name=\"God_Class_Report_for_Apache_Tobago_5.0.0-SNAPSHOT\"></a>God Class Report for ")
+        stringBuilder.append("<section>\n" + "<h2>God Class Report for ")
                 .append(projectName).append(" ").append(projectVersion).append("</h2>\n").append("<div id=\"series_chart_div\"></div>");
 
         GitLogReader gitLogReader = new GitLogReader();
