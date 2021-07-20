@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.hjug.refactorfirst</groupId>
         <artifactId>refactor-first</artifactId>
-        <version>0.1.2-SNAPSHOT</version>
+        <version>0.2.0-SNAPSHOT</version>
     </parent>
 
     <groupId>org.hjug.refactorfirst.costbenefitcalculator</groupId>
