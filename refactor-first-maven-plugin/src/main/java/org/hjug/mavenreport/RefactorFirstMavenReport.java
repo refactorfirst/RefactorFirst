@@ -125,7 +125,7 @@ public class RefactorFirstMavenReport extends AbstractMojo {
                                                 "TCC",
                                                 "TCC Rank",
                                                 "Date of First Commit",
-                                                "Date of Most Recent Commit",
+                                                "Most Recent Commit Date",
                                                 "Commit Count",
                                                 "Full Path"};
 
