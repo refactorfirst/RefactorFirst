@@ -57,17 +57,16 @@ Once the plugin finishes executing (it may take a while for a large / old codeba
 ## Additional Details
 This plugin will work on both single module and multi-module Maven projects that have a typical Maven project layout.
  
-This tool is based on the paper **[Prioritizing Design Debt Investment Opportunities](https://dl.acm.org/doi/10.1145/1985362.1985372)** by Nico Zazworka, Carolyn Seaman, and Forrest Shull
+This tool is based on the paper **[Prioritizing Design Debt Investment Opportunities](https://dl.acm.org/doi/10.1145/1985362.1985372)** by Nico Zazworka, Carolyn Seaman, and Forrest Shull.  The presentation based on the paper is available at https://resources.sei.cmu.edu/asset_files/Presentation/2011_017_001_516911.pdf 
 
 ## Limitations
-* My time.  This is a passion project and has been done in my spare time.
+* My time.  This is a passion project and is developed in my spare time.
 
 ## Feedback and Collaboration Welcome
 There is still much to be done.  Your feedback and collaboration would be greatly appreciated in the form of feature requests, bug submissions, and PRs.  
 If you find this plugin useful, please star this repository and share with your friends & colleagues and on social media.
 
 ## Future Plans
-* Improve logging.
 * Move from JUnit 4 to Junit 5.  Junit 5 is lacking the support for temporary files that JUnit 4 provides.
 * Add a Gradle plugin.
 * Incorporate Unit Test coverage metrics to quickly identify the safety of refactoring a God class.
