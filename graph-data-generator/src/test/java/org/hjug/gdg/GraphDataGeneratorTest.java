@@ -45,6 +45,7 @@ public class GraphDataGeneratorTest {
                         "               'Fix Higher Priority Classes First',\n" +
                         "        height: 900, " +
                         "        width: 1200, " +
+                        "        explorer: {}, " +
                         "        hAxis: {title: 'Effort'},\n" +
                         "        vAxis: {title: 'Change Proneness'},\n" +
                         "        colorAxis: {colors: ['blue', 'green']},\n" +
