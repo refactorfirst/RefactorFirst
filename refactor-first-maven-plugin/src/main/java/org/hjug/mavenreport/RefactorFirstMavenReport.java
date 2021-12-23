@@ -151,7 +151,8 @@ public class RefactorFirstMavenReport extends AbstractMojo {
                 "    <link rel=\"stylesheet\" href=\"./css/maven-theme.css\" />\n" +
                 "    <link rel=\"stylesheet\" href=\"./css/site.css\" />\n" +
                 "    <link rel=\"stylesheet\" href=\"./css/print.css\" media=\"print\" />\n" +
-                "<script type=\"text/javascript\" src=\"https://www.gstatic.com/charts/loader.js\"></script><script type=\"text/javascript\" src=\"./gchart.js\"></script>  </head>\n" +
+                "<script type=\"text/javascript\" src=\"https://www.gstatic.com/charts/loader.js\">" +
+                "</script><script type=\"text/javascript\" src=\"./gchart.js\"></script>  </head>\n" +
                 "  <body class=\"composite\">\n" +
                 "    <div id=\"banner\">\n" +
                 "      <div class=\"clear\">\n" +
@@ -161,8 +162,14 @@ public class RefactorFirstMavenReport extends AbstractMojo {
                 "    <div id=\"breadcrumbs\">\n" +
                 "      <div class=\"xleft\">");
 
-        stringBuilder.append("<span id=\"publishDate\">Last Published: ").append(formatter.format(Instant.now())).append("</span>");
-        stringBuilder.append("<span id=\"projectVersion\"> Version: ").append(projectVersion).append("</span>");
+        stringBuilder
+                .append("<span id=\"publishDate\">Last Published: ")
+                .append(formatter.format(Instant.now()))
+                .append("</span>");
+        stringBuilder
+                .append("<span id=\"projectVersion\"> Version: ")
+                .append(projectVersion)
+                .append("</span>");
 
         stringBuilder.append("</div>\n" +
                 "      <div class=\"xright\">      </div>\n" +
@@ -180,8 +187,11 @@ public class RefactorFirstMavenReport extends AbstractMojo {
                 "    <div id=\"bodyColumn\">\n" +
                 "      <div id=\"contentBox\">");
 
-        stringBuilder.append("<section>\n" + "<h2>God Class Report for ")
-                .append(projectName).append(" ").append(projectVersion).append("</h2>\n").append("<div id=\"series_chart_div\"></div>");
+        stringBuilder
+                .append("<section>\n" + "<h2>God Class Report for ")
+                .append(projectName).append(" ").append(projectVersion)
+                .append("</h2>\n")
+                .append("<div id=\"series_chart_div\"></div>");
 
         GitLogReader gitLogReader = new GitLogReader();
         String projectBaseDir = project.getBasedir().getPath();
@@ -206,7 +216,9 @@ public class RefactorFirstMavenReport extends AbstractMojo {
 
         if(!projectBaseDir.equals(parentOfGitDir)) {
             log.warn("Project Base Directory does not match Git Parent Directory");
-            stringBuilder.append("Project Base Directory does not match Git Parent Directory.  Please refer to the report at the root of the site directory.");
+            stringBuilder.append(
+                    "Project Base Directory does not match Git Parent Directory.  " +
+                    "Please refer to the report at the root of the site directory.");
             stringBuilder.append(THE_END);
             return;
         }
@@ -217,7 +229,9 @@ public class RefactorFirstMavenReport extends AbstractMojo {
         rankedDisharmonies.sort(Comparator.comparing(RankedDisharmony::getPriority).reversed());
 
         if(rankedDisharmonies.isEmpty()) {
-            stringBuilder.append("Congratulations!  ").append(projectName).append(" ").append(projectVersion).append(" has no God classes!");
+            stringBuilder.append("Congratulations!  ")
+                    .append(projectName).append(" ")
+                    .append(projectVersion).append(" has no God classes!");
             log.info("Done! No God classes found!");
             stringBuilder.append(THE_END);
             writeReportToDisk(filename, stringBuilder);
