@@ -238,6 +238,17 @@
                             <goal>report</goal>
                         </goals>
                     </execution>
+
+                    <execution>
+                        <id>reportdata</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+
+
+
                 </executions>
             </plugin>
 
