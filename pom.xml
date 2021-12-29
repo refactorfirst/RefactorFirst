@@ -240,15 +240,12 @@
                     </execution>
 
                     <execution>
-                        <id>reportdata</id>
+                        <id>csvreport</id>
                         <phase>verify</phase>
                         <goals>
                             <goal>report</goal>
                         </goals>
                     </execution>
-
-
-
                 </executions>
             </plugin>
 

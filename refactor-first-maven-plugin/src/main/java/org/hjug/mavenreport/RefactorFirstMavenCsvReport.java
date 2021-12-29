@@ -26,16 +26,14 @@ import java.util.Optional;
 
 @Slf4j
 @Mojo(
-        name = "reportdata",
+        name = "csvreport",
         defaultPhase = LifecyclePhase.SITE,
         requiresDependencyResolution = ResolutionScope.RUNTIME,
         requiresProject = true,
         threadSafe = true,
         inheritByDefault = false
 )
-public class RefactorFirstMavenReportData extends AbstractMojo {
-
-
+public class RefactorFirstMavenCsvReport extends AbstractMojo {
 
     @Parameter(property = "showDetails")
     private boolean showDetails = false;
@@ -70,8 +68,6 @@ public class RefactorFirstMavenReportData extends AbstractMojo {
 
     @Override
     public void execute() {
-
-
         StringBuilder fileNameSB = new StringBuilder();
         String publishedDate = createFileDateTimeFormatter().format(Instant.now());
 
