@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 
+import static org.hjug.mavenreport.ReportWriter.writeReportToDisk;
+
 @Slf4j
 @Mojo(
         name = "report",
@@ -206,7 +208,7 @@ public class RefactorFirstMavenReport extends AbstractMojo {
             stringBuilder.append("No Git repository found in project ").append(projectName).append(" ").append(projectVersion).append(".  ");
             stringBuilder.append("Please initialize a Git repository and perform an initial commit.");
             stringBuilder.append(THE_END);
-            writeReportToDisk(filename, stringBuilder);
+            writeReportToDisk(project, filename, stringBuilder);
             return;
         }
 
@@ -234,7 +236,7 @@ public class RefactorFirstMavenReport extends AbstractMojo {
                     .append(projectVersion).append(" has no God classes!");
             log.info("Done! No God classes found!");
             stringBuilder.append(THE_END);
-            writeReportToDisk(filename, stringBuilder);
+            writeReportToDisk(project, filename, stringBuilder);
             return;
         }
 
@@ -299,31 +301,7 @@ public class RefactorFirstMavenReport extends AbstractMojo {
 
         log.info(stringBuilder.toString());
 
-        writeReportToDisk(filename, stringBuilder);
-    }
-
-    private void writeReportToDisk(String filename, StringBuilder stringBuilder) {
-        String reportOutputDirectory = project.getModel().getReporting().getOutputDirectory();
-        File reportOutputDir = new File(reportOutputDirectory);
-        if(!reportOutputDir.exists()) {
-            reportOutputDir.mkdirs();
-        }
-        String pathname = reportOutputDirectory + File.separator + "refactor-first-report.html";
-
-        File reportFile = new File(pathname);
-        try {
-            reportFile.createNewFile();
-        } catch (IOException e) {
-            log.error("Failure creating chart script file", e);
-        }
-
-        try(BufferedWriter writer = new BufferedWriter(new FileWriter(reportFile))) {
-            writer.write(stringBuilder.toString());
-        } catch (IOException e) {
-            log.error("Error writing chart script file", e);
-        }
-
-        log.info("Done! View the report at target/site/{}", filename);
+        writeReportToDisk(project, filename, stringBuilder);
     }
 
     //TODO: Move to another class to allow use by Gradle plugin
