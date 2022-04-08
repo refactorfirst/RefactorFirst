@@ -9,8 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.maven.project.MavenProject;
 
 @Slf4j
-public class ReportWriter
-{
+public class ReportWriter {
   public static void writeReportToDisk(
       final MavenProject project,
       final String filename,

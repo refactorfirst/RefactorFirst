@@ -7,8 +7,7 @@ import lombok.Data;
 
 @Data
 @Builder
-class JsonReport
-{
+class JsonReport {
   private List<JsonReportDisharmonyEntry> rankedDisharmonies;
   private List<String> errors;
 }

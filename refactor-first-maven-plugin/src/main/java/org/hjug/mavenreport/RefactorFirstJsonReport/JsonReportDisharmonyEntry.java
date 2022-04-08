@@ -11,8 +11,7 @@ import org.hjug.cbc.RankedDisharmony;
 
 @Data
 @Builder
-class JsonReportDisharmonyEntry
-{
+class JsonReportDisharmonyEntry {
   private static final DateTimeFormatter formatter =
       DateTimeFormatter.ofLocalizedDateTime( FormatStyle.SHORT )
           .withLocale( Locale.getDefault() )
