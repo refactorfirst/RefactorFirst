@@ -1,9 +1,8 @@
 package org.hjug.mavenreport;
 
-import java.io.BufferedWriter;
+import static org.hjug.mavenreport.ReportWriter.writeReportToDisk;
+
 import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -101,7 +100,7 @@ public class RefactorFirstMavenCsvReport extends AbstractMojo {
                     .append(projectVersion)
                     .append(". ");
             contentBuilder.append("Please initialize a Git repository and perform an initial commit.");
-            writeReportToDisk(filename, contentBuilder);
+            writeReportToDisk(project, filename, contentBuilder);
             return;
         }
 
@@ -133,7 +132,7 @@ public class RefactorFirstMavenCsvReport extends AbstractMojo {
                     .append(" has no God classes!");
             log.info("Done! No God classes found!");
 
-            writeReportToDisk(filename, contentBuilder);
+            writeReportToDisk(project, filename, contentBuilder);
             return;
         }
 
@@ -153,7 +152,7 @@ public class RefactorFirstMavenCsvReport extends AbstractMojo {
 
         log.info(contentBuilder.toString());
 
-        writeReportToDisk(filename, contentBuilder);
+        writeReportToDisk(project, filename, contentBuilder);
     }
 
     private DateTimeFormatter createFileDateTimeFormatter() {
@@ -237,29 +236,5 @@ public class RefactorFirstMavenCsvReport extends AbstractMojo {
         for (String rowData : rankedDisharmonyData) {
             contentBuilder.append(rowData).append(",");
         }
-    }
-
-    private void writeReportToDisk(String filename, StringBuilder stringBuilder) {
-        String reportOutputDirectory = project.getModel().getReporting().getOutputDirectory();
-        File reportOutputDir = new File(reportOutputDirectory);
-        if (!reportOutputDir.exists()) {
-            reportOutputDir.mkdirs();
-        }
-        String pathname = reportOutputDirectory + File.separator + filename;
-
-        File reportFile = new File(pathname);
-        try {
-            reportFile.createNewFile();
-        } catch (IOException e) {
-            log.error("Failure creating chart script file", e);
-        }
-
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(reportFile))) {
-            writer.write(stringBuilder.toString());
-        } catch (IOException e) {
-            log.error("Error writing chart script file", e);
-        }
-
-        log.info("Done! View the report at target/site/{}", filename);
     }
 }
