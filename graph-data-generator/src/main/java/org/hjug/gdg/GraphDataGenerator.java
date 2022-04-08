@@ -1,40 +1,35 @@
 package org.hjug.gdg;
 
-import org.hjug.cbc.CostBenefitCalculator;
-import org.hjug.cbc.RankedDisharmony;
-
-import java.util.ArrayList;
 import java.util.List;
+import org.hjug.cbc.RankedDisharmony;
 
 public class GraphDataGenerator {
 
     public String getScriptStart() {
-        return
-                "      google.charts.load('current', {'packages':['corechart']});\n" +
-                "      google.charts.setOnLoadCallback(drawSeriesChart);\n" +
-                "\n" +
-                "    function drawSeriesChart() {\n" +
-                "\n" +
-                "      var data = google.visualization.arrayToDataTable([";
+        return "      google.charts.load('current', {'packages':['corechart']});\n"
+                + "      google.charts.setOnLoadCallback(drawSeriesChart);\n"
+                + "\n"
+                + "    function drawSeriesChart() {\n"
+                + "\n"
+                + "      var data = google.visualization.arrayToDataTable([";
     }
 
     public String getScriptEnd() {
-        return "]);\n" +
-                "\n" +
-                "      var options = {\n" +
-                "        title: 'Priority Ranking for Refactoring God Classes - ' +\n" +
-                "               'Fix Higher Priority Classes First',\n" +
-                "        height: 900, " +
-                "        width: 1200, " +
-                "        explorer: {}, " +
-                "        hAxis: {title: 'Effort'},\n" +
-                "        vAxis: {title: 'Change Proneness'},\n" +
-                "        colorAxis: {colors: ['blue', 'green']},\n" +
-                "        bubble: {textStyle: {fontSize: 11}}      };\n" +
-                "\n" +
-                "      var chart = new google.visualization.BubbleChart(document.getElementById('series_chart_div'));\n" +
-                "      chart.draw(data, options);\n" +
-                "    }\n";
+        return "]);\n" + "\n"
+                + "      var options = {\n"
+                + "        title: 'Priority Ranking for Refactoring God Classes - ' +\n"
+                + "               'Fix Higher Priority Classes First',\n"
+                + "        height: 900, "
+                + "        width: 1200, "
+                + "        explorer: {}, "
+                + "        hAxis: {title: 'Effort'},\n"
+                + "        vAxis: {title: 'Change Proneness'},\n"
+                + "        colorAxis: {colors: ['blue', 'green']},\n"
+                + "        bubble: {textStyle: {fontSize: 11}}      };\n"
+                + "\n"
+                + "      var chart = new google.visualization.BubbleChart(document.getElementById('series_chart_div'));\n"
+                + "      chart.draw(data, options);\n"
+                + "    }\n";
     }
 
     public String generateBubbleChartData(List<RankedDisharmony> rankedDisharmonies) {
@@ -56,7 +51,7 @@ public class GraphDataGenerator {
             chartData.append(",");
             chartData.append(rankedDisharmony.getWmc());
             chartData.append("]");
-            if (i+1 < rankedDisharmonies.size()) {
+            if (i + 1 < rankedDisharmonies.size()) {
                 chartData.append(",");
             }
         }

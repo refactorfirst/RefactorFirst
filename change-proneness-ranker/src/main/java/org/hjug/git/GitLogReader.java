@@ -1,5 +1,7 @@
 package org.hjug.git;
 
+import java.io.*;
+import java.util.*;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
@@ -12,24 +14,22 @@ import org.eclipse.jgit.treewalk.CanonicalTreeParser;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.util.io.NullOutputStream;
 
-import java.io.*;
-import java.util.*;
-
 @Slf4j
 public class GitLogReader implements RepositoryLogReader {
 
     static final String JAVA_FILE_TYPE = ".java";
 
-    //Based on https://github.com/Cosium/git-code-format-maven-plugin/blob/master/src/main/java/com/cosium/code/format/AbstractMavenGitCodeFormatMojo.java
-    //MIT License
-    //Move to a provider?
+    // Based on
+    // https://github.com/Cosium/git-code-format-maven-plugin/blob/master/src/main/java/com/cosium/code/format/AbstractMavenGitCodeFormatMojo.java
+    // MIT License
+    // Move to a provider?
     @Override
     public Repository gitRepository(File basedir) throws IOException {
         Repository gitRepository;
-        FileRepositoryBuilder repositoryBuilder =
-                new FileRepositoryBuilder().findGitDir(basedir);
+        FileRepositoryBuilder repositoryBuilder = new FileRepositoryBuilder().findGitDir(basedir);
         String gitIndexFileEnvVariable = System.getenv("GIT_INDEX_FILE");
-        if (Objects.nonNull(gitIndexFileEnvVariable) && !gitIndexFileEnvVariable.trim().isEmpty()) {
+        if (Objects.nonNull(gitIndexFileEnvVariable)
+                && !gitIndexFileEnvVariable.trim().isEmpty()) {
             log.debug("Setting Index File based on Env Variable GIT_INDEX_FILE {}", gitIndexFileEnvVariable);
             repositoryBuilder = repositoryBuilder.setIndexFile(new File(gitIndexFileEnvVariable));
         }
@@ -39,14 +39,13 @@ public class GitLogReader implements RepositoryLogReader {
     }
 
     public File getGitDir(File basedir) {
-        FileRepositoryBuilder repositoryBuilder =
-                new FileRepositoryBuilder().findGitDir(basedir);
+        FileRepositoryBuilder repositoryBuilder = new FileRepositoryBuilder().findGitDir(basedir);
         return repositoryBuilder.getGitDir();
     }
 
-    //https://stackoverflow.com/a/19950970/346247
-    //and
-    //https://github.com/centic9/jgit-cookbook/blob/master/src/main/java/org/dstadler/jgit/api/ReadFileFromCommit.java
+    // https://stackoverflow.com/a/19950970/346247
+    // and
+    // https://github.com/centic9/jgit-cookbook/blob/master/src/main/java/org/dstadler/jgit/api/ReadFileFromCommit.java
     @Override
     public Map<String, ByteArrayOutputStream> listRepositoryContentsAtHEAD(Repository repository) throws IOException {
         Ref head = repository.exactRef("HEAD");
@@ -59,7 +58,7 @@ public class GitLogReader implements RepositoryLogReader {
         treeWalk.addTree(tree);
         treeWalk.setRecursive(false);
 
-        //TODO: extract rest of this method to test it
+        // TODO: extract rest of this method to test it
         Map<String, ByteArrayOutputStream> fileContentsCollection = new HashMap<>();
         while (treeWalk.next()) {
             if (treeWalk.isSubtree()) {
@@ -77,9 +76,8 @@ public class GitLogReader implements RepositoryLogReader {
         return fileContentsCollection;
     }
 
-
-    //log --follow implementation may be worth adopting in the future
-    //https://github.com/spearce/jgit/blob/master/org.eclipse.jgit.pgm/src/org/eclipse/jgit/pgm/RevWalkTextBuiltin.java
+    // log --follow implementation may be worth adopting in the future
+    // https://github.com/spearce/jgit/blob/master/org.eclipse.jgit.pgm/src/org/eclipse/jgit/pgm/RevWalkTextBuiltin.java
 
     /**
      * Returns the number of commits and earliest commit for a given path
@@ -105,21 +103,24 @@ public class GitLogReader implements RepositoryLogReader {
             commitCount++;
         }
 
-        //based on https://stackoverflow.com/a/59274329/346247
-        int mostRecentCommit =
-                new Git(repository).log()
-                        .add(branchId)
-                        .addPath(path)
-                        .setMaxCount(1)
-                        .call().iterator().next()
-                        .getCommitTime();
+        // based on https://stackoverflow.com/a/59274329/346247
+        int mostRecentCommit = new Git(repository)
+                .log()
+                .add(branchId)
+                .addPath(path)
+                .setMaxCount(1)
+                .call()
+                .iterator()
+                .next()
+                .getCommitTime();
 
         return new ScmLogInfo(path, earliestCommit, mostRecentCommit, commitCount);
     }
 
-    //based on https://stackoverflow.com/questions/27361538/how-to-show-changes-between-commits-with-jgit
+    // based on https://stackoverflow.com/questions/27361538/how-to-show-changes-between-commits-with-jgit
     @Override
-    public TreeMap<Integer, Integer> captureChangeCountByCommitTimestamp(Repository repository) throws IOException, GitAPIException {
+    public TreeMap<Integer, Integer> captureChangeCountByCommitTimestamp(Repository repository)
+            throws IOException, GitAPIException {
 
         TreeMap<Integer, Integer> changesByCommitTimestamp = new TreeMap<>();
 
@@ -149,7 +150,7 @@ public class GitLogReader implements RepositoryLogReader {
                     changesByCommitTimestamp.put(newCommit.getCommitTime(), count);
                 }
 
-                //Handle first / initial commit
+                // Handle first / initial commit
                 if (!iterator.hasNext()) {
                     changesByCommitTimestamp.putAll(walkFirstCommit(repository, oldCommit));
                 }
@@ -199,5 +200,4 @@ public class GitLogReader implements RepositoryLogReader {
 
         return changesByCommitTimestamp;
     }
-
 }

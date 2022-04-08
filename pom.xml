@@ -135,7 +135,7 @@
             <dependency>
                 <groupId>net.sourceforge.pmd</groupId>
                 <artifactId>pmd-java</artifactId>
-                <version>6.39.0</version>
+                <version>6.42.0</version>
                 <scope>compile</scope>
 
                 <exclusions>
@@ -324,6 +324,41 @@
             </plugin>
             <!--TODO: Add the SNYK plugin-->
             <!-- https://github.com/snyk/snyk-maven-plugin -->
+
+            <plugin>
+                <groupId>com.diffplug.spotless</groupId>
+                <artifactId>spotless-maven-plugin</artifactId>
+                <version>2.22.1</version>
+                <configuration>
+                    <formats>
+                        <!-- you can define as many formats as you want, each is independent -->
+                        <format>
+                            <!-- define the files to apply to -->
+                            <includes>
+                                <include>*.java</include>
+                            </includes>
+                            <!-- define the steps to apply to those files -->
+                            <trimTrailingWhitespace/>
+                            <endWithNewline/>
+                            <indent>
+                                <tabs>true</tabs>
+                                <spacesPerTab>4</spacesPerTab>
+                            </indent>
+                        </format>
+                    </formats>
+                    <java>
+                        <palantirJavaFormat/>
+                    </java>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>apply</goal>
+                        </goals>
+                        <phase>initialize</phase>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 

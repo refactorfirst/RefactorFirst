@@ -1,12 +1,11 @@
 package org.hjug.metrics;
 
+import static org.junit.Assert.assertEquals;
+
+import java.util.Locale;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.util.Locale;
-
-import static org.junit.Assert.assertEquals;
 
 public class GodClassParsingTest {
 
@@ -31,5 +30,4 @@ public class GodClassParsingTest {
         assertEquals(Integer.valueOf(1700), god.getAtfd());
         assertEquals(Float.valueOf(4.597f), god.getTcc());
     }
-
 }

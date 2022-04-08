@@ -1,5 +1,9 @@
 package org.hjug.git;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
+import java.io.*;
+import java.util.*;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.Repository;
@@ -7,17 +11,12 @@ import org.eclipse.jgit.revwalk.RevCommit;
 import org.junit.*;
 import org.junit.rules.TemporaryFolder;
 
-import java.io.*;
-import java.util.*;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
-
 public class GitLogReaderTest {
-    //Borrowed bits and pieces from
-    //https://gist.github.com/rherrmann/0c682ea327862cb6847704acf90b1d5d
+    // Borrowed bits and pieces from
+    // https://gist.github.com/rherrmann/0c682ea327862cb6847704acf90b1d5d
 
     @Rule
-    public TemporaryFolder tempFolder= new TemporaryFolder();
+    public TemporaryFolder tempFolder = new TemporaryFolder();
 
     private Git git;
     private Repository repository;
@@ -33,11 +32,10 @@ public class GitLogReaderTest {
         repository.close();
     }
 
-
     @Test
     public void testFileLog() throws IOException, GitAPIException, InterruptedException {
-        //This path works when referencing the full Tobago repository
-        //String filePath = "tobago-core/src/main/java/org/apache/myfaces/tobago/facelets/AttributeHandler.java";
+        // This path works when referencing the full Tobago repository
+        // String filePath = "tobago-core/src/main/java/org/apache/myfaces/tobago/facelets/AttributeHandler.java";
 
         GitLogReader gitLogReader = new GitLogReader();
 
@@ -48,10 +46,10 @@ public class GitLogReaderTest {
         git.add().addFilepattern(".").call();
         RevCommit firstCommit = git.commit().setMessage("message").call();
 
-        //Sleeping for one second to guarantee commits have different time stamps
-        Thread.sleep(1000) ;
+        // Sleeping for one second to guarantee commits have different time stamps
+        Thread.sleep(1000);
 
-        //write contents of updated file to original file
+        // write contents of updated file to original file
         InputStream resourceAsStream2 = getClass().getClassLoader().getResourceAsStream("AttributeHandler2.java");
         writeFile(attributeHandler, convertInputStreamToString(resourceAsStream2));
 
@@ -92,10 +90,10 @@ public class GitLogReaderTest {
         git.add().addFilepattern(".").call();
         RevCommit firstCommit = git.commit().setMessage("message").call();
 
-        //Sleeping for one second to guarantee commits have different time stamps
-        Thread.sleep(1000) ;
+        // Sleeping for one second to guarantee commits have different time stamps
+        Thread.sleep(1000);
 
-        //write contents of updated file to original file
+        // write contents of updated file to original file
         InputStream resourceAsStream2 = getClass().getClassLoader().getResourceAsStream("AttributeHandler2.java");
         writeFile(attributeHandler, convertInputStreamToString(resourceAsStream2));
 
@@ -110,7 +108,6 @@ public class GitLogReaderTest {
         Assert.assertEquals(1, commitCounts.get(firstCommit.getCommitTime()).intValue());
         Assert.assertEquals(2, commitCounts.get(secondCommit.getCommitTime()).intValue());
     }
-
 
     private void writeFile(String name, String content) throws IOException {
         File file = new File(git.getRepository().getWorkTree(), name);

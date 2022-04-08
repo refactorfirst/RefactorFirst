@@ -1,9 +1,8 @@
 package org.hjug.metrics;
 
-import lombok.Data;
-
 import java.text.NumberFormat;
 import java.text.ParseException;
+import lombok.Data;
 
 /**
  * Created by Jim on 11/16/2016.
@@ -29,10 +28,11 @@ public class GodClass {
 
         NumberFormat integerFormat = NumberFormat.getIntegerInstance();
 
-        String [] values = result.substring(result.indexOf("(") + 1, result.indexOf(")")).split(", ");
+        String[] values =
+                result.substring(result.indexOf("(") + 1, result.indexOf(")")).split(", ");
         try {
             wmc = (int) (long) integerFormat.parse(extractValue(values[0]));
-            atfd = (int) (long)  integerFormat.parse(extractValue(values[1]));
+            atfd = (int) (long) integerFormat.parse(extractValue(values[1]));
         } catch (ParseException e) {
             throw new RuntimeException(e);
         }

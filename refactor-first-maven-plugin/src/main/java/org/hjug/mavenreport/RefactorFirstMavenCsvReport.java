@@ -1,5 +1,16 @@
 package org.hjug.mavenreport;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
@@ -11,19 +22,6 @@ import org.hjug.cbc.CostBenefitCalculator;
 import org.hjug.cbc.RankedDisharmony;
 import org.hjug.git.GitLogReader;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
-import java.time.format.FormatStyle;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Locale;
-import java.util.Optional;
-
 import static org.hjug.mavenreport.ReportWriter.writeReportToDisk;
 
 @Slf4j
@@ -33,8 +31,7 @@ import static org.hjug.mavenreport.ReportWriter.writeReportToDisk;
         requiresDependencyResolution = ResolutionScope.RUNTIME,
         requiresProject = true,
         threadSafe = true,
-        inheritByDefault = false
-)
+        inheritByDefault = false)
 public class RefactorFirstMavenCsvReport extends AbstractMojo {
 
     @Parameter(property = "showDetails")
@@ -84,7 +81,7 @@ public class RefactorFirstMavenCsvReport extends AbstractMojo {
                 .append(".csv");
         String filename = fileNameSB.toString();
 
-        log.info("Generating {} for {} - {} date: {}", filename, projectName, projectVersion, publishedDate );
+        log.info("Generating {} for {} - {} date: {}", filename, projectName, projectVersion, publishedDate);
 
         StringBuilder contentBuilder = new StringBuilder();
 
@@ -97,10 +94,14 @@ public class RefactorFirstMavenCsvReport extends AbstractMojo {
         if (optionalGitDir.isPresent()) {
             gitDir = optionalGitDir.get();
         } else {
-            log.info("Done! No Git repository found!  Please initialize a Git repository and perform an initial commit.");
-            contentBuilder.append("No Git repository found in project ")
-                    .append(projectName).append(" ")
-                    .append(projectVersion).append(". ");
+            log.info(
+                    "Done! No Git repository found!  Please initialize a Git repository and perform an initial commit.");
+            contentBuilder
+                    .append("No Git repository found in project ")
+                    .append(projectName)
+                    .append(" ")
+                    .append(projectVersion)
+                    .append(". ");
             contentBuilder.append("Please initialize a Git repository and perform an initial commit.");
             writeReportToDisk(project, filename, contentBuilder);
             return;
@@ -110,11 +111,10 @@ public class RefactorFirstMavenCsvReport extends AbstractMojo {
         log.info("Project Base Dir: {} ", projectBaseDir);
         log.info("Parent of Git Dir: {}", parentOfGitDir);
 
-        if(!projectBaseDir.equals(parentOfGitDir)) {
+        if (!projectBaseDir.equals(parentOfGitDir)) {
             log.warn("Project Base Directory does not match Git Parent Directory");
-            contentBuilder.append(
-                    "Project Base Directory does not match Git Parent Directory.  " +
-                    "Please refer to the report at the root of the site directory.");
+            contentBuilder.append("Project Base Directory does not match Git Parent Directory.  "
+                    + "Please refer to the report at the root of the site directory.");
             return;
         }
 
@@ -122,13 +122,17 @@ public class RefactorFirstMavenCsvReport extends AbstractMojo {
         CostBenefitCalculator costBenefitCalculator = new CostBenefitCalculator();
         List<RankedDisharmony> rankedDisharmonies = costBenefitCalculator.calculateCostBenefitValues(projectBaseDir);
 
-        rankedDisharmonies.sort(Comparator.comparing(RankedDisharmony::getPriority).reversed());
+        rankedDisharmonies.sort(
+                Comparator.comparing(RankedDisharmony::getPriority).reversed());
 
         // perfect score: no god classes
-        if(rankedDisharmonies.isEmpty()) {
-            contentBuilder.append("Congratulations!  ")
-                    .append(projectName).append(" ")
-                    .append(projectVersion).append(" has no God classes!");
+        if (rankedDisharmonies.isEmpty()) {
+            contentBuilder
+                    .append("Congratulations!  ")
+                    .append(projectName)
+                    .append(" ")
+                    .append(projectVersion)
+                    .append(" has no God classes!");
             log.info("Done! No God classes found!");
 
             writeReportToDisk(project, filename, contentBuilder);
@@ -156,41 +160,43 @@ public class RefactorFirstMavenCsvReport extends AbstractMojo {
 
     private DateTimeFormatter createFileDateTimeFormatter() {
         return DateTimeFormatter.ofPattern("yyyyMMddhhmm")
-                .withLocale( Locale.getDefault() )
-                .withZone( ZoneId.systemDefault() );
+                .withLocale(Locale.getDefault())
+                .withZone(ZoneId.systemDefault());
     }
 
     private DateTimeFormatter createCsvDateTimeFormatter() {
         return DateTimeFormatter.ISO_LOCAL_DATE_TIME
-                .withLocale( Locale.getDefault() )
-                .withZone( ZoneId.systemDefault() );
+                .withLocale(Locale.getDefault())
+                .withZone(ZoneId.systemDefault());
     }
 
+    private String[] getDataList(RankedDisharmony rankedDisharmony) {
+        String[] simpleRankedDisharmonyData = {
+            rankedDisharmony.getClassName(),
+            rankedDisharmony.getPriority().toString(),
+            rankedDisharmony.getChangePronenessRank().toString(),
+            rankedDisharmony.getEffortRank().toString(),
+            rankedDisharmony.getWmc().toString(),
+            createCsvDateTimeFormatter().format(rankedDisharmony.getMostRecentCommitTime()),
+            rankedDisharmony.getCommitCount().toString()
+        };
 
-    private String[] getDataList(RankedDisharmony rankedDisharmony ) {
-        String[] simpleRankedDisharmonyData = { rankedDisharmony.getClassName(),
-                rankedDisharmony.getPriority().toString(),
-                rankedDisharmony.getChangePronenessRank().toString(),
-                rankedDisharmony.getEffortRank().toString(),
-                rankedDisharmony.getWmc().toString(),
-                createCsvDateTimeFormatter().format(rankedDisharmony.getMostRecentCommitTime()),
-                rankedDisharmony.getCommitCount().toString()};
-
-        String[] detailedRankedDisharmonyData = {  rankedDisharmony.getClassName(),
-                rankedDisharmony.getPriority().toString(),
-                rankedDisharmony.getChangePronenessRank().toString(),
-                rankedDisharmony.getEffortRank().toString(),
-                rankedDisharmony.getWmc().toString(),
-                rankedDisharmony.getWmcRank().toString(),
-                rankedDisharmony.getAtfd().toString(),
-                rankedDisharmony.getAtfdRank().toString(),
-                rankedDisharmony.getTcc().toString(),
-                rankedDisharmony.getTccRank().toString(),
-                createCsvDateTimeFormatter().format(rankedDisharmony.getFirstCommitTime()),
-                createCsvDateTimeFormatter().format(rankedDisharmony.getMostRecentCommitTime()),
-                rankedDisharmony.getCommitCount().toString(),
-                rankedDisharmony.getPath()};
-
+        String[] detailedRankedDisharmonyData = {
+            rankedDisharmony.getClassName(),
+            rankedDisharmony.getPriority().toString(),
+            rankedDisharmony.getChangePronenessRank().toString(),
+            rankedDisharmony.getEffortRank().toString(),
+            rankedDisharmony.getWmc().toString(),
+            rankedDisharmony.getWmcRank().toString(),
+            rankedDisharmony.getAtfd().toString(),
+            rankedDisharmony.getAtfdRank().toString(),
+            rankedDisharmony.getTcc().toString(),
+            rankedDisharmony.getTccRank().toString(),
+            createCsvDateTimeFormatter().format(rankedDisharmony.getFirstCommitTime()),
+            createCsvDateTimeFormatter().format(rankedDisharmony.getMostRecentCommitTime()),
+            rankedDisharmony.getCommitCount().toString(),
+            rankedDisharmony.getPath()
+        };
 
         return showDetails ? detailedRankedDisharmonyData : simpleRankedDisharmonyData;
     }
@@ -198,31 +204,33 @@ public class RefactorFirstMavenCsvReport extends AbstractMojo {
     private String[] getHeaderList() {
 
         final String[] simpleTableHeadings = {
-                "Ver",
-                "Class",
-                "Priority",
-                "Change Proneness Rank",
-                "Effort Rank",
-                "Method Count",
-                "Most Recent Commit Date",
-                "Commit Count"};
+            "Ver",
+            "Class",
+            "Priority",
+            "Change Proneness Rank",
+            "Effort Rank",
+            "Method Count",
+            "Most Recent Commit Date",
+            "Commit Count"
+        };
 
         final String[] detailedTableHeadings = {
-                "Ver",
-                "Class",
-                "Priority",
-                "Change Proneness Rank",
-                "Effort Rank",
-                "WMC",
-                "WMC Rank",
-                "ATFD",
-                "ATFD Rank",
-                "TCC",
-                "TCC Rank",
-                "Date of First Commit",
-                "Most Recent Commit Date",
-                "Commit Count",
-                "Full Path"};
+            "Ver",
+            "Class",
+            "Priority",
+            "Change Proneness Rank",
+            "Effort Rank",
+            "WMC",
+            "WMC Rank",
+            "ATFD",
+            "ATFD Rank",
+            "TCC",
+            "TCC Rank",
+            "Date of First Commit",
+            "Most Recent Commit Date",
+            "Commit Count",
+            "Full Path"
+        };
 
         return showDetails ? detailedTableHeadings : simpleTableHeadings;
     }
