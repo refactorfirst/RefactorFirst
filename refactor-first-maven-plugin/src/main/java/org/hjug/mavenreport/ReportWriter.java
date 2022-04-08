@@ -33,7 +33,7 @@ public class ReportWriter
       log.error("Failure creating chart script file", e);
     }
 
-    try(BufferedWriter writer = new BufferedWriter(new FileWriter(reportFile))) {
+    try(BufferedWriter writer = Files.newBufferedWriter(reportFile.toPath(), UTF_8)) {' or 'try(BufferedWriter writer = Files.newBufferedWriter(reportFile.toPath(), Charset.defaultCharset())) {
       writer.write(stringBuilder.toString());
     } catch (IOException e) {
       log.error("Error writing chart script file", e);
