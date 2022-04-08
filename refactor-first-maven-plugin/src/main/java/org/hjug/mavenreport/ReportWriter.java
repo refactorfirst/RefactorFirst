@@ -2,8 +2,9 @@ package org.hjug.mavenreport;
 
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.maven.project.MavenProject;
@@ -32,7 +33,7 @@ public class ReportWriter {
       log.error("Failure creating chart script file", e);
     }
 
-    try(BufferedWriter writer = Files.newBufferedWriter(reportFile.toPath(), UTF_8)) {' or 'try(BufferedWriter writer = Files.newBufferedWriter(reportFile.toPath(), Charset.defaultCharset())) {
+    try(BufferedWriter writer = Files.newBufferedWriter(reportFile.toPath(), Charset.defaultCharset())) {
       writer.write(stringBuilder.toString());
     } catch (IOException e) {
       log.error("Error writing chart script file", e);
