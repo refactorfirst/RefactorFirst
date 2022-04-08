@@ -8,6 +8,7 @@ import lombok.Data;
 @Data
 @Builder
 class JsonReport {
-  private List<JsonReportDisharmonyEntry> rankedDisharmonies;
-  private List<String> errors;
+    private List<JsonReportDisharmonyEntry> rankedDisharmonies;
+
+    private List<String> errors;
 }

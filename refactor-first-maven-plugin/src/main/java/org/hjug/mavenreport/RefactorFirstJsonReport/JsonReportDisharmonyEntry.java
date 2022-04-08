@@ -12,28 +12,34 @@ import org.hjug.cbc.RankedDisharmony;
 @Data
 @Builder
 class JsonReportDisharmonyEntry {
-  private static final DateTimeFormatter formatter =
-      DateTimeFormatter.ofLocalizedDateTime( FormatStyle.SHORT )
-          .withLocale( Locale.getDefault() )
-          .withZone( ZoneId.systemDefault() );
+    private static final DateTimeFormatter formatter =
+        DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT)
+            .withLocale(Locale.getDefault())
+            .withZone(ZoneId.systemDefault());
 
-  private final String className;
-  private final Integer effortRank;
-  private final Integer changePronenessRank;
-  private final Integer priority;
-  private final Integer weightedMethodCount;
-  private final Integer commitCount;
-  private final String mostRecentCommitTime;
+    private final String className;
 
-  public static JsonReportDisharmonyEntry fromRankedDisharmony(RankedDisharmony entry) {
-    return JsonReportDisharmonyEntry.builder()
-      .className(entry.getClassName())
-      .effortRank(entry.getEffortRank())
-      .changePronenessRank(entry.getChangePronenessRank())
-      .priority(entry.getPriority())
-      .weightedMethodCount(entry.getWmc())
-      .commitCount(entry.getCommitCount())
-      .mostRecentCommitTime(formatter.format(entry.getMostRecentCommitTime()))
-      .build();
-  }
+    private final Integer effortRank;
+
+    private final Integer changePronenessRank;
+
+    private final Integer priority;
+
+    private final Integer weightedMethodCount;
+
+    private final Integer commitCount;
+
+    private final String mostRecentCommitTime;
+
+    public static JsonReportDisharmonyEntry fromRankedDisharmony(RankedDisharmony entry) {
+        return JsonReportDisharmonyEntry.builder()
+            .className(entry.getClassName())
+            .effortRank(entry.getEffortRank())
+            .changePronenessRank(entry.getChangePronenessRank())
+            .priority(entry.getPriority())
+            .weightedMethodCount(entry.getWmc())
+            .commitCount(entry.getCommitCount())
+            .mostRecentCommitTime(formatter.format(entry.getMostRecentCommitTime()))
+            .build();
+    }
 }
