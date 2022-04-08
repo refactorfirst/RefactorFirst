@@ -1,22 +1,21 @@
 package org.hjug.cbc;
 
-import lombok.extern.slf4j.Slf4j;
-import org.eclipse.jgit.api.errors.GitAPIException;
-import org.eclipse.jgit.lib.Repository;
-import org.hjug.git.ChangePronenessRanker;
-import org.hjug.git.GitLogReader;
-import org.hjug.git.ScmLogInfo;
-import org.hjug.git.RepositoryLogReader;
-import org.hjug.metrics.GodClass;
-import org.hjug.metrics.GodClassRanker;
-import org.hjug.metrics.PMDGodClassRuleRunner;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
+import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.lib.Repository;
+import org.hjug.git.ChangePronenessRanker;
+import org.hjug.git.GitLogReader;
+import org.hjug.git.RepositoryLogReader;
+import org.hjug.git.ScmLogInfo;
+import org.hjug.metrics.GodClass;
+import org.hjug.metrics.GodClassRanker;
+import org.hjug.metrics.PMDGodClassRuleRunner;
 
 @Slf4j
 public class CostBenefitCalculator {
@@ -37,8 +36,7 @@ public class CostBenefitCalculator {
         List<ScmLogInfo> scmLogInfos = getRankedChangeProneness(repositoryLogReader, repository, godClasses);
 
         Map<String, ScmLogInfo> rankedLogInfosByPath =
-                scmLogInfos.stream()
-                        .collect(Collectors.toMap(ScmLogInfo::getPath, logInfo -> logInfo, (a, b) -> b));
+                scmLogInfos.stream().collect(Collectors.toMap(ScmLogInfo::getPath, logInfo -> logInfo, (a, b) -> b));
 
         List<RankedDisharmony> rankedDisharmonies = new ArrayList<>();
         for (GodClass godClass : godClasses) {
@@ -48,7 +46,8 @@ public class CostBenefitCalculator {
         return rankedDisharmonies;
     }
 
-    List<ScmLogInfo> getRankedChangeProneness(RepositoryLogReader repositoryLogReader, Repository repository, List<GodClass> godClasses) {
+    List<ScmLogInfo> getRankedChangeProneness(
+            RepositoryLogReader repositoryLogReader, Repository repository, List<GodClass> godClasses) {
         List<ScmLogInfo> scmLogInfos = new ArrayList<>();
         log.info("Calculating Change Proneness for each God Class");
         for (GodClass godClass : godClasses) {
@@ -63,8 +62,7 @@ public class CostBenefitCalculator {
             scmLogInfos.add(scmLogInfo);
         }
 
-        ChangePronenessRanker changePronenessRanker
-                = new ChangePronenessRanker(repository, repositoryLogReader);
+        ChangePronenessRanker changePronenessRanker = new ChangePronenessRanker(repository, repositoryLogReader);
         changePronenessRanker.rankChangeProneness(scmLogInfos);
         return scmLogInfos;
     }
@@ -77,7 +75,6 @@ public class CostBenefitCalculator {
         } catch (IOException e) {
             log.error("Error reading Git repository contents", e);
         }
-
 
         PMDGodClassRuleRunner ruleRunner = new PMDGodClassRuleRunner();
 
@@ -95,6 +92,4 @@ public class CostBenefitCalculator {
         godClassRanker.rankGodClasses(godClasses);
         return godClasses;
     }
-
-
 }

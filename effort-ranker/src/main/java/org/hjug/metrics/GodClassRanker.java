@@ -62,8 +62,8 @@ public class GodClassRanker {
         setRank(godClasses, getTcc, setTccRank);
     }
 
-    <T extends Number & Comparable<? super T>> void setRank(List<GodClass> godClasses,
-                                                                   Function<GodClass, T> getter, ObjIntConsumer<GodClass> setter) {
+    <T extends Number & Comparable<? super T>> void setRank(
+            List<GodClass> godClasses, Function<GodClass, T> getter, ObjIntConsumer<GodClass> setter) {
         int rank = 1;
         T previousValue = null;
 
@@ -81,6 +81,4 @@ public class GodClassRanker {
             }
         }
     }
-
-
 }

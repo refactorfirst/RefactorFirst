@@ -1,5 +1,9 @@
 package org.hjug.cbc;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
+import java.io.*;
+import java.util.*;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.Repository;
@@ -10,15 +14,10 @@ import org.hjug.metrics.PMDGodClassRuleRunner;
 import org.junit.*;
 import org.junit.rules.TemporaryFolder;
 
-import java.io.*;
-import java.util.*;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
-
 public class CostBenefitCalculatorTest {
 
     @Rule
-    public TemporaryFolder tempFolder= new TemporaryFolder();
+    public TemporaryFolder tempFolder = new TemporaryFolder();
 
     private Git git;
     private Repository repository;
@@ -43,27 +42,27 @@ public class CostBenefitCalculatorTest {
         git.add().addFilepattern(".").call();
         RevCommit firstCommit = git.commit().setMessage("message").call();
 
-        //Sleeping for one second to guarantee commits have different time stamps
-        Thread.sleep(1000) ;
+        // Sleeping for one second to guarantee commits have different time stamps
+        Thread.sleep(1000);
 
-        //write contents of updated file to original file
+        // write contents of updated file to original file
         InputStream resourceAsStream2 = getClass().getClassLoader().getResourceAsStream("AttributeHandler2.java");
         writeFile(attributeHandler, convertInputStreamToString(resourceAsStream2));
 
-        InputStream resourceAsStream3 = getClass().getClassLoader().getResourceAsStream("AttributeHandlerAndSorter.java");
+        InputStream resourceAsStream3 =
+                getClass().getClassLoader().getResourceAsStream("AttributeHandlerAndSorter.java");
         writeFile("AttributeHandlerAndSorter.java", convertInputStreamToString(resourceAsStream3));
 
         git.add().addFilepattern(".").call();
         RevCommit secondCommit = git.commit().setMessage("message").call();
 
         CostBenefitCalculator costBenefitCalculator = new CostBenefitCalculator();
-        List<RankedDisharmony> disharmonies =
-                costBenefitCalculator.calculateCostBenefitValues(git.getRepository().getDirectory().getPath());
+        List<RankedDisharmony> disharmonies = costBenefitCalculator.calculateCostBenefitValues(
+                git.getRepository().getDirectory().getPath());
 
         Assert.assertEquals(0, disharmonies.get(0).getPriority().intValue());
         Assert.assertEquals(0, disharmonies.get(1).getPriority().intValue());
     }
-
 
     @Test
     public void scanClassesInRepo2() throws IOException, GitAPIException {
@@ -81,7 +80,8 @@ public class CostBenefitCalculatorTest {
 
         Map<String, GodClass> godClasses = new HashMap<>();
         for (String filePath : filesToScan.keySet()) {
-            ByteArrayInputStream inputStream = new ByteArrayInputStream(filesToScan.get(filePath).toByteArray());
+            ByteArrayInputStream inputStream =
+                    new ByteArrayInputStream(filesToScan.get(filePath).toByteArray());
             Optional<GodClass> godClassOptional = ruleRunner.runGodClassRule(filePath, inputStream);
             godClassOptional.ifPresent(godClass -> godClasses.put(filePath, godClass));
         }
@@ -105,14 +105,14 @@ public class CostBenefitCalculatorTest {
 
         Map<String, GodClass> godClasses = new HashMap<>();
         for (String filePath : filesToScan.keySet()) {
-            ByteArrayInputStream inputStream = new ByteArrayInputStream(filesToScan.get(filePath).toByteArray());
+            ByteArrayInputStream inputStream =
+                    new ByteArrayInputStream(filesToScan.get(filePath).toByteArray());
             Optional<GodClass> godClassOptional = ruleRunner.runGodClassRule(filePath, inputStream);
             godClassOptional.ifPresent(godClass -> godClasses.put(filePath, godClass));
         }
 
         Assert.assertFalse(godClasses.isEmpty());
     }
-
 
     private void writeFile(String name, String content) throws IOException {
         File file = new File(git.getRepository().getWorkTree(), name);

@@ -1,13 +1,9 @@
 package org.hjug.mavenreport;
 
-import org.junit.Before;
-import org.junit.Test;
+import static org.junit.Assert.*;
 
 import java.util.Locale;
-
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import org.junit.Test;
 
 public class RefactorFirstMavenReportTest {
 
@@ -28,7 +24,9 @@ public class RefactorFirstMavenReportTest {
     @Test
     public void getDescription() {
         // Description of the report when listed in the project-reports.html page of a project
-        assertEquals("Ranks the disharmonies in a codebase.  The classes that should be refactored first "
-                + " have the highest priority values.", mavenReport.getDescription(Locale.getDefault()));
+        assertEquals(
+                "Ranks the disharmonies in a codebase.  The classes that should be refactored first "
+                        + " have the highest priority values.",
+                mavenReport.getDescription(Locale.getDefault()));
     }
 }
