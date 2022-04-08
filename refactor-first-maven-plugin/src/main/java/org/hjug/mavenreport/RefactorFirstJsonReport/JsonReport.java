@@ -1,7 +1,6 @@
 package org.hjug.mavenreport.RefactorFirstJsonReport;
 
 import java.util.List;
-
 import lombok.Builder;
 import lombok.Data;
 

@@ -1,9 +1,8 @@
 package org.hjug.mavenreport;
 
-import java.io.BufferedWriter;
+import static org.hjug.mavenreport.ReportWriter.writeReportToDisk;
+
 import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -21,8 +20,6 @@ import org.apache.maven.project.MavenProject;
 import org.hjug.cbc.CostBenefitCalculator;
 import org.hjug.cbc.RankedDisharmony;
 import org.hjug.git.GitLogReader;
-
-import static org.hjug.mavenreport.ReportWriter.writeReportToDisk;
 
 @Slf4j
 @Mojo(

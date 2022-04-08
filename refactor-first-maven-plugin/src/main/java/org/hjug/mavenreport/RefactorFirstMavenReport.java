@@ -1,5 +1,7 @@
 package org.hjug.mavenreport;
 
+import static org.hjug.mavenreport.ReportWriter.writeReportToDisk;
+
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -23,8 +25,6 @@ import org.hjug.cbc.CostBenefitCalculator;
 import org.hjug.cbc.RankedDisharmony;
 import org.hjug.gdg.GraphDataGenerator;
 import org.hjug.git.GitLogReader;
-
-import static org.hjug.mavenreport.ReportWriter.writeReportToDisk;
 
 @Slf4j
 @Mojo(
