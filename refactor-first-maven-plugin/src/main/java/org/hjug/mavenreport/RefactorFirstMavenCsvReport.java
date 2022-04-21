@@ -94,7 +94,6 @@ public class RefactorFirstMavenCsvReport extends AbstractMojo {
             projectBaseDir = baseDir.getPath();
             optionalGitDir = Optional.ofNullable(gitLogReader.getGitDir(baseDir));
         } else {
-            // TODO: ensure File is initialized to the project root directory, not PWD
             projectBaseDir = Paths.get("").toAbsolutePath().toString();
             optionalGitDir = Optional.ofNullable(gitLogReader.getGitDir(new File(projectBaseDir)));
         }
