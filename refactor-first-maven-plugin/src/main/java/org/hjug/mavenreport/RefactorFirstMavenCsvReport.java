@@ -3,13 +3,11 @@ package org.hjug.mavenreport;
 import static org.hjug.mavenreport.ReportWriter.writeReportToDisk;
 
 import java.io.File;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Locale;
-import java.util.Optional;
+import java.util.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
@@ -26,7 +24,7 @@ import org.hjug.git.GitLogReader;
         name = "csvreport",
         defaultPhase = LifecyclePhase.SITE,
         requiresDependencyResolution = ResolutionScope.RUNTIME,
-        requiresProject = true,
+        requiresProject = false,
         threadSafe = true,
         inheritByDefault = false)
 public class RefactorFirstMavenCsvReport extends AbstractMojo {
@@ -78,16 +76,30 @@ public class RefactorFirstMavenCsvReport extends AbstractMojo {
                 .append(".csv");
         String filename = fileNameSB.toString();
 
+        if (Objects.equals(project.getName(), "Maven Stub Project (No POM)")) {
+            projectName = new File(Paths.get("").toAbsolutePath().toString()).getName();
+        }
+
         log.info("Generating {} for {} - {} date: {}", filename, projectName, projectVersion, publishedDate);
 
         StringBuilder contentBuilder = new StringBuilder();
 
         // git management
         GitLogReader gitLogReader = new GitLogReader();
-        String projectBaseDir = project.getBasedir().getPath();
-        Optional<File> optionalGitDir = Optional.ofNullable(gitLogReader.getGitDir(project.getBasedir()));
-        File gitDir;
+        String projectBaseDir;
+        Optional<File> optionalGitDir;
 
+        File baseDir = project.getBasedir();
+        if (baseDir != null) {
+            projectBaseDir = baseDir.getPath();
+            optionalGitDir = Optional.ofNullable(gitLogReader.getGitDir(baseDir));
+        } else {
+            // TODO: ensure File is initialized to the project root directory, not PWD
+            projectBaseDir = Paths.get("").toAbsolutePath().toString();
+            optionalGitDir = Optional.ofNullable(gitLogReader.getGitDir(new File(projectBaseDir)));
+        }
+
+        File gitDir;
         if (optionalGitDir.isPresent()) {
             gitDir = optionalGitDir.get();
         } else {

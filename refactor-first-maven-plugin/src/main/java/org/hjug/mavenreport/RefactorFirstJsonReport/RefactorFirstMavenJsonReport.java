@@ -4,6 +4,8 @@ import static org.hjug.mavenreport.ReportWriter.writeReportToDisk;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.File;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -36,7 +38,14 @@ public class RefactorFirstMavenJsonReport extends AbstractMojo {
 
     @Override
     public void execute() {
-        final String projectBaseDir = project.getBasedir().getPath();
+        String projectBaseDir;
+
+        File baseDir = project.getBasedir();
+        if (baseDir != null) {
+            projectBaseDir = baseDir.getPath();
+        } else {
+            projectBaseDir = Paths.get("").toAbsolutePath().toString();
+        }
 
         final CostBenefitCalculator costBenefitCalculator = new CostBenefitCalculator();
         final List<RankedDisharmony> rankedDisharmonies =

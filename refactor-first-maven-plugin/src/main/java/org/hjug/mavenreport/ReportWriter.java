@@ -12,7 +12,10 @@ import org.apache.maven.project.MavenProject;
 public class ReportWriter {
     public static void writeReportToDisk(
             final MavenProject project, final String filename, final StringBuilder stringBuilder) {
-        final String reportOutputDirectory = project.getModel().getReporting().getOutputDirectory();
+        final String reportOutputDirectory = project.getModel()
+                .getReporting()
+                .getOutputDirectory()
+                .replace("${project.basedir}" + File.separator, "");
         final File reportOutputDir = new File(reportOutputDirectory);
 
         if (!reportOutputDir.exists()) {
