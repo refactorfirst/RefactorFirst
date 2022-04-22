@@ -6,14 +6,12 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Locale;
-import java.util.Optional;
+import java.util.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
@@ -31,7 +29,7 @@ import org.hjug.git.GitLogReader;
         name = "report",
         defaultPhase = LifecyclePhase.SITE,
         requiresDependencyResolution = ResolutionScope.RUNTIME,
-        requiresProject = true,
+        requiresProject = false,
         threadSafe = true,
         inheritByDefault = false)
 public class RefactorFirstMavenReport extends AbstractMojo {
@@ -132,6 +130,10 @@ public class RefactorFirstMavenReport extends AbstractMojo {
 
         String filename = getOutputName() + ".html";
 
+        if (Objects.equals(project.getName(), "Maven Stub Project (No POM)")) {
+            projectName = new File(Paths.get("").toAbsolutePath().toString()).getName();
+        }
+
         log.info("Generating {} for {} - {}", filename, projectName, projectVersion);
 
         DateTimeFormatter formatter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT)
@@ -197,10 +199,19 @@ public class RefactorFirstMavenReport extends AbstractMojo {
                 .append("<div id=\"series_chart_div\"></div>");
 
         GitLogReader gitLogReader = new GitLogReader();
-        String projectBaseDir = project.getBasedir().getPath();
-        Optional<File> optionalGitDir = Optional.ofNullable(gitLogReader.getGitDir(project.getBasedir()));
-        File gitDir;
+        String projectBaseDir;
+        Optional<File> optionalGitDir;
 
+        File baseDir = project.getBasedir();
+        if (baseDir != null) {
+            projectBaseDir = baseDir.getPath();
+            optionalGitDir = Optional.ofNullable(gitLogReader.getGitDir(baseDir));
+        } else {
+            projectBaseDir = Paths.get("").toAbsolutePath().toString();
+            optionalGitDir = Optional.ofNullable(gitLogReader.getGitDir(new File(projectBaseDir)));
+        }
+
+        File gitDir;
         if (optionalGitDir.isPresent()) {
             gitDir = optionalGitDir.get();
         } else {
