@@ -25,7 +25,7 @@ import org.hjug.cbc.RankedDisharmony;
         name = "jsonreport",
         defaultPhase = LifecyclePhase.SITE,
         requiresDependencyResolution = ResolutionScope.RUNTIME,
-        requiresProject = true,
+        requiresProject = false,
         threadSafe = true,
         inheritByDefault = false)
 public class RefactorFirstMavenJsonReport extends AbstractMojo {
