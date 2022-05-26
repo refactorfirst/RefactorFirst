@@ -55,6 +55,7 @@ public class GraphDataGeneratorTest {
     @Test
     public void generateBubbleChartDataOneDataPoint() {
         GodClass godClass = new GodClass(
+                "AttributeHandler",
                 "AttributeHandler.java",
                 "org.apache.myfaces.tobago.facelets",
                 "(WMC=77, ATFD=105, TCC=15.555999755859375)");
@@ -76,6 +77,7 @@ public class GraphDataGeneratorTest {
     @Test
     public void generateBubbleChartDataTwoDataPoints() {
         GodClass godClass = new GodClass(
+                "AttributeHandler",
                 "AttributeHandler.java",
                 "org.apache.myfaces.tobago.facelets",
                 "(WMC=77, ATFD=105, TCC=15.555999755859375)");

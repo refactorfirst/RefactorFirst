@@ -180,7 +180,7 @@ public class RefactorFirstMavenCsvReport extends AbstractMojo {
 
     private String[] getDataList(RankedDisharmony rankedDisharmony) {
         String[] simpleRankedDisharmonyData = {
-            rankedDisharmony.getClassName(),
+            rankedDisharmony.getFileName(),
             rankedDisharmony.getPriority().toString(),
             rankedDisharmony.getChangePronenessRank().toString(),
             rankedDisharmony.getEffortRank().toString(),
@@ -190,7 +190,7 @@ public class RefactorFirstMavenCsvReport extends AbstractMojo {
         };
 
         String[] detailedRankedDisharmonyData = {
-            rankedDisharmony.getClassName(),
+            rankedDisharmony.getFileName(),
             rankedDisharmony.getPriority().toString(),
             rankedDisharmony.getChangePronenessRank().toString(),
             rankedDisharmony.getEffortRank().toString(),

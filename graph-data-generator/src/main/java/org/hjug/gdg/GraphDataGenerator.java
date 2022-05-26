@@ -41,7 +41,7 @@ public class GraphDataGenerator {
             RankedDisharmony rankedDisharmony = rankedDisharmonies.get(i);
             chartData.append("[");
             chartData.append("'");
-            chartData.append(rankedDisharmony.getClassName());
+            chartData.append(rankedDisharmony.getFileName());
             chartData.append("',");
             chartData.append(rankedDisharmony.getEffortRank());
             chartData.append(",");
