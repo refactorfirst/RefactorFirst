@@ -73,7 +73,11 @@ public class PMDGodClassRuleRunner {
             // write results
             if (!ctx.getReport().isEmpty()) {
                 for (final RuleViolation violation : ctx.getReport()) {
-                    godClass = new GodClass(sourceCodeFileName, violation.getPackageName(), violation.getDescription());
+                    godClass = new GodClass(
+                            violation.getClassName(),
+                            sourceCodeFileName,
+                            violation.getPackageName(),
+                            violation.getDescription());
                 }
             }
         } catch (PMDException ignore) {

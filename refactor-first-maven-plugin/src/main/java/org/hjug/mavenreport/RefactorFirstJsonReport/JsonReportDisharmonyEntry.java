@@ -15,7 +15,11 @@ class JsonReportDisharmonyEntry {
             .withLocale(Locale.getDefault())
             .withZone(ZoneId.systemDefault());
 
+    private final String fileName;
+
     private final String className;
+
+    private final String fullFilePath;
 
     private final Integer effortRank;
 
@@ -29,10 +33,9 @@ class JsonReportDisharmonyEntry {
 
     private final String mostRecentCommitTime;
 
-    private final String fullPath;
-
     public static JsonReportDisharmonyEntry fromRankedDisharmony(RankedDisharmony entry) {
         return JsonReportDisharmonyEntry.builder()
+                .fileName(entry.getFileName())
                 .className(entry.getClassName())
                 .effortRank(entry.getEffortRank())
                 .changePronenessRank(entry.getChangePronenessRank())
@@ -40,7 +43,7 @@ class JsonReportDisharmonyEntry {
                 .weightedMethodCount(entry.getWmc())
                 .commitCount(entry.getCommitCount())
                 .mostRecentCommitTime(formatter.format(entry.getMostRecentCommitTime()))
-                .fullPath(entry.getPath())
+                .fullFilePath(entry.getPath())
                 .build();
     }
 }

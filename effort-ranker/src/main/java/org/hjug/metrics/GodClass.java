@@ -10,6 +10,7 @@ import lombok.Data;
 @Data
 public class GodClass {
 
+    private String className;
     private String fileName;
     private String packageName;
     private Integer wmc;
@@ -22,7 +23,8 @@ public class GodClass {
     private Integer sumOfRanks;
     private Integer overallRank;
 
-    public GodClass(String fileName, String packageName, String result) {
+    public GodClass(String className, String fileName, String packageName, String result) {
+        this.className = className;
         this.fileName = fileName;
         this.packageName = packageName;
 

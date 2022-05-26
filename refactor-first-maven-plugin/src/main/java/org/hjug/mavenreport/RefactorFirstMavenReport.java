@@ -278,7 +278,7 @@ public class RefactorFirstMavenReport extends AbstractMojo {
             stringBuilder.append("<tr>");
 
             String[] simpleRankedDisharmonyData = {
-                rankedDisharmony.getClassName(),
+                rankedDisharmony.getFileName(),
                 rankedDisharmony.getPriority().toString(),
                 rankedDisharmony.getChangePronenessRank().toString(),
                 rankedDisharmony.getEffortRank().toString(),
@@ -288,7 +288,7 @@ public class RefactorFirstMavenReport extends AbstractMojo {
             };
 
             String[] detailedRankedDisharmonyData = {
-                rankedDisharmony.getClassName(),
+                rankedDisharmony.getFileName(),
                 rankedDisharmony.getPriority().toString(),
                 rankedDisharmony.getChangePronenessRank().toString(),
                 rankedDisharmony.getEffortRank().toString(),

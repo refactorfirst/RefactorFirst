@@ -10,6 +10,7 @@ import org.hjug.metrics.GodClass;
 public class RankedDisharmony {
 
     private final String path;
+    private final String fileName;
     private final String className;
     private final Integer effortRank;
     private final Integer changePronenessRank;
@@ -29,7 +30,8 @@ public class RankedDisharmony {
     public RankedDisharmony(GodClass godClass, ScmLogInfo scmLogInfo) {
         path = scmLogInfo.getPath();
         // from https://stackoverflow.com/questions/1011287/get-file-name-from-a-file-location-in-java
-        className = Paths.get(path).getFileName().toString();
+        fileName = Paths.get(path).getFileName().toString();
+        className = godClass.getClassName();
         changePronenessRank = scmLogInfo.getChangePronenessRank();
         effortRank = godClass.getOverallRank();
         priority = changePronenessRank - effortRank;

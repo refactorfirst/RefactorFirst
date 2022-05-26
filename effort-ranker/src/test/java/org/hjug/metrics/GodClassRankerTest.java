@@ -14,22 +14,26 @@ public class GodClassRankerTest {
     private final GodClassRanker godClassRanker = new GodClassRanker();
 
     private final GodClass attributeHandler = new GodClass(
+            "AttributeHandler",
             "org/hjug/git/AttributeHandler.java",
             "org.apache.myfaces.tobago.facelets",
             "null (WMC=79, ATFD=79, TCC=0.027777777777777776)");
     private final GodClass attributeHandler2 = new GodClass(
+            "AttributeHandler",
             "org/hjug/git/AttributeHandler.java",
             "org.apache.myfaces.tobago.facelets",
             "null (WMC=79, ATFD=79, TCC=0.027777777777777776)");
-    private final GodClass sorter =
-            new GodClass("Sorter.java", "org.apache.myfaces.tobago.facelets", " God class (WMC=51, ATFD=25, TCC=0.2)");
-    private final GodClass sorter2 =
-            new GodClass("Sorter2.java", "org.apache.myfaces.tobago.facelets", " God class (WMC=51, ATFD=25, TCC=0.2)");
+    private final GodClass sorter = new GodClass(
+            "Sorter", "Sorter.java", "org.apache.myfaces.tobago.facelets", " God class (WMC=51, ATFD=25, TCC=0.2)");
+    private final GodClass sorter2 = new GodClass(
+            "Sorter", "Sorter2.java", "org.apache.myfaces.tobago.facelets", " God class (WMC=51, ATFD=25, TCC=0.2)");
     private final GodClass themeImpl = new GodClass(
+            "ThemeImpl",
             "ThemeImpl.java",
             "org.apache.myfaces.tobago.facelets",
             "God class (WMC=60, ATFD=16, TCC=0.07816091954022988)");
     private final GodClass themeImpl2 = new GodClass(
+            "ThemeImpl",
             "ThemeImpl2.java",
             "org.apache.myfaces.tobago.facelets",
             "God class (WMC=60, ATFD=16, TCC=0.07816091954022988)");
