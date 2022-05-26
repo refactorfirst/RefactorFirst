@@ -29,6 +29,8 @@ class JsonReportDisharmonyEntry {
 
     private final String mostRecentCommitTime;
 
+    private final String fullPath;
+
     public static JsonReportDisharmonyEntry fromRankedDisharmony(RankedDisharmony entry) {
         return JsonReportDisharmonyEntry.builder()
                 .className(entry.getClassName())
@@ -38,6 +40,7 @@ class JsonReportDisharmonyEntry {
                 .weightedMethodCount(entry.getWmc())
                 .commitCount(entry.getCommitCount())
                 .mostRecentCommitTime(formatter.format(entry.getMostRecentCommitTime()))
+                .fullPath(entry.getPath())
                 .build();
     }
 }
