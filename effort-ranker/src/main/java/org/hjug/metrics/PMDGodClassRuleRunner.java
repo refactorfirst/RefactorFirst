@@ -17,10 +17,20 @@ public class PMDGodClassRuleRunner {
 
     private SourceCodeProcessor sourceCodeProcessor;
     private Language java = LanguageRegistry.getLanguage(JavaLanguageModule.NAME);
+    private RuleSets ruleSets;
 
     public PMDGodClassRuleRunner() {
         PMD pmd = new PMD();
         sourceCodeProcessor = pmd.getSourceCodeProcessor();
+
+        RuleSet ruleSet = new RuleSetLoader().loadFromResource("category/java/design.xml");
+        Rule godClassRule = ruleSet.getRuleByName("GodClass");
+        godClassRule.setLanguage(java);
+
+        // add your rule to the ruleset
+        RuleSetFactory ruleSetFactory = new RuleSetFactory();
+        RuleSet ruleSet2 = ruleSetFactory.createSingleRuleRuleSet(godClassRule);
+        ruleSets = new RuleSets(ruleSet2);
     }
 
     public Optional<GodClass> runGodClassRule(File file) {
@@ -50,15 +60,6 @@ public class PMDGodClassRuleRunner {
     }
 
     public Optional<GodClass> runPMD(String sourceCodeFileName, InputStream inputStream) {
-        RuleSet ruleSet = new RuleSetLoader().loadFromResource("category/java/design.xml");
-        Rule godClassRule = ruleSet.getRuleByName("GodClass");
-        godClassRule.setLanguage(java);
-
-        // add your rule to the ruleset
-        RuleSetFactory ruleSetFactory = new RuleSetFactory();
-        RuleSet ruleSet2 = ruleSetFactory.createSingleRuleRuleSet(godClassRule);
-        RuleSets ruleSets = new RuleSets(ruleSet2);
-
         GodClass godClass = null;
         try {
             // Set the javaVersion you are using. (*1)
