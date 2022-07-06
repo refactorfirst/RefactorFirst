@@ -7,7 +7,6 @@ import org.junit.Test;
 
 import java.util.Optional;
 
-@Ignore
 public class CBORuleRunnerTest {
 
     private CBORuleRunner CBORuleRunner;
