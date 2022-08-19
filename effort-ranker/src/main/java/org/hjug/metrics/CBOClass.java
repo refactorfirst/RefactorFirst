@@ -1,8 +1,7 @@
 package org.hjug.metrics;
 
-import lombok.Data;
-
 import java.util.Scanner;
+import lombok.Data;
 
 /**
  * Created by Jim on 11/16/2016.

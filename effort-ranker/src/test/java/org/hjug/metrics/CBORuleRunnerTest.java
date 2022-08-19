@@ -1,40 +1,38 @@
 package org.hjug.metrics;
 
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
-
 import java.util.Optional;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class CBORuleRunnerTest {
 
     private CBORuleRunner CBORuleRunner;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         CBORuleRunner = new CBORuleRunner();
     }
 
     @Test
-    public void testRuleRunnerExpectOneClass() throws Exception {
+    void testRuleRunnerExpectOneClass() throws Exception {
         String attributeHandler = "Console.java";
         Optional<CBOClass> optionalResult = CBORuleRunner.runCBOClassRule(
                 attributeHandler, getClass().getClassLoader().getResourceAsStream(attributeHandler));
 
         CBOClass result = optionalResult.get();
 
-        Assert.assertEquals("Console.java", result.getFileName());
-        Assert.assertEquals("io.confluent.ksql.cli.console", result.getPackageName());
-        Assert.assertEquals(35, result.getCouplingCount().longValue());
+        Assertions.assertEquals("Console.java", result.getFileName());
+        Assertions.assertEquals("io.confluent.ksql.cli.console", result.getPackageName());
+        Assertions.assertEquals(35, result.getCouplingCount().longValue());
     }
 
     @Test
-    public void testRuleRunnerExpectNoResults() throws Exception {
+    void testRuleRunnerExpectNoResults() throws Exception {
         String attributeHandler = "Attributes.java";
         Optional<CBOClass> result = CBORuleRunner.runCBOClassRule(
                 attributeHandler, getClass().getClassLoader().getResourceAsStream(attributeHandler));
 
-        Assert.assertFalse(result.isPresent());
+        Assertions.assertFalse(result.isPresent());
     }
 }
