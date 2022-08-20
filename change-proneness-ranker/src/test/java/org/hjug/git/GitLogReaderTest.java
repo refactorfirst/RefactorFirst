@@ -8,32 +8,35 @@ import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
-import org.junit.*;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 public class GitLogReaderTest {
     // Borrowed bits and pieces from
     // https://gist.github.com/rherrmann/0c682ea327862cb6847704acf90b1d5d
 
-    @Rule
-    public TemporaryFolder tempFolder = new TemporaryFolder();
+    @TempDir
+    public File tempFolder;
 
     private Git git;
     private Repository repository;
 
-    @Before
+    @BeforeEach
     public void setUp() throws GitAPIException {
-        git = Git.init().setDirectory(tempFolder.getRoot()).call();
+        git = Git.init().setDirectory(tempFolder).call();
         repository = git.getRepository();
     }
 
-    @After
+    @AfterEach
     public void tearDown() {
         repository.close();
     }
 
     @Test
-    public void testFileLog() throws IOException, GitAPIException, InterruptedException {
+    void testFileLog() throws IOException, GitAPIException, InterruptedException {
         // This path works when referencing the full Tobago repository
         // String filePath = "tobago-core/src/main/java/org/apache/myfaces/tobago/facelets/AttributeHandler.java";
 
@@ -58,13 +61,13 @@ public class GitLogReaderTest {
 
         ScmLogInfo scmLogInfo = gitLogReader.fileLog(repository, attributeHandler);
 
-        Assert.assertEquals(2, scmLogInfo.getCommitCount());
-        Assert.assertEquals(firstCommit.getCommitTime(), scmLogInfo.getEarliestCommit());
-        Assert.assertEquals(secondCommit.getCommitTime(), scmLogInfo.getMostRecentCommit());
+        Assertions.assertEquals(2, scmLogInfo.getCommitCount());
+        Assertions.assertEquals(firstCommit.getCommitTime(), scmLogInfo.getEarliestCommit());
+        Assertions.assertEquals(secondCommit.getCommitTime(), scmLogInfo.getMostRecentCommit());
     }
 
     @Test
-    public void testWalkFirstCommit() throws IOException, GitAPIException {
+    void testWalkFirstCommit() throws IOException, GitAPIException {
         GitLogReader gitLogReader = new GitLogReader();
 
         String attributeHandler = "AttributeHandler.java";
@@ -75,12 +78,12 @@ public class GitLogReaderTest {
 
         Map<Integer, Integer> result = gitLogReader.walkFirstCommit(repository, commit);
 
-        Assert.assertTrue(result.containsKey(commit.getCommitTime()));
-        Assert.assertEquals(1, result.get(commit.getCommitTime()).intValue());
+        Assertions.assertTrue(result.containsKey(commit.getCommitTime()));
+        Assertions.assertEquals(1, result.get(commit.getCommitTime()).intValue());
     }
 
     @Test
-    public void testCaptureChangCountByCommitTimestamp() throws Exception {
+    void testCaptureChangCountByCommitTimestamp() throws Exception {
         GitLogReader gitLogReader = new GitLogReader();
 
         String attributeHandler = "AttributeHandler.java";
@@ -105,8 +108,9 @@ public class GitLogReaderTest {
 
         Map<Integer, Integer> commitCounts = gitLogReader.captureChangeCountByCommitTimestamp(repository);
 
-        Assert.assertEquals(1, commitCounts.get(firstCommit.getCommitTime()).intValue());
-        Assert.assertEquals(2, commitCounts.get(secondCommit.getCommitTime()).intValue());
+        Assertions.assertEquals(1, commitCounts.get(firstCommit.getCommitTime()).intValue());
+        Assertions.assertEquals(
+                2, commitCounts.get(secondCommit.getCommitTime()).intValue());
     }
 
     private void writeFile(String name, String content) throws IOException {

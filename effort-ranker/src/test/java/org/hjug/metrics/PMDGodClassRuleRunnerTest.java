@@ -1,64 +1,65 @@
 package org.hjug.metrics;
 
 import java.util.Optional;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class PMDGodClassRuleRunnerTest {
 
     private PMDGodClassRuleRunner PMDGodClassRuleRunner;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         PMDGodClassRuleRunner = new PMDGodClassRuleRunner();
     }
 
     @Test
-    public void testRuleRunnerExpectOneClass() throws Exception {
+    void testRuleRunnerExpectOneClass() throws Exception {
         String attributeHandler = "AttributeHandler.java";
         Optional<GodClass> optionalResult = PMDGodClassRuleRunner.runGodClassRule(
                 attributeHandler, getClass().getClassLoader().getResourceAsStream(attributeHandler));
 
         GodClass result = optionalResult.get();
 
-        Assert.assertEquals("AttributeHandler.java", result.getFileName());
-        Assert.assertEquals("org.apache.myfaces.tobago.facelets", result.getPackageName());
-        Assert.assertEquals(77, result.getWmc().longValue());
-        Assert.assertEquals(105, result.getAtfd().longValue());
-        Assert.assertEquals(15.555999755859375, result.getTcc(), 0.001);
+        Assertions.assertEquals("AttributeHandler.java", result.getFileName());
+        Assertions.assertEquals("org.apache.myfaces.tobago.facelets", result.getPackageName());
+        Assertions.assertEquals(77, result.getWmc().longValue());
+        Assertions.assertEquals(105, result.getAtfd().longValue());
+        Assertions.assertEquals(15.555999755859375, result.getTcc(), 0.001);
     }
 
     @Test
-    public void testRuleRunnerExpectJavaElevenClass() throws Exception {
+    void testRuleRunnerExpectJavaElevenClass() throws Exception {
         String attributeHandler = "AttributeHandlerJavaEleven.java";
         Optional<GodClass> optionalResult = PMDGodClassRuleRunner.runGodClassRule(
                 attributeHandler, getClass().getClassLoader().getResourceAsStream(attributeHandler));
 
         GodClass result = optionalResult.get();
 
-        Assert.assertEquals("AttributeHandlerJavaEleven.java", result.getFileName());
-        Assert.assertEquals("org.apache.myfaces.tobago.facelets", result.getPackageName());
-        Assert.assertEquals(77, result.getWmc().longValue());
-        Assert.assertEquals(105, result.getAtfd().longValue());
-        Assert.assertEquals(15.555999755859375, result.getTcc(), 0.001);
+        Assertions.assertEquals("AttributeHandlerJavaEleven.java", result.getFileName());
+        Assertions.assertEquals("org.apache.myfaces.tobago.facelets", result.getPackageName());
+        Assertions.assertEquals(77, result.getWmc().longValue());
+        Assertions.assertEquals(105, result.getAtfd().longValue());
+        Assertions.assertEquals(15.555999755859375, result.getTcc(), 0.001);
     }
 
     @Test
-    public void testRuleRunnerExpectNoResults() throws Exception {
+    void testRuleRunnerExpectNoResults() throws Exception {
         String attributeHandler = "Attributes.java";
         Optional<GodClass> result = PMDGodClassRuleRunner.runGodClassRule(
                 attributeHandler, getClass().getClassLoader().getResourceAsStream(attributeHandler));
 
-        Assert.assertFalse(result.isPresent());
+        Assertions.assertFalse(result.isPresent());
     }
 
-    @Test // Only returns one result
-    public void testRuleRunnerWithTwoClasses() throws Exception {
+    // Only returns one result
+    @Test
+    void testRuleRunnerWithTwoClasses() throws Exception {
         String attributeHandler = "AttributeHandlerAndSorter.java";
         Optional<GodClass> result = PMDGodClassRuleRunner.runGodClassRule(
                 attributeHandler, getClass().getClassLoader().getResourceAsStream(attributeHandler));
 
-        Assert.assertTrue(result.isPresent());
+        Assertions.assertTrue(result.isPresent());
     }
 }

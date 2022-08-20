@@ -67,7 +67,6 @@ There is still much to be done.  Your feedback and collaboration would be greatl
 If you find this plugin useful, please star this repository and share with your friends & colleagues and on social media.
 
 ## Future Plans
-* Move from JUnit 4 to Junit 5.  Junit 5 is lacking the support for temporary files that JUnit 4 provides.
 * Add a Gradle plugin.
 * Incorporate Unit Test coverage metrics to quickly identify the safety of refactoring a God class.
 * Incorporate bug counts per God class to the Impact (Y-Axis) calculation.

@@ -1,17 +1,16 @@
 package org.hjug.metrics;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import net.sourceforge.pmd.*;
 import net.sourceforge.pmd.lang.Language;
 import net.sourceforge.pmd.lang.LanguageRegistry;
 import net.sourceforge.pmd.lang.java.JavaLanguageModule;
 import org.hjug.metrics.rules.CBORule;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.InputStream;
-import java.util.Optional;
 
 // based on http://sdoulger.blogspot.com/2010/12/call-pmd-from-your-code-with-you-custom.html
 @Slf4j

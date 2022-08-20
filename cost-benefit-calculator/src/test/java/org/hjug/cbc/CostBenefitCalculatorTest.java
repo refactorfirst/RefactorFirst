@@ -11,30 +11,33 @@ import org.eclipse.jgit.revwalk.RevCommit;
 import org.hjug.git.GitLogReader;
 import org.hjug.metrics.GodClass;
 import org.hjug.metrics.PMDGodClassRuleRunner;
-import org.junit.*;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 public class CostBenefitCalculatorTest {
 
-    @Rule
-    public TemporaryFolder tempFolder = new TemporaryFolder();
+    @TempDir
+    public File tempFolder;
 
     private Git git;
     private Repository repository;
 
-    @Before
+    @BeforeEach
     public void setUp() throws GitAPIException {
-        git = Git.init().setDirectory(tempFolder.getRoot()).call();
+        git = Git.init().setDirectory(tempFolder).call();
         repository = git.getRepository();
     }
 
-    @After
+    @AfterEach
     public void tearDown() {
         repository.close();
     }
 
     @Test
-    public void testCostBenefitCalculation() throws IOException, GitAPIException, InterruptedException {
+    void testCostBenefitCalculation() throws IOException, GitAPIException, InterruptedException {
         String attributeHandler = "AttributeHandler.java";
         InputStream resourceAsStream = getClass().getClassLoader().getResourceAsStream(attributeHandler);
         writeFile(attributeHandler, convertInputStreamToString(resourceAsStream));
@@ -60,12 +63,12 @@ public class CostBenefitCalculatorTest {
         List<RankedDisharmony> disharmonies = costBenefitCalculator.calculateCostBenefitValues(
                 git.getRepository().getDirectory().getPath());
 
-        Assert.assertEquals(0, disharmonies.get(0).getPriority().intValue());
-        Assert.assertEquals(0, disharmonies.get(1).getPriority().intValue());
+        Assertions.assertEquals(0, disharmonies.get(0).getPriority().intValue());
+        Assertions.assertEquals(0, disharmonies.get(1).getPriority().intValue());
     }
 
     @Test
-    public void scanClassesInRepo2() throws IOException, GitAPIException {
+    void scanClassesInRepo2() throws IOException, GitAPIException {
         String attributeHandler = "AttributeHandler.java";
         InputStream resourceAsStream = getClass().getClassLoader().getResourceAsStream(attributeHandler);
         writeFile(attributeHandler, convertInputStreamToString(resourceAsStream));
@@ -86,11 +89,11 @@ public class CostBenefitCalculatorTest {
             godClassOptional.ifPresent(godClass -> godClasses.put(filePath, godClass));
         }
 
-        Assert.assertFalse(godClasses.isEmpty());
+        Assertions.assertFalse(godClasses.isEmpty());
     }
 
     @Test
-    public void scanClassesInRepo() throws IOException, GitAPIException {
+    void scanClassesInRepo() throws IOException, GitAPIException {
         String attributeHandler = "AttributeHandler.java";
         InputStream resourceAsStream = getClass().getClassLoader().getResourceAsStream(attributeHandler);
         writeFile(attributeHandler, convertInputStreamToString(resourceAsStream));
@@ -111,7 +114,7 @@ public class CostBenefitCalculatorTest {
             godClassOptional.ifPresent(godClass -> godClasses.put(filePath, godClass));
         }
 
-        Assert.assertFalse(godClasses.isEmpty());
+        Assertions.assertFalse(godClasses.isEmpty());
     }
 
     private void writeFile(String name, String content) throws IOException {
