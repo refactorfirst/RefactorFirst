@@ -16,6 +16,8 @@ public class RankedDisharmony {
     private final Integer changePronenessRank;
     private final Integer priority;
 
+    private Integer couplingCount;
+
     private final Integer wmc;
     private final Integer wmcRank;
     private final Integer atfd;
