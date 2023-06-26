@@ -49,7 +49,7 @@ public class RefactorFirstMavenJsonReport extends AbstractMojo {
 
         final CostBenefitCalculator costBenefitCalculator = new CostBenefitCalculator();
         final List<RankedDisharmony> rankedDisharmonies =
-                costBenefitCalculator.calculateCostBenefitValues(projectBaseDir);
+                costBenefitCalculator.calculateGodClassCostBenefitValues(projectBaseDir);
         final List<JsonReportDisharmonyEntry> disharmonyEntries = rankedDisharmonies.stream()
                 .map(JsonReportDisharmonyEntry::fromRankedDisharmony)
                 .collect(Collectors.toList());

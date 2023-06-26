@@ -7,7 +7,7 @@ import lombok.Data;
  * Created by Jim on 11/16/2016.
  */
 @Data
-public class CBOClass {
+public class CBOClass implements Disharmony {
 
     private String className;
     private String fileName;

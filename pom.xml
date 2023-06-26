@@ -4,7 +4,7 @@
 
     <groupId>org.hjug.refactorfirst</groupId>
     <artifactId>refactor-first</artifactId>
-    <version>0.3.1-SNAPSHOT</version>
+    <version>0.4.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <url>https://github.com/jimbethancourt/RefactorFirst</url>
@@ -317,7 +317,7 @@
             <plugin>
                 <groupId>org.owasp</groupId>
                 <artifactId>dependency-check-maven</artifactId>
-                <version>6.1.0</version>
+                <version>8.3.1</version>
                 <configuration>
                     <failBuildOnCVSS>8.0</failBuildOnCVSS>
                 </configuration>
@@ -345,8 +345,8 @@
                                 <include>*.java</include>
                             </includes>
                             <!-- define the steps to apply to those files -->
-                            <trimTrailingWhitespace/>
-                            <endWithNewline/>
+                            <trimTrailingWhitespace />
+                            <endWithNewline />
                             <indent>
                                 <tabs>true</tabs>
                                 <spacesPerTab>4</spacesPerTab>
@@ -354,7 +354,7 @@
                         </format>
                     </formats>
                     <java>
-                        <palantirJavaFormat/>
+                        <palantirJavaFormat />
                     </java>
                 </configuration>
                 <executions>

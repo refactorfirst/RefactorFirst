@@ -8,7 +8,7 @@ import lombok.Data;
  * Created by Jim on 11/16/2016.
  */
 @Data
-public class GodClass {
+public class GodClass implements Disharmony {
 
     private String className;
     private String fileName;

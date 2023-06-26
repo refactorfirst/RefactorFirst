@@ -40,15 +40,27 @@ public class RefactorFirstMavenReport extends AbstractMojo {
                     + "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n"
                     + "    <meta name=\"generator\" content=\"Apache Maven Doxia Site Renderer 1.9.2\" />";
 
-    private static final String LEGEND = "       <h2>Chart Legend:</h2>" + "       <table border=\"5px\">\n"
-            + "          <tbody>\n"
-            + "            <tr><td><strong>X-Axis:</strong> Effort to refactor to a non-God class</td></tr>\n"
-            + "            <tr><td><strong>Y-Axis:</strong> Relative churn</td></tr>\n"
-            + "            <tr><td><strong>Color:</strong> Rank of what to fix first</td></tr>\n"
-            + "            <tr><td><strong>Circle size:</strong> Number of non-getter/setter methods</td></tr>\n"
-            + "          </tbody>\n"
-            + "        </table>"
-            + "        <br/>";
+    private static final String GOD_CLASS_CHART_LEGEND =
+            "       <h2>God Class Chart Legend:</h2>" + "       <table border=\"5px\">\n"
+                    + "          <tbody>\n"
+                    + "            <tr><td><strong>X-Axis:</strong> Effort to refactor to a non-God class</td></tr>\n"
+                    + "            <tr><td><strong>Y-Axis:</strong> Relative churn</td></tr>\n"
+                    + "            <tr><td><strong>Color:</strong> Priority of what to fix first</td></tr>\n"
+                    + "            <tr><td><strong>Circle size:</strong> Priority (Visual) of what to fix first</td></tr>\n"
+                    + "          </tbody>\n"
+                    + "        </table>"
+                    + "        <br/>";
+
+    private static final String COUPLING_BETWEEN_OBJECT_CHART_LEGEND =
+            "       <h2>Coupling Between Objects Chart Legend:</h2>" + "       <table border=\"5px\">\n"
+                    + "          <tbody>\n"
+                    + "            <tr><td><strong>X-Axis:</strong> Number of objects the class is coupled to</td></tr>\n"
+                    + "            <tr><td><strong>Y-Axis:</strong> Relative churn</td></tr>\n"
+                    + "            <tr><td><strong>Color:</strong> Priority of what to fix first</td></tr>\n"
+                    + "            <tr><td><strong>Circle size:</strong> Priority (Visual) of what to fix first</td></tr>\n"
+                    + "          </tbody>\n"
+                    + "        </table>"
+                    + "        <br/>";
 
     private static final String THE_END = "</div>\n" + "    </div>\n"
             + "    <div class=\"clear\">\n"
@@ -99,7 +111,7 @@ public class RefactorFirstMavenReport extends AbstractMojo {
     @Override
     public void execute() {
 
-        final String[] simpleTableHeadings = {
+        final String[] godClassSimpleTableHeadings = {
             "Class",
             "Priority",
             "Change Proneness Rank",
@@ -109,9 +121,10 @@ public class RefactorFirstMavenReport extends AbstractMojo {
             "Commit Count"
         };
 
-        final String[] detailedTableHeadings = {
+        final String[] godClassDetailedTableHeadings = {
             "Class",
             "Priority",
+            "Raw Priority",
             "Change Proneness Rank",
             "Effort Rank",
             "WMC",
@@ -126,7 +139,12 @@ public class RefactorFirstMavenReport extends AbstractMojo {
             "Full Path"
         };
 
-        final String[] tableHeadings = showDetails ? detailedTableHeadings : simpleTableHeadings;
+        final String[] cboTableHeadings = {
+            "Class", "Priority", "Change Proneness Rank", "Coupling Count", "Most Recent Commit Date", "Commit Count"
+        };
+
+        final String[] godClassTableHeadings =
+                showDetails ? godClassDetailedTableHeadings : godClassSimpleTableHeadings;
 
         String filename = getOutputName() + ".html";
 
@@ -156,7 +174,9 @@ public class RefactorFirstMavenReport extends AbstractMojo {
                 + "    <link rel=\"stylesheet\" href=\"./css/site.css\" />\n"
                 + "    <link rel=\"stylesheet\" href=\"./css/print.css\" media=\"print\" />\n"
                 + "<script type=\"text/javascript\" src=\"https://www.gstatic.com/charts/loader.js\">"
-                + "</script><script type=\"text/javascript\" src=\"./gchart.js\"></script>  </head>\n"
+                + "</script><script type=\"text/javascript\" src=\"./gchart.js\"></script>"
+                + "<script type=\"text/javascript\" src=\"./gchart2.js\"></script>"
+                + "  </head>\n"
                 + "  <body class=\"composite\">\n"
                 + "    <div id=\"banner\">\n"
                 + "      <div class=\"clear\">\n"
@@ -180,23 +200,15 @@ public class RefactorFirstMavenReport extends AbstractMojo {
                 + "        <hr/>\n"
                 + "      </div>\n"
                 + "    </div>\n"
-                + "    <div id=\"leftColumn\">\n"
-                + "      <div id=\"navcolumn\">\n"
-                + "      <a href=\"http://maven.apache.org/\" title=\"Built by Maven\" class=\"poweredBy\">\n"
-                + "        <img class=\"poweredBy\" alt=\"Built by Maven\" src=\"./images/logos/maven-feather.png\" />\n"
-                + "      </a>\n"
-                + "      </div>\n"
-                + "    </div>\n"
                 + "    <div id=\"bodyColumn\">\n"
                 + "      <div id=\"contentBox\">");
 
         stringBuilder
-                .append("<section>\n" + "<h2>God Class Report for ")
+                .append("<section>\n" + "<h2>RefactorFirst Report for ")
                 .append(projectName)
                 .append(" ")
                 .append(projectVersion)
-                .append("</h2>\n")
-                .append("<div id=\"series_chart_div\"></div>");
+                .append("</h2>\n");
 
         GitLogReader gitLogReader = new GitLogReader();
         String projectBaseDir;
@@ -242,96 +254,169 @@ public class RefactorFirstMavenReport extends AbstractMojo {
         }
 
         CostBenefitCalculator costBenefitCalculator = new CostBenefitCalculator();
-        List<RankedDisharmony> rankedDisharmonies = costBenefitCalculator.calculateCostBenefitValues(projectBaseDir);
+        List<RankedDisharmony> rankedGodClassDisharmonies =
+                costBenefitCalculator.calculateGodClassCostBenefitValues(projectBaseDir);
 
-        rankedDisharmonies.sort(
-                Comparator.comparing(RankedDisharmony::getPriority).reversed());
+        List<RankedDisharmony> rankedCBODisharmonies =
+                costBenefitCalculator.calculateCBOCostBenefitValues(projectBaseDir);
 
-        if (rankedDisharmonies.isEmpty()) {
+        if (rankedGodClassDisharmonies.isEmpty() && rankedCBODisharmonies.isEmpty()) {
             stringBuilder
                     .append("Congratulations!  ")
                     .append(projectName)
                     .append(" ")
                     .append(projectVersion)
-                    .append(" has no God classes!");
-            log.info("Done! No God classes found!");
+                    .append(" has no God classes or highly coupled classes!");
+            log.info("Done! No Disharmonies found!");
             stringBuilder.append(THE_END);
             writeReportToDisk(project, filename, stringBuilder);
             return;
         }
 
-        writeGchartJs(rankedDisharmonies);
-        stringBuilder.append(LEGEND);
-
-        stringBuilder.append("<h2>God classes by the numbers: (Refactor higher priority classes first)</h2>");
-        stringBuilder.append("<table border=\"5px\" class=\"table table-striped\">");
-
-        // Content
-        stringBuilder.append("<thead><tr>");
-        for (String heading : tableHeadings) {
-            stringBuilder.append("<th>").append(heading).append("</th>");
+        if (!rankedGodClassDisharmonies.isEmpty() && !rankedCBODisharmonies.isEmpty()) {
+            stringBuilder.append("<a href=\"#GOD\">God Classes</a>");
+            stringBuilder.append("<br/>");
+            stringBuilder.append("<a href=\"#CBO\">Highly Coupled Classes</a>");
         }
-        stringBuilder.append("</tr></thead>");
 
-        stringBuilder.append("<tbody>");
-        for (RankedDisharmony rankedDisharmony : rankedDisharmonies) {
-            stringBuilder.append("<tr>");
+        if (!rankedGodClassDisharmonies.isEmpty()) {
+            rankedGodClassDisharmonies.sort(
+                    Comparator.comparing(RankedDisharmony::getRawPriority).reversed());
 
-            String[] simpleRankedDisharmonyData = {
-                rankedDisharmony.getFileName(),
-                rankedDisharmony.getPriority().toString(),
-                rankedDisharmony.getChangePronenessRank().toString(),
-                rankedDisharmony.getEffortRank().toString(),
-                rankedDisharmony.getWmc().toString(),
-                formatter.format(rankedDisharmony.getMostRecentCommitTime()),
-                rankedDisharmony.getCommitCount().toString()
-            };
-
-            String[] detailedRankedDisharmonyData = {
-                rankedDisharmony.getFileName(),
-                rankedDisharmony.getPriority().toString(),
-                rankedDisharmony.getChangePronenessRank().toString(),
-                rankedDisharmony.getEffortRank().toString(),
-                rankedDisharmony.getWmc().toString(),
-                rankedDisharmony.getWmcRank().toString(),
-                rankedDisharmony.getAtfd().toString(),
-                rankedDisharmony.getAtfdRank().toString(),
-                rankedDisharmony.getTcc().toString(),
-                rankedDisharmony.getTccRank().toString(),
-                formatter.format(rankedDisharmony.getFirstCommitTime()),
-                formatter.format(rankedDisharmony.getMostRecentCommitTime()),
-                rankedDisharmony.getCommitCount().toString(),
-                rankedDisharmony.getPath()
-            };
-
-            final String[] rankedDisharmonyData =
-                    showDetails ? detailedRankedDisharmonyData : simpleRankedDisharmonyData;
-
-            for (String rowData : rankedDisharmonyData) {
-                stringBuilder.append("<td>").append(rowData).append("</td>");
+            int godClassPriority = 1;
+            for (RankedDisharmony rankedGodClassDisharmony : rankedGodClassDisharmonies) {
+                rankedGodClassDisharmony.setPriority(godClassPriority++);
             }
 
-            stringBuilder.append("</tr>");
+            stringBuilder.append("<div style=\"text-align: center;\"><a id=\"GOD\"><h1>God Classes</h1></a></div>");
+
+            writeGodClassGchartJs(rankedGodClassDisharmonies, godClassPriority - 1);
+            stringBuilder.append("<div id=\"series_chart_div\"></div>");
+            stringBuilder.append(GOD_CLASS_CHART_LEGEND);
+
+            stringBuilder.append("<h2>God classes by the numbers: (Refactor Starting with Priority 1)</h2>");
+            stringBuilder.append("<table border=\"5px\" class=\"table table-striped\">");
+
+            // Content
+            stringBuilder.append("<thead><tr>");
+            for (String heading : godClassTableHeadings) {
+                stringBuilder.append("<th>").append(heading).append("</th>");
+            }
+            stringBuilder.append("</tr></thead>");
+
+            stringBuilder.append("<tbody>");
+            for (RankedDisharmony rankedGodClassDisharmony : rankedGodClassDisharmonies) {
+                stringBuilder.append("<tr>");
+
+                String[] simpleRankedGodClassDisharmonyData = {
+                    rankedGodClassDisharmony.getFileName(),
+                    rankedGodClassDisharmony.getPriority().toString(),
+                    rankedGodClassDisharmony.getChangePronenessRank().toString(),
+                    rankedGodClassDisharmony.getEffortRank().toString(),
+                    rankedGodClassDisharmony.getWmc().toString(),
+                    formatter.format(rankedGodClassDisharmony.getMostRecentCommitTime()),
+                    rankedGodClassDisharmony.getCommitCount().toString()
+                };
+
+                String[] detailedRankedGodClassDisharmonyData = {
+                    rankedGodClassDisharmony.getFileName(),
+                    rankedGodClassDisharmony.getPriority().toString(),
+                    rankedGodClassDisharmony.getRawPriority().toString(),
+                    rankedGodClassDisharmony.getChangePronenessRank().toString(),
+                    rankedGodClassDisharmony.getEffortRank().toString(),
+                    rankedGodClassDisharmony.getWmc().toString(),
+                    rankedGodClassDisharmony.getWmcRank().toString(),
+                    rankedGodClassDisharmony.getAtfd().toString(),
+                    rankedGodClassDisharmony.getAtfdRank().toString(),
+                    rankedGodClassDisharmony.getTcc().toString(),
+                    rankedGodClassDisharmony.getTccRank().toString(),
+                    formatter.format(rankedGodClassDisharmony.getFirstCommitTime()),
+                    formatter.format(rankedGodClassDisharmony.getMostRecentCommitTime()),
+                    rankedGodClassDisharmony.getCommitCount().toString(),
+                    rankedGodClassDisharmony.getPath()
+                };
+
+                final String[] rankedDisharmonyData =
+                        showDetails ? detailedRankedGodClassDisharmonyData : simpleRankedGodClassDisharmonyData;
+
+                for (String rowData : rankedDisharmonyData) {
+                    stringBuilder.append("<td>").append(rowData).append("</td>");
+                }
+
+                stringBuilder.append("</tr>");
+            }
+
+            stringBuilder.append("</tbody>");
+            stringBuilder.append("</table>");
         }
 
-        stringBuilder.append("</tbody>");
+        if (!rankedCBODisharmonies.isEmpty()) {
 
-        log.info("Done! View the report at target/site/{}", filename);
+            stringBuilder.append("<br/>\n" + "<br/>\n" + "<br/>\n" + "<br/>\n" + "<hr/>\n" + "<br/>\n" + "<br/>");
+
+            rankedCBODisharmonies.sort(
+                    Comparator.comparing(RankedDisharmony::getRawPriority).reversed());
+
+            int cboPriority = 1;
+            for (RankedDisharmony rankedCBODisharmony : rankedCBODisharmonies) {
+                rankedCBODisharmony.setPriority(cboPriority++);
+            }
+
+            stringBuilder.append(
+                    "<div style=\"text-align: center;\"><a id=\"CBO\"><h1>Highly Coupled Classes</h1></a></div>");
+
+            stringBuilder.append("<div id=\"series_chart_div_2\"></div>");
+            writeGCBOGchartJs(rankedCBODisharmonies, cboPriority - 1);
+            stringBuilder.append(COUPLING_BETWEEN_OBJECT_CHART_LEGEND);
+
+            stringBuilder.append("<h2>Highly Coupled classes by the numbers: (Refactor starting with Priority 1)</h2>");
+            stringBuilder.append("<table border=\"5px\" class=\"table table-striped\">");
+
+            // Content
+            stringBuilder.append("<thead><tr>");
+            for (String heading : cboTableHeadings) {
+                stringBuilder.append("<th>").append(heading).append("</th>");
+            }
+            stringBuilder.append("</tr></thead>");
+
+            stringBuilder.append("<tbody>");
+            for (RankedDisharmony rankedCboClassDisharmony : rankedCBODisharmonies) {
+                stringBuilder.append("<tr>");
+
+                String[] rankedCboClassDisharmonyData = {
+                    rankedCboClassDisharmony.getFileName(),
+                    rankedCboClassDisharmony.getPriority().toString(),
+                    rankedCboClassDisharmony.getChangePronenessRank().toString(),
+                    rankedCboClassDisharmony.getEffortRank().toString(),
+                    formatter.format(rankedCboClassDisharmony.getMostRecentCommitTime()),
+                    rankedCboClassDisharmony.getCommitCount().toString()
+                };
+
+                for (String rowData : rankedCboClassDisharmonyData) {
+                    stringBuilder.append("<td>").append(rowData).append("</td>");
+                }
+
+                stringBuilder.append("</tr>");
+            }
+
+            stringBuilder.append("</tbody>");
+        }
 
         stringBuilder.append("</table></section>");
         stringBuilder.append(THE_END);
 
-        log.info(stringBuilder.toString());
+        log.debug(stringBuilder.toString());
 
         writeReportToDisk(project, filename, stringBuilder);
+        log.info("Done! View the report at target/site/{}", filename);
     }
 
     // TODO: Move to another class to allow use by Gradle plugin
-    void writeGchartJs(List<RankedDisharmony> rankedDisharmonies) {
+    void writeGodClassGchartJs(List<RankedDisharmony> rankedDisharmonies, int maxPriority) {
         GraphDataGenerator graphDataGenerator = new GraphDataGenerator();
-        String scriptStart = graphDataGenerator.getScriptStart();
-        String bubbleChartData = graphDataGenerator.generateBubbleChartData(rankedDisharmonies);
-        String scriptEnd = graphDataGenerator.getScriptEnd();
+        String scriptStart = graphDataGenerator.getGodClassScriptStart();
+        String bubbleChartData = graphDataGenerator.generateGodClassBubbleChartData(rankedDisharmonies, maxPriority);
+        String scriptEnd = graphDataGenerator.getGodClassScriptEnd();
 
         String javascriptCode = scriptStart + bubbleChartData + scriptEnd;
 
@@ -346,13 +431,42 @@ public class RefactorFirstMavenReport extends AbstractMojo {
         try {
             scriptFile.createNewFile();
         } catch (IOException e) {
-            log.error("Failure creating chart script file", e);
+            log.error("Failure creating God Class chart script file", e);
         }
 
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(scriptFile))) {
             writer.write(javascriptCode);
         } catch (IOException e) {
             log.error("Error writing chart script file", e);
+        }
+    }
+
+    void writeGCBOGchartJs(List<RankedDisharmony> rankedDisharmonies, int maxPriority) {
+        GraphDataGenerator graphDataGenerator = new GraphDataGenerator();
+        String scriptStart = graphDataGenerator.getCBOScriptStart();
+        String bubbleChartData = graphDataGenerator.generateCBOBubbleChartData(rankedDisharmonies, maxPriority);
+        String scriptEnd = graphDataGenerator.getCBOScriptEnd();
+
+        String javascriptCode = scriptStart + bubbleChartData + scriptEnd;
+
+        String reportOutputDirectory = project.getModel().getReporting().getOutputDirectory();
+        File reportOutputDir = new File(reportOutputDirectory);
+        if (!reportOutputDir.exists()) {
+            reportOutputDir.mkdirs();
+        }
+        String pathname = reportOutputDirectory + File.separator + "gchart2.js";
+
+        File scriptFile = new File(pathname);
+        try {
+            scriptFile.createNewFile();
+        } catch (IOException e) {
+            log.error("Failure creating CBO chart script file", e);
+        }
+
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(scriptFile))) {
+            writer.write(javascriptCode);
+        } catch (IOException e) {
+            log.error("Error writing CBO chart script file", e);
         }
     }
 }
