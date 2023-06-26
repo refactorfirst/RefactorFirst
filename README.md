@@ -10,7 +10,7 @@ The graph generated in the report will look similar to this one:
 Run the following command from the root of your project (the source code does not need to be built):
 
 ```bash
-mvn org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.3.0:report
+mvn org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.4.0:report
 ```
 
 ### As Part of a Build
@@ -22,7 +22,7 @@ Add the following to your project in the build section.  **showDetails** will sh
         <plugin>
             <groupId>org.hjug.refactorfirst.plugin</groupId>
             <artifactId>refactor-first-maven-plugin</artifactId>
-            <version>0.3.0</version>       
+            <version>0.4.0</version>       
             <!-- optional -->
             <configuration>
                 <showDetails>true</showDetails>
