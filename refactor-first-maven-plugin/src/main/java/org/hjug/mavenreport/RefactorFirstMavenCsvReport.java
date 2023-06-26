@@ -128,10 +128,11 @@ public class RefactorFirstMavenCsvReport extends AbstractMojo {
 
         // actual calcualte
         CostBenefitCalculator costBenefitCalculator = new CostBenefitCalculator();
-        List<RankedDisharmony> rankedDisharmonies = costBenefitCalculator.calculateCostBenefitValues(projectBaseDir);
+        List<RankedDisharmony> rankedDisharmonies =
+                costBenefitCalculator.calculateGodClassCostBenefitValues(projectBaseDir);
 
         rankedDisharmonies.sort(
-                Comparator.comparing(RankedDisharmony::getPriority).reversed());
+                Comparator.comparing(RankedDisharmony::getRawPriority).reversed());
 
         // perfect score: no god classes
         if (rankedDisharmonies.isEmpty()) {
@@ -181,7 +182,7 @@ public class RefactorFirstMavenCsvReport extends AbstractMojo {
     private String[] getDataList(RankedDisharmony rankedDisharmony) {
         String[] simpleRankedDisharmonyData = {
             rankedDisharmony.getFileName(),
-            rankedDisharmony.getPriority().toString(),
+            rankedDisharmony.getRawPriority().toString(),
             rankedDisharmony.getChangePronenessRank().toString(),
             rankedDisharmony.getEffortRank().toString(),
             rankedDisharmony.getWmc().toString(),
@@ -191,7 +192,7 @@ public class RefactorFirstMavenCsvReport extends AbstractMojo {
 
         String[] detailedRankedDisharmonyData = {
             rankedDisharmony.getFileName(),
-            rankedDisharmony.getPriority().toString(),
+            rankedDisharmony.getRawPriority().toString(),
             rankedDisharmony.getChangePronenessRank().toString(),
             rankedDisharmony.getEffortRank().toString(),
             rankedDisharmony.getWmc().toString(),

@@ -57,11 +57,11 @@ public class CostBenefitCalculatorTest {
         RevCommit secondCommit = git.commit().setMessage("message").call();
 
         CostBenefitCalculator costBenefitCalculator = new CostBenefitCalculator();
-        List<RankedDisharmony> disharmonies = costBenefitCalculator.calculateCostBenefitValues(
+        List<RankedDisharmony> disharmonies = costBenefitCalculator.calculateGodClassCostBenefitValues(
                 git.getRepository().getDirectory().getPath());
 
-        Assert.assertEquals(0, disharmonies.get(0).getPriority().intValue());
-        Assert.assertEquals(0, disharmonies.get(1).getPriority().intValue());
+        Assert.assertEquals(0, disharmonies.get(0).getRawPriority().intValue());
+        Assert.assertEquals(0, disharmonies.get(1).getRawPriority().intValue());
     }
 
     @Test

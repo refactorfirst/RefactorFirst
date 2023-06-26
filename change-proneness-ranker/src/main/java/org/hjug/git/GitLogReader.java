@@ -47,7 +47,7 @@ public class GitLogReader implements RepositoryLogReader {
     // and
     // https://github.com/centic9/jgit-cookbook/blob/master/src/main/java/org/dstadler/jgit/api/ReadFileFromCommit.java
     @Override
-    public Map<String, ByteArrayOutputStream> (Repository repository) throws IOException {
+    public Map<String, ByteArrayOutputStream> listRepositoryContentsAtHEAD(Repository repository) throws IOException {
         Ref head = repository.exactRef("HEAD");
         // a RevWalk allows us to walk over commits based on some filtering that is defined
         RevWalk walk = new RevWalk(repository);
@@ -56,7 +56,7 @@ public class GitLogReader implements RepositoryLogReader {
 
         TreeWalk treeWalk = new TreeWalk(repository);
         treeWalk.addTree(tree);
-        treeWalk.setRecursive(false);listRepositoryContentsAtHEAD
+        treeWalk.setRecursive(false);
 
         // TODO: extract rest of this method to test it
         Map<String, ByteArrayOutputStream> fileContentsCollection = new HashMap<>();

@@ -39,7 +39,7 @@ class JsonReportDisharmonyEntry {
                 .className(entry.getClassName())
                 .effortRank(entry.getEffortRank())
                 .changePronenessRank(entry.getChangePronenessRank())
-                .priority(entry.getPriority())
+                .priority(entry.getRawPriority())
                 .weightedMethodCount(entry.getWmc())
                 .commitCount(entry.getCommitCount())
                 .mostRecentCommitTime(formatter.format(entry.getMostRecentCommitTime()))
