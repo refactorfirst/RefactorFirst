@@ -1,27 +1,26 @@
 package org.hjug.gdg;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.ArrayList;
 import java.util.List;
 import org.hjug.cbc.RankedDisharmony;
 import org.hjug.git.ScmLogInfo;
 import org.hjug.metrics.GodClass;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class GraphDataGeneratorTest {
 
     private GraphDataGenerator graphDataGenerator;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         graphDataGenerator = new GraphDataGenerator();
     }
 
     @Test
-    public void getScriptStart() {
+    void getScriptStart() {
         String scriptStart = "      google.charts.load('current', {'packages':['corechart']});\n"
                 + "      google.charts.setOnLoadCallback(drawSeriesChart);\n"
                 + "\n"
@@ -32,7 +31,7 @@ public class GraphDataGeneratorTest {
     }
 
     @Test
-    public void getScriptEnd() {
+    void getScriptEnd() {
         String scriptEnd = "]);\n" + "\n"
                 + "      var options = {\n"
                 + "        title: 'Priority Ranking for Refactoring God Classes - ' +\n"
@@ -53,7 +52,7 @@ public class GraphDataGeneratorTest {
     }
 
     @Test
-    public void generateBubbleChartDataOneDataPoint() {
+    void generateBubbleChartDataOneDataPoint() {
         GodClass godClass = new GodClass(
                 "AttributeHandler",
                 "AttributeHandler.java",
@@ -76,7 +75,7 @@ public class GraphDataGeneratorTest {
 
     // Only testing correct string formatting, not data correctness
     @Test
-    public void generateBubbleChartDataTwoDataPoints() {
+    void generateBubbleChartDataTwoDataPoints() {
         GodClass godClass = new GodClass(
                 "AttributeHandler",
                 "AttributeHandler.java",

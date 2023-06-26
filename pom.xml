@@ -72,7 +72,7 @@
         <sonar.organization>jimbethancourt-github</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
 
-        <maven.core.version>3.8.2</maven.core.version>
+        <maven.core.version>3.9.2</maven.core.version>
     </properties>
 
     <modules>
@@ -157,7 +157,7 @@
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-databind</artifactId>
-                <version>2.13.2.2</version>
+                <version>2.13.4.2</version>
             </dependency>
             <!--
             <dependency>
@@ -173,16 +173,23 @@
     <dependencies>
 
         <dependency>
-            <groupId>org.junit.vintage</groupId>
-            <artifactId>junit-vintage-engine</artifactId>
-            <version>5.8.1</version>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>3.4.4</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-core</artifactId>
-            <version>3.4.4</version>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <version>5.9.0</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>5.9.0</version>
             <scope>test</scope>
         </dependency>
 
