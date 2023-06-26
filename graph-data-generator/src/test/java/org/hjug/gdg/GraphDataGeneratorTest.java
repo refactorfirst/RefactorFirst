@@ -7,10 +7,11 @@ import java.util.List;
 import org.hjug.cbc.RankedDisharmony;
 import org.hjug.git.ScmLogInfo;
 import org.hjug.metrics.GodClass;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class GraphDataGeneratorTest {
+class GraphDataGeneratorTest {
 
     private GraphDataGenerator graphDataGenerator;
 
@@ -70,7 +71,7 @@ public class GraphDataGeneratorTest {
 
         String chartData = "[ 'ID', 'Effort', 'Change Proneness', 'Priority', 'Priority (Visual)'], "
                 + "['AttributeHandler.java',0,0,1,0]";
-        Assert.assertEquals(chartData, graphDataGenerator.generateGodClassBubbleChartData(rankedDisharmonies, 1));
+        Assertions.assertEquals(chartData, graphDataGenerator.generateGodClassBubbleChartData(rankedDisharmonies, 1));
     }
 
     // Only testing correct string formatting, not data correctness
@@ -88,7 +89,7 @@ public class GraphDataGeneratorTest {
         RankedDisharmony rankedDisharmony = new RankedDisharmony(godClass, scmLogInfo);
         rankedDisharmony.setPriority(1);
         RankedDisharmony rankedDisharmony2 = new RankedDisharmony(godClass, scmLogInfo);
-        rankedDisharmony2.setPriority(1);
+        rankedDisharmony2.setPriority(2);
 
         List<RankedDisharmony> rankedDisharmonies = new ArrayList<>();
         rankedDisharmonies.add(rankedDisharmony);
@@ -96,7 +97,7 @@ public class GraphDataGeneratorTest {
 
         String chartData = "[ 'ID', 'Effort', 'Change Proneness', 'Priority', 'Priority (Visual)'], "
                 + "['AttributeHandler.java',0,0,1,0],"
-                + "['AttributeHandler.java',0,0,1,0]";
-        Assert.assertEquals(chartData, graphDataGenerator.generateGodClassBubbleChartData(rankedDisharmonies, 1));
+                + "['AttributeHandler.java',0,0,2,0]";
+        Assertions.assertEquals(chartData, graphDataGenerator.generateGodClassBubbleChartData(rankedDisharmonies, 1));
     }
 }
