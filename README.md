@@ -1,7 +1,9 @@
 # RefactorFirst
 
-This tool for Java codebases will help you identify the God Classes you should refactor first.
-The graph generated in the report will look similar to this one:
+This tool for Java codebases will help you identify the God Classes and classes with High Coupling you should refactor first.
+It runs PMD's God Class Rule and Coupling Between Objects rule and scans your Git repository history.
+
+The graphs generated in the report will look similar to this one:
 ![image info](./RefactorFirst_Sample_Report.png)
 
 ## There are several ways to run the analysis on your codebase:
@@ -50,8 +52,32 @@ Not supported as of Version 0.2.0 due to CVE-2020-13936
 </reporting>
 ```
 
+## But I'm using Gradle / my project layout isn't typical!
+I would like to create a Gradle plugin and (possibly) support non-conventional projects in the future, but in the meantime you can create a dummy POM file in the same directory as your .git directory:
+
+```xml
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+ 
+  <groupId>com.mycompany.app</groupId>
+  <artifactId>my-app</artifactId>
+  <version>1.0-SNAPSHOT</version>
+</project>
+```
+and then (assuming Maven is installed) run
+
+```bash
+mvn org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.4.0:report
+```
+
 ## Viewing the Report
-Once the plugin finishes executing (it may take a while for a large / old codebase), open the file **target/site/refactor-first-report.html** in the root of the project.  It will contain a graph similar to the one above, and a table that lists God classes in the recommended order that they should be refactored.  The classes in the top left of the graph are the easiest to refactor while also having the biggest positive impact to team productivity.
+Once the plugin finishes executing (it may take a while for a large / old codebase), open the file **target/site/refactor-first-report.html** in the root of the project.  It will contain a graph similar to the one above, and a table that lists God classes in the recommended order that they should be refactored.  The classes in the top left of the graph are the easiest to refactor while also having the biggest positive impact to team productivity.  
+If highly coupled classes are detected, a graph and table listing Highly Coupled Classes in will be generated.
+
+## I have the report.  Now What???
+Work with your Product Owner to prioritize the technical debt that has been identified.  It may help to explain it as hidden negative value that is slowing team porductivity.  
+If you have IntelliJ Ultimate, you can install the [Method Reference Diagram](https://plugins.jetbrains.com/plugin/7996-java-method-reference-diagram) plugin to help you determine how the identified God classes and Highly Coupled classes can be refactored.
 
 
 ## Additional Details
@@ -67,6 +93,7 @@ There is still much to be done.  Your feedback and collaboration would be greatl
 If you find this plugin useful, please star this repository and share with your friends & colleagues and on social media.
 
 ## Future Plans
+* Identify class cycles and prioritize them.
 * Add a Gradle plugin.
 * Incorporate Unit Test coverage metrics to quickly identify the safety of refactoring a God class.
 * Incorporate bug counts per God class to the Impact (Y-Axis) calculation.
