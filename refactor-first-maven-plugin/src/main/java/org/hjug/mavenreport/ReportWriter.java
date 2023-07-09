@@ -1,16 +1,14 @@
 package org.hjug.mavenreport;
 
-import lombok.extern.slf4j.Slf4j;
-import org.apache.maven.project.MavenProject;
-
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.maven.project.MavenProject;
 
 @Slf4j
-
 public class ReportWriter {
     public static void writeReportToDisk(
             final MavenProject project, final String filename, final StringBuilder stringBuilder) {

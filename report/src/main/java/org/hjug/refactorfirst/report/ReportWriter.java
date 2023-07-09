@@ -1,12 +1,11 @@
 package org.hjug.refactorfirst.report;
 
-import lombok.extern.slf4j.Slf4j;
-
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class ReportWriter {

@@ -1,10 +1,6 @@
 package org.hjug.refactorfirst.report;
 
-import lombok.extern.slf4j.Slf4j;
-import org.hjug.cbc.CostBenefitCalculator;
-import org.hjug.cbc.RankedDisharmony;
-import org.hjug.gdg.GraphDataGenerator;
-import org.hjug.git.GitLogReader;
+import static org.hjug.refactorfirst.report.ReportWriter.writeReportToDisk;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -15,9 +11,15 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
-import java.util.*;
-
-import static org.hjug.refactorfirst.report.ReportWriter.writeReportToDisk;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
+import lombok.extern.slf4j.Slf4j;
+import org.hjug.cbc.CostBenefitCalculator;
+import org.hjug.cbc.RankedDisharmony;
+import org.hjug.gdg.GraphDataGenerator;
+import org.hjug.git.GitLogReader;
 
 @Slf4j
 public class HtmlReport {
@@ -65,38 +67,39 @@ public class HtmlReport {
             + "  </body>\n"
             + "</html>\n";
 
-    public void execute(boolean showDetails, String projectName, String projectVersion, String outputDirectory, File baseDir) {
+    public void execute(
+            boolean showDetails, String projectName, String projectVersion, String outputDirectory, File baseDir) {
 
         final String[] godClassSimpleTableHeadings = {
-                "Class",
-                "Priority",
-                "Change Proneness Rank",
-                "Effort Rank",
-                "Method Count",
-                "Most Recent Commit Date",
-                "Commit Count"
+            "Class",
+            "Priority",
+            "Change Proneness Rank",
+            "Effort Rank",
+            "Method Count",
+            "Most Recent Commit Date",
+            "Commit Count"
         };
 
         final String[] godClassDetailedTableHeadings = {
-                "Class",
-                "Priority",
-                "Raw Priority",
-                "Change Proneness Rank",
-                "Effort Rank",
-                "WMC",
-                "WMC Rank",
-                "ATFD",
-                "ATFD Rank",
-                "TCC",
-                "TCC Rank",
-                "Date of First Commit",
-                "Most Recent Commit Date",
-                "Commit Count",
-                "Full Path"
+            "Class",
+            "Priority",
+            "Raw Priority",
+            "Change Proneness Rank",
+            "Effort Rank",
+            "WMC",
+            "WMC Rank",
+            "ATFD",
+            "ATFD Rank",
+            "TCC",
+            "TCC Rank",
+            "Date of First Commit",
+            "Most Recent Commit Date",
+            "Commit Count",
+            "Full Path"
         };
 
         final String[] cboTableHeadings = {
-                "Class", "Priority", "Change Proneness Rank", "Coupling Count", "Most Recent Commit Date", "Commit Count"
+            "Class", "Priority", "Change Proneness Rank", "Coupling Count", "Most Recent Commit Date", "Commit Count"
         };
 
         final String[] godClassTableHeadings =
@@ -260,31 +263,31 @@ public class HtmlReport {
                 stringBuilder.append("<tr>");
 
                 String[] simpleRankedGodClassDisharmonyData = {
-                        rankedGodClassDisharmony.getFileName(),
-                        rankedGodClassDisharmony.getPriority().toString(),
-                        rankedGodClassDisharmony.getChangePronenessRank().toString(),
-                        rankedGodClassDisharmony.getEffortRank().toString(),
-                        rankedGodClassDisharmony.getWmc().toString(),
-                        formatter.format(rankedGodClassDisharmony.getMostRecentCommitTime()),
-                        rankedGodClassDisharmony.getCommitCount().toString()
+                    rankedGodClassDisharmony.getFileName(),
+                    rankedGodClassDisharmony.getPriority().toString(),
+                    rankedGodClassDisharmony.getChangePronenessRank().toString(),
+                    rankedGodClassDisharmony.getEffortRank().toString(),
+                    rankedGodClassDisharmony.getWmc().toString(),
+                    formatter.format(rankedGodClassDisharmony.getMostRecentCommitTime()),
+                    rankedGodClassDisharmony.getCommitCount().toString()
                 };
 
                 String[] detailedRankedGodClassDisharmonyData = {
-                        rankedGodClassDisharmony.getFileName(),
-                        rankedGodClassDisharmony.getPriority().toString(),
-                        rankedGodClassDisharmony.getRawPriority().toString(),
-                        rankedGodClassDisharmony.getChangePronenessRank().toString(),
-                        rankedGodClassDisharmony.getEffortRank().toString(),
-                        rankedGodClassDisharmony.getWmc().toString(),
-                        rankedGodClassDisharmony.getWmcRank().toString(),
-                        rankedGodClassDisharmony.getAtfd().toString(),
-                        rankedGodClassDisharmony.getAtfdRank().toString(),
-                        rankedGodClassDisharmony.getTcc().toString(),
-                        rankedGodClassDisharmony.getTccRank().toString(),
-                        formatter.format(rankedGodClassDisharmony.getFirstCommitTime()),
-                        formatter.format(rankedGodClassDisharmony.getMostRecentCommitTime()),
-                        rankedGodClassDisharmony.getCommitCount().toString(),
-                        rankedGodClassDisharmony.getPath()
+                    rankedGodClassDisharmony.getFileName(),
+                    rankedGodClassDisharmony.getPriority().toString(),
+                    rankedGodClassDisharmony.getRawPriority().toString(),
+                    rankedGodClassDisharmony.getChangePronenessRank().toString(),
+                    rankedGodClassDisharmony.getEffortRank().toString(),
+                    rankedGodClassDisharmony.getWmc().toString(),
+                    rankedGodClassDisharmony.getWmcRank().toString(),
+                    rankedGodClassDisharmony.getAtfd().toString(),
+                    rankedGodClassDisharmony.getAtfdRank().toString(),
+                    rankedGodClassDisharmony.getTcc().toString(),
+                    rankedGodClassDisharmony.getTccRank().toString(),
+                    formatter.format(rankedGodClassDisharmony.getFirstCommitTime()),
+                    formatter.format(rankedGodClassDisharmony.getMostRecentCommitTime()),
+                    rankedGodClassDisharmony.getCommitCount().toString(),
+                    rankedGodClassDisharmony.getPath()
                 };
 
                 final String[] rankedDisharmonyData =
@@ -335,12 +338,12 @@ public class HtmlReport {
                 stringBuilder.append("<tr>");
 
                 String[] rankedCboClassDisharmonyData = {
-                        rankedCboClassDisharmony.getFileName(),
-                        rankedCboClassDisharmony.getPriority().toString(),
-                        rankedCboClassDisharmony.getChangePronenessRank().toString(),
-                        rankedCboClassDisharmony.getEffortRank().toString(),
-                        formatter.format(rankedCboClassDisharmony.getMostRecentCommitTime()),
-                        rankedCboClassDisharmony.getCommitCount().toString()
+                    rankedCboClassDisharmony.getFileName(),
+                    rankedCboClassDisharmony.getPriority().toString(),
+                    rankedCboClassDisharmony.getChangePronenessRank().toString(),
+                    rankedCboClassDisharmony.getEffortRank().toString(),
+                    formatter.format(rankedCboClassDisharmony.getMostRecentCommitTime()),
+                    rankedCboClassDisharmony.getCommitCount().toString()
                 };
 
                 for (String rowData : rankedCboClassDisharmonyData) {
@@ -363,7 +366,8 @@ public class HtmlReport {
     }
 
     // TODO: Move to another class to allow use by Gradle plugin
-    void writeGodClassGchartJs(List<RankedDisharmony> rankedDisharmonies, int maxPriority, String reportOutputDirectory) {
+    void writeGodClassGchartJs(
+            List<RankedDisharmony> rankedDisharmonies, int maxPriority, String reportOutputDirectory) {
         GraphDataGenerator graphDataGenerator = new GraphDataGenerator();
         String scriptStart = graphDataGenerator.getGodClassScriptStart();
         String bubbleChartData = graphDataGenerator.generateGodClassBubbleChartData(rankedDisharmonies, maxPriority);

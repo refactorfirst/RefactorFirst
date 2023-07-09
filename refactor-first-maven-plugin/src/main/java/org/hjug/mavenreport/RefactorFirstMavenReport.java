@@ -12,7 +12,8 @@ import org.hjug.refactorfirst.report.HtmlReport;
 import java.io.File;
 
 @Slf4j
-@Mojo(name = "report",
+@Mojo(
+        name = "report",
         defaultPhase = LifecyclePhase.SITE,
         requiresDependencyResolution = ResolutionScope.RUNTIME,
         requiresProject = false,
@@ -38,7 +39,16 @@ public class RefactorFirstMavenReport extends AbstractMojo {
     @Override
     public void execute() {
 
+        log.info(outputDirectory.getPath());
         HtmlReport htmlReport = new HtmlReport();
-        htmlReport.execute(showDetails, projectName, projectVersion, project.getModel().getReporting().getOutputDirectory(), project.getBasedir());
+        htmlReport.execute(
+                showDetails,
+                projectName,
+                projectVersion,
+                project.getModel()
+                        .getReporting()
+                        .getOutputDirectory()
+                        .replace("${project.basedir}" + File.separator, ""),
+                project.getBasedir());
     }
 }
