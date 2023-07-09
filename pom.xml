@@ -84,6 +84,8 @@
         <module>refactor-first-maven-plugin</module>
         <!--<module>refactor-first-gradle-plugin</module>-->
         <module>coverage</module>
+        <module>cli</module>
+        <module>report</module>
     </modules>
 
     <dependencyManagement>
@@ -115,6 +117,12 @@
             <dependency>
                 <groupId>org.hjug.refactorfirst.plugin</groupId>
                 <artifactId>refactor-first-maven-plugin</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.hjug.refactorfirst.report</groupId>
+                <artifactId>report</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

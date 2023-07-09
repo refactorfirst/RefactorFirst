@@ -18,6 +18,11 @@
             <artifactId>graph-data-generator</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>org.hjug.refactorfirst.report</groupId>
+            <artifactId>report</artifactId>
+        </dependency>
+
         <!-- Maven Reporting -->
         <dependency>
             <groupId>org.apache.maven</groupId>

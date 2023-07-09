@@ -1,7 +1,6 @@
-package org.hjug.mavenreport;
+package org.hjug.refactorfirst.report;
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.maven.project.MavenProject;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -10,14 +9,10 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 
 @Slf4j
-
 public class ReportWriter {
+
     public static void writeReportToDisk(
-            final MavenProject project, final String filename, final StringBuilder stringBuilder) {
-        final String reportOutputDirectory = project.getModel()
-                .getReporting()
-                .getOutputDirectory()
-                .replace("${project.basedir}" + File.separator, "");
+            final String reportOutputDirectory, final String filename, final StringBuilder stringBuilder) {
         final File reportOutputDir = new File(reportOutputDirectory);
 
         if (!reportOutputDir.exists()) {
