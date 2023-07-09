@@ -1,4 +1,4 @@
-package org.hjug.mavenreport.RefactorFirstJsonReport;
+package org.hjug.mavenreport;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.maven.plugin.AbstractMojo;
