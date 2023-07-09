@@ -1,26 +1,16 @@
 package org.hjug.mavenreport.RefactorFirstJsonReport;
 
-import static org.hjug.mavenreport.ReportWriter.writeReportToDisk;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.File;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
-import org.hjug.cbc.CostBenefitCalculator;
-import org.hjug.cbc.RankedDisharmony;
+import org.hjug.refactorfirst.report.json.JsonReportExecutor;
 
-@Slf4j
+import java.io.File;
+
 @Mojo(
         name = "jsonreport",
         defaultPhase = LifecyclePhase.SITE,
@@ -38,46 +28,12 @@ public class RefactorFirstMavenJsonReport extends AbstractMojo {
 
     @Override
     public void execute() {
-        String projectBaseDir;
-
-        File baseDir = project.getBasedir();
-        if (baseDir != null) {
-            projectBaseDir = baseDir.getPath();
-        } else {
-            projectBaseDir = Paths.get("").toAbsolutePath().toString();
-        }
-
-        final CostBenefitCalculator costBenefitCalculator = new CostBenefitCalculator();
-        final List<RankedDisharmony> rankedDisharmonies =
-                costBenefitCalculator.calculateGodClassCostBenefitValues(projectBaseDir);
-        final List<JsonReportDisharmonyEntry> disharmonyEntries = rankedDisharmonies.stream()
-                .map(JsonReportDisharmonyEntry::fromRankedDisharmony)
-                .collect(Collectors.toList());
-
-        final JsonReport report =
-                JsonReport.builder().rankedDisharmonies(disharmonyEntries).build();
-
-        try {
-            final String reportJson = MAPPER.writeValueAsString(report);
-
-            writeReportToDisk(project, FILE_NAME, new StringBuilder(reportJson));
-        } catch (final JsonProcessingException jsonProcessingException) {
-            final String errorMessage = "Could not generate a json report: " + jsonProcessingException;
-
-            log.error(errorMessage);
-            final JsonReport errorReport = JsonReport.builder()
-                    .errors(new ArrayList<>(Collections.singletonList(errorMessage)))
-                    .build();
-
-            writeErrorReport(errorReport);
-        }
-    }
-
-    private void writeErrorReport(final JsonReport errorReport) {
-        try {
-            writeReportToDisk(project, FILE_NAME, new StringBuilder(MAPPER.writeValueAsString(errorReport)));
-        } catch (final JsonProcessingException jsonProcessingException) {
-            log.error("failed to write error report: ", jsonProcessingException);
-        }
+        JsonReportExecutor jsonReportExecutor = new JsonReportExecutor();
+        jsonReportExecutor.execute(
+                project.getBasedir(),
+                project.getModel()
+                        .getReporting()
+                        .getOutputDirectory()
+                        .replace("${project.basedir}" + File.separator, ""));
     }
 }
