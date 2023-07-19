@@ -84,8 +84,8 @@
         <module>refactor-first-maven-plugin</module>
         <!--<module>refactor-first-gradle-plugin</module>-->
         <module>coverage</module>
-        <module>cli</module>
         <module>report</module>
+        <module>cli</module>
     </modules>
 
     <dependencyManagement>

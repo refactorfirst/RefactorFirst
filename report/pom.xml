@@ -12,11 +12,6 @@
     <groupId>org.hjug.refactorfirst.report</groupId>
     <artifactId>report</artifactId>
 
-    <properties>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    </properties>
     <dependencies>
         <dependency>
             <groupId>org.hjug.refactorfirst.graphdatagenerator</groupId>

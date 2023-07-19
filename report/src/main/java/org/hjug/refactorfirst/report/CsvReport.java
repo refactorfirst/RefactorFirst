@@ -1,6 +1,9 @@
 package org.hjug.refactorfirst.report;
 
-import static org.hjug.refactorfirst.report.ReportWriter.writeReportToDisk;
+import lombok.extern.slf4j.Slf4j;
+import org.hjug.cbc.CostBenefitCalculator;
+import org.hjug.cbc.RankedDisharmony;
+import org.hjug.git.GitLogReader;
 
 import java.io.File;
 import java.nio.file.Paths;
@@ -8,31 +11,23 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import lombok.extern.slf4j.Slf4j;
-import org.hjug.cbc.CostBenefitCalculator;
-import org.hjug.cbc.RankedDisharmony;
-import org.hjug.git.GitLogReader;
+
+import static org.hjug.refactorfirst.report.ReportWriter.writeReportToDisk;
 
 @Slf4j
 public class CsvReport {
 
     public void execute(
-            boolean showDetails,
-            String projectName,
-            String projectVersion,
-            String outputDirectory,
-            File baseDir,
-            String artifactId,
-            String artifactVersion) {
+            boolean showDetails, String projectName, String projectVersion, String outputDirectory, File baseDir) {
         StringBuilder fileNameSB = new StringBuilder();
         String publishedDate = createFileDateTimeFormatter().format(Instant.now());
 
         fileNameSB
                 .append(getOutputNamePrefix())
                 .append("_P")
-                .append(artifactId)
+                .append(projectName)
                 .append("_PV")
-                .append(artifactVersion)
+                .append(projectVersion)
                 .append("_PD")
                 .append(publishedDate)
                 .append(".csv");
