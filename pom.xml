@@ -128,7 +128,7 @@
             <dependency>
                 <groupId>org.eclipse.jgit</groupId>
                 <artifactId>org.eclipse.jgit</artifactId>
-                <version>5.10.0.202012080955-r</version>
+                <version>6.6.1.202309021850-r</version>
                 <scope>compile</scope>
             </dependency>
 
@@ -345,8 +345,8 @@
                                 <include>*.java</include>
                             </includes>
                             <!-- define the steps to apply to those files -->
-                            <trimTrailingWhitespace />
-                            <endWithNewline />
+                            <trimTrailingWhitespace/>
+                            <endWithNewline/>
                             <indent>
                                 <tabs>true</tabs>
                                 <spacesPerTab>4</spacesPerTab>
@@ -354,7 +354,7 @@
                         </format>
                     </formats>
                     <java>
-                        <palantirJavaFormat />
+                        <palantirJavaFormat/>
                     </java>
                 </configuration>
                 <executions>
