@@ -12,7 +12,7 @@ The graphs generated in the report will look similar to this one:
 Run the following command from the root of your project (the source code does not need to be built):
 
 ```bash
-mvn org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.4.0:report
+mvn org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.5.0:report
 ```
 
 ### As Part of a Build
@@ -24,7 +24,7 @@ Add the following to your project in the build section.  **showDetails** will sh
         <plugin>
             <groupId>org.hjug.refactorfirst.plugin</groupId>
             <artifactId>refactor-first-maven-plugin</artifactId>
-            <version>0.4.0</version>       
+            <version>0.5.0</version>       
             <!-- optional -->
             <configuration>
                 <showDetails>true</showDetails>
@@ -35,9 +35,8 @@ Add the following to your project in the build section.  **showDetails** will sh
 </build>
 ```
 
-### As a Report
+### As a Maven Report
 Add the following to your project in the reports section.
-Not supported as of Version 0.2.0 due to CVE-2020-13936
 ```xml
 <reporting>
     <plugins>
@@ -45,11 +44,38 @@ Not supported as of Version 0.2.0 due to CVE-2020-13936
         <plugin>
             <groupId>org.hjug.refactorfirst.plugin</groupId>
             <artifactId>refactor-first-maven-plugin</artifactId>
-            <version>0.1.1</version>       
+            <version>0.5.0</version>       
         </plugin>
         ...
     </plugins>
 </reporting>
+```
+
+If you see an error similar to
+```
+ Execution default-site of goal org.apache.maven.plugins:maven-site-plugin:3.3:site failed: A required class was missing while executing org.apache.maven.plugins:maven-site-plugin:3.3:site: org/apache/maven/doxia/siterenderer/DocumentContent
+```
+you will need to add the following to your pom.xml:
+```xml
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-site-plugin</artifactId>
+        <version>3.12.1</version>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-project-info-reports-plugin</artifactId>
+        <version>3.4.5</version>
+      </plugin>
+    </plugins>
+  </build>
+```
+
+### As an HTML Report
+```bash
+mvn org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.5.0:htmlReport
 ```
 
 ## But I'm using Gradle / my project layout isn't typical!

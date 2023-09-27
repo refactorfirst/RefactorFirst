@@ -26,7 +26,7 @@ import org.hjug.git.GitLogReader;
 
 @Slf4j
 @Mojo(
-        name = "report",
+        name = "htmlReport",
         defaultPhase = LifecyclePhase.SITE,
         requiresDependencyResolution = ResolutionScope.RUNTIME,
         requiresProject = false,
