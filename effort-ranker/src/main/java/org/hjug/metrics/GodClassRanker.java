@@ -53,7 +53,7 @@ public class GodClassRanker {
     }
 
     void rankTcc(List<GodClass> godClasses) {
-        log.info("Calculating Total Cyclomatic Complexity (TCC) Rank");
+        log.info("Calculating Tight Class Cohesion (TCC) Rank");
         godClasses.sort(Comparator.comparing(GodClass::getTcc));
 
         Function<GodClass, Float> getTcc = GodClass::getTcc;

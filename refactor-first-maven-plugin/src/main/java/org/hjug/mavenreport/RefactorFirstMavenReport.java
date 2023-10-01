@@ -12,7 +12,7 @@ import org.hjug.refactorfirst.report.HtmlReport;
 
 @Slf4j
 @Mojo(
-        name = "report",
+        name = "htmlReport",
         defaultPhase = LifecyclePhase.SITE,
         requiresDependencyResolution = ResolutionScope.RUNTIME,
         requiresProject = false,
