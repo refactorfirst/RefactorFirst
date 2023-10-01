@@ -1,4 +1,4 @@
-package org.hjug.mavenreport.RefactorFirstJsonReport;
+package org.hjug.refactorfirst.report.json;
 
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;

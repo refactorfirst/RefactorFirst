@@ -1,50 +1,39 @@
 package org.hjug.mavenreport;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
-import org.hjug.refactorfirst.report.CsvReport;
+import org.hjug.refactorfirst.report.json.JsonReportExecutor;
 
 import java.io.File;
 
 @Mojo(
-        name = "csvreport",
+        name = "jsonreport",
         defaultPhase = LifecyclePhase.SITE,
         requiresDependencyResolution = ResolutionScope.RUNTIME,
         requiresProject = false,
         threadSafe = true,
         inheritByDefault = false)
-public class RefactorFirstMavenCsvReport extends AbstractMojo {
+public class RefactorFirstMavenJsonReport extends AbstractMojo {
+    private static final String FILE_NAME = "refactor-first-data.json";
 
-    @Parameter(property = "showDetails")
-    private boolean showDetails = false;
-
-    @Parameter(defaultValue = "${project.name}")
-    private String projectName;
-
-    @Parameter(defaultValue = "${project.version}")
-    private String projectVersion;
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     @Parameter(readonly = true, defaultValue = "${project}")
     private MavenProject project;
 
-    @Parameter(property = "project.build.directory")
-    protected File outputDirectory;
-
     @Override
     public void execute() {
-        CsvReport csvReport = new CsvReport();
-        csvReport.execute(
-                showDetails,
-                projectName,
-                projectVersion,
+        JsonReportExecutor jsonReportExecutor = new JsonReportExecutor();
+        jsonReportExecutor.execute(
+                project.getBasedir(),
                 project.getModel()
                         .getReporting()
                         .getOutputDirectory()
-                        .replace("${project.basedir}" + File.separator, ""),
-                project.getBasedir());
+                        .replace("${project.basedir}" + File.separator, ""));
     }
 }

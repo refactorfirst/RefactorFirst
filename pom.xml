@@ -58,7 +58,7 @@
         <javac.version>9+181-r4173-1</javac.version>
 
         <!--Compiler plugins-->
-        <errorprone.version>2.10.0</errorprone.version>
+        <errorprone.version>2.20.0</errorprone.version>
         <lombok.version>1.18.28</lombok.version>
 
         <spotbugs.maven.plugin.version>4.0.0</spotbugs.maven.plugin.version>
@@ -84,6 +84,8 @@
         <module>refactor-first-maven-plugin</module>
         <!--<module>refactor-first-gradle-plugin</module>-->
         <module>coverage</module>
+        <module>report</module>
+        <module>cli</module>
     </modules>
 
     <dependencyManagement>
@@ -115,6 +117,12 @@
             <dependency>
                 <groupId>org.hjug.refactorfirst.plugin</groupId>
                 <artifactId>refactor-first-maven-plugin</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.hjug.refactorfirst.report</groupId>
+                <artifactId>report</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
