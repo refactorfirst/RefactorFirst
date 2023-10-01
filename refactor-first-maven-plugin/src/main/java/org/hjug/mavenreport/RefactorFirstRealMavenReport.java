@@ -126,11 +126,21 @@ public class RefactorFirstRealMavenReport extends AbstractMavenReport {
         /**
          * @See https://maven.apache.org/doxia/developers/sink.html#How_to_inject_javascript_code_into_HTML
          */
+
+        SinkEventAttributeSet githubButtonJS = new SinkEventAttributeSet();
+        // githubButtonJS.addAttribute(SinkEventAttributes.TYPE, "text/javascript");
+        // githubButtonJS.addAttribute("async", "");
+        // githubButtonJS.addAttribute("defer", "");
+        githubButtonJS.addAttribute(SinkEventAttributes.SRC, "https://buttons.github.io/buttons.js");
+
+        String script = "script";
+        mainSink.unknown(script, new Object[] {HtmlMarkup.TAG_TYPE_START}, githubButtonJS);
+        mainSink.unknown(script, new Object[] {HtmlMarkup.TAG_TYPE_END}, null);
+
         SinkEventAttributeSet googleChartImport = new SinkEventAttributeSet();
         googleChartImport.addAttribute(SinkEventAttributes.TYPE, "text/javascript");
         googleChartImport.addAttribute(SinkEventAttributes.SRC, "https://www.gstatic.com/charts/loader.js");
 
-        String script = "script";
         mainSink.unknown(script, new Object[] {HtmlMarkup.TAG_TYPE_START}, googleChartImport);
         mainSink.unknown(script, new Object[] {HtmlMarkup.TAG_TYPE_END}, null);
 
@@ -154,7 +164,7 @@ public class RefactorFirstRealMavenReport extends AbstractMavenReport {
         // Heading 1
         mainSink.section1();
         mainSink.sectionTitle1();
-        mainSink.text("God Class Report for " + projectName + " " + projectVersion);
+        mainSink.text("RefactorFirst Report for " + projectName + " " + projectVersion);
         mainSink.sectionTitle1_();
 
         GitLogReader gitLogReader = new GitLogReader();
@@ -256,6 +266,8 @@ public class RefactorFirstRealMavenReport extends AbstractMavenReport {
             seriesChartDiv.addAttribute(SinkEventAttributes.ALIGN, "center");
             mainSink.division(seriesChartDiv);
             mainSink.division_();
+
+            renderGitHubButtons(mainSink);
 
             String legendHeading = "God Class Chart Legend:";
             String xAxis = "Effort to refactor to a non-God class";
@@ -365,6 +377,8 @@ public class RefactorFirstRealMavenReport extends AbstractMavenReport {
             mainSink.division_();
             writeGCBOGchartJs(rankedCBODisharmonies, cboPriority - 1);
 
+            renderGitHubButtons(mainSink);
+
             String legendHeading = "Highly Coupled Classes Chart Legend:";
             String xAxis = "Number of objects the class is coupled to";
             renderLegend(mainSink, legendHeading, xAxis);
@@ -446,7 +460,6 @@ public class RefactorFirstRealMavenReport extends AbstractMavenReport {
     }
 
     void drawTableHeaderCell(String cellText, Sink mainSink) {
-        // TODO may need to use mainSink.tableHeaderCell(sinkAttributes)
         mainSink.tableHeaderCell();
         mainSink.text(cellText);
         mainSink.tableHeaderCell_();
@@ -469,6 +482,79 @@ public class RefactorFirstRealMavenReport extends AbstractMavenReport {
         }
 
         mainSink.tableCell_();
+    }
+
+    /*
+    <a class="github-button" href="https://github.com/jimbethancourt/refactorfirst" data-icon="octicon-star" data-size="large" data-show-count="true" aria-label="Star jimbethancourt/refactorfirst on GitHub">Star</a>
+    <a class="github-button" href="https://github.com/jimbethancourt/refactorfirst/fork" data-icon="octicon-repo-forked" data-size="large" data-show-count="true" aria-label="Fork jimbethancourt/refactorfirst on GitHub">Fork</a>
+    <a class="github-button" href="https://github.com/jimbethancourt/refactorfirst/subscription" data-icon="octicon-eye" data-size="large" data-show-count="true" aria-label="Watch jimbethancourt/refactorfirst on GitHub">Watch</a>
+    <a class="github-button" href="https://github.com/jimbethancourt/refactorfirst/issues" data-icon="octicon-issue-opened" data-size="large" data-show-count="false" aria-label="Issue jimbethancourt/refactorfirst on GitHub">Issue</a>
+    <a class="github-button" href="https://github.com/sponsors/jimbethancourt" data-icon="octicon-heart" data-size="large" aria-label="Sponsor @jimbethancourt on GitHub">Sponsor</a>
+    */
+    void renderGitHubButtons(Sink mainSink) {
+        SinkEventAttributeSet alignCenter = new SinkEventAttributeSet();
+        alignCenter.addAttribute(SinkEventAttributes.ALIGN, "center");
+
+        mainSink.division(alignCenter);
+        mainSink.text("Show RefactorFirst some &#10084;&#65039;");
+        mainSink.lineBreak();
+
+        renderGitHubButton(
+                mainSink,
+                "https://github.com/jimbethancourt/refactorfirst",
+                "octicon-star",
+                "true",
+                "Star jimbethancourt/refactorfirst on GitHub",
+                "Star");
+        renderGitHubButton(
+                mainSink,
+                "https://github.com/jimbethancourt/refactorfirst/fork",
+                "octicon-repo-forked",
+                "true",
+                "Fork jimbethancourt/refactorfirst on GitHub",
+                "Fork");
+        renderGitHubButton(
+                mainSink,
+                "https://github.com/jimbethancourt/refactorfirst/subscription",
+                "octicon-eye",
+                "true",
+                "Watch jimbethancourt/refactorfirst on GitHub",
+                "Watch");
+        renderGitHubButton(
+                mainSink,
+                "https://github.com/jimbethancourt/refactorfirst/issue",
+                "octicon-issue-opened",
+                "false",
+                "Issue jimbethancourt/refactorfirst on GitHub",
+                "Issue");
+        renderGitHubButton(
+                mainSink,
+                "https://github.com/jimbethancourt/refactorfirst/issue",
+                "octicon-heart",
+                "false",
+                "Sponsor @jimbethancourt on GitHub",
+                "Sponsor");
+
+        mainSink.division_();
+    }
+
+    private static void renderGitHubButton(
+            Sink mainSink,
+            String url,
+            String dataIconValue,
+            String dataShowCount,
+            String ariaLabel,
+            String anchorText) {
+        SinkEventAttributeSet starButton = new SinkEventAttributeSet();
+        starButton.addAttribute(SinkEventAttributes.HREF, url);
+        starButton.addAttribute("class", "github-button");
+        starButton.addAttribute("data-icon", dataIconValue);
+        starButton.addAttribute("data-size", "large");
+        starButton.addAttribute("data-show-count", dataShowCount);
+        starButton.addAttribute("aria-label", ariaLabel);
+        mainSink.unknown("a", new Object[] {HtmlMarkup.TAG_TYPE_START}, starButton);
+        mainSink.text(anchorText);
+        mainSink.unknown("a", new Object[] {HtmlMarkup.TAG_TYPE_END}, null);
     }
 
     // TODO: Move to another class to allow use by Gradle plugin
