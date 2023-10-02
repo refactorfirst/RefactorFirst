@@ -69,7 +69,7 @@
         <sonar.organization>jimbethancourt-github</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
 
-        <maven.core.version>3.9.2</maven.core.version>
+        <maven.core.version>3.9.4</maven.core.version>
     </properties>
 
     <modules>
@@ -349,8 +349,8 @@
                                 <include>*.java</include>
                             </includes>
                             <!-- define the steps to apply to those files -->
-                            <trimTrailingWhitespace />
-                            <endWithNewline />
+                            <trimTrailingWhitespace/>
+                            <endWithNewline/>
                             <indent>
                                 <tabs>true</tabs>
                                 <spacesPerTab>4</spacesPerTab>
@@ -358,7 +358,7 @@
                         </format>
                     </formats>
                     <java>
-                        <palantirJavaFormat />
+                        <palantirJavaFormat/>
                     </java>
                 </configuration>
                 <executions>
