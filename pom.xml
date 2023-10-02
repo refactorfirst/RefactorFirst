@@ -55,10 +55,10 @@
         <maven.compiler.target>1.8</maven.compiler.target>
 
         <!--For errorprone on Java 8 -->
-        <javac.version>9+181-r4173-1</javac.version>
+        <!--<javac.version>9+181-r4173-1</javac.version>-->
 
         <!--Compiler plugins-->
-        <errorprone.version>2.20.0</errorprone.version>
+        <!--<errorprone.version>2.22.0</errorprone.version>-->
         <lombok.version>1.18.28</lombok.version>
 
         <spotbugs.maven.plugin.version>4.0.0</spotbugs.maven.plugin.version>
@@ -221,7 +221,7 @@
                     <target>8</target>
                     <compilerArgs>
                         <arg>-XDcompilePolicy=simple</arg>
-                        <arg>-Xplugin:ErrorProne</arg>
+                        <!--<arg>-Xplugin:ErrorProne</arg>-->
                     </compilerArgs>
                     <annotationProcessorPaths>
                         <path>
@@ -229,11 +229,11 @@
                             <artifactId>lombok</artifactId>
                             <version>${lombok.version}</version>
                         </path>
-                        <pathe>
+                        <!--<path>
                             <groupId>com.google.errorprone</groupId>
                             <artifactId>error_prone_core</artifactId>
                             <version>${errorprone.version}</version>
-                        </pathe>
+                        </path>-->
                     </annotationProcessorPaths>
                 </configuration>
             </plugin>
@@ -380,7 +380,7 @@
 
     <!-- using github.com/google/error-prone-javac is required when running on JDK 8 -->
     <profiles>
-        <profile>
+        <!--<profile>
             <id>jdk8</id>
             <activation>
                 <jdk>1.8</jdk>
@@ -401,7 +401,7 @@
                     </plugin>
                 </plugins>
             </build>
-        </profile>
+        </profile>-->
         <profile>
             <id>snapshot-release</id>
             <build>

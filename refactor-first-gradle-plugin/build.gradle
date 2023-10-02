@@ -12,7 +12,7 @@ repositories {
 
 dependencies {
     compileOnly gradleApi()
-    api "org.hjug.refactorfirst.graphdatagenerator:graph-data-generator:${version}"
+//    api "org.hjug.refactorfirst.graphdatagenerator:graph-data-generator:${version}"
 }
 
 pluginBundle {

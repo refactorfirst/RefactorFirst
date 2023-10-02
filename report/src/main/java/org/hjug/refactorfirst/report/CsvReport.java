@@ -1,9 +1,6 @@
 package org.hjug.refactorfirst.report;
 
-import lombok.extern.slf4j.Slf4j;
-import org.hjug.cbc.CostBenefitCalculator;
-import org.hjug.cbc.RankedDisharmony;
-import org.hjug.git.GitLogReader;
+import static org.hjug.refactorfirst.report.ReportWriter.writeReportToDisk;
 
 import java.io.File;
 import java.nio.file.Paths;
@@ -11,8 +8,10 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-
-import static org.hjug.refactorfirst.report.ReportWriter.writeReportToDisk;
+import lombok.extern.slf4j.Slf4j;
+import org.hjug.cbc.CostBenefitCalculator;
+import org.hjug.cbc.RankedDisharmony;
+import org.hjug.git.GitLogReader;
 
 @Slf4j
 public class CsvReport {

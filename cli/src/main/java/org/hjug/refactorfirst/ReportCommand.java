@@ -1,5 +1,10 @@
 package org.hjug.refactorfirst;
 
+import static picocli.CommandLine.Option;
+
+import java.io.File;
+import java.io.FileReader;
+import java.util.concurrent.Callable;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
@@ -8,12 +13,6 @@ import org.hjug.refactorfirst.report.CsvReport;
 import org.hjug.refactorfirst.report.HtmlReport;
 import org.hjug.refactorfirst.report.json.JsonReportExecutor;
 import picocli.CommandLine.Command;
-
-import java.io.File;
-import java.io.FileReader;
-import java.util.concurrent.Callable;
-
-import static picocli.CommandLine.Option;
 
 @Command(mixinStandardHelpOptions = true, description = "Generate a report")
 @Slf4j
