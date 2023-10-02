@@ -140,7 +140,7 @@
             <dependency>
                 <groupId>net.sourceforge.pmd</groupId>
                 <artifactId>pmd-java</artifactId>
-                <version>6.46.0</version>
+                <version>6.55.0</version>
                 <scope>compile</scope>
 
                 <exclusions>
