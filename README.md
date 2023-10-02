@@ -7,7 +7,8 @@ The graphs generated in the report will look similar to this one:
 ![image info](./RefactorFirst_Sample_Report.png)
 
 ## Please Note: Java 11 is now required to run RefactorFirst
-The change to require Java 11 is needed to address vulnerability CVE-2023-4759 in JGit
+The change to require Java 11 is needed to address vulnerability CVE-2023-4759 in JGit  
+Java 21 features are not yet integrated since PMD APIs have changed.
 
 ## There are several ways to run the analysis on your codebase:
 
@@ -15,7 +16,7 @@ The change to require Java 11 is needed to address vulnerability CVE-2023-4759 i
 Run the following command from the root of your project (the source code does not need to be built):
 
 ```bash
-mvn org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.5.0:report
+mvn org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.5.0-M1:report
 ```
 
 ### As Part of a Build
@@ -27,7 +28,7 @@ Add the following to your project in the build section.  **showDetails** will sh
         <plugin>
             <groupId>org.hjug.refactorfirst.plugin</groupId>
             <artifactId>refactor-first-maven-plugin</artifactId>
-            <version>0.5.0</version>       
+            <version>0.5.0-M1</version>       
             <!-- optional -->
             <configuration>
                 <showDetails>true</showDetails>
@@ -47,7 +48,7 @@ Add the following to your project in the reports section.
         <plugin>
             <groupId>org.hjug.refactorfirst.plugin</groupId>
             <artifactId>refactor-first-maven-plugin</artifactId>
-            <version>0.5.0</version>       
+            <version>0.5.0-M1</version>       
         </plugin>
         ...
     </plugins>
@@ -78,7 +79,7 @@ you will need to add the following to your pom.xml:
 
 ### As an HTML Report
 ```bash
-mvn org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.5.0:htmlReport
+mvn org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.5.0-M1:htmlReport
 ```
 View the report at ```target/site/refactor-first-report.html```
 
@@ -98,7 +99,7 @@ I would like to create a Gradle plugin and (possibly) support non-conventional p
 and then (assuming Maven is installed) run
 
 ```bash
-mvn org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.5.0:htmlReport
+mvn org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.5.0-M1:htmlReport
 ```
 
 ## Viewing the Report
