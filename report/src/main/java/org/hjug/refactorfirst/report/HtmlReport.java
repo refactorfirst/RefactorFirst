@@ -128,6 +128,7 @@ public class HtmlReport {
                 + "    <link rel=\"stylesheet\" href=\"./css/maven-theme.css\" />\n"
                 + "    <link rel=\"stylesheet\" href=\"./css/site.css\" />\n"
                 + "    <link rel=\"stylesheet\" href=\"./css/print.css\" media=\"print\" />\n"
+                + "<script async defer src=\"https://buttons.github.io/buttons.js\"></script>"
                 + "<script type=\"text/javascript\" src=\"https://www.gstatic.com/charts/loader.js\">"
                 + "</script><script type=\"text/javascript\" src=\"./gchart.js\"></script>"
                 + "<script type=\"text/javascript\" src=\"./gchart2.js\"></script>"
@@ -221,6 +222,7 @@ public class HtmlReport {
                     .append(" ")
                     .append(projectVersion)
                     .append(" has no God classes or highly coupled classes!");
+            renderGithubButtons(stringBuilder);
             log.info("Done! No Disharmonies found!");
             stringBuilder.append(THE_END);
             writeReportToDisk(outputDirectory, filename, stringBuilder);
@@ -245,11 +247,13 @@ public class HtmlReport {
             stringBuilder.append("<div style=\"text-align: center;\"><a id=\"GOD\"><h1>God Classes</h1></a></div>");
 
             writeGodClassGchartJs(rankedGodClassDisharmonies, godClassPriority - 1, outputDirectory);
-            stringBuilder.append("<div id=\"series_chart_div\"></div>");
+            stringBuilder.append("<div id=\"series_chart_div\" align=\"center\"></div>");
+            renderGithubButtons(stringBuilder);
             stringBuilder.append(GOD_CLASS_CHART_LEGEND);
 
-            stringBuilder.append("<h2>God classes by the numbers: (Refactor Starting with Priority 1)</h2>");
-            stringBuilder.append("<table border=\"5px\" class=\"table table-striped\">");
+            stringBuilder.append(
+                    "<h2 align=\"center\">God classes by the numbers: (Refactor Starting with Priority 1)</h2>");
+            stringBuilder.append("<table align=\"center\" border=\"5px\">");
 
             // Content
             stringBuilder.append("<thead><tr>");
@@ -319,12 +323,13 @@ public class HtmlReport {
             stringBuilder.append(
                     "<div style=\"text-align: center;\"><a id=\"CBO\"><h1>Highly Coupled Classes</h1></a></div>");
 
-            stringBuilder.append("<div id=\"series_chart_div_2\"></div>");
+            stringBuilder.append("<div id=\"series_chart_div_2\" align=\"center\"></div>");
             writeGCBOGchartJs(rankedCBODisharmonies, cboPriority - 1, outputDirectory);
+            renderGithubButtons(stringBuilder);
             stringBuilder.append(COUPLING_BETWEEN_OBJECT_CHART_LEGEND);
 
             stringBuilder.append("<h2>Highly Coupled classes by the numbers: (Refactor starting with Priority 1)</h2>");
-            stringBuilder.append("<table border=\"5px\" class=\"table table-striped\">");
+            stringBuilder.append("<table align=\"center\" border=\"5px\">");
 
             // Content
             stringBuilder.append("<thead><tr>");
@@ -363,6 +368,23 @@ public class HtmlReport {
 
         writeReportToDisk(outputDirectory, filename, stringBuilder);
         log.info("Done! View the report at target/site/{}", filename);
+    }
+
+    void renderGithubButtons(StringBuilder stringBuilder) {
+        stringBuilder.append("<div align=\"center\">");
+        stringBuilder.append("Show RefactorFirst some &#10084;&#65039;");
+        stringBuilder.append("<br/>");
+        stringBuilder.append(
+                "<a class=\"github-button\" href=\"https://github.com/jimbethancourt/refactorfirst\" data-icon=\"octicon-star\" data-size=\"large\" data-show-count=\"true\" aria-label=\"Star jimbethancourt/refactorfirst on GitHub\">Star</a>");
+        stringBuilder.append(
+                "<a class=\"github-button\" href=\"https://github.com/jimbethancourt/refactorfirst/fork\" data-icon=\"octicon-repo-forked\" data-size=\"large\" data-show-count=\"true\" aria-label=\"Fork jimbethancourt/refactorfirst on GitHub\">Fork</a>");
+        stringBuilder.append(
+                "<a class=\"github-button\" href=\"https://github.com/jimbethancourt/refactorfirst/subscription\" data-icon=\"octicon-eye\" data-size=\"large\" data-show-count=\"true\" aria-label=\"Watch jimbethancourt/refactorfirst on GitHub\">Watch</a>");
+        stringBuilder.append(
+                "<a class=\"github-button\" href=\"https://github.com/jimbethancourt/refactorfirst/issues\" data-icon=\"octicon-issue-opened\" data-size=\"large\" data-show-count=\"false\" aria-label=\"Issue jimbethancourt/refactorfirst on GitHub\">Issue</a>");
+        stringBuilder.append(
+                "<a class=\"github-button\" href=\"https://github.com/sponsors/jimbethancourt\" data-icon=\"octicon-heart\" data-size=\"large\" aria-label=\"Sponsor @jimbethancourt on GitHub\">Sponsor</a>");
+        stringBuilder.append("</div>");
     }
 
     // TODO: Move to another class to allow use by Gradle plugin

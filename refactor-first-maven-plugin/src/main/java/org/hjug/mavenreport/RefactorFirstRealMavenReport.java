@@ -220,6 +220,7 @@ public class RefactorFirstRealMavenReport extends AbstractMavenReport {
             mainSink.text("Contratulations!  " + projectName + " " + projectVersion
                     + " has no God classes or highly coupled classes!");
             mainSink.section1_();
+            renderGitHubButtons(mainSink);
             mainSink.body_();
             log.info("Done! No Disharmonies found!");
             return;

@@ -6,6 +6,9 @@ It runs PMD's God Class Rule and Coupling Between Objects rule and scans your Gi
 The graphs generated in the report will look similar to this one:
 ![image info](./RefactorFirst_Sample_Report.png)
 
+## Please Note: Java 11 is now required to run RefactorFirst
+The change to require Java 11 is needed to address vulnerability CVE-2023-4759 in JGit
+
 ## There are several ways to run the analysis on your codebase:
 
 ### From The Command Line
@@ -77,6 +80,7 @@ you will need to add the following to your pom.xml:
 ```bash
 mvn org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.5.0:htmlReport
 ```
+View the report at ```target/site/refactor-first-report.html```
 
 ## But I'm using Gradle / my project layout isn't typical!
 I would like to create a Gradle plugin and (possibly) support non-conventional projects in the future, but in the meantime you can create a dummy POM file in the same directory as your .git directory:
@@ -94,10 +98,11 @@ I would like to create a Gradle plugin and (possibly) support non-conventional p
 and then (assuming Maven is installed) run
 
 ```bash
-mvn org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.4.0:report
+mvn org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.5.0:htmlReport
 ```
 
 ## Viewing the Report
+View the report at ```target/site/refactor-first-report.html```   
 Once the plugin finishes executing (it may take a while for a large / old codebase), open the file **target/site/refactor-first-report.html** in the root of the project.  It will contain a graph similar to the one above, and a table that lists God classes in the recommended order that they should be refactored.  The classes in the top left of the graph are the easiest to refactor while also having the biggest positive impact to team productivity.  
 If highly coupled classes are detected, a graph and table listing Highly Coupled Classes in will be generated.
 
