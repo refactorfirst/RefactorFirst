@@ -4,7 +4,7 @@
 
     <groupId>org.hjug.refactorfirst</groupId>
     <artifactId>refactor-first</artifactId>
-    <version>0.5.0-M1-SNAPSHOT</version>
+    <version>0.5.0.M1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <url>https://github.com/jimbethancourt/RefactorFirst</url>
@@ -349,8 +349,8 @@
                                 <include>*.java</include>
                             </includes>
                             <!-- define the steps to apply to those files -->
-                            <trimTrailingWhitespace/>
-                            <endWithNewline/>
+                            <trimTrailingWhitespace />
+                            <endWithNewline />
                             <indent>
                                 <tabs>true</tabs>
                                 <spacesPerTab>4</spacesPerTab>
@@ -358,7 +358,7 @@
                         </format>
                     </formats>
                     <java>
-                        <palantirJavaFormat/>
+                        <palantirJavaFormat />
                     </java>
                 </configuration>
                 <executions>
