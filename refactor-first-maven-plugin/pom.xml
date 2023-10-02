@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.hjug.refactorfirst</groupId>
         <artifactId>refactor-first</artifactId>
-        <version>0.4.1-SNAPSHOT</version>
+        <version>0.5.0-M1-SNAPSHOT</version>
     </parent>
 
     <groupId>org.hjug.refactorfirst.plugin</groupId>
@@ -18,6 +18,10 @@
             <artifactId>graph-data-generator</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>org.hjug.refactorfirst.report</groupId>
+            <artifactId>report</artifactId>
+        </dependency>
         <!-- Doxia -->
         <!-- Needed since maven-reporting-impl brings in Struts 1.3.8 jars that have CVSS > 8 -->
         <dependency>

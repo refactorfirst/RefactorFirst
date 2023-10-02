@@ -1,13 +1,13 @@
-package org.hjug.mavenreport;
+package org.hjug.refactorfirst.report;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.Locale;
 import org.junit.jupiter.api.Test;
 
-public class RefactorFirstMavenReportTest {
+public class HtmlReportTest {
 
-    private RefactorFirstMavenReport mavenReport = new RefactorFirstMavenReport();
+    private HtmlReport mavenReport = new HtmlReport();
 
     @Test
     void testGetOutputName() {

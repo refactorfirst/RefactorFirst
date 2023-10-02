@@ -1,4 +1,4 @@
-package org.hjug.mavenreport.RefactorFirstJsonReport;
+package org.hjug.refactorfirst.report.json;
 
 import java.util.List;
 import lombok.Builder;

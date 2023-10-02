@@ -126,7 +126,6 @@ public class RefactorFirstRealMavenReport extends AbstractMavenReport {
         /**
          * @See https://maven.apache.org/doxia/developers/sink.html#How_to_inject_javascript_code_into_HTML
          */
-
         SinkEventAttributeSet githubButtonJS = new SinkEventAttributeSet();
         // githubButtonJS.addAttribute(SinkEventAttributes.TYPE, "text/javascript");
         // githubButtonJS.addAttribute("async", "");
@@ -221,6 +220,7 @@ public class RefactorFirstRealMavenReport extends AbstractMavenReport {
             mainSink.text("Contratulations!  " + projectName + " " + projectVersion
                     + " has no God classes or highly coupled classes!");
             mainSink.section1_();
+            renderGitHubButtons(mainSink);
             mainSink.body_();
             log.info("Done! No Disharmonies found!");
             return;
