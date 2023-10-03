@@ -375,13 +375,13 @@ public class HtmlReport {
         stringBuilder.append("Show RefactorFirst some &#10084;&#65039;");
         stringBuilder.append("<br/>");
         stringBuilder.append(
-                "<a class=\"github-button\" href=\"https://github.com/jimbethancourt/refactorfirst\" data-icon=\"octicon-star\" data-size=\"large\" data-show-count=\"true\" aria-label=\"Star jimbethancourt/refactorfirst on GitHub\">Star</a>");
+                "<a class=\"github-button\" href=\"https://github.com/refactorfirst/refactorfirst\" data-icon=\"octicon-star\" data-size=\"large\" data-show-count=\"true\" aria-label=\"Star refactorfirst/refactorfirst on GitHub\">Star</a>");
         stringBuilder.append(
-                "<a class=\"github-button\" href=\"https://github.com/jimbethancourt/refactorfirst/fork\" data-icon=\"octicon-repo-forked\" data-size=\"large\" data-show-count=\"true\" aria-label=\"Fork jimbethancourt/refactorfirst on GitHub\">Fork</a>");
+                "<a class=\"github-button\" href=\"https://github.com/refactorfirst/refactorfirst/fork\" data-icon=\"octicon-repo-forked\" data-size=\"large\" data-show-count=\"true\" aria-label=\"Fork refactorfirst/refactorfirst on GitHub\">Fork</a>");
         stringBuilder.append(
-                "<a class=\"github-button\" href=\"https://github.com/jimbethancourt/refactorfirst/subscription\" data-icon=\"octicon-eye\" data-size=\"large\" data-show-count=\"true\" aria-label=\"Watch jimbethancourt/refactorfirst on GitHub\">Watch</a>");
+                "<a class=\"github-button\" href=\"https://github.com/refactorfirst/refactorfirst/subscription\" data-icon=\"octicon-eye\" data-size=\"large\" data-show-count=\"true\" aria-label=\"Watch refactorfirst/refactorfirst on GitHub\">Watch</a>");
         stringBuilder.append(
-                "<a class=\"github-button\" href=\"https://github.com/jimbethancourt/refactorfirst/issues\" data-icon=\"octicon-issue-opened\" data-size=\"large\" data-show-count=\"false\" aria-label=\"Issue jimbethancourt/refactorfirst on GitHub\">Issue</a>");
+                "<a class=\"github-button\" href=\"https://github.com/refactorfirst/refactorfirst/issues\" data-icon=\"octicon-issue-opened\" data-size=\"large\" data-show-count=\"false\" aria-label=\"Issue refactorfirst/refactorfirst on GitHub\">Issue</a>");
         stringBuilder.append(
                 "<a class=\"github-button\" href=\"https://github.com/sponsors/jimbethancourt\" data-icon=\"octicon-heart\" data-size=\"large\" aria-label=\"Sponsor @jimbethancourt on GitHub\">Sponsor</a>");
         stringBuilder.append("</div>");
