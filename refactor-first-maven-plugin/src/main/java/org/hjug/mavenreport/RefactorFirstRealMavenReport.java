@@ -501,31 +501,31 @@ public class RefactorFirstRealMavenReport extends AbstractMavenReport {
 
         renderGitHubButton(
                 mainSink,
-                "https://github.com/jimbethancourt/refactorfirst",
+                "https://github.com/refactorfirst/refactorfirst",
                 "octicon-star",
                 "true",
-                "Star jimbethancourt/refactorfirst on GitHub",
+                "Star refactorfirst/refactorfirst on GitHub",
                 "Star");
         renderGitHubButton(
                 mainSink,
-                "https://github.com/jimbethancourt/refactorfirst/fork",
+                "https://github.com/refactorfirst/refactorfirst/fork",
                 "octicon-repo-forked",
                 "true",
-                "Fork jimbethancourt/refactorfirst on GitHub",
+                "Fork refactorfirst/refactorfirst on GitHub",
                 "Fork");
         renderGitHubButton(
                 mainSink,
-                "https://github.com/jimbethancourt/refactorfirst/subscription",
+                "https://github.com/refactorfirst/refactorfirst/subscription",
                 "octicon-eye",
                 "true",
-                "Watch jimbethancourt/refactorfirst on GitHub",
+                "Watch refactorfirst/refactorfirst on GitHub",
                 "Watch");
         renderGitHubButton(
                 mainSink,
-                "https://github.com/jimbethancourt/refactorfirst/issue",
+                "https://github.com/refactorfirst/refactorfirst/issue",
                 "octicon-issue-opened",
                 "false",
-                "Issue jimbethancourt/refactorfirst on GitHub",
+                "Issue refactorfirst/refactorfirst on GitHub",
                 "Issue");
         renderGitHubButton(
                 mainSink,
