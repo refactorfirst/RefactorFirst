@@ -6,17 +6,13 @@ It runs PMD's God Class Rule and Coupling Between Objects rule and scans your Gi
 The graphs generated in the report will look similar to this one:
 ![image info](./RefactorFirst_Sample_Report.png)
 
-## Please Note: Java 11 is now required to run RefactorFirst
-The change to require Java 11 is needed to address vulnerability CVE-2023-4759 in JGit  
-Java 21 features are not yet integrated since PMD APIs have changed.
-
 ## There are several ways to run the analysis on your codebase:
 
 ### From The Command Line
 Run the following command from the root of your project (the source code does not need to be built):
 
 ```bash
-mvn org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.5.0-M1:report
+mvn org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.4.0:report
 ```
 
 ### As Part of a Build
@@ -28,7 +24,7 @@ Add the following to your project in the build section.  **showDetails** will sh
         <plugin>
             <groupId>org.hjug.refactorfirst.plugin</groupId>
             <artifactId>refactor-first-maven-plugin</artifactId>
-            <version>0.5.0-M1</version>       
+            <version>0.4.0</version>       
             <!-- optional -->
             <configuration>
                 <showDetails>true</showDetails>
@@ -39,8 +35,9 @@ Add the following to your project in the build section.  **showDetails** will sh
 </build>
 ```
 
-### As a Maven Report
+### As a Report
 Add the following to your project in the reports section.
+Not supported as of Version 0.2.0 due to CVE-2020-13936
 ```xml
 <reporting>
     <plugins>
@@ -48,40 +45,12 @@ Add the following to your project in the reports section.
         <plugin>
             <groupId>org.hjug.refactorfirst.plugin</groupId>
             <artifactId>refactor-first-maven-plugin</artifactId>
-            <version>0.5.0-M1</version>       
+            <version>0.1.1</version>       
         </plugin>
         ...
     </plugins>
 </reporting>
 ```
-
-If you see an error similar to
-```
- Execution default-site of goal org.apache.maven.plugins:maven-site-plugin:3.3:site failed: A required class was missing while executing org.apache.maven.plugins:maven-site-plugin:3.3:site: org/apache/maven/doxia/siterenderer/DocumentContent
-```
-you will need to add the following to your pom.xml:
-```xml
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-site-plugin</artifactId>
-        <version>3.12.1</version>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-project-info-reports-plugin</artifactId>
-        <version>3.4.5</version>
-      </plugin>
-    </plugins>
-  </build>
-```
-
-### As an HTML Report
-```bash
-mvn org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.5.0-M1:htmlReport
-```
-View the report at ```target/site/refactor-first-report.html```
 
 ## But I'm using Gradle / my project layout isn't typical!
 I would like to create a Gradle plugin and (possibly) support non-conventional projects in the future, but in the meantime you can create a dummy POM file in the same directory as your .git directory:
@@ -99,11 +68,10 @@ I would like to create a Gradle plugin and (possibly) support non-conventional p
 and then (assuming Maven is installed) run
 
 ```bash
-mvn org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.5.0-M1:htmlReport
+mvn org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.4.0:report
 ```
 
 ## Viewing the Report
-View the report at ```target/site/refactor-first-report.html```   
 Once the plugin finishes executing (it may take a while for a large / old codebase), open the file **target/site/refactor-first-report.html** in the root of the project.  It will contain a graph similar to the one above, and a table that lists God classes in the recommended order that they should be refactored.  The classes in the top left of the graph are the easiest to refactor while also having the biggest positive impact to team productivity.  
 If highly coupled classes are detected, a graph and table listing Highly Coupled Classes in will be generated.
 
