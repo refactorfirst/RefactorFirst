@@ -21,6 +21,7 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 11
+          distribution: 'zulu'
 
       - name: Configure Git user
         run: |
