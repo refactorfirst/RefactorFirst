@@ -6,7 +6,7 @@ name: Maven Package
 on:
   release:
     types: [created]
-
+https://github.com/refactorfirst/RefactorFirst/blob/main/.github/workflows/maven-publish.yml
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -41,4 +41,4 @@ jobs:
           nexus_password: ${{ secrets.nexus_password }}
           maven_profiles: publish
           maven_goals_phases: release:prepare release:perform
-          maven_args: -B -X -e
+          maven_args: -B
