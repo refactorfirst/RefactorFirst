@@ -6,7 +6,7 @@ name: Maven Package
 on:
   release:
     types: [created]
-https://github.com/refactorfirst/RefactorFirst/blob/main/.github/workflows/maven-publish.yml
+
 jobs:
   build:
     runs-on: ubuntu-latest
