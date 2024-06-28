@@ -97,7 +97,7 @@ class GraphDataGeneratorTest {
 
         String chartData = "[ 'ID', 'Effort', 'Change Proneness', 'Priority', 'Priority (Visual)'], "
                 + "['AttributeHandler.java',0,0,1,0],"
-                + "['AttributeHandler.java',0,0,2,0]";
+                + "['AttributeHandler.java',0,0,2,-1]";
         Assertions.assertEquals(chartData, graphDataGenerator.generateGodClassBubbleChartData(rankedDisharmonies, 1));
     }
 }

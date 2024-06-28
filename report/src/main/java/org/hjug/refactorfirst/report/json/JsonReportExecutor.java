@@ -5,6 +5,7 @@ import static org.hjug.refactorfirst.report.ReportWriter.writeReportToDisk;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -31,6 +32,12 @@ public class JsonReportExecutor {
         }
 
         final CostBenefitCalculator costBenefitCalculator = new CostBenefitCalculator();
+        try {
+            costBenefitCalculator.runPmdAnalysis(projectBaseDir);
+        } catch (IOException e) {
+            log.error("Error running PMD analysis.");
+            throw new RuntimeException(e);
+        }
         final List<RankedDisharmony> rankedDisharmonies =
                 costBenefitCalculator.calculateGodClassCostBenefitValues(projectBaseDir);
         final List<JsonReportDisharmonyEntry> disharmonyEntries = rankedDisharmonies.stream()

@@ -11,7 +11,6 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -209,6 +208,12 @@ public class HtmlReport {
         }
 
         CostBenefitCalculator costBenefitCalculator = new CostBenefitCalculator();
+        try {
+            costBenefitCalculator.runPmdAnalysis(projectBaseDir);
+        } catch (IOException e) {
+            log.error("Error running PMD analysis.");
+            throw new RuntimeException(e);
+        }
         List<RankedDisharmony> rankedGodClassDisharmonies =
                 costBenefitCalculator.calculateGodClassCostBenefitValues(projectBaseDir);
 
@@ -236,17 +241,13 @@ public class HtmlReport {
         }
 
         if (!rankedGodClassDisharmonies.isEmpty()) {
-            rankedGodClassDisharmonies.sort(
-                    Comparator.comparing(RankedDisharmony::getRawPriority).reversed());
-
-            int godClassPriority = 1;
-            for (RankedDisharmony rankedGodClassDisharmony : rankedGodClassDisharmonies) {
-                rankedGodClassDisharmony.setPriority(godClassPriority++);
-            }
+            int maxGodClassPriority = rankedGodClassDisharmonies
+                    .get(rankedGodClassDisharmonies.size() - 1)
+                    .getPriority();
 
             stringBuilder.append("<div style=\"text-align: center;\"><a id=\"GOD\"><h1>God Classes</h1></a></div>");
 
-            writeGodClassGchartJs(rankedGodClassDisharmonies, godClassPriority - 1, outputDirectory);
+            writeGodClassGchartJs(rankedGodClassDisharmonies, maxGodClassPriority - 1, outputDirectory);
             stringBuilder.append("<div id=\"series_chart_div\" align=\"center\"></div>");
             renderGithubButtons(stringBuilder);
             stringBuilder.append(GOD_CLASS_CHART_LEGEND);
@@ -312,19 +313,15 @@ public class HtmlReport {
 
             stringBuilder.append("<br/>\n" + "<br/>\n" + "<br/>\n" + "<br/>\n" + "<hr/>\n" + "<br/>\n" + "<br/>");
 
-            rankedCBODisharmonies.sort(
-                    Comparator.comparing(RankedDisharmony::getRawPriority).reversed());
-
-            int cboPriority = 1;
-            for (RankedDisharmony rankedCBODisharmony : rankedCBODisharmonies) {
-                rankedCBODisharmony.setPriority(cboPriority++);
-            }
-
             stringBuilder.append(
                     "<div style=\"text-align: center;\"><a id=\"CBO\"><h1>Highly Coupled Classes</h1></a></div>");
 
             stringBuilder.append("<div id=\"series_chart_div_2\" align=\"center\"></div>");
-            writeGCBOGchartJs(rankedCBODisharmonies, cboPriority - 1, outputDirectory);
+
+            int maxCboPriority =
+                    rankedCBODisharmonies.get(rankedCBODisharmonies.size() - 1).getPriority();
+
+            writeGCBOGchartJs(rankedCBODisharmonies, maxCboPriority - 1, outputDirectory);
             renderGithubButtons(stringBuilder);
             stringBuilder.append(COUPLING_BETWEEN_OBJECT_CHART_LEGEND);
 
