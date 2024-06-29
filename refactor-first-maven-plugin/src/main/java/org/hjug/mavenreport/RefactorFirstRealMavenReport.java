@@ -210,6 +210,12 @@ public class RefactorFirstRealMavenReport extends AbstractMavenReport {
         }
 
         CostBenefitCalculator costBenefitCalculator = new CostBenefitCalculator();
+        try {
+            costBenefitCalculator.runPmdAnalysis(projectBaseDir);
+        } catch (IOException e) {
+            log.error("Error running PMD analysis.");
+            throw new RuntimeException(e);
+        }
         List<RankedDisharmony> rankedGodClassDisharmonies =
                 costBenefitCalculator.calculateGodClassCostBenefitValues(projectBaseDir);
 
@@ -241,13 +247,9 @@ public class RefactorFirstRealMavenReport extends AbstractMavenReport {
         }*/
 
         if (!rankedGodClassDisharmonies.isEmpty()) {
-            rankedGodClassDisharmonies.sort(
-                    Comparator.comparing(RankedDisharmony::getRawPriority).reversed());
-
-            int godClassPriority = 1;
-            for (RankedDisharmony rankedGodClassDisharmony : rankedGodClassDisharmonies) {
-                rankedGodClassDisharmony.setPriority(godClassPriority++);
-            }
+            int maxGodClassPriority = rankedGodClassDisharmonies
+                    .get(rankedGodClassDisharmonies.size() - 1)
+                    .getPriority();
 
             SinkEventAttributeSet alignCenter = new SinkEventAttributeSet();
             alignCenter.addAttribute(SinkEventAttributes.ALIGN, "center");
@@ -260,7 +262,7 @@ public class RefactorFirstRealMavenReport extends AbstractMavenReport {
             mainSink.section2_();
             mainSink.division_();
 
-            writeGodClassGchartJs(rankedGodClassDisharmonies, godClassPriority - 1);
+            writeGodClassGchartJs(rankedGodClassDisharmonies, maxGodClassPriority - 1);
             SinkEventAttributeSet seriesChartDiv = new SinkEventAttributeSet();
             seriesChartDiv.addAttribute(SinkEventAttributes.ID, "series_chart_div");
             seriesChartDiv.addAttribute(SinkEventAttributes.ALIGN, "center");
@@ -351,13 +353,8 @@ public class RefactorFirstRealMavenReport extends AbstractMavenReport {
                 mainSink.lineBreak();
             }
 
-            rankedCBODisharmonies.sort(
-                    Comparator.comparing(RankedDisharmony::getRawPriority).reversed());
-
-            int cboPriority = 1;
-            for (RankedDisharmony rankedCBODisharmony : rankedCBODisharmonies) {
-                rankedCBODisharmony.setPriority(cboPriority++);
-            }
+            int maxCboPriority =
+                    rankedCBODisharmonies.get(rankedCBODisharmonies.size() - 1).getPriority();
 
             SinkEventAttributeSet alignCenter = new SinkEventAttributeSet();
             alignCenter.addAttribute(SinkEventAttributes.ALIGN, "center");
@@ -375,7 +372,7 @@ public class RefactorFirstRealMavenReport extends AbstractMavenReport {
             seriesChartDiv.addAttribute(SinkEventAttributes.ALIGN, "center");
             mainSink.division(seriesChartDiv);
             mainSink.division_();
-            writeGCBOGchartJs(rankedCBODisharmonies, cboPriority - 1);
+            writeGCBOGchartJs(rankedCBODisharmonies, maxCboPriority - 1);
 
             renderGitHubButtons(mainSink);
 

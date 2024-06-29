@@ -1,34 +1,17 @@
 package org.hjug.refactorfirst.report;
 
-import static org.hjug.refactorfirst.report.ReportWriter.writeReportToDisk;
-
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.file.Paths;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
-import java.time.format.FormatStyle;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
-import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
-import org.hjug.cbc.CostBenefitCalculator;
 import org.hjug.cbc.RankedDisharmony;
 import org.hjug.gdg.GraphDataGenerator;
-import org.hjug.git.GitLogReader;
 
 @Slf4j
-public class HtmlReport {
-
-    public static final String THE_BEGINNING =
-            "<html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\">\n" + "  <head>\n"
-                    + "    <meta charset=\"UTF-8\" />\n"
-                    + "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n"
-                    + "    <meta name=\"generator\" content=\"Apache Maven Doxia Site Renderer 1.9.2\" />";
+public class HtmlReport extends SimpleHtmlReport {
 
     public static final String GOD_CLASS_CHART_LEGEND =
             "       <h2>God Class Chart Legend:</h2>" + "       <table border=\"5px\">\n"
@@ -52,78 +35,8 @@ public class HtmlReport {
                     + "        </table>"
                     + "        <br/>";
 
-    public static final String THE_END = "</div>\n" + "    </div>\n"
-            + "    <div class=\"clear\">\n"
-            + "      <hr/>\n"
-            + "    </div>\n"
-            + "    <div id=\"footer\">\n"
-            + "      <div class=\"xright\">\n"
-            + "        Copyright &#169;      2002&#x2013;2021<a href=\"https://www.apache.org/\">The Apache Software Foundation</a>.\n"
-            + ".      </div>\n"
-            + "      <div class=\"clear\">\n"
-            + "        <hr/>\n"
-            + "      </div>\n"
-            + "    </div>\n"
-            + "  </body>\n"
-            + "</html>\n";
-
-    public void execute(
-            boolean showDetails, String projectName, String projectVersion, String outputDirectory, File baseDir) {
-
-        final String[] godClassSimpleTableHeadings = {
-            "Class",
-            "Priority",
-            "Change Proneness Rank",
-            "Effort Rank",
-            "Method Count",
-            "Most Recent Commit Date",
-            "Commit Count"
-        };
-
-        final String[] godClassDetailedTableHeadings = {
-            "Class",
-            "Priority",
-            "Raw Priority",
-            "Change Proneness Rank",
-            "Effort Rank",
-            "WMC",
-            "WMC Rank",
-            "ATFD",
-            "ATFD Rank",
-            "TCC",
-            "TCC Rank",
-            "Date of First Commit",
-            "Most Recent Commit Date",
-            "Commit Count",
-            "Full Path"
-        };
-
-        final String[] cboTableHeadings = {
-            "Class", "Priority", "Change Proneness Rank", "Coupling Count", "Most Recent Commit Date", "Commit Count"
-        };
-
-        final String[] godClassTableHeadings =
-                showDetails ? godClassDetailedTableHeadings : godClassSimpleTableHeadings;
-
-        String filename = getOutputName() + ".html";
-
-        log.info("Generating {} for {} - {}", filename, projectName, projectVersion);
-
-        DateTimeFormatter formatter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT)
-                .withLocale(Locale.getDefault())
-                .withZone(ZoneId.systemDefault());
-
-        StringBuilder stringBuilder = new StringBuilder();
-
-        stringBuilder.append(THE_BEGINNING);
-
-        stringBuilder
-                .append("<title>Refactor First Report for ")
-                .append(projectName)
-                .append(" ")
-                .append(projectVersion)
-                .append(" </title>");
-
+    @Override
+    public void printHead(StringBuilder stringBuilder) {
         stringBuilder.append("<link rel=\"stylesheet\" href=\"./css/maven-base.css\" />\n"
                 + "    <link rel=\"stylesheet\" href=\"./css/maven-theme.css\" />\n"
                 + "    <link rel=\"stylesheet\" href=\"./css/site.css\" />\n"
@@ -132,244 +45,20 @@ public class HtmlReport {
                 + "<script type=\"text/javascript\" src=\"https://www.gstatic.com/charts/loader.js\">"
                 + "</script><script type=\"text/javascript\" src=\"./gchart.js\"></script>"
                 + "<script type=\"text/javascript\" src=\"./gchart2.js\"></script>"
-                + "  </head>\n"
-                + "  <body class=\"composite\">\n"
-                + "    <div id=\"banner\">\n"
-                + "      <div class=\"clear\">\n"
-                + "        <hr/>\n"
-                + "      </div>\n"
-                + "    </div>\n"
-                + "    <div id=\"breadcrumbs\">\n"
-                + "      <div class=\"xleft\">");
+                + "  </head>\n");
+    }
 
+    @Override
+    public void printTitle(String projectName, String projectVersion, StringBuilder stringBuilder) {
         stringBuilder
-                .append("<span id=\"publishDate\">Last Published: ")
-                .append(formatter.format(Instant.now()))
-                .append("</span>");
-        stringBuilder
-                .append("<span id=\"projectVersion\"> Version: ")
-                .append(projectVersion)
-                .append("</span>");
-
-        stringBuilder.append("</div>\n" + "      <div class=\"xright\">      </div>\n"
-                + "      <div class=\"clear\">\n"
-                + "        <hr/>\n"
-                + "      </div>\n"
-                + "    </div>\n"
-                + "    <div id=\"bodyColumn\">\n"
-                + "      <div id=\"contentBox\">");
-
-        stringBuilder
-                .append("<section>\n" + "<h2>RefactorFirst Report for ")
+                .append("<title>Refactor First Report for ")
                 .append(projectName)
                 .append(" ")
                 .append(projectVersion)
-                .append("</h2>\n");
-
-        GitLogReader gitLogReader = new GitLogReader();
-        String projectBaseDir;
-        Optional<File> optionalGitDir;
-
-        if (baseDir != null) {
-            projectBaseDir = baseDir.getPath();
-            optionalGitDir = Optional.ofNullable(gitLogReader.getGitDir(baseDir));
-        } else {
-            projectBaseDir = Paths.get("").toAbsolutePath().toString();
-            optionalGitDir = Optional.ofNullable(gitLogReader.getGitDir(new File(projectBaseDir)));
-        }
-
-        File gitDir;
-        if (optionalGitDir.isPresent()) {
-            gitDir = optionalGitDir.get();
-        } else {
-            log.info(
-                    "Done! No Git repository found!  Please initialize a Git repository and perform an initial commit.");
-            stringBuilder
-                    .append("No Git repository found in project ")
-                    .append(projectName)
-                    .append(" ")
-                    .append(projectVersion)
-                    .append(".  ");
-            stringBuilder.append("Please initialize a Git repository and perform an initial commit.");
-            stringBuilder.append(THE_END);
-            writeReportToDisk(outputDirectory, filename, stringBuilder);
-            return;
-        }
-
-        String parentOfGitDir = gitDir.getParentFile().getPath();
-        log.info("Project Base Dir: {} ", projectBaseDir);
-        log.info("Parent of Git Dir: {}", parentOfGitDir);
-
-        if (!projectBaseDir.equals(parentOfGitDir)) {
-            log.warn("Project Base Directory does not match Git Parent Directory");
-            stringBuilder.append("Project Base Directory does not match Git Parent Directory.  "
-                    + "Please refer to the report at the root of the site directory.");
-            stringBuilder.append(THE_END);
-            return;
-        }
-
-        CostBenefitCalculator costBenefitCalculator = new CostBenefitCalculator();
-        List<RankedDisharmony> rankedGodClassDisharmonies =
-                costBenefitCalculator.calculateGodClassCostBenefitValues(projectBaseDir);
-
-        List<RankedDisharmony> rankedCBODisharmonies =
-                costBenefitCalculator.calculateCBOCostBenefitValues(projectBaseDir);
-
-        if (rankedGodClassDisharmonies.isEmpty() && rankedCBODisharmonies.isEmpty()) {
-            stringBuilder
-                    .append("Congratulations!  ")
-                    .append(projectName)
-                    .append(" ")
-                    .append(projectVersion)
-                    .append(" has no God classes or highly coupled classes!");
-            renderGithubButtons(stringBuilder);
-            log.info("Done! No Disharmonies found!");
-            stringBuilder.append(THE_END);
-            writeReportToDisk(outputDirectory, filename, stringBuilder);
-            return;
-        }
-
-        if (!rankedGodClassDisharmonies.isEmpty() && !rankedCBODisharmonies.isEmpty()) {
-            stringBuilder.append("<a href=\"#GOD\">God Classes</a>");
-            stringBuilder.append("<br/>");
-            stringBuilder.append("<a href=\"#CBO\">Highly Coupled Classes</a>");
-        }
-
-        if (!rankedGodClassDisharmonies.isEmpty()) {
-            rankedGodClassDisharmonies.sort(
-                    Comparator.comparing(RankedDisharmony::getRawPriority).reversed());
-
-            int godClassPriority = 1;
-            for (RankedDisharmony rankedGodClassDisharmony : rankedGodClassDisharmonies) {
-                rankedGodClassDisharmony.setPriority(godClassPriority++);
-            }
-
-            stringBuilder.append("<div style=\"text-align: center;\"><a id=\"GOD\"><h1>God Classes</h1></a></div>");
-
-            writeGodClassGchartJs(rankedGodClassDisharmonies, godClassPriority - 1, outputDirectory);
-            stringBuilder.append("<div id=\"series_chart_div\" align=\"center\"></div>");
-            renderGithubButtons(stringBuilder);
-            stringBuilder.append(GOD_CLASS_CHART_LEGEND);
-
-            stringBuilder.append(
-                    "<h2 align=\"center\">God classes by the numbers: (Refactor Starting with Priority 1)</h2>");
-            stringBuilder.append("<table align=\"center\" border=\"5px\">");
-
-            // Content
-            stringBuilder.append("<thead><tr>");
-            for (String heading : godClassTableHeadings) {
-                stringBuilder.append("<th>").append(heading).append("</th>");
-            }
-            stringBuilder.append("</tr></thead>");
-
-            stringBuilder.append("<tbody>");
-            for (RankedDisharmony rankedGodClassDisharmony : rankedGodClassDisharmonies) {
-                stringBuilder.append("<tr>");
-
-                String[] simpleRankedGodClassDisharmonyData = {
-                    rankedGodClassDisharmony.getFileName(),
-                    rankedGodClassDisharmony.getPriority().toString(),
-                    rankedGodClassDisharmony.getChangePronenessRank().toString(),
-                    rankedGodClassDisharmony.getEffortRank().toString(),
-                    rankedGodClassDisharmony.getWmc().toString(),
-                    formatter.format(rankedGodClassDisharmony.getMostRecentCommitTime()),
-                    rankedGodClassDisharmony.getCommitCount().toString()
-                };
-
-                String[] detailedRankedGodClassDisharmonyData = {
-                    rankedGodClassDisharmony.getFileName(),
-                    rankedGodClassDisharmony.getPriority().toString(),
-                    rankedGodClassDisharmony.getRawPriority().toString(),
-                    rankedGodClassDisharmony.getChangePronenessRank().toString(),
-                    rankedGodClassDisharmony.getEffortRank().toString(),
-                    rankedGodClassDisharmony.getWmc().toString(),
-                    rankedGodClassDisharmony.getWmcRank().toString(),
-                    rankedGodClassDisharmony.getAtfd().toString(),
-                    rankedGodClassDisharmony.getAtfdRank().toString(),
-                    rankedGodClassDisharmony.getTcc().toString(),
-                    rankedGodClassDisharmony.getTccRank().toString(),
-                    formatter.format(rankedGodClassDisharmony.getFirstCommitTime()),
-                    formatter.format(rankedGodClassDisharmony.getMostRecentCommitTime()),
-                    rankedGodClassDisharmony.getCommitCount().toString(),
-                    rankedGodClassDisharmony.getPath()
-                };
-
-                final String[] rankedDisharmonyData =
-                        showDetails ? detailedRankedGodClassDisharmonyData : simpleRankedGodClassDisharmonyData;
-
-                for (String rowData : rankedDisharmonyData) {
-                    stringBuilder.append("<td>").append(rowData).append("</td>");
-                }
-
-                stringBuilder.append("</tr>");
-            }
-
-            stringBuilder.append("</tbody>");
-            stringBuilder.append("</table>");
-        }
-
-        if (!rankedCBODisharmonies.isEmpty()) {
-
-            stringBuilder.append("<br/>\n" + "<br/>\n" + "<br/>\n" + "<br/>\n" + "<hr/>\n" + "<br/>\n" + "<br/>");
-
-            rankedCBODisharmonies.sort(
-                    Comparator.comparing(RankedDisharmony::getRawPriority).reversed());
-
-            int cboPriority = 1;
-            for (RankedDisharmony rankedCBODisharmony : rankedCBODisharmonies) {
-                rankedCBODisharmony.setPriority(cboPriority++);
-            }
-
-            stringBuilder.append(
-                    "<div style=\"text-align: center;\"><a id=\"CBO\"><h1>Highly Coupled Classes</h1></a></div>");
-
-            stringBuilder.append("<div id=\"series_chart_div_2\" align=\"center\"></div>");
-            writeGCBOGchartJs(rankedCBODisharmonies, cboPriority - 1, outputDirectory);
-            renderGithubButtons(stringBuilder);
-            stringBuilder.append(COUPLING_BETWEEN_OBJECT_CHART_LEGEND);
-
-            stringBuilder.append("<h2>Highly Coupled classes by the numbers: (Refactor starting with Priority 1)</h2>");
-            stringBuilder.append("<table align=\"center\" border=\"5px\">");
-
-            // Content
-            stringBuilder.append("<thead><tr>");
-            for (String heading : cboTableHeadings) {
-                stringBuilder.append("<th>").append(heading).append("</th>");
-            }
-            stringBuilder.append("</tr></thead>");
-
-            stringBuilder.append("<tbody>");
-            for (RankedDisharmony rankedCboClassDisharmony : rankedCBODisharmonies) {
-                stringBuilder.append("<tr>");
-
-                String[] rankedCboClassDisharmonyData = {
-                    rankedCboClassDisharmony.getFileName(),
-                    rankedCboClassDisharmony.getPriority().toString(),
-                    rankedCboClassDisharmony.getChangePronenessRank().toString(),
-                    rankedCboClassDisharmony.getEffortRank().toString(),
-                    formatter.format(rankedCboClassDisharmony.getMostRecentCommitTime()),
-                    rankedCboClassDisharmony.getCommitCount().toString()
-                };
-
-                for (String rowData : rankedCboClassDisharmonyData) {
-                    stringBuilder.append("<td>").append(rowData).append("</td>");
-                }
-
-                stringBuilder.append("</tr>");
-            }
-
-            stringBuilder.append("</tbody>");
-        }
-
-        stringBuilder.append("</table></section>");
-        stringBuilder.append(THE_END);
-
-        log.debug(stringBuilder.toString());
-
-        writeReportToDisk(outputDirectory, filename, stringBuilder);
-        log.info("Done! View the report at target/site/{}", filename);
+                .append(" </title>");
     }
 
+    @Override
     void renderGithubButtons(StringBuilder stringBuilder) {
         stringBuilder.append("<div align=\"center\">");
         stringBuilder.append("Show RefactorFirst some &#10084;&#65039;");
@@ -417,6 +106,7 @@ public class HtmlReport {
         }
     }
 
+    @Override
     void writeGCBOGchartJs(List<RankedDisharmony> rankedDisharmonies, int maxPriority, String reportOutputDirectory) {
         GraphDataGenerator graphDataGenerator = new GraphDataGenerator();
         String scriptStart = graphDataGenerator.getCBOScriptStart();
@@ -445,11 +135,6 @@ public class HtmlReport {
         }
     }
 
-    public String getOutputName() {
-        // This report will generate simple-report.html when invoked in a project with `mvn site`
-        return "refactor-first-report";
-    }
-
     public String getName(Locale locale) {
         // Name of the report when listed in the project-reports.html page of a project
         return "Refactor First Report";
@@ -459,5 +144,29 @@ public class HtmlReport {
         // Description of the report when listed in the project-reports.html page of a project
         return "Ranks the disharmonies in a codebase.  The classes that should be refactored first "
                 + " have the highest priority values.";
+    }
+
+    @Override
+    void renderGodClassChart(
+            String outputDirectory,
+            List<RankedDisharmony> rankedGodClassDisharmonies,
+            int maxGodClassPriority,
+            StringBuilder stringBuilder) {
+        writeGodClassGchartJs(rankedGodClassDisharmonies, maxGodClassPriority - 1, outputDirectory);
+        stringBuilder.append("<div id=\"series_chart_div\" align=\"center\"></div>");
+        renderGithubButtons(stringBuilder);
+        stringBuilder.append(GOD_CLASS_CHART_LEGEND);
+    }
+
+    @Override
+    void renderCBOChart(
+            String outputDirectory,
+            List<RankedDisharmony> rankedCBODisharmonies,
+            int maxCboPriority,
+            StringBuilder stringBuilder) {
+        writeGCBOGchartJs(rankedCBODisharmonies, maxCboPriority - 1, outputDirectory);
+        stringBuilder.append("<div id=\"series_chart_div_2\" align=\"center\"></div>");
+        renderGithubButtons(stringBuilder);
+        stringBuilder.append(COUPLING_BETWEEN_OBJECT_CHART_LEGEND);
     }
 }

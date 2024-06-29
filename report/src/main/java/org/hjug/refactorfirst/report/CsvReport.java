@@ -3,6 +3,7 @@ package org.hjug.refactorfirst.report;
 import static org.hjug.refactorfirst.report.ReportWriter.writeReportToDisk;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -83,11 +84,16 @@ public class CsvReport {
 
         // actual calcualte
         CostBenefitCalculator costBenefitCalculator = new CostBenefitCalculator();
+        try {
+            costBenefitCalculator.runPmdAnalysis(projectBaseDir);
+        } catch (IOException e) {
+            log.error("Error running PMD analysis.");
+            throw new RuntimeException(e);
+        }
         List<RankedDisharmony> rankedDisharmonies =
                 costBenefitCalculator.calculateGodClassCostBenefitValues(projectBaseDir);
 
-        rankedDisharmonies.sort(
-                Comparator.comparing(RankedDisharmony::getRawPriority).reversed());
+        rankedDisharmonies.sort(Comparator.comparing(RankedDisharmony::getPriority));
 
         // perfect score: no god classes
         if (rankedDisharmonies.isEmpty()) {
@@ -137,7 +143,7 @@ public class CsvReport {
     private String[] getDataList(RankedDisharmony rankedDisharmony, boolean showDetails) {
         String[] simpleRankedDisharmonyData = {
             rankedDisharmony.getFileName(),
-            rankedDisharmony.getRawPriority().toString(),
+            rankedDisharmony.getPriority().toString(),
             rankedDisharmony.getChangePronenessRank().toString(),
             rankedDisharmony.getEffortRank().toString(),
             rankedDisharmony.getWmc().toString(),
@@ -147,7 +153,7 @@ public class CsvReport {
 
         String[] detailedRankedDisharmonyData = {
             rankedDisharmony.getFileName(),
-            rankedDisharmony.getRawPriority().toString(),
+            rankedDisharmony.getPriority().toString(),
             rankedDisharmony.getChangePronenessRank().toString(),
             rankedDisharmony.getEffortRank().toString(),
             rankedDisharmony.getWmc().toString(),

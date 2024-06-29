@@ -8,17 +8,17 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
-import org.hjug.refactorfirst.report.HtmlReport;
+import org.hjug.refactorfirst.report.SimpleHtmlReport;
 
 @Slf4j
 @Mojo(
-        name = "htmlReport",
+        name = "simpleHtmlReport",
         defaultPhase = LifecyclePhase.SITE,
         requiresDependencyResolution = ResolutionScope.RUNTIME,
         requiresProject = false,
         threadSafe = true,
         inheritByDefault = false)
-public class RefactorFirstMavenReport extends AbstractMojo {
+public class RefactorFirstSimpleHtmlReport extends AbstractMojo {
 
     @Parameter(property = "showDetails")
     private boolean showDetails = false;
@@ -39,7 +39,7 @@ public class RefactorFirstMavenReport extends AbstractMojo {
     public void execute() {
 
         log.info(outputDirectory.getPath());
-        HtmlReport htmlReport = new HtmlReport();
+        SimpleHtmlReport htmlReport = new SimpleHtmlReport();
         htmlReport.execute(
                 showDetails,
                 projectName,

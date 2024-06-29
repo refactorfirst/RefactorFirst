@@ -8,20 +8,19 @@ import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
-import org.hjug.git.GitLogReader;
-import org.hjug.metrics.GodClass;
-import org.hjug.metrics.PMDGodClassRuleRunner;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-public class CostBenefitCalculatorTest {
+class CostBenefitCalculatorTest {
 
     @TempDir
     public File tempFolder;
 
+    private String faceletsPath = "org/apache/myfaces/tobago/facelets/";
+    private String hudsonPath = "hudson/model/";
     private Git git;
     private Repository repository;
 
@@ -29,6 +28,8 @@ public class CostBenefitCalculatorTest {
     public void setUp() throws GitAPIException {
         git = Git.init().setDirectory(tempFolder).call();
         repository = git.getRepository();
+        new File(tempFolder.getPath() + "/" + faceletsPath).mkdirs();
+        new File(tempFolder.getPath() + "/" + hudsonPath).mkdirs();
     }
 
     @AfterEach
@@ -37,10 +38,29 @@ public class CostBenefitCalculatorTest {
     }
 
     @Test
+    void testCBOViolation() throws IOException, GitAPIException, InterruptedException {
+        // Has CBO violation
+        String user = "User.java";
+        InputStream userResourceAsStream = getClass().getClassLoader().getResourceAsStream(hudsonPath + user);
+        writeFile(hudsonPath + user, convertInputStreamToString(userResourceAsStream));
+
+        git.add().addFilepattern(".").call();
+        RevCommit firstCommit = git.commit().setMessage("message").call();
+
+        CostBenefitCalculator costBenefitCalculator = new CostBenefitCalculator();
+        costBenefitCalculator.runPmdAnalysis(git.getRepository().getDirectory().getParent());
+        List<RankedDisharmony> disharmonies = costBenefitCalculator.calculateCBOCostBenefitValues(
+                git.getRepository().getDirectory().getPath());
+
+        Assertions.assertFalse(disharmonies.isEmpty());
+    }
+
+    @Test
     void testCostBenefitCalculation() throws IOException, GitAPIException, InterruptedException {
+
         String attributeHandler = "AttributeHandler.java";
-        InputStream resourceAsStream = getClass().getClassLoader().getResourceAsStream(attributeHandler);
-        writeFile(attributeHandler, convertInputStreamToString(resourceAsStream));
+        InputStream resourceAsStream = getClass().getClassLoader().getResourceAsStream(faceletsPath + attributeHandler);
+        writeFile(faceletsPath + attributeHandler, convertInputStreamToString(resourceAsStream));
 
         git.add().addFilepattern(".").call();
         RevCommit firstCommit = git.commit().setMessage("message").call();
@@ -49,76 +69,33 @@ public class CostBenefitCalculatorTest {
         Thread.sleep(1000);
 
         // write contents of updated file to original file
-        InputStream resourceAsStream2 = getClass().getClassLoader().getResourceAsStream("AttributeHandler2.java");
-        writeFile(attributeHandler, convertInputStreamToString(resourceAsStream2));
+        InputStream resourceAsStream2 =
+                getClass().getClassLoader().getResourceAsStream(faceletsPath + "AttributeHandler2.java");
+        writeFile(faceletsPath + attributeHandler, convertInputStreamToString(resourceAsStream2));
 
         InputStream resourceAsStream3 =
-                getClass().getClassLoader().getResourceAsStream("AttributeHandlerAndSorter.java");
-        writeFile("AttributeHandlerAndSorter.java", convertInputStreamToString(resourceAsStream3));
+                getClass().getClassLoader().getResourceAsStream(faceletsPath + "AttributeHandlerAndSorter.java");
+        writeFile(faceletsPath + "AttributeHandlerAndSorter.java", convertInputStreamToString(resourceAsStream3));
 
         git.add().addFilepattern(".").call();
         RevCommit secondCommit = git.commit().setMessage("message").call();
 
         CostBenefitCalculator costBenefitCalculator = new CostBenefitCalculator();
+        costBenefitCalculator.runPmdAnalysis(git.getRepository().getDirectory().getParent());
         List<RankedDisharmony> disharmonies = costBenefitCalculator.calculateGodClassCostBenefitValues(
                 git.getRepository().getDirectory().getPath());
 
-        Assertions.assertEquals(0, disharmonies.get(0).getPriority().intValue());
-        Assertions.assertEquals(0, disharmonies.get(1).getPriority().intValue());
-    }
+        Assertions.assertEquals(1, disharmonies.get(0).getRawPriority().intValue());
+        Assertions.assertEquals(1, disharmonies.get(1).getRawPriority().intValue());
 
-    @Test
-    void scanClassesInRepo2() throws IOException, GitAPIException {
-        String attributeHandler = "AttributeHandler.java";
-        InputStream resourceAsStream = getClass().getClassLoader().getResourceAsStream(attributeHandler);
-        writeFile(attributeHandler, convertInputStreamToString(resourceAsStream));
-
-        git.add().addFilepattern(".").call();
-        git.commit().setMessage("message").call();
-
-        GitLogReader gitLogReader = new GitLogReader();
-        Map<String, ByteArrayOutputStream> filesToScan = gitLogReader.listRepositoryContentsAtHEAD(repository);
-
-        PMDGodClassRuleRunner ruleRunner = new PMDGodClassRuleRunner();
-
-        Map<String, GodClass> godClasses = new HashMap<>();
-        for (String filePath : filesToScan.keySet()) {
-            ByteArrayInputStream inputStream =
-                    new ByteArrayInputStream(filesToScan.get(filePath).toByteArray());
-            Optional<GodClass> godClassOptional = ruleRunner.runGodClassRule(filePath, inputStream);
-            godClassOptional.ifPresent(godClass -> godClasses.put(filePath, godClass));
-        }
-
-        Assertions.assertFalse(godClasses.isEmpty());
-    }
-
-    @Test
-    void scanClassesInRepo() throws IOException, GitAPIException {
-        String attributeHandler = "AttributeHandler.java";
-        InputStream resourceAsStream = getClass().getClassLoader().getResourceAsStream(attributeHandler);
-        writeFile(attributeHandler, convertInputStreamToString(resourceAsStream));
-
-        git.add().addFilepattern(".").call();
-        git.commit().setMessage("message").call();
-
-        GitLogReader gitLogReader = new GitLogReader();
-        Map<String, ByteArrayOutputStream> filesToScan = gitLogReader.listRepositoryContentsAtHEAD(repository);
-
-        PMDGodClassRuleRunner ruleRunner = new PMDGodClassRuleRunner();
-
-        Map<String, GodClass> godClasses = new HashMap<>();
-        for (String filePath : filesToScan.keySet()) {
-            ByteArrayInputStream inputStream =
-                    new ByteArrayInputStream(filesToScan.get(filePath).toByteArray());
-            Optional<GodClass> godClassOptional = ruleRunner.runGodClassRule(filePath, inputStream);
-            godClassOptional.ifPresent(godClass -> godClasses.put(filePath, godClass));
-        }
-
-        Assertions.assertFalse(godClasses.isEmpty());
+        Assertions.assertEquals(1, disharmonies.get(0).getPriority().intValue());
+        Assertions.assertEquals(2, disharmonies.get(1).getPriority().intValue());
     }
 
     private void writeFile(String name, String content) throws IOException {
+        // Files.writeString(Path.of(git.getRepository().getWorkTree().getPath()), content);
         File file = new File(git.getRepository().getWorkTree(), name);
+
         try (FileOutputStream outputStream = new FileOutputStream(file)) {
             outputStream.write(content.getBytes(UTF_8));
         }

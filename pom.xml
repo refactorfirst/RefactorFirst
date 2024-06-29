@@ -140,7 +140,7 @@
             <dependency>
                 <groupId>net.sourceforge.pmd</groupId>
                 <artifactId>pmd-java</artifactId>
-                <version>6.55.0</version>
+                <version>7.0.0-rc4</version>
                 <scope>compile</scope>
 
                 <exclusions>
@@ -264,6 +264,19 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.pitest</groupId>
+                <artifactId>pitest-maven</artifactId>
+                <version>1.16.1</version>
+                    <dependencies>
+                        <dependency>
+                            <groupId>org.pitest</groupId>
+                            <artifactId>pitest-junit5-plugin</artifactId>
+                            <version>1.2.1</version>
+                        </dependency>
+                    </dependencies>
             </plugin>
 
             <!-- From https://mkyong.com/maven/mvn-site-java-lang-classnotfoundexception-org-apache-maven-doxia-siterenderer-documentcontent/-->
