@@ -19,6 +19,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           java-version: 11
+          distribution: 'zulu'
 
       - name: Build With Maven
         run: mvn -B verify
