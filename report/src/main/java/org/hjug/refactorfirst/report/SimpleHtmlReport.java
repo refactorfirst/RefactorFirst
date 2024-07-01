@@ -351,7 +351,9 @@ public class SimpleHtmlReport {
                 + "      <div id=\"contentBox\">");
 
         stringBuilder
-                .append("<section>\n" + "<h2>RefactorFirst Report for ")
+                .append(
+                        "<section>\n"
+                                + "<h2><a href=\"https://github.com/refactorfirst/refactorfirst\" target=\"_blank\" title=\"Learn about RefactorFirst\" aria-label=\"RefactorFirst\">RefactorFirst</a> Report for ")
                 .append(projectName)
                 .append(" ")
                 .append(projectVersion)
