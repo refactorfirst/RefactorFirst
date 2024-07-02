@@ -34,7 +34,7 @@ import org.hjug.git.GitLogReader;
         requiresProject = false,
         threadSafe = true,
         inheritByDefault = false)
-public class RefactorFirstRealMavenReport extends AbstractMavenReport {
+public class RefactorFirstMavenReport extends AbstractMavenReport {
 
     @Parameter(property = "showDetails")
     private boolean showDetails = false;
@@ -209,18 +209,16 @@ public class RefactorFirstRealMavenReport extends AbstractMavenReport {
             return;
         }
 
-        CostBenefitCalculator costBenefitCalculator = new CostBenefitCalculator();
+        CostBenefitCalculator costBenefitCalculator = new CostBenefitCalculator(projectBaseDir);
         try {
-            costBenefitCalculator.runPmdAnalysis(projectBaseDir);
+            costBenefitCalculator.runPmdAnalysis();
         } catch (IOException e) {
             log.error("Error running PMD analysis.");
             throw new RuntimeException(e);
         }
-        List<RankedDisharmony> rankedGodClassDisharmonies =
-                costBenefitCalculator.calculateGodClassCostBenefitValues(projectBaseDir);
+        List<RankedDisharmony> rankedGodClassDisharmonies = costBenefitCalculator.calculateGodClassCostBenefitValues();
 
-        List<RankedDisharmony> rankedCBODisharmonies =
-                costBenefitCalculator.calculateCBOCostBenefitValues(projectBaseDir);
+        List<RankedDisharmony> rankedCBODisharmonies = costBenefitCalculator.calculateCBOCostBenefitValues();
 
         if (rankedGodClassDisharmonies.isEmpty() && rankedCBODisharmonies.isEmpty()) {
             mainSink.text("Contratulations!  " + projectName + " " + projectVersion

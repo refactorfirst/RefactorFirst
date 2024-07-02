@@ -18,7 +18,6 @@ import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.Repository;
 import org.hjug.git.ChangePronenessRanker;
 import org.hjug.git.GitLogReader;
-import org.hjug.git.RepositoryLogReader;
 import org.hjug.git.ScmLogInfo;
 import org.hjug.metrics.*;
 import org.hjug.metrics.rules.CBORule;
@@ -27,11 +26,30 @@ import org.hjug.metrics.rules.CBORule;
 public class CostBenefitCalculator {
 
     private Report report;
-    private String projBaseDir = null;
+    private String repositoryPath;
+    private final GitLogReader gitLogReader = new GitLogReader();
+    private Repository repository = null;
+    private final ChangePronenessRanker changePronenessRanker;
+
+    public CostBenefitCalculator(String repositoryPath) {
+        this.repositoryPath = repositoryPath;
+
+        log.info("Initiating Cost Benefit calculation");
+        try {
+            repository = gitLogReader.gitRepository(new File(repositoryPath));
+            for (String file :
+                    gitLogReader.listRepositoryContentsAtHEAD(repository).keySet()) {
+                log.info("Files at HEAD: {}", file);
+            }
+        } catch (IOException e) {
+            log.error("Failure to access Git repository", e);
+        }
+
+        changePronenessRanker = new ChangePronenessRanker(repository, gitLogReader);
+    }
 
     // copied from PMD's PmdTaskImpl.java and modified
-    public void runPmdAnalysis(String projectBaseDir) throws IOException {
-        projBaseDir = projectBaseDir;
+    public void runPmdAnalysis() throws IOException {
         PMDConfiguration configuration = new PMDConfiguration();
 
         try (PmdAnalysis pmd = PmdAnalysis.create(configuration)) {
@@ -42,9 +60,9 @@ public class CostBenefitCalculator {
             cboClassRule.setLanguage(LanguageRegistry.PMD.getLanguageByFullName("Java"));
             pmd.addRuleSet(RuleSet.forSingleRule(cboClassRule));
 
-            log.info("files to be scanned: " + Paths.get(projectBaseDir));
+            log.info("files to be scanned: " + Paths.get(repositoryPath));
 
-            try (Stream<Path> files = Files.walk(Paths.get(projectBaseDir))) {
+            try (Stream<Path> files = Files.walk(Paths.get(repositoryPath))) {
                 files.forEach(file -> pmd.files().addFile(file));
             }
 
@@ -52,25 +70,10 @@ public class CostBenefitCalculator {
         }
     }
 
-    public List<RankedDisharmony> calculateGodClassCostBenefitValues(String repositoryPath) {
-
-        RepositoryLogReader repositoryLogReader = new GitLogReader();
-        Repository repository = null;
-        log.info("Initiating Cost Benefit calculation");
-        try {
-            repository = repositoryLogReader.gitRepository(new File(repositoryPath));
-            for (String file :
-                    repositoryLogReader.listRepositoryContentsAtHEAD(repository).keySet()) {
-                log.info("Files at HEAD: {}", file);
-            }
-        } catch (IOException e) {
-            log.error("Failure to access Git repository", e);
-        }
-
-        // pass repo path here, not ByteArrayOutputStream
+    public List<RankedDisharmony> calculateGodClassCostBenefitValues() {
         List<GodClass> godClasses = getGodClasses();
 
-        List<ScmLogInfo> scmLogInfos = getRankedChangeProneness(repositoryLogReader, repository, godClasses);
+        List<ScmLogInfo> scmLogInfos = getRankedChangeProneness(godClasses);
 
         Map<String, ScmLogInfo> rankedLogInfosByPath =
                 scmLogInfos.stream().collect(Collectors.toMap(ScmLogInfo::getPath, logInfo -> logInfo, (a, b) -> b));
@@ -114,15 +117,14 @@ public class CostBenefitCalculator {
         return godClasses;
     }
 
-    <T extends Disharmony> List<ScmLogInfo> getRankedChangeProneness(
-            RepositoryLogReader repositoryLogReader, Repository repository, List<T> disharmonies) {
+    <T extends Disharmony> List<ScmLogInfo> getRankedChangeProneness(List<T> disharmonies) {
         List<ScmLogInfo> scmLogInfos = new ArrayList<>();
         log.info("Calculating Change Proneness");
         for (Disharmony disharmony : disharmonies) {
             String path = disharmony.getFileName();
             ScmLogInfo scmLogInfo = null;
             try {
-                scmLogInfo = repositoryLogReader.fileLog(repository, path);
+                scmLogInfo = gitLogReader.fileLog(repository, path);
                 log.info("Successfully fetched scmLogInfo for {}", scmLogInfo.getPath());
             } catch (GitAPIException | IOException e) {
                 log.error("Error reading Git repository contents.", e);
@@ -136,25 +138,14 @@ public class CostBenefitCalculator {
             }
         }
 
-        ChangePronenessRanker changePronenessRanker = new ChangePronenessRanker(repository, repositoryLogReader);
         changePronenessRanker.rankChangeProneness(scmLogInfos);
         return scmLogInfos;
     }
 
-    public List<RankedDisharmony> calculateCBOCostBenefitValues(String repositoryPath) {
-
-        RepositoryLogReader repositoryLogReader = new GitLogReader();
-        Repository repository = null;
-        log.info("Initiating Cost Benefit calculation");
-        try {
-            repository = repositoryLogReader.gitRepository(new File(repositoryPath));
-        } catch (IOException e) {
-            log.error("Failure to access Git repository", e);
-        }
-
+    public List<RankedDisharmony> calculateCBOCostBenefitValues() {
         List<CBOClass> cboClasses = getCBOClasses();
 
-        List<ScmLogInfo> scmLogInfos = getRankedChangeProneness(repositoryLogReader, repository, cboClasses);
+        List<ScmLogInfo> scmLogInfos = getRankedChangeProneness(cboClasses);
 
         Map<String, ScmLogInfo> rankedLogInfosByPath =
                 scmLogInfos.stream().collect(Collectors.toMap(ScmLogInfo::getPath, logInfo -> logInfo, (a, b) -> b));
@@ -193,6 +184,6 @@ public class CostBenefitCalculator {
     }
 
     private String getFileName(RuleViolation violation) {
-        return violation.getFileId().getUriString().replace("file:///" + projBaseDir.replace("\\", "/") + "/", "");
+        return violation.getFileId().getUriString().replace("file:///" + repositoryPath.replace("\\", "/") + "/", "");
     }
 }

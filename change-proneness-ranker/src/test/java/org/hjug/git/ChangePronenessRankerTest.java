@@ -11,15 +11,14 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class ChangePronenessRankerTest {
+class ChangePronenessRankerTest {
 
     private ChangePronenessRanker changePronenessRanker;
-    private RepositoryLogReader repositoryLogReader;
+    private GitLogReader repositoryLogReader;
 
     @BeforeEach
     public void setUp() {
-        repositoryLogReader = mock(RepositoryLogReader.class);
-        changePronenessRanker = new ChangePronenessRanker(null, repositoryLogReader);
+        repositoryLogReader = mock(GitLogReader.class);
     }
 
     // TODO: this should probably be a cucumber test
@@ -34,6 +33,7 @@ public class ChangePronenessRankerTest {
 
         when(repositoryLogReader.captureChangeCountByCommitTimestamp(any())).thenReturn(commitsWithChangeCounts);
 
+        changePronenessRanker = new ChangePronenessRanker(null, repositoryLogReader);
         List<ScmLogInfo> scmLogInfos = new ArrayList<>();
         scmLogInfos.add(scmLogInfo);
         changePronenessRanker.rankChangeProneness(scmLogInfos);
@@ -58,6 +58,7 @@ public class ChangePronenessRankerTest {
         commitsWithChangeCounts.put(scmLogInfo2.getEarliestCommit() + 10 * 60, 5);
 
         when(repositoryLogReader.captureChangeCountByCommitTimestamp(any())).thenReturn(commitsWithChangeCounts);
+        changePronenessRanker = new ChangePronenessRanker(null, repositoryLogReader);
 
         List<ScmLogInfo> scmLogInfos = new ArrayList<>();
         scmLogInfos.add(scmLogInfo);
