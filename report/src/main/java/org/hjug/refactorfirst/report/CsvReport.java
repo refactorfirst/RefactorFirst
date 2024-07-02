@@ -83,15 +83,14 @@ public class CsvReport {
         }
 
         // actual calcualte
-        CostBenefitCalculator costBenefitCalculator = new CostBenefitCalculator();
+        CostBenefitCalculator costBenefitCalculator = new CostBenefitCalculator(projectBaseDir);
         try {
-            costBenefitCalculator.runPmdAnalysis(projectBaseDir);
+            costBenefitCalculator.runPmdAnalysis();
         } catch (IOException e) {
             log.error("Error running PMD analysis.");
             throw new RuntimeException(e);
         }
-        List<RankedDisharmony> rankedDisharmonies =
-                costBenefitCalculator.calculateGodClassCostBenefitValues(projectBaseDir);
+        List<RankedDisharmony> rankedDisharmonies = costBenefitCalculator.calculateGodClassCostBenefitValues();
 
         rankedDisharmonies.sort(Comparator.comparing(RankedDisharmony::getPriority));
 

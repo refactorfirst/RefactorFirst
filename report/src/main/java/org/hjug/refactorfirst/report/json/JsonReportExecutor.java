@@ -31,15 +31,14 @@ public class JsonReportExecutor {
             projectBaseDir = Paths.get("").toAbsolutePath().toString();
         }
 
-        final CostBenefitCalculator costBenefitCalculator = new CostBenefitCalculator();
+        final CostBenefitCalculator costBenefitCalculator = new CostBenefitCalculator(projectBaseDir);
         try {
-            costBenefitCalculator.runPmdAnalysis(projectBaseDir);
+            costBenefitCalculator.runPmdAnalysis();
         } catch (IOException e) {
             log.error("Error running PMD analysis.");
             throw new RuntimeException(e);
         }
-        final List<RankedDisharmony> rankedDisharmonies =
-                costBenefitCalculator.calculateGodClassCostBenefitValues(projectBaseDir);
+        final List<RankedDisharmony> rankedDisharmonies = costBenefitCalculator.calculateGodClassCostBenefitValues();
         final List<JsonReportDisharmonyEntry> disharmonyEntries = rankedDisharmonies.stream()
                 .map(JsonReportDisharmonyEntry::fromRankedDisharmony)
                 .collect(Collectors.toList());

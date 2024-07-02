@@ -47,10 +47,10 @@ class CostBenefitCalculatorTest {
         git.add().addFilepattern(".").call();
         RevCommit firstCommit = git.commit().setMessage("message").call();
 
-        CostBenefitCalculator costBenefitCalculator = new CostBenefitCalculator();
-        costBenefitCalculator.runPmdAnalysis(git.getRepository().getDirectory().getParent());
-        List<RankedDisharmony> disharmonies = costBenefitCalculator.calculateCBOCostBenefitValues(
-                git.getRepository().getDirectory().getPath());
+        CostBenefitCalculator costBenefitCalculator =
+                new CostBenefitCalculator(git.getRepository().getDirectory().getParent());
+        costBenefitCalculator.runPmdAnalysis();
+        List<RankedDisharmony> disharmonies = costBenefitCalculator.calculateCBOCostBenefitValues();
 
         Assertions.assertFalse(disharmonies.isEmpty());
     }
@@ -80,10 +80,10 @@ class CostBenefitCalculatorTest {
         git.add().addFilepattern(".").call();
         RevCommit secondCommit = git.commit().setMessage("message").call();
 
-        CostBenefitCalculator costBenefitCalculator = new CostBenefitCalculator();
-        costBenefitCalculator.runPmdAnalysis(git.getRepository().getDirectory().getParent());
-        List<RankedDisharmony> disharmonies = costBenefitCalculator.calculateGodClassCostBenefitValues(
-                git.getRepository().getDirectory().getPath());
+        CostBenefitCalculator costBenefitCalculator =
+                new CostBenefitCalculator(git.getRepository().getDirectory().getParent());
+        costBenefitCalculator.runPmdAnalysis();
+        List<RankedDisharmony> disharmonies = costBenefitCalculator.calculateGodClassCostBenefitValues();
 
         Assertions.assertEquals(1, disharmonies.get(0).getRawPriority().intValue());
         Assertions.assertEquals(1, disharmonies.get(1).getRawPriority().intValue());

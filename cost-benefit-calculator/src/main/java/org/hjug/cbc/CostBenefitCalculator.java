@@ -26,11 +26,14 @@ import org.hjug.metrics.rules.CBORule;
 public class CostBenefitCalculator {
 
     private Report report;
-    private String projBaseDir = null;
+    private String repositoryPath = null;
+
+    public CostBenefitCalculator(String repositoryPath) {
+        this.repositoryPath = repositoryPath;
+    }
 
     // copied from PMD's PmdTaskImpl.java and modified
-    public void runPmdAnalysis(String projectBaseDir) throws IOException {
-        projBaseDir = projectBaseDir;
+    public void runPmdAnalysis() throws IOException {
         PMDConfiguration configuration = new PMDConfiguration();
 
         try (PmdAnalysis pmd = PmdAnalysis.create(configuration)) {
@@ -41,9 +44,9 @@ public class CostBenefitCalculator {
             cboClassRule.setLanguage(LanguageRegistry.PMD.getLanguageByFullName("Java"));
             pmd.addRuleSet(RuleSet.forSingleRule(cboClassRule));
 
-            log.info("files to be scanned: " + Paths.get(projectBaseDir));
+            log.info("files to be scanned: " + Paths.get(repositoryPath));
 
-            try (Stream<Path> files = Files.walk(Paths.get(projectBaseDir))) {
+            try (Stream<Path> files = Files.walk(Paths.get(repositoryPath))) {
                 files.forEach(file -> pmd.files().addFile(file));
             }
 
@@ -51,7 +54,7 @@ public class CostBenefitCalculator {
         }
     }
 
-    public List<RankedDisharmony> calculateGodClassCostBenefitValues(String repositoryPath) {
+    public List<RankedDisharmony> calculateGodClassCostBenefitValues() {
 
         GitLogReader repositoryLogReader = new GitLogReader();
         Repository repository = null;
@@ -140,7 +143,7 @@ public class CostBenefitCalculator {
         return scmLogInfos;
     }
 
-    public List<RankedDisharmony> calculateCBOCostBenefitValues(String repositoryPath) {
+    public List<RankedDisharmony> calculateCBOCostBenefitValues() {
 
         GitLogReader repositoryLogReader = new GitLogReader();
         Repository repository = null;
@@ -192,6 +195,6 @@ public class CostBenefitCalculator {
     }
 
     private String getFileName(RuleViolation violation) {
-        return violation.getFileId().getUriString().replace("file:///" + projBaseDir.replace("\\", "/") + "/", "");
+        return violation.getFileId().getUriString().replace("file:///" + repositoryPath.replace("\\", "/") + "/", "");
     }
 }
