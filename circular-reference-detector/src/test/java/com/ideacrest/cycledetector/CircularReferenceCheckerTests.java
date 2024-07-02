@@ -28,7 +28,7 @@ class CircularReferenceCheckerTests {
         classReferencesGraph.addEdge("B", "C");
         classReferencesGraph.addEdge("C", "A");
         Map<String, AsSubgraph<String, DefaultEdge>> cyclesForEveryVertexMap =
-                sutCircularReferenceChecker.detectCyles(classReferencesGraph);
+                sutCircularReferenceChecker.detectCycles(classReferencesGraph);
         assertEquals(3, cyclesForEveryVertexMap.size());
     }
 

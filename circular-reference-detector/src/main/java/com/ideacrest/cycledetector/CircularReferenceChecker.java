@@ -25,7 +25,7 @@ public class CircularReferenceChecker {
      * @param classReferencesGraph
      * @return a Map of Class and its Cycle Graph
      */
-    public Map<String, AsSubgraph<String, DefaultEdge>> detectCyles(Graph<String, DefaultEdge> classReferencesGraph) {
+    public Map<String, AsSubgraph<String, DefaultEdge>> detectCycles(Graph<String, DefaultEdge> classReferencesGraph) {
         Map<String, AsSubgraph<String, DefaultEdge>> cyclesForEveryVertexMap = new HashMap<>();
         CycleDetector<String, DefaultEdge> cycleDetector = new CycleDetector<>(classReferencesGraph);
         cycleDetector.findCycles().forEach(v -> {
