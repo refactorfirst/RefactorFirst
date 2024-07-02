@@ -26,10 +26,23 @@ import org.hjug.metrics.rules.CBORule;
 public class CostBenefitCalculator {
 
     private Report report;
-    private String repositoryPath = null;
+    private String repositoryPath;
+    private final GitLogReader gitLogReader = new GitLogReader();
+    private Repository repository = null;
 
     public CostBenefitCalculator(String repositoryPath) {
         this.repositoryPath = repositoryPath;
+
+        log.info("Initiating Cost Benefit calculation");
+        try {
+            repository = gitLogReader.gitRepository(new File(repositoryPath));
+            for (String file :
+                    gitLogReader.listRepositoryContentsAtHEAD(repository).keySet()) {
+                log.info("Files at HEAD: {}", file);
+            }
+        } catch (IOException e) {
+            log.error("Failure to access Git repository", e);
+        }
     }
 
     // copied from PMD's PmdTaskImpl.java and modified
@@ -55,24 +68,9 @@ public class CostBenefitCalculator {
     }
 
     public List<RankedDisharmony> calculateGodClassCostBenefitValues() {
-
-        GitLogReader repositoryLogReader = new GitLogReader();
-        Repository repository = null;
-        log.info("Initiating Cost Benefit calculation");
-        try {
-            repository = repositoryLogReader.gitRepository(new File(repositoryPath));
-            for (String file :
-                    repositoryLogReader.listRepositoryContentsAtHEAD(repository).keySet()) {
-                log.info("Files at HEAD: {}", file);
-            }
-        } catch (IOException e) {
-            log.error("Failure to access Git repository", e);
-        }
-
-        // pass repo path here, not ByteArrayOutputStream
         List<GodClass> godClasses = getGodClasses();
 
-        List<ScmLogInfo> scmLogInfos = getRankedChangeProneness(repositoryLogReader, repository, godClasses);
+        List<ScmLogInfo> scmLogInfos = getRankedChangeProneness(godClasses);
 
         Map<String, ScmLogInfo> rankedLogInfosByPath =
                 scmLogInfos.stream().collect(Collectors.toMap(ScmLogInfo::getPath, logInfo -> logInfo, (a, b) -> b));
@@ -116,15 +114,14 @@ public class CostBenefitCalculator {
         return godClasses;
     }
 
-    <T extends Disharmony> List<ScmLogInfo> getRankedChangeProneness(
-            GitLogReader repositoryLogReader, Repository repository, List<T> disharmonies) {
+    <T extends Disharmony> List<ScmLogInfo> getRankedChangeProneness(List<T> disharmonies) {
         List<ScmLogInfo> scmLogInfos = new ArrayList<>();
         log.info("Calculating Change Proneness");
         for (Disharmony disharmony : disharmonies) {
             String path = disharmony.getFileName();
             ScmLogInfo scmLogInfo = null;
             try {
-                scmLogInfo = repositoryLogReader.fileLog(repository, path);
+                scmLogInfo = gitLogReader.fileLog(repository, path);
                 log.info("Successfully fetched scmLogInfo for {}", scmLogInfo.getPath());
             } catch (GitAPIException | IOException e) {
                 log.error("Error reading Git repository contents.", e);
@@ -138,25 +135,15 @@ public class CostBenefitCalculator {
             }
         }
 
-        ChangePronenessRanker changePronenessRanker = new ChangePronenessRanker(repository, repositoryLogReader);
+        ChangePronenessRanker changePronenessRanker = new ChangePronenessRanker(repository, gitLogReader);
         changePronenessRanker.rankChangeProneness(scmLogInfos);
         return scmLogInfos;
     }
 
     public List<RankedDisharmony> calculateCBOCostBenefitValues() {
-
-        GitLogReader repositoryLogReader = new GitLogReader();
-        Repository repository = null;
-        log.info("Initiating Cost Benefit calculation");
-        try {
-            repository = repositoryLogReader.gitRepository(new File(repositoryPath));
-        } catch (IOException e) {
-            log.error("Failure to access Git repository", e);
-        }
-
         List<CBOClass> cboClasses = getCBOClasses();
 
-        List<ScmLogInfo> scmLogInfos = getRankedChangeProneness(repositoryLogReader, repository, cboClasses);
+        List<ScmLogInfo> scmLogInfos = getRankedChangeProneness(cboClasses);
 
         Map<String, ScmLogInfo> rankedLogInfosByPath =
                 scmLogInfos.stream().collect(Collectors.toMap(ScmLogInfo::getPath, logInfo -> logInfo, (a, b) -> b));
