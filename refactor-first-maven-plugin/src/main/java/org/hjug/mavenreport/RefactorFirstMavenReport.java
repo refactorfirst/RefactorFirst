@@ -34,7 +34,7 @@ import org.hjug.git.GitLogReader;
         requiresProject = false,
         threadSafe = true,
         inheritByDefault = false)
-public class RefactorFirstRealMavenReport extends AbstractMavenReport {
+public class RefactorFirstMavenReport extends AbstractMavenReport {
 
     @Parameter(property = "showDetails")
     private boolean showDetails = false;
