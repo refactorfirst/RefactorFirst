@@ -98,7 +98,7 @@ public class SimpleHtmlReport {
         printTitle(projectName, projectVersion, stringBuilder);
         printHead(stringBuilder);
         printBreadcrumbs(stringBuilder);
-        printProjectHeader(projectName, projectVersion, stringBuilder, formatter);
+        printProjectHeader(projectName, projectVersion, stringBuilder);
 
         GitLogReader gitLogReader = new GitLogReader();
         String projectBaseDir;
@@ -286,6 +286,7 @@ public class SimpleHtmlReport {
         }
 
         stringBuilder.append("</table></section>");
+        printProjectFooter(stringBuilder, formatter);
         stringBuilder.append(THE_END);
 
         log.debug(stringBuilder.toString());
@@ -321,29 +322,20 @@ public class SimpleHtmlReport {
     public void printBreadcrumbs(StringBuilder stringBuilder) {
         stringBuilder.append("  <body class=\"composite\">\n"
                 + "    <div id=\"banner\">\n"
-                + "      <div class=\"clear\">\n"
+                /*+ "      <div class=\"clear\">\n"
                 + "        <hr/>\n"
-                + "      </div>\n"
+                + "      </div>\n"*/
                 + "    </div>\n"
                 + "    <div id=\"breadcrumbs\">\n"
                 + "      <div class=\"xleft\">");
     }
 
-    public void printProjectHeader(
-            String projectName, String projectVersion, StringBuilder stringBuilder, DateTimeFormatter formatter) {
-        stringBuilder
-                .append("<span id=\"publishDate\">Last Published: ")
-                .append(formatter.format(Instant.now()))
-                .append("</span>");
-        stringBuilder
-                .append("<span id=\"projectVersion\"> Version: ")
-                .append(projectVersion)
-                .append("</span>");
+    public void printProjectHeader(String projectName, String projectVersion, StringBuilder stringBuilder) {
 
         stringBuilder.append("</div>\n" + "      <div class=\"xright\">      </div>\n"
-                + "      <div class=\"clear\">\n"
+               /* + "      <div class=\"clear\">\n"
                 + "        <hr/>\n"
-                + "      </div>\n"
+                + "      </div>\n"*/
                 + "    </div>\n"
                 + "    <div id=\"bodyColumn\">\n"
                 + "      <div id=\"contentBox\">");
@@ -356,6 +348,15 @@ public class SimpleHtmlReport {
                 .append(" ")
                 .append(projectVersion)
                 .append("</h2>\n");
+    }
+
+    public void printProjectFooter(StringBuilder stringBuilder, DateTimeFormatter formatter) {
+        stringBuilder
+                .append("      <div class=\"clear\">\n" + "        <hr/>\n" + "      </div>\n")
+                .append("<span id=\"publishDate\">Last Published: ")
+                .append(formatter.format(Instant.now()))
+                .append("      <div class=\"clear\">\n" + "        <hr/>\n" + "      </div>\n")
+                .append("</span>");
     }
 
     void renderGithubButtons(StringBuilder stringBuilder) {
