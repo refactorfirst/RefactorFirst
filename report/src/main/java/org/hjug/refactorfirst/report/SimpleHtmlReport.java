@@ -333,7 +333,7 @@ public class SimpleHtmlReport {
     public void printProjectHeader(String projectName, String projectVersion, StringBuilder stringBuilder) {
 
         stringBuilder.append("</div>\n" + "      <div class=\"xright\">      </div>\n"
-               /* + "      <div class=\"clear\">\n"
+                /* + "      <div class=\"clear\">\n"
                 + "        <hr/>\n"
                 + "      </div>\n"*/
                 + "    </div>\n"
