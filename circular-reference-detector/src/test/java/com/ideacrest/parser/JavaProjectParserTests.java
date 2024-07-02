@@ -1,8 +1,5 @@
 package com.ideacrest.parser;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
@@ -13,7 +10,9 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-public class JavaProjectParserTests {
+import static org.junit.jupiter.api.Assertions.*;
+
+class JavaProjectParserTests {
 
 	JavaProjectParser sutJavaProjectParser = new JavaProjectParser();
 	

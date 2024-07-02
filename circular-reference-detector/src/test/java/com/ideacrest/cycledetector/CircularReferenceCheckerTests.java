@@ -1,7 +1,5 @@
 package com.ideacrest.cycledetector;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
@@ -14,7 +12,10 @@ import org.jgrapht.graph.DefaultEdge;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-public class CircularReferenceCheckerTests {
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+class CircularReferenceCheckerTests {
 	
 	CircularReferenceChecker sutCircularReferenceChecker = new CircularReferenceChecker();
 	
