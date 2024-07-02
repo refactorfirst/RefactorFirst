@@ -1,9 +1,7 @@
 package org.hjug.git;
 
 import java.io.IOException;
-import java.util.Comparator;
-import java.util.List;
-import java.util.TreeMap;
+import java.util.*;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.Repository;
@@ -12,6 +10,7 @@ import org.eclipse.jgit.lib.Repository;
 public class ChangePronenessRanker {
 
     private final TreeMap<Integer, Integer> changeCountsByTimeStamps = new TreeMap<>();
+    private final Map<String, ScmLogInfo> cachedScmLogInfos = new HashMap<>();
 
     public ChangePronenessRanker(Repository repository, GitLogReader repositoryLogReader) {
         try {
@@ -24,12 +23,18 @@ public class ChangePronenessRanker {
 
     public void rankChangeProneness(List<ScmLogInfo> scmLogInfos) {
         for (ScmLogInfo scmLogInfo : scmLogInfos) {
-            int commitsInRepositorySinceCreation =
-                    changeCountsByTimeStamps.tailMap(scmLogInfo.getEarliestCommit()).values().stream()
-                            .mapToInt(i -> i)
-                            .sum();
+            if (!cachedScmLogInfos.containsKey(scmLogInfo.getPath())) {
+                int commitsInRepositorySinceCreation =
+                        changeCountsByTimeStamps.tailMap(scmLogInfo.getEarliestCommit()).values().stream()
+                                .mapToInt(i -> i)
+                                .sum();
 
-            scmLogInfo.setChangeProneness((float) scmLogInfo.getCommitCount() / commitsInRepositorySinceCreation);
+                scmLogInfo.setChangeProneness((float) scmLogInfo.getCommitCount() / commitsInRepositorySinceCreation);
+                cachedScmLogInfos.put(scmLogInfo.getPath(), scmLogInfo);
+            } else {
+                scmLogInfo.setChangeProneness(
+                        cachedScmLogInfos.get(scmLogInfo.getPath()).getChangeProneness());
+            }
         }
 
         scmLogInfos.sort(Comparator.comparing(ScmLogInfo::getChangeProneness));
