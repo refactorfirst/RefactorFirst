@@ -11,6 +11,7 @@ import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.apache.maven.project.MavenProject;
 import org.hjug.refactorfirst.report.CsvReport;
 import org.hjug.refactorfirst.report.HtmlReport;
+import org.hjug.refactorfirst.report.SimpleHtmlReport;
 import org.hjug.refactorfirst.report.json.JsonReportExecutor;
 import picocli.CommandLine.Command;
 
@@ -58,6 +59,10 @@ public class ReportCommand implements Callable<Integer> {
         inferArgumentsFromMavenProject();
         populateDefaultArguments();
         switch (reportType) {
+            case SIMPLE_HTML:
+                SimpleHtmlReport simpleHtmlReport = new SimpleHtmlReport();
+                simpleHtmlReport.execute(showDetails, projectName, projectVersion, outputDirectory, baseDir);
+                return 0;
             case HTML:
                 HtmlReport htmlReport = new HtmlReport();
                 htmlReport.execute(showDetails, projectName, projectVersion, outputDirectory, baseDir);
