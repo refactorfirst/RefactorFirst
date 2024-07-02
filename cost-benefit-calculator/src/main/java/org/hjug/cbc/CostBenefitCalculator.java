@@ -18,7 +18,6 @@ import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.Repository;
 import org.hjug.git.ChangePronenessRanker;
 import org.hjug.git.GitLogReader;
-import org.hjug.git.RepositoryLogReader;
 import org.hjug.git.ScmLogInfo;
 import org.hjug.metrics.*;
 import org.hjug.metrics.rules.CBORule;
@@ -54,7 +53,7 @@ public class CostBenefitCalculator {
 
     public List<RankedDisharmony> calculateGodClassCostBenefitValues(String repositoryPath) {
 
-        RepositoryLogReader repositoryLogReader = new GitLogReader();
+        GitLogReader repositoryLogReader = new GitLogReader();
         Repository repository = null;
         log.info("Initiating Cost Benefit calculation");
         try {
@@ -115,7 +114,7 @@ public class CostBenefitCalculator {
     }
 
     <T extends Disharmony> List<ScmLogInfo> getRankedChangeProneness(
-            RepositoryLogReader repositoryLogReader, Repository repository, List<T> disharmonies) {
+            GitLogReader repositoryLogReader, Repository repository, List<T> disharmonies) {
         List<ScmLogInfo> scmLogInfos = new ArrayList<>();
         log.info("Calculating Change Proneness");
         for (Disharmony disharmony : disharmonies) {
@@ -143,7 +142,7 @@ public class CostBenefitCalculator {
 
     public List<RankedDisharmony> calculateCBOCostBenefitValues(String repositoryPath) {
 
-        RepositoryLogReader repositoryLogReader = new GitLogReader();
+        GitLogReader repositoryLogReader = new GitLogReader();
         Repository repository = null;
         log.info("Initiating Cost Benefit calculation");
         try {

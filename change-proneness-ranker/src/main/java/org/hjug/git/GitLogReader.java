@@ -15,7 +15,7 @@ import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.util.io.NullOutputStream;
 
 @Slf4j
-public class GitLogReader implements RepositoryLogReader {
+public class GitLogReader {
 
     static final String JAVA_FILE_TYPE = ".java";
 
@@ -23,7 +23,6 @@ public class GitLogReader implements RepositoryLogReader {
     // https://github.com/Cosium/git-code-format-maven-plugin/blob/master/src/main/java/com/cosium/code/format/AbstractMavenGitCodeFormatMojo.java
     // MIT License
     // Move to a provider?
-    @Override
     public Repository gitRepository(File basedir) throws IOException {
         Repository gitRepository;
         FileRepositoryBuilder repositoryBuilder = new FileRepositoryBuilder().findGitDir(basedir);
@@ -46,7 +45,6 @@ public class GitLogReader implements RepositoryLogReader {
     // https://stackoverflow.com/a/19950970/346247
     // and
     // https://github.com/centic9/jgit-cookbook/blob/master/src/main/java/org/dstadler/jgit/api/ReadFileFromCommit.java
-    @Override
     public Map<String, ByteArrayOutputStream> listRepositoryContentsAtHEAD(Repository repository) throws IOException {
         Ref head = repository.exactRef("HEAD");
         // a RevWalk allows us to walk over commits based on some filtering that is defined
@@ -88,7 +86,6 @@ public class GitLogReader implements RepositoryLogReader {
      * @return a LogInfo object
      * @throws GitAPIException
      */
-    @Override
     public ScmLogInfo fileLog(Repository repository, String path) throws GitAPIException, IOException {
         Git git = new Git(repository);
         ObjectId branchId = repository.resolve("HEAD");
@@ -118,7 +115,6 @@ public class GitLogReader implements RepositoryLogReader {
     }
 
     // based on https://stackoverflow.com/questions/27361538/how-to-show-changes-between-commits-with-jgit
-    @Override
     public TreeMap<Integer, Integer> captureChangeCountByCommitTimestamp(Repository repository)
             throws IOException, GitAPIException {
 

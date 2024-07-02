@@ -14,11 +14,11 @@ import org.junit.jupiter.api.Test;
 public class ChangePronenessRankerTest {
 
     private ChangePronenessRanker changePronenessRanker;
-    private RepositoryLogReader repositoryLogReader;
+    private GitLogReader repositoryLogReader;
 
     @BeforeEach
     public void setUp() {
-        repositoryLogReader = mock(RepositoryLogReader.class);
+        repositoryLogReader = mock(GitLogReader.class);
         changePronenessRanker = new ChangePronenessRanker(null, repositoryLogReader);
     }
 

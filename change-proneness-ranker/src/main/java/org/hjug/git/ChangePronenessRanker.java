@@ -12,9 +12,9 @@ import org.eclipse.jgit.lib.Repository;
 public class ChangePronenessRanker {
 
     private Repository repository;
-    private RepositoryLogReader repositoryLogReader;
+    private GitLogReader repositoryLogReader;
 
-    public ChangePronenessRanker(Repository repository, RepositoryLogReader repositoryLogReader) {
+    public ChangePronenessRanker(Repository repository, GitLogReader repositoryLogReader) {
         this.repositoryLogReader = repositoryLogReader;
         this.repository = repository;
     }
