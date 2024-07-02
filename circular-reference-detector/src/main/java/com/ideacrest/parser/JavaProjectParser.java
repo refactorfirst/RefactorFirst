@@ -3,6 +3,8 @@ package com.ideacrest.parser;
 import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.FieldDeclaration;
+import com.github.javaparser.ast.body.MethodDeclaration;
+import com.github.javaparser.ast.body.Parameter;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -36,13 +38,14 @@ public class JavaProjectParser {
                 filesStream
                         .filter(path -> path.getFileName().toString().endsWith(".java"))
                         .forEach(path -> {
-                            Set<String> instanceVarTypes = getInstanceVarTypes(classNames, path.toFile());
-                            if (!instanceVarTypes.isEmpty()) {
+                            Set<String> varTypes = getInstanceVarTypes(classNames, path.toFile());
+                            varTypes.addAll(getMethodTypes(classNames, path.toFile()));
+                            if (!varTypes.isEmpty()) {
                                 String className =
                                         getClassName(path.getFileName().toString());
                                 classReferencesGraph.addVertex(className);
-                                instanceVarTypes.forEach(classReferencesGraph::addVertex);
-                                instanceVarTypes.forEach(var -> classReferencesGraph.addEdge(className, var));
+                                varTypes.forEach(classReferencesGraph::addVertex);
+                                varTypes.forEach(var -> classReferencesGraph.addEdge(className, var));
                             }
                         });
             } catch (FileNotFoundException e) {
@@ -54,7 +57,7 @@ public class JavaProjectParser {
 
     /**
      * Get instance variables types of a java source file using java parser
-     * @param classNamesToFilterBy - only add instance variables which have these class names as type
+     * @param classNamesToFilterBy - only add instance variable types which have these class names as type
      * @param file
      * @return
      */
@@ -65,6 +68,31 @@ public class JavaProjectParser {
             return compilationUnit.findAll(FieldDeclaration.class).stream()
                     .map(f -> f.getVariables().get(0).getType())
                     .filter(v -> !v.isPrimitiveType())
+                    .map(Object::toString)
+                    .filter(classNamesToFilterBy::contains)
+                    .collect(Collectors.toSet());
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+        return new HashSet<>();
+    }
+
+    /**
+     * Get parameter types of methods declared in a java source file using java parser
+     * @param classNamesToFilterBy - only add types which have these class names as type
+     * @param file
+     * @return
+     */
+    private Set<String> getMethodTypes(List<String> classNamesToFilterBy, File javaSrcFile) {
+        CompilationUnit compilationUnit;
+        try {
+            compilationUnit = StaticJavaParser.parse(javaSrcFile);
+            return compilationUnit.findAll(MethodDeclaration.class).stream()
+                    .flatMap(f -> f.getParameters().stream()
+                            .map(Parameter::getType)
+                            .filter(type -> !type.isPrimitiveType())
+                            .collect(Collectors.toSet())
+                            .stream())
                     .map(Object::toString)
                     .filter(classNamesToFilterBy::contains)
                     .collect(Collectors.toSet());
