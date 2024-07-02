@@ -29,6 +29,7 @@ public class CostBenefitCalculator {
     private String repositoryPath;
     private final GitLogReader gitLogReader = new GitLogReader();
     private Repository repository = null;
+    private final ChangePronenessRanker changePronenessRanker;
 
     public CostBenefitCalculator(String repositoryPath) {
         this.repositoryPath = repositoryPath;
@@ -43,6 +44,8 @@ public class CostBenefitCalculator {
         } catch (IOException e) {
             log.error("Failure to access Git repository", e);
         }
+
+        changePronenessRanker = new ChangePronenessRanker(repository, gitLogReader);
     }
 
     // copied from PMD's PmdTaskImpl.java and modified
@@ -135,7 +138,6 @@ public class CostBenefitCalculator {
             }
         }
 
-        ChangePronenessRanker changePronenessRanker = new ChangePronenessRanker(repository, gitLogReader);
         changePronenessRanker.rankChangeProneness(scmLogInfos);
         return scmLogInfos;
     }
