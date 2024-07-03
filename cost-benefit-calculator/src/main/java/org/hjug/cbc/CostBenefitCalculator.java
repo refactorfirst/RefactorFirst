@@ -3,6 +3,8 @@ package org.hjug.cbc;
 import static net.sourceforge.pmd.RuleViolation.CLASS_NAME;
 import static net.sourceforge.pmd.RuleViolation.PACKAGE_NAME;
 
+import com.github.javaparser.ParserConfiguration;
+import com.github.javaparser.StaticJavaParser;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -59,6 +61,7 @@ public class CostBenefitCalculator {
     }
 
     public List<RankedCycle> runCycleAnalysis(String outputDirectoryPath, boolean renderImages) {
+        StaticJavaParser.getParserConfiguration().setLanguageLevel(ParserConfiguration.LanguageLevel.BLEEDING_EDGE);
         List<RankedCycle> rankedCycles = new ArrayList<>();
         try {
             Map<String, String> classNamesAndPaths = getClassNamesAndPaths();
@@ -296,7 +299,15 @@ public class CostBenefitCalculator {
     }
 
     private String getFileName(RuleViolation violation) {
-        return violation.getFileId().getUriString().replace("file:///" + repositoryPath.replace("\\", "/") + "/", "");
+        String uriString = violation.getFileId().getUriString();
+        return canonicaliseURIStringForRepoLookup(uriString);
+    }
+
+    private String canonicaliseURIStringForRepoLookup(String uriString) {
+        if (repositoryPath.startsWith("/") || repositoryPath.startsWith("\\")) {
+            return uriString.replace("file://" + repositoryPath.replace("\\", "/") + "/", "");
+        }
+        return uriString.replace("file:///" + repositoryPath.replace("\\", "/") + "/", "");
     }
 
     public Map<String, String> getClassNamesAndPaths() throws IOException {
@@ -307,9 +318,8 @@ public class CostBenefitCalculator {
             walk.forEach(path -> {
                 String filename = path.getFileName().toString();
                 if (filename.endsWith(".java")) {
-                    fileNamePaths.put(
-                            getClassName(filename),
-                            path.toUri().toString().replace("file:///" + repositoryPath.replace("\\", "/") + "/", ""));
+                    String uriString = path.toUri().toString();
+                    fileNamePaths.put(getClassName(filename), canonicaliseURIStringForRepoLookup(uriString));
                 }
             });
         }
