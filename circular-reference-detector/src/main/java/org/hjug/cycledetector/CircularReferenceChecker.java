@@ -1,4 +1,4 @@
-package com.ideacrest.cycledetector;
+package org.hjug.cycledetector;
 
 import com.mxgraph.layout.mxCircleLayout;
 import com.mxgraph.layout.mxIGraphLayout;

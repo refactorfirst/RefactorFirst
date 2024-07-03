@@ -1,11 +1,11 @@
-package com.ideacrest.app;
+package org.hjug.app;
 
-import com.ideacrest.cycledetector.CircularReferenceChecker;
-import com.ideacrest.parser.JavaProjectParser;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import org.hjug.cycledetector.CircularReferenceChecker;
+import org.hjug.parser.JavaProjectParser;
 import org.jgrapht.Graph;
 import org.jgrapht.alg.flow.GusfieldGomoryHuCutTree;
 import org.jgrapht.graph.AsSubgraph;
@@ -17,7 +17,6 @@ import org.jgrapht.graph.DefaultEdge;
  * Takes two arguments : source folder of java project, directory to store images of the circular reference graphs.
  *
  * @author nikhil_pereira
- *
  */
 public class CircularReferenceDetectorApp {
 

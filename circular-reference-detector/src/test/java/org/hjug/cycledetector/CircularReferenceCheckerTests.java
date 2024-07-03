@@ -1,4 +1,4 @@
-package com.ideacrest.cycledetector;
+package org.hjug.cycledetector;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;

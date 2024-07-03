@@ -14,6 +14,7 @@ import java.util.Locale;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.hjug.cbc.CostBenefitCalculator;
+import org.hjug.cbc.RankedCycle;
 import org.hjug.cbc.RankedDisharmony;
 import org.hjug.git.GitLogReader;
 
@@ -75,6 +76,10 @@ public class SimpleHtmlReport {
 
     public final String[] cboTableHeadings = {
         "Class", "Priority", "Change Proneness Rank", "Coupling Count", "Most Recent Commit Date", "Commit Count"
+    };
+
+    public final String[] cycleTableHeadings = {
+        "Cycle Name", "Priority", "Change Proneness Rank", "Class Count", "Relationship Count", "Minimum Cuts"
     };
 
     public void execute(
@@ -150,8 +155,8 @@ public class SimpleHtmlReport {
             throw new RuntimeException(e);
         }
         List<RankedDisharmony> rankedGodClassDisharmonies = costBenefitCalculator.calculateGodClassCostBenefitValues();
-
         List<RankedDisharmony> rankedCBODisharmonies = costBenefitCalculator.calculateCBOCostBenefitValues();
+        List<RankedCycle> rankedCycles = costBenefitCalculator.runCycleAnalysis();
 
         if (rankedGodClassDisharmonies.isEmpty() && rankedCBODisharmonies.isEmpty()) {
             stringBuilder
@@ -159,7 +164,7 @@ public class SimpleHtmlReport {
                     .append(projectName)
                     .append(" ")
                     .append(projectVersion)
-                    .append(" has no God classes or highly coupled classes!");
+                    .append(" has no God classes, highly coupled classes, or cycles!");
             renderGithubButtons(stringBuilder);
             log.info("Done! No Disharmonies found!");
             stringBuilder.append(THE_END);
@@ -174,7 +179,13 @@ public class SimpleHtmlReport {
         }
 
         if (!rankedGodClassDisharmonies.isEmpty()) {
-            renderGodClassInfo(showDetails, outputDirectory, rankedGodClassDisharmonies, stringBuilder, godClassTableHeadings, formatter);
+            renderGodClassInfo(
+                    showDetails,
+                    outputDirectory,
+                    rankedGodClassDisharmonies,
+                    stringBuilder,
+                    godClassTableHeadings,
+                    formatter);
         }
 
         if (!rankedGodClassDisharmonies.isEmpty() && !rankedCBODisharmonies.isEmpty()) {
@@ -183,6 +194,10 @@ public class SimpleHtmlReport {
 
         if (!rankedCBODisharmonies.isEmpty()) {
             renderHighlyCoupledClassInfo(outputDirectory, stringBuilder, rankedCBODisharmonies, formatter);
+        }
+
+        if (!rankedCycles.isEmpty()) {
+            renderCycles(outputDirectory, stringBuilder, rankedCycles, formatter);
         }
 
         stringBuilder.append("</section>");
@@ -195,7 +210,59 @@ public class SimpleHtmlReport {
         log.info("Done! View the report at target/site/{}", filename);
     }
 
-    private void renderGodClassInfo(boolean showDetails, String outputDirectory, List<RankedDisharmony> rankedGodClassDisharmonies, StringBuilder stringBuilder, String[] godClassTableHeadings, DateTimeFormatter formatter) {
+    private void renderCycles(
+            String outputDirectory,
+            StringBuilder stringBuilder,
+            List<RankedCycle> rankedCycles,
+            DateTimeFormatter formatter) {
+
+        stringBuilder.append("<div style=\"text-align: center;\"><a id=\"CBO\"><h1>Class Cycles</h1></a></div>");
+
+        stringBuilder.append(
+                "<h2 align=\"center\">Class Cycles by the numbers: (Refactor starting with Priority 1)</h2>");
+        stringBuilder.append("<table align=\"center\" border=\"5px\">");
+
+        // Content
+        stringBuilder.append("<thead><tr>");
+        for (String heading : cycleTableHeadings) {
+            stringBuilder.append("<th>").append(heading).append("</th>");
+        }
+
+        stringBuilder.append("<tbody>");
+        for (RankedCycle rankedCboClassDisharmony : rankedCycles) {
+            stringBuilder.append("<tr>");
+
+            // "Cycle Name", "Priority", "Change Proneness Rank", "Class Count", "Relationship Count", "Min Cuts"
+            String[] rankedCycleData = {
+                rankedCboClassDisharmony.getCycleName(),
+                rankedCboClassDisharmony.getPriority().toString(),
+                rankedCboClassDisharmony.getChangePronenessRank().toString(),
+                String.valueOf(rankedCboClassDisharmony.getCycleNodes().size()),
+                String.valueOf(rankedCboClassDisharmony.getEdgeSet().size()),
+                rankedCboClassDisharmony.getMinCutEdges().toString()
+            };
+
+            for (String rowData : rankedCycleData) {
+                drawTableCell(rowData, stringBuilder);
+            }
+
+            stringBuilder.append("</tr>");
+        }
+
+        stringBuilder.append("</tbody>");
+
+        stringBuilder.append("</tr></thead>");
+
+        stringBuilder.append("</table>");
+    }
+
+    private void renderGodClassInfo(
+            boolean showDetails,
+            String outputDirectory,
+            List<RankedDisharmony> rankedGodClassDisharmonies,
+            StringBuilder stringBuilder,
+            String[] godClassTableHeadings,
+            DateTimeFormatter formatter) {
         int maxGodClassPriority = rankedGodClassDisharmonies
                 .get(rankedGodClassDisharmonies.size() - 1)
                 .getPriority();
@@ -261,7 +328,11 @@ public class SimpleHtmlReport {
         stringBuilder.append("</table>");
     }
 
-    private void renderHighlyCoupledClassInfo(String outputDirectory, StringBuilder stringBuilder, List<RankedDisharmony> rankedCBODisharmonies, DateTimeFormatter formatter) {
+    private void renderHighlyCoupledClassInfo(
+            String outputDirectory,
+            StringBuilder stringBuilder,
+            List<RankedDisharmony> rankedCBODisharmonies,
+            DateTimeFormatter formatter) {
         stringBuilder.append(
                 "<div style=\"text-align: center;\"><a id=\"CBO\"><h1>Highly Coupled Classes</h1></a></div>");
 
@@ -286,12 +357,12 @@ public class SimpleHtmlReport {
             stringBuilder.append("<tr>");
 
             String[] rankedCboClassDisharmonyData = {
-                    rankedCboClassDisharmony.getFileName(),
-                    rankedCboClassDisharmony.getPriority().toString(),
-                    rankedCboClassDisharmony.getChangePronenessRank().toString(),
-                    rankedCboClassDisharmony.getEffortRank().toString(),
-                    formatter.format(rankedCboClassDisharmony.getMostRecentCommitTime()),
-                    rankedCboClassDisharmony.getCommitCount().toString()
+                rankedCboClassDisharmony.getFileName(),
+                rankedCboClassDisharmony.getPriority().toString(),
+                rankedCboClassDisharmony.getChangePronenessRank().toString(),
+                rankedCboClassDisharmony.getEffortRank().toString(),
+                formatter.format(rankedCboClassDisharmony.getMostRecentCommitTime()),
+                rankedCboClassDisharmony.getCommitCount().toString()
             };
 
             for (String rowData : rankedCboClassDisharmonyData) {

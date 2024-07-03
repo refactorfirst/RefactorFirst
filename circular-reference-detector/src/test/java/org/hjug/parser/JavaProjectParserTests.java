@@ -1,4 +1,4 @@
-package com.ideacrest.parser;
+package org.hjug.parser;
 
 import static org.junit.jupiter.api.Assertions.*;
 

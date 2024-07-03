@@ -30,6 +30,11 @@
         </dependency>
 
         <dependency>
+            <groupId>org.hjug.refactorfirst.circularreferencedetector</groupId>
+            <artifactId>circular-reference-detector</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>org.hjug.refactorfirst.testresources</groupId>
             <artifactId>test-resources</artifactId>
         </dependency>
