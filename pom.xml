@@ -74,6 +74,7 @@
 
     <modules>
         <module>test-resources</module>
+        <module>circular-reference-detector</module>
         <module>change-proneness-ranker</module>
         <module>effort-ranker</module>
         <module>cost-benefit-calculator</module>
@@ -96,6 +97,12 @@
             <dependency>
                 <groupId>org.hjug.refactorfirst.effortranker</groupId>
                 <artifactId>effort-ranker</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.hjug.refactorfirst.circularreferencedetector</groupId>
+                <artifactId>circular-reference-detector</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

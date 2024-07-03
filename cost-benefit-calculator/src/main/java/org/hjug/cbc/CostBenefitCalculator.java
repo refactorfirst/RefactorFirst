@@ -16,20 +16,30 @@ import net.sourceforge.pmd.*;
 import net.sourceforge.pmd.lang.LanguageRegistry;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.Repository;
+import org.hjug.cycledetector.CircularReferenceChecker;
 import org.hjug.git.ChangePronenessRanker;
 import org.hjug.git.GitLogReader;
 import org.hjug.git.ScmLogInfo;
 import org.hjug.metrics.*;
 import org.hjug.metrics.rules.CBORule;
+import org.hjug.parser.JavaProjectParser;
+import org.jgrapht.Graph;
+import org.jgrapht.alg.flow.GusfieldGomoryHuCutTree;
+import org.jgrapht.graph.AsSubgraph;
+import org.jgrapht.graph.AsUndirectedGraph;
+import org.jgrapht.graph.DefaultEdge;
 
 @Slf4j
 public class CostBenefitCalculator {
+
+    private final Map<String, AsSubgraph> renderedSubGraphs = new HashMap<>();
 
     private Report report;
     private String repositoryPath;
     private final GitLogReader gitLogReader = new GitLogReader();
     private Repository repository = null;
     private final ChangePronenessRanker changePronenessRanker;
+    private final JavaProjectParser javaProjectParser = new JavaProjectParser();
 
     public CostBenefitCalculator(String repositoryPath) {
         this.repositoryPath = repositoryPath;
@@ -46,6 +56,100 @@ public class CostBenefitCalculator {
         }
 
         changePronenessRanker = new ChangePronenessRanker(repository, gitLogReader);
+    }
+
+    public List<RankedCycle> runCycleAnalysis() {
+        List<RankedCycle> rankedCycles = new ArrayList<>();
+        try {
+            Map<String, String> classNamesAndPaths = getClassNamesAndPaths();
+            Graph<String, DefaultEdge> classReferencesGraph = javaProjectParser.getClassReferences(repositoryPath);
+            CircularReferenceChecker circularReferenceChecker = new CircularReferenceChecker();
+            Map<String, AsSubgraph<String, DefaultEdge>> cyclesForEveryVertexMap =
+                    circularReferenceChecker.detectCycles(classReferencesGraph);
+            cyclesForEveryVertexMap.forEach((vertex, subGraph) -> {
+                int vertexCount = subGraph.vertexSet().size();
+                int edgeCount = subGraph.edgeSet().size();
+                double minCut = 0;
+                Set<DefaultEdge> minCutEdges = null;
+                if (vertexCount > 1 && edgeCount > 1 && !isDuplicateSubGraph(subGraph, vertex)) {
+                    // circularReferenceChecker.createImage(outputDirectoryPath, subGraph, vertex);
+                    renderedSubGraphs.put(vertex, subGraph);
+                    log.info("Vertex: " + vertex + " vertex count: " + vertexCount + " edge count: " + edgeCount);
+                    GusfieldGomoryHuCutTree<String, DefaultEdge> gusfieldGomoryHuCutTree =
+                            new GusfieldGomoryHuCutTree<>(new AsUndirectedGraph<>(subGraph));
+                    minCut = gusfieldGomoryHuCutTree.calculateMinCut();
+                    log.info("Min cut weight: " + minCut);
+                    minCutEdges = gusfieldGomoryHuCutTree.getCutEdges();
+
+                    log.info("Minimum Cut Edges:");
+                    for (DefaultEdge minCutEdge : minCutEdges) {
+                        log.info(minCutEdge.toString());
+                    }
+                }
+
+                List<CycleNode> cycleNodes = subGraph.vertexSet().stream()
+                        .map(classInCycle -> new CycleNode(classInCycle, classNamesAndPaths.get(classInCycle)))
+                        .collect(Collectors.toList());
+                List<ScmLogInfo> changeRanks = getRankedChangeProneness(cycleNodes);
+
+                Map<String, CycleNode> cycleNodeMap = new HashMap<>();
+
+                for (CycleNode cycleNode : cycleNodes) {
+                    cycleNodeMap.put(cycleNode.getFileName(), cycleNode);
+                }
+
+                for (ScmLogInfo changeRank : changeRanks) {
+                    CycleNode cn = cycleNodeMap.get(changeRank.getPath());
+                    cn.setScmLogInfo(changeRank);
+                }
+
+                // sum change proneness ranks
+                int changePronenessRankSum = changeRanks.stream()
+                        .mapToInt(ScmLogInfo::getChangePronenessRank)
+                        .sum();
+                rankedCycles.add(new RankedCycle(
+                        vertex,
+                        changePronenessRankSum,
+                        subGraph.vertexSet(),
+                        subGraph.edgeSet(),
+                        minCut,
+                        minCutEdges,
+                        cycleNodes));
+            });
+
+            rankedCycles.sort(Comparator.comparing(RankedCycle::getAverageChangeProneness));
+            int cpr = 1;
+            for (RankedCycle rankedCycle : rankedCycles) {
+                rankedCycle.setChangePronenessRank(cpr++);
+            }
+
+            rankedCycles.sort(Comparator.comparing(RankedCycle::getRawPriority).reversed());
+
+            int priority = 1;
+            for (RankedCycle rankedCycle : rankedCycles) {
+                rankedCycle.setPriority(priority++);
+            }
+
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        return rankedCycles;
+    }
+
+    private boolean isDuplicateSubGraph(AsSubgraph<String, DefaultEdge> subGraph, String vertex) {
+        if (!renderedSubGraphs.isEmpty()) {
+            for (AsSubgraph renderedSubGraph : renderedSubGraphs.values()) {
+                if (renderedSubGraph.vertexSet().size() == subGraph.vertexSet().size()
+                        && renderedSubGraph.edgeSet().size()
+                                == subGraph.edgeSet().size()
+                        && renderedSubGraph.vertexSet().contains(vertex)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     // copied from PMD's PmdTaskImpl.java and modified
@@ -185,5 +289,32 @@ public class CostBenefitCalculator {
 
     private String getFileName(RuleViolation violation) {
         return violation.getFileId().getUriString().replace("file:///" + repositoryPath.replace("\\", "/") + "/", "");
+    }
+
+    public Map<String, String> getClassNamesAndPaths() throws IOException {
+
+        Map<String, String> fileNamePaths = new HashMap<>();
+
+        Files.walk(Paths.get(repositoryPath)).forEach(path -> {
+            String filename = path.getFileName().toString();
+            if (filename.endsWith(".java")) {
+                fileNamePaths.put(
+                        getClassName(filename),
+                        path.toUri().toString().replace("file:///" + repositoryPath.replace("\\", "/") + "/", ""));
+            }
+        });
+
+        return fileNamePaths;
+    }
+
+    /**
+     * Extract class name from java file name
+     * Example : MyJavaClass.java becomes MyJavaClass
+     *
+     * @param javaFileName
+     * @return
+     */
+    private String getClassName(String javaFileName) {
+        return javaFileName.substring(0, javaFileName.indexOf('.'));
     }
 }
