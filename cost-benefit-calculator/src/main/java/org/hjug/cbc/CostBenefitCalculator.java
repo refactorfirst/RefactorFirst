@@ -58,7 +58,7 @@ public class CostBenefitCalculator {
         changePronenessRanker = new ChangePronenessRanker(repository, gitLogReader);
     }
 
-    public List<RankedCycle> runCycleAnalysis() {
+    public List<RankedCycle> runCycleAnalysis(String outputDirectoryPath, boolean renderImages) {
         List<RankedCycle> rankedCycles = new ArrayList<>();
         try {
             Map<String, String> classNamesAndPaths = getClassNamesAndPaths();
@@ -72,7 +72,15 @@ public class CostBenefitCalculator {
                 double minCut = 0;
                 Set<DefaultEdge> minCutEdges = null;
                 if (vertexCount > 1 && edgeCount > 1 && !isDuplicateSubGraph(subGraph, vertex)) {
-                    // circularReferenceChecker.createImage(outputDirectoryPath, subGraph, vertex);
+                    if (renderImages) {
+                        try {
+                            circularReferenceChecker.createImage(
+                                    outputDirectoryPath + "/refactorFirst/cycles", subGraph, vertex);
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+
                     renderedSubGraphs.put(vertex, subGraph);
                     log.info("Vertex: " + vertex + " vertex count: " + vertexCount + " edge count: " + edgeCount);
                     GusfieldGomoryHuCutTree<String, DefaultEdge> gusfieldGomoryHuCutTree =
@@ -85,36 +93,36 @@ public class CostBenefitCalculator {
                     for (DefaultEdge minCutEdge : minCutEdges) {
                         log.info(minCutEdge.toString());
                     }
+
+                    List<CycleNode> cycleNodes = subGraph.vertexSet().stream()
+                            .map(classInCycle -> new CycleNode(classInCycle, classNamesAndPaths.get(classInCycle)))
+                            .collect(Collectors.toList());
+                    List<ScmLogInfo> changeRanks = getRankedChangeProneness(cycleNodes);
+
+                    Map<String, CycleNode> cycleNodeMap = new HashMap<>();
+
+                    for (CycleNode cycleNode : cycleNodes) {
+                        cycleNodeMap.put(cycleNode.getFileName(), cycleNode);
+                    }
+
+                    for (ScmLogInfo changeRank : changeRanks) {
+                        CycleNode cn = cycleNodeMap.get(changeRank.getPath());
+                        cn.setScmLogInfo(changeRank);
+                    }
+
+                    // sum change proneness ranks
+                    int changePronenessRankSum = changeRanks.stream()
+                            .mapToInt(ScmLogInfo::getChangePronenessRank)
+                            .sum();
+                    rankedCycles.add(new RankedCycle(
+                            vertex,
+                            changePronenessRankSum,
+                            subGraph.vertexSet(),
+                            subGraph.edgeSet(),
+                            minCut,
+                            minCutEdges,
+                            cycleNodes));
                 }
-
-                List<CycleNode> cycleNodes = subGraph.vertexSet().stream()
-                        .map(classInCycle -> new CycleNode(classInCycle, classNamesAndPaths.get(classInCycle)))
-                        .collect(Collectors.toList());
-                List<ScmLogInfo> changeRanks = getRankedChangeProneness(cycleNodes);
-
-                Map<String, CycleNode> cycleNodeMap = new HashMap<>();
-
-                for (CycleNode cycleNode : cycleNodes) {
-                    cycleNodeMap.put(cycleNode.getFileName(), cycleNode);
-                }
-
-                for (ScmLogInfo changeRank : changeRanks) {
-                    CycleNode cn = cycleNodeMap.get(changeRank.getPath());
-                    cn.setScmLogInfo(changeRank);
-                }
-
-                // sum change proneness ranks
-                int changePronenessRankSum = changeRanks.stream()
-                        .mapToInt(ScmLogInfo::getChangePronenessRank)
-                        .sum();
-                rankedCycles.add(new RankedCycle(
-                        vertex,
-                        changePronenessRankSum,
-                        subGraph.vertexSet(),
-                        subGraph.edgeSet(),
-                        minCut,
-                        minCutEdges,
-                        cycleNodes));
             });
 
             rankedCycles.sort(Comparator.comparing(RankedCycle::getAverageChangeProneness));
@@ -295,14 +303,16 @@ public class CostBenefitCalculator {
 
         Map<String, String> fileNamePaths = new HashMap<>();
 
-        Files.walk(Paths.get(repositoryPath)).forEach(path -> {
-            String filename = path.getFileName().toString();
-            if (filename.endsWith(".java")) {
-                fileNamePaths.put(
-                        getClassName(filename),
-                        path.toUri().toString().replace("file:///" + repositoryPath.replace("\\", "/") + "/", ""));
-            }
-        });
+        try (Stream<Path> walk = Files.walk(Paths.get(repositoryPath))) {
+            walk.forEach(path -> {
+                String filename = path.getFileName().toString();
+                if (filename.endsWith(".java")) {
+                    fileNamePaths.put(
+                            getClassName(filename),
+                            path.toUri().toString().replace("file:///" + repositoryPath.replace("\\", "/") + "/", ""));
+                }
+            });
+        }
 
         return fileNamePaths;
     }

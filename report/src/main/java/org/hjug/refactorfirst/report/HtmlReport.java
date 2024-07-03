@@ -7,6 +7,8 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
 import lombok.extern.slf4j.Slf4j;
+import org.hjug.cbc.CostBenefitCalculator;
+import org.hjug.cbc.RankedCycle;
 import org.hjug.cbc.RankedDisharmony;
 import org.hjug.gdg.GraphDataGenerator;
 
@@ -77,6 +79,7 @@ public class HtmlReport extends SimpleHtmlReport {
     }
 
     // TODO: Move to another class to allow use by Gradle plugin
+    @Override
     void writeGodClassGchartJs(
             List<RankedDisharmony> rankedDisharmonies, int maxPriority, String reportOutputDirectory) {
         GraphDataGenerator graphDataGenerator = new GraphDataGenerator();
@@ -168,5 +171,20 @@ public class HtmlReport extends SimpleHtmlReport {
         stringBuilder.append("<div id=\"series_chart_div_2\" align=\"center\"></div>");
         renderGithubButtons(stringBuilder);
         stringBuilder.append(COUPLING_BETWEEN_OBJECT_CHART_LEGEND);
+    }
+
+    @Override
+    public List<RankedCycle> runCycleAnalysis(CostBenefitCalculator costBenefitCalculator, String outputDirectory) {
+        return costBenefitCalculator.runCycleAnalysis(outputDirectory, true);
+    }
+
+    @Override
+    public void renderCycleImage(String cycleName, StringBuilder stringBuilder, String outputDirectory) {
+        stringBuilder.append("<div align=\"center\">");
+        stringBuilder.append("<img src=\"./refactorFirst/cycles/graph" + cycleName
+                + ".png\" width=\"1000\" height=\"1000\" alt=\"Cycle " + cycleName + "\">");
+        stringBuilder.append("</div>");
+        stringBuilder.append("<br/>");
+        stringBuilder.append("<br/>");
     }
 }

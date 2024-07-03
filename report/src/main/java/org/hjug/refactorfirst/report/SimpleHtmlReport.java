@@ -17,6 +17,7 @@ import org.hjug.cbc.CostBenefitCalculator;
 import org.hjug.cbc.RankedCycle;
 import org.hjug.cbc.RankedDisharmony;
 import org.hjug.git.GitLogReader;
+import org.jgrapht.graph.DefaultEdge;
 
 /**
  * Strictly HTML report that contains no JavaScript
@@ -81,6 +82,9 @@ public class SimpleHtmlReport {
     public final String[] cycleTableHeadings = {
         "Cycle Name", "Priority", "Change Proneness Rank", "Class Count", "Relationship Count", "Minimum Cuts"
     };
+
+    //    public final String[] classCycleTableHeadings = {"Classes", "Relationships", "Min Cut Edges"};
+    public final String[] classCycleTableHeadings = {"Classes", "Relationships"};
 
     public void execute(
             boolean showDetails, String projectName, String projectVersion, String outputDirectory, File baseDir) {
@@ -156,7 +160,8 @@ public class SimpleHtmlReport {
         }
         List<RankedDisharmony> rankedGodClassDisharmonies = costBenefitCalculator.calculateGodClassCostBenefitValues();
         List<RankedDisharmony> rankedCBODisharmonies = costBenefitCalculator.calculateCBOCostBenefitValues();
-        List<RankedCycle> rankedCycles = costBenefitCalculator.runCycleAnalysis();
+
+        List<RankedCycle> rankedCycles = runCycleAnalysis(costBenefitCalculator, outputDirectory);
 
         if (rankedGodClassDisharmonies.isEmpty() && rankedCBODisharmonies.isEmpty()) {
             stringBuilder
@@ -175,7 +180,15 @@ public class SimpleHtmlReport {
         if (!rankedGodClassDisharmonies.isEmpty() && !rankedCBODisharmonies.isEmpty()) {
             stringBuilder.append("<a href=\"#GOD\">God Classes</a>");
             stringBuilder.append("<br/>");
+        }
+
+        if (!rankedCBODisharmonies.isEmpty()) {
             stringBuilder.append("<a href=\"#CBO\">Highly Coupled Classes</a>");
+            stringBuilder.append("<br/>");
+        }
+
+        if (!rankedCycles.isEmpty()) {
+            stringBuilder.append("<a href=\"#CYCLES\">Class Cycles</a>");
         }
 
         if (!rankedGodClassDisharmonies.isEmpty()) {
@@ -197,6 +210,13 @@ public class SimpleHtmlReport {
         }
 
         if (!rankedCycles.isEmpty()) {
+            if (!rankedGodClassDisharmonies.isEmpty() || !rankedCBODisharmonies.isEmpty()) {
+                stringBuilder.append("<br/>");
+                stringBuilder.append("<br/>");
+                stringBuilder.append("<hr/>");
+                stringBuilder.append("<br/>");
+                stringBuilder.append("<br/>");
+            }
             renderCycles(outputDirectory, stringBuilder, rankedCycles, formatter);
         }
 
@@ -210,13 +230,17 @@ public class SimpleHtmlReport {
         log.info("Done! View the report at target/site/{}", filename);
     }
 
+    public List<RankedCycle> runCycleAnalysis(CostBenefitCalculator costBenefitCalculator, String outputDirectory) {
+        return costBenefitCalculator.runCycleAnalysis(outputDirectory, false);
+    }
+
     private void renderCycles(
             String outputDirectory,
             StringBuilder stringBuilder,
             List<RankedCycle> rankedCycles,
             DateTimeFormatter formatter) {
 
-        stringBuilder.append("<div style=\"text-align: center;\"><a id=\"CBO\"><h1>Class Cycles</h1></a></div>");
+        stringBuilder.append("<div style=\"text-align: center;\"><a id=\"CYCLES\"><h1>Class Cycles</h1></a></div>");
 
         stringBuilder.append(
                 "<h2 align=\"center\">Class Cycles by the numbers: (Refactor starting with Priority 1)</h2>");
@@ -229,17 +253,23 @@ public class SimpleHtmlReport {
         }
 
         stringBuilder.append("<tbody>");
-        for (RankedCycle rankedCboClassDisharmony : rankedCycles) {
+        for (RankedCycle rankedCycle : rankedCycles) {
             stringBuilder.append("<tr>");
+
+            StringBuilder edgesToCut = new StringBuilder();
+            for (DefaultEdge minCutEdge : rankedCycle.getMinCutEdges()) {
+                edgesToCut.append(minCutEdge.toString());
+                edgesToCut.append("</br>");
+            }
 
             // "Cycle Name", "Priority", "Change Proneness Rank", "Class Count", "Relationship Count", "Min Cuts"
             String[] rankedCycleData = {
-                rankedCboClassDisharmony.getCycleName(),
-                rankedCboClassDisharmony.getPriority().toString(),
-                rankedCboClassDisharmony.getChangePronenessRank().toString(),
-                String.valueOf(rankedCboClassDisharmony.getCycleNodes().size()),
-                String.valueOf(rankedCboClassDisharmony.getEdgeSet().size()),
-                rankedCboClassDisharmony.getMinCutEdges().toString()
+                rankedCycle.getCycleName(),
+                rankedCycle.getPriority().toString(),
+                rankedCycle.getChangePronenessRank().toString(),
+                String.valueOf(rankedCycle.getCycleNodes().size()),
+                String.valueOf(rankedCycle.getEdgeSet().size()),
+                edgesToCut.toString()
             };
 
             for (String rowData : rankedCycleData) {
@@ -254,6 +284,70 @@ public class SimpleHtmlReport {
         stringBuilder.append("</tr></thead>");
 
         stringBuilder.append("</table>");
+
+        for (RankedCycle rankedCycle : rankedCycles) {
+            renderCycleTable(outputDirectory, stringBuilder, rankedCycle, formatter);
+        }
+    }
+
+    private void renderCycleTable(
+            String outputDirectory, StringBuilder stringBuilder, RankedCycle cycle, DateTimeFormatter formatter) {
+
+        stringBuilder.append("<br/>");
+        stringBuilder.append("<br/>");
+        stringBuilder.append("<hr/>");
+        stringBuilder.append("<br/>");
+        stringBuilder.append("<br/>");
+
+        stringBuilder.append("<h2 align=\"center\">Class Cycle : " + cycle.getCycleName() + "</h2>");
+        renderCycleImage(cycle.getCycleName(), stringBuilder, outputDirectory);
+
+        stringBuilder.append("<div align=\"center\">");
+        stringBuilder.append("<strong>");
+        stringBuilder.append("\"*\" indicates relationship(s) to remove to decompose cycle");
+        stringBuilder.append("</strong>");
+        stringBuilder.append("</div>");
+
+        stringBuilder.append("<table align=\"center\" border=\"5px\">");
+
+        // Content
+        stringBuilder.append("<thead><tr>");
+        for (String heading : classCycleTableHeadings) {
+            stringBuilder.append("<th>").append(heading).append("</th>");
+        }
+
+        stringBuilder.append("<tbody>");
+
+        for (String vertex : cycle.getVertexSet()) {
+            stringBuilder.append("<tr>");
+            drawTableCell(vertex, stringBuilder);
+            StringBuilder edges = new StringBuilder();
+            for (org.jgrapht.graph.DefaultEdge edge : cycle.getEdgeSet()) {
+                if (edge.toString().startsWith("(" + vertex + " :")) {
+                    if (cycle.getMinCutEdges().contains(edge)) {
+                        edges.append("<strong>");
+                        edges.append(edge + "*");
+                        edges.append("</strong>");
+                    } else {
+                        edges.append(edge);
+                    }
+
+                    edges.append("<br/>");
+                }
+            }
+            drawTableCell(edges.toString(), stringBuilder);
+            stringBuilder.append("</tr>");
+        }
+
+        stringBuilder.append("</tbody>");
+
+        stringBuilder.append("</tr></thead>");
+
+        stringBuilder.append("</table>");
+    }
+
+    public void renderCycleImage(String cycleName, StringBuilder stringBuilder, String outputDirectory) {
+        // empty on purpose
     }
 
     private void renderGodClassInfo(
