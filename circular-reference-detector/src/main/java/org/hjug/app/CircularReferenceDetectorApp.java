@@ -22,10 +22,10 @@ public class CircularReferenceDetectorApp {
 
     private Map<String, AsSubgraph> renderedSubGraphs = new HashMap<>();
 
-    public static void main(String[] args) {
-        CircularReferenceDetectorApp circularReferenceDetectorApp = new CircularReferenceDetectorApp();
-        circularReferenceDetectorApp.launchApp(args);
-    }
+    //    public static void main(String[] args) {
+    //        CircularReferenceDetectorApp circularReferenceDetectorApp = new CircularReferenceDetectorApp();
+    //        circularReferenceDetectorApp.launchApp(args);
+    //    }
 
     /**
      * Parses source project files and creates a graph of class references of the java project.
