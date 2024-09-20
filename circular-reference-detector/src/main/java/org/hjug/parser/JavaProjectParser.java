@@ -15,8 +15,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.jgrapht.Graph;
-import org.jgrapht.graph.DefaultDirectedGraph;
-import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.DefaultWeightedEdge;
+import org.jgrapht.graph.builder.GraphTypeBuilder;
 
 public class JavaProjectParser {
 
@@ -26,8 +26,14 @@ public class JavaProjectParser {
      * @return
      * @throws IOException
      */
-    public Graph<String, DefaultEdge> getClassReferences(String srcDirectory) throws IOException {
-        Graph<String, DefaultEdge> classReferencesGraph = new DefaultDirectedGraph<>(DefaultEdge.class);
+    public Graph<String, DefaultWeightedEdge> getClassReferences(String srcDirectory) throws IOException {
+        Graph<String, DefaultWeightedEdge> classReferencesGraph =
+                GraphTypeBuilder.<String, DefaultWeightedEdge>directed()
+                        .allowingMultipleEdges(false)
+                        .allowingSelfLoops(true)
+                        .edgeClass(DefaultWeightedEdge.class)
+                        .weighted(true)
+                        .buildGraph();
         if (srcDirectory == null || srcDirectory.isEmpty()) {
             throw new IllegalArgumentException();
         } else {
@@ -43,13 +49,26 @@ public class JavaProjectParser {
                                         getClassName(path.getFileName().toString());
                                 classReferencesGraph.addVertex(className);
                                 varTypes.forEach(classReferencesGraph::addVertex);
-                                varTypes.forEach(var -> classReferencesGraph.addEdge(className, var));
+                                varTypes.forEach(varType -> {
+                                    DefaultWeightedEdge weightedEdge = classReferencesGraph.addEdge(className, varType);
+
+                                    // not sure why some edges are null, but let's ignore them for now
+                                    if (null != weightedEdge) {
+                                        classReferencesGraph.setEdgeWeight(
+                                                weightedEdge, classReferencesGraph.getEdgeWeight(weightedEdge) + 1);
+                                    }
+                                });
                             }
                         });
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
         }
+
+        for (DefaultWeightedEdge weightedEdge : classReferencesGraph.edgeSet()) {
+            System.out.println(weightedEdge.toString() + ":" + classReferencesGraph.getEdgeWeight(weightedEdge));
+        }
+
         return classReferencesGraph;
     }
 

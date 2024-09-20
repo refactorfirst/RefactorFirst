@@ -13,6 +13,7 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.sourceforge.pmd.*;
 import net.sourceforge.pmd.lang.LanguageRegistry;
@@ -29,7 +30,7 @@ import org.jgrapht.Graph;
 import org.jgrapht.alg.flow.GusfieldGomoryHuCutTree;
 import org.jgrapht.graph.AsSubgraph;
 import org.jgrapht.graph.AsUndirectedGraph;
-import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.DefaultWeightedEdge;
 
 @Slf4j
 public class CostBenefitCalculator {
@@ -42,6 +43,9 @@ public class CostBenefitCalculator {
     private Repository repository = null;
     private final ChangePronenessRanker changePronenessRanker;
     private final JavaProjectParser javaProjectParser = new JavaProjectParser();
+
+    @Getter
+    private Graph<String, DefaultWeightedEdge> classReferencesGraph;
 
     public CostBenefitCalculator(String repositoryPath) {
         this.repositoryPath = repositoryPath;
@@ -65,15 +69,15 @@ public class CostBenefitCalculator {
         List<RankedCycle> rankedCycles = new ArrayList<>();
         try {
             Map<String, String> classNamesAndPaths = getClassNamesAndPaths();
-            Graph<String, DefaultEdge> classReferencesGraph = javaProjectParser.getClassReferences(repositoryPath);
+            classReferencesGraph = javaProjectParser.getClassReferences(repositoryPath);
             CircularReferenceChecker circularReferenceChecker = new CircularReferenceChecker();
-            Map<String, AsSubgraph<String, DefaultEdge>> cyclesForEveryVertexMap =
+            Map<String, AsSubgraph<String, DefaultWeightedEdge>> cyclesForEveryVertexMap =
                     circularReferenceChecker.detectCycles(classReferencesGraph);
             cyclesForEveryVertexMap.forEach((vertex, subGraph) -> {
                 int vertexCount = subGraph.vertexSet().size();
                 int edgeCount = subGraph.edgeSet().size();
                 double minCut = 0;
-                Set<DefaultEdge> minCutEdges = null;
+                Set<DefaultWeightedEdge> minCutEdges;
                 if (vertexCount > 1 && edgeCount > 1 && !isDuplicateSubGraph(subGraph, vertex)) {
                     if (renderImages) {
                         try {
@@ -86,15 +90,22 @@ public class CostBenefitCalculator {
 
                     renderedSubGraphs.put(vertex, subGraph);
                     log.info("Vertex: " + vertex + " vertex count: " + vertexCount + " edge count: " + edgeCount);
-                    GusfieldGomoryHuCutTree<String, DefaultEdge> gusfieldGomoryHuCutTree =
+                    GusfieldGomoryHuCutTree<String, DefaultWeightedEdge> gusfieldGomoryHuCutTree =
                             new GusfieldGomoryHuCutTree<>(new AsUndirectedGraph<>(subGraph));
                     minCut = gusfieldGomoryHuCutTree.calculateMinCut();
                     log.info("Min cut weight: " + minCut);
                     minCutEdges = gusfieldGomoryHuCutTree.getCutEdges();
 
                     log.info("Minimum Cut Edges:");
-                    for (DefaultEdge minCutEdge : minCutEdges) {
+                    for (DefaultWeightedEdge minCutEdge : minCutEdges) {
                         log.info(minCutEdge.toString());
+                    }
+
+                    log.info("All edge weights:");
+                    for (DefaultWeightedEdge weightedEdge :
+                            gusfieldGomoryHuCutTree.getGomoryHuTree().edgeSet()) {
+                        log.info(weightedEdge.toString() + ":"
+                                + gusfieldGomoryHuCutTree.getGomoryHuTree().getEdgeWeight(weightedEdge));
                     }
 
                     List<CycleNode> cycleNodes = subGraph.vertexSet().stream()
@@ -148,7 +159,7 @@ public class CostBenefitCalculator {
         return rankedCycles;
     }
 
-    private boolean isDuplicateSubGraph(AsSubgraph<String, DefaultEdge> subGraph, String vertex) {
+    private boolean isDuplicateSubGraph(AsSubgraph<String, DefaultWeightedEdge> subGraph, String vertex) {
         if (!renderedSubGraphs.isEmpty()) {
             for (AsSubgraph renderedSubGraph : renderedSubGraphs.values()) {
                 if (renderedSubGraph.vertexSet().size() == subGraph.vertexSet().size()

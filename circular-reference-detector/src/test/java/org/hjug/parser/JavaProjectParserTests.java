@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.io.File;
 import java.io.IOException;
 import org.jgrapht.Graph;
-import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.DefaultWeightedEdge;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -25,7 +25,7 @@ class JavaProjectParserTests {
     @Test
     public void parseSourceDirectoryTest() throws IOException {
         File srcDirectory = new File("src/test/resources/javaSrcDirectory");
-        Graph<String, DefaultEdge> classReferencesGraph =
+        Graph<String, DefaultWeightedEdge> classReferencesGraph =
                 sutJavaProjectParser.getClassReferences(srcDirectory.getAbsolutePath());
         assertNotNull(classReferencesGraph);
         assertEquals(5, classReferencesGraph.vertexSet().size());
@@ -42,5 +42,7 @@ class JavaProjectParserTests {
         assertTrue(classReferencesGraph.containsEdge("D", "A"));
         assertTrue(classReferencesGraph.containsEdge("D", "C"));
         assertTrue(classReferencesGraph.containsEdge("E", "D"));
+        DefaultWeightedEdge edge = classReferencesGraph.getEdge("E", "D");
+        assertEquals(2, classReferencesGraph.getEdgeWeight(edge));
     }
 }
