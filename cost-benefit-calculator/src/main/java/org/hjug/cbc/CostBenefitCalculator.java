@@ -35,7 +35,7 @@ import org.jgrapht.graph.DefaultWeightedEdge;
 @Slf4j
 public class CostBenefitCalculator {
 
-    private final Map<String, AsSubgraph> renderedSubGraphs = new HashMap<>();
+    private final Map<String, AsSubgraph<String, DefaultWeightedEdge>> renderedSubGraphs = new HashMap<>();
 
     private Report report;
     private String repositoryPath;
@@ -93,20 +93,7 @@ public class CostBenefitCalculator {
                     GusfieldGomoryHuCutTree<String, DefaultWeightedEdge> gusfieldGomoryHuCutTree =
                             new GusfieldGomoryHuCutTree<>(new AsUndirectedGraph<>(subGraph));
                     minCut = gusfieldGomoryHuCutTree.calculateMinCut();
-                    log.info("Min cut weight: " + minCut);
                     minCutEdges = gusfieldGomoryHuCutTree.getCutEdges();
-
-                    log.info("Minimum Cut Edges:");
-                    for (DefaultWeightedEdge minCutEdge : minCutEdges) {
-                        log.info(minCutEdge.toString());
-                    }
-
-                    log.info("All edge weights:");
-                    for (DefaultWeightedEdge weightedEdge :
-                            gusfieldGomoryHuCutTree.getGomoryHuTree().edgeSet()) {
-                        log.info(weightedEdge.toString() + ":"
-                                + gusfieldGomoryHuCutTree.getGomoryHuTree().getEdgeWeight(weightedEdge));
-                    }
 
                     List<CycleNode> cycleNodes = subGraph.vertexSet().stream()
                             .map(classInCycle -> new CycleNode(classInCycle, classNamesAndPaths.get(classInCycle)))
@@ -120,8 +107,8 @@ public class CostBenefitCalculator {
                     }
 
                     for (ScmLogInfo changeRank : changeRanks) {
-                        CycleNode cn = cycleNodeMap.get(changeRank.getPath());
-                        cn.setScmLogInfo(changeRank);
+                        CycleNode cycleNode = cycleNodeMap.get(changeRank.getPath());
+                        cycleNode.setScmLogInfo(changeRank);
                     }
 
                     // sum change proneness ranks
@@ -161,7 +148,7 @@ public class CostBenefitCalculator {
 
     private boolean isDuplicateSubGraph(AsSubgraph<String, DefaultWeightedEdge> subGraph, String vertex) {
         if (!renderedSubGraphs.isEmpty()) {
-            for (AsSubgraph renderedSubGraph : renderedSubGraphs.values()) {
+            for (AsSubgraph<String, DefaultWeightedEdge>  renderedSubGraph : renderedSubGraphs.values()) {
                 if (renderedSubGraph.vertexSet().size() == subGraph.vertexSet().size()
                         && renderedSubGraph.edgeSet().size()
                                 == subGraph.edgeSet().size()
