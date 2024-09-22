@@ -15,8 +15,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.jgrapht.Graph;
-import org.jgrapht.graph.DefaultDirectedGraph;
-import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.DefaultDirectedWeightedGraph;
+import org.jgrapht.graph.DefaultWeightedEdge;
 
 public class JavaProjectParser {
 
@@ -26,8 +26,9 @@ public class JavaProjectParser {
      * @return
      * @throws IOException
      */
-    public Graph<String, DefaultEdge> getClassReferences(String srcDirectory) throws IOException {
-        Graph<String, DefaultEdge> classReferencesGraph = new DefaultDirectedGraph<>(DefaultEdge.class);
+    public Graph<String, DefaultWeightedEdge> getClassReferences(String srcDirectory) throws IOException {
+        Graph<String, DefaultWeightedEdge> classReferencesGraph =
+                new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
         if (srcDirectory == null || srcDirectory.isEmpty()) {
             throw new IllegalArgumentException();
         } else {
@@ -36,20 +37,29 @@ public class JavaProjectParser {
                 filesStream
                         .filter(path -> path.getFileName().toString().endsWith(".java"))
                         .forEach(path -> {
-                            Set<String> varTypes = getInstanceVarTypes(classNames, path.toFile());
-                            varTypes.addAll(getMethodTypes(classNames, path.toFile()));
-                            if (!varTypes.isEmpty()) {
+                            List<String> types = getInstanceVarTypes(classNames, path.toFile());
+                            types.addAll(getMethodArgumentTypes(classNames, path.toFile()));
+                            if (!types.isEmpty()) {
                                 String className =
                                         getClassName(path.getFileName().toString());
                                 classReferencesGraph.addVertex(className);
-                                varTypes.forEach(classReferencesGraph::addVertex);
-                                varTypes.forEach(var -> classReferencesGraph.addEdge(className, var));
+                                types.forEach(classReferencesGraph::addVertex);
+                                types.forEach(type -> {
+                                    if (!classReferencesGraph.containsEdge(className, type)) {
+                                        classReferencesGraph.addEdge(className, type);
+                                    } else {
+                                        DefaultWeightedEdge edge = classReferencesGraph.getEdge(className, type);
+                                        classReferencesGraph.setEdgeWeight(
+                                                edge, classReferencesGraph.getEdgeWeight(edge) + 1);
+                                    }
+                                });
                             }
                         });
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
         }
+
         return classReferencesGraph;
     }
 
@@ -59,7 +69,7 @@ public class JavaProjectParser {
      * @param file
      * @return
      */
-    private Set<String> getInstanceVarTypes(List<String> classNamesToFilterBy, File javaSrcFile) {
+    private List<String> getInstanceVarTypes(List<String> classNamesToFilterBy, File javaSrcFile) {
         CompilationUnit compilationUnit;
         try {
             compilationUnit = StaticJavaParser.parse(javaSrcFile);
@@ -68,11 +78,11 @@ public class JavaProjectParser {
                     .filter(v -> !v.isPrimitiveType())
                     .map(Object::toString)
                     .filter(classNamesToFilterBy::contains)
-                    .collect(Collectors.toSet());
+                    .collect(Collectors.toList());
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
-        return new HashSet<>();
+        return new ArrayList<>();
     }
 
     /**
@@ -81,7 +91,7 @@ public class JavaProjectParser {
      * @param file
      * @return
      */
-    private Set<String> getMethodTypes(List<String> classNamesToFilterBy, File javaSrcFile) {
+    private List<String> getMethodArgumentTypes(List<String> classNamesToFilterBy, File javaSrcFile) {
         CompilationUnit compilationUnit;
         try {
             compilationUnit = StaticJavaParser.parse(javaSrcFile);
@@ -89,15 +99,15 @@ public class JavaProjectParser {
                     .flatMap(f -> f.getParameters().stream()
                             .map(Parameter::getType)
                             .filter(type -> !type.isPrimitiveType())
-                            .collect(Collectors.toSet())
+                            .collect(Collectors.toList())
                             .stream())
                     .map(Object::toString)
                     .filter(classNamesToFilterBy::contains)
-                    .collect(Collectors.toSet());
+                    .collect(Collectors.toList());
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
-        return new HashSet<>();
+        return new ArrayList<>();
     }
 
     /**

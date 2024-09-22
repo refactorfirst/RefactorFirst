@@ -10,7 +10,7 @@ import org.jgrapht.Graph;
 import org.jgrapht.alg.flow.GusfieldGomoryHuCutTree;
 import org.jgrapht.graph.AsSubgraph;
 import org.jgrapht.graph.AsUndirectedGraph;
-import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.DefaultWeightedEdge;
 
 /**
  * Command line application to detect circular references in a java project.
@@ -41,7 +41,7 @@ public class CircularReferenceDetectorApp {
             String outputDirectoryPath = args[1];
             JavaProjectParser javaProjectParser = new JavaProjectParser();
             try {
-                Graph<String, DefaultEdge> classReferencesGraph =
+                Graph<String, DefaultWeightedEdge> classReferencesGraph =
                         javaProjectParser.getClassReferences(srcDirectoryPath);
                 detectAndStoreCyclesInDirectory(outputDirectoryPath, classReferencesGraph);
             } catch (Exception e) {
@@ -51,9 +51,9 @@ public class CircularReferenceDetectorApp {
     }
 
     private void detectAndStoreCyclesInDirectory(
-            String outputDirectoryPath, Graph<String, DefaultEdge> classReferencesGraph) {
+            String outputDirectoryPath, Graph<String, DefaultWeightedEdge> classReferencesGraph) {
         CircularReferenceChecker circularReferenceChecker = new CircularReferenceChecker();
-        Map<String, AsSubgraph<String, DefaultEdge>> cyclesForEveryVertexMap =
+        Map<String, AsSubgraph<String, DefaultWeightedEdge>> cyclesForEveryVertexMap =
                 circularReferenceChecker.detectCycles(classReferencesGraph);
         cyclesForEveryVertexMap.forEach((vertex, subGraph) -> {
             try {
@@ -64,13 +64,13 @@ public class CircularReferenceDetectorApp {
                     renderedSubGraphs.put(vertex, subGraph);
                     System.out.println(
                             "Vertex: " + vertex + " vertex count: " + vertexCount + " edge count: " + edgeCount);
-                    GusfieldGomoryHuCutTree<String, DefaultEdge> gusfieldGomoryHuCutTree =
+                    GusfieldGomoryHuCutTree<String, DefaultWeightedEdge> gusfieldGomoryHuCutTree =
                             new GusfieldGomoryHuCutTree<>(new AsUndirectedGraph<>(subGraph));
                     double minCut = gusfieldGomoryHuCutTree.calculateMinCut();
                     System.out.println("Min cut weight: " + minCut);
-                    Set<DefaultEdge> minCutEdges = gusfieldGomoryHuCutTree.getCutEdges();
+                    Set<DefaultWeightedEdge> minCutEdges = gusfieldGomoryHuCutTree.getCutEdges();
                     System.out.println("Minimum Cut Edges:");
-                    for (DefaultEdge minCutEdge : minCutEdges) {
+                    for (DefaultWeightedEdge minCutEdge : minCutEdges) {
                         System.out.println(minCutEdge);
                     }
                 }
@@ -80,7 +80,7 @@ public class CircularReferenceDetectorApp {
         });
     }
 
-    private boolean isDuplicateSubGraph(AsSubgraph<String, DefaultEdge> subGraph, String vertex) {
+    private boolean isDuplicateSubGraph(AsSubgraph<String, DefaultWeightedEdge> subGraph, String vertex) {
         if (!renderedSubGraphs.isEmpty()) {
             for (AsSubgraph renderedSubGraph : renderedSubGraphs.values()) {
                 if (renderedSubGraph.vertexSet().size() == subGraph.vertexSet().size()

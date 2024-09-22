@@ -14,7 +14,7 @@ import org.jgrapht.Graph;
 import org.jgrapht.alg.cycle.CycleDetector;
 import org.jgrapht.ext.JGraphXAdapter;
 import org.jgrapht.graph.AsSubgraph;
-import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.DefaultWeightedEdge;
 
 public class CircularReferenceChecker {
 
@@ -25,11 +25,12 @@ public class CircularReferenceChecker {
      * @param classReferencesGraph
      * @return a Map of Class and its Cycle Graph
      */
-    public Map<String, AsSubgraph<String, DefaultEdge>> detectCycles(Graph<String, DefaultEdge> classReferencesGraph) {
-        Map<String, AsSubgraph<String, DefaultEdge>> cyclesForEveryVertexMap = new HashMap<>();
-        CycleDetector<String, DefaultEdge> cycleDetector = new CycleDetector<>(classReferencesGraph);
+    public Map<String, AsSubgraph<String, DefaultWeightedEdge>> detectCycles(
+            Graph<String, DefaultWeightedEdge> classReferencesGraph) {
+        Map<String, AsSubgraph<String, DefaultWeightedEdge>> cyclesForEveryVertexMap = new HashMap<>();
+        CycleDetector<String, DefaultWeightedEdge> cycleDetector = new CycleDetector<>(classReferencesGraph);
         cycleDetector.findCycles().forEach(v -> {
-            AsSubgraph<String, DefaultEdge> subGraph =
+            AsSubgraph<String, DefaultWeightedEdge> subGraph =
                     new AsSubgraph<>(classReferencesGraph, cycleDetector.findCyclesContainingVertex(v));
             cyclesForEveryVertexMap.put(v, subGraph);
         });
@@ -45,12 +46,12 @@ public class CircularReferenceChecker {
      * @param imageName
      * @throws IOException
      */
-    public void createImage(String outputDirectoryPath, Graph<String, DefaultEdge> subGraph, String imageName)
+    public void createImage(String outputDirectoryPath, Graph<String, DefaultWeightedEdge> subGraph, String imageName)
             throws IOException {
         new File(outputDirectoryPath).mkdirs();
         File imgFile = new File(outputDirectoryPath + "/graph" + imageName + ".png");
         if (imgFile.createNewFile()) {
-            JGraphXAdapter<String, DefaultEdge> graphAdapter = new JGraphXAdapter<>(subGraph);
+            JGraphXAdapter<String, DefaultWeightedEdge> graphAdapter = new JGraphXAdapter<>(subGraph);
             mxIGraphLayout layout = new mxCircleLayout(graphAdapter);
             layout.execute(graphAdapter.getDefaultParent());
 

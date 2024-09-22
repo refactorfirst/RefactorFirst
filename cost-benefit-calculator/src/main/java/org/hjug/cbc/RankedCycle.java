@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Set;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.DefaultWeightedEdge;
 
 @Data
 @Slf4j
@@ -15,9 +15,9 @@ public class RankedCycle {
     private final Integer changePronenessRankSum;
 
     private final Set<String> vertexSet;
-    private final Set<DefaultEdge> edgeSet;
+    private final Set<DefaultWeightedEdge> edgeSet;
     private final double minCutCount;
-    private final Set<DefaultEdge> minCutEdges;
+    private final Set<DefaultWeightedEdge> minCutEdges;
     private final List<CycleNode> cycleNodes;
 
     private float rawPriority;
@@ -30,9 +30,9 @@ public class RankedCycle {
             String cycleName,
             Integer changePronenessRankSum,
             Set<String> vertexSet,
-            Set<DefaultEdge> edgeSet,
+            Set<DefaultWeightedEdge> edgeSet,
             double minCutCount,
-            Set<DefaultEdge> minCutEdges,
+            Set<DefaultWeightedEdge> minCutEdges,
             List<CycleNode> cycleNodes) {
         this.cycleNodes = cycleNodes;
         this.cycleName = cycleName;

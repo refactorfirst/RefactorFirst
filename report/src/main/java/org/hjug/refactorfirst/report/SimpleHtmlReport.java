@@ -17,7 +17,8 @@ import org.hjug.cbc.CostBenefitCalculator;
 import org.hjug.cbc.RankedCycle;
 import org.hjug.cbc.RankedDisharmony;
 import org.hjug.git.GitLogReader;
-import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.Graph;
+import org.jgrapht.graph.DefaultWeightedEdge;
 
 /**
  * Strictly HTML report that contains no JavaScript
@@ -85,6 +86,8 @@ public class SimpleHtmlReport {
 
     //    public final String[] classCycleTableHeadings = {"Classes", "Relationships", "Min Cut Edges"};
     public final String[] classCycleTableHeadings = {"Classes", "Relationships"};
+
+    private Graph<String, DefaultWeightedEdge> classGraph;
 
     public void execute(
             boolean showDetails, String projectName, String projectVersion, String outputDirectory, File baseDir) {
@@ -162,8 +165,9 @@ public class SimpleHtmlReport {
         List<RankedDisharmony> rankedCBODisharmonies = costBenefitCalculator.calculateCBOCostBenefitValues();
 
         List<RankedCycle> rankedCycles = runCycleAnalysis(costBenefitCalculator, outputDirectory);
+        classGraph = costBenefitCalculator.getClassReferencesGraph();
 
-        if (rankedGodClassDisharmonies.isEmpty() && rankedCBODisharmonies.isEmpty()) {
+        if (rankedGodClassDisharmonies.isEmpty() && rankedCBODisharmonies.isEmpty() && rankedCycles.isEmpty()) {
             stringBuilder
                     .append("Congratulations!  ")
                     .append(projectName)
@@ -257,8 +261,8 @@ public class SimpleHtmlReport {
             stringBuilder.append("<tr>");
 
             StringBuilder edgesToCut = new StringBuilder();
-            for (DefaultEdge minCutEdge : rankedCycle.getMinCutEdges()) {
-                edgesToCut.append(minCutEdge.toString());
+            for (DefaultWeightedEdge minCutEdge : rankedCycle.getMinCutEdges()) {
+                edgesToCut.append(minCutEdge + ":" + (int) classGraph.getEdgeWeight(minCutEdge));
                 edgesToCut.append("</br>");
             }
 
@@ -322,14 +326,18 @@ public class SimpleHtmlReport {
             stringBuilder.append("<tr>");
             drawTableCell(vertex, stringBuilder);
             StringBuilder edges = new StringBuilder();
-            for (org.jgrapht.graph.DefaultEdge edge : cycle.getEdgeSet()) {
+            for (org.jgrapht.graph.DefaultWeightedEdge edge : cycle.getEdgeSet()) {
                 if (edge.toString().startsWith("(" + vertex + " :")) {
                     if (cycle.getMinCutEdges().contains(edge)) {
                         edges.append("<strong>");
-                        edges.append(edge + "*");
+                        edges.append(edge);
+                        edges.append(":")
+                                .append((int) classGraph.getEdgeWeight(edge))
+                                .append("*");
                         edges.append("</strong>");
                     } else {
                         edges.append(edge);
+                        edges.append(":").append((int) classGraph.getEdgeWeight(edge));
                     }
 
                     edges.append("<br/>");
