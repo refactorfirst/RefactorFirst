@@ -15,9 +15,38 @@ import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.util.io.NullOutputStream;
 
 @Slf4j
-public class GitLogReader {
+public class GitLogReader implements AutoCloseable {
 
     static final String JAVA_FILE_TYPE = ".java";
+
+    private Repository gitRepository;
+
+    private Git git;
+
+    public GitLogReader() {}
+
+    public GitLogReader(File basedir) throws IOException {
+        FileRepositoryBuilder repositoryBuilder = new FileRepositoryBuilder().findGitDir(basedir);
+        String gitIndexFileEnvVariable = System.getenv("GIT_INDEX_FILE");
+        if (Objects.nonNull(gitIndexFileEnvVariable)
+                && !gitIndexFileEnvVariable.trim().isEmpty()) {
+            log.debug("Setting Index File based on Env Variable GIT_INDEX_FILE {}", gitIndexFileEnvVariable);
+            repositoryBuilder = repositoryBuilder.setIndexFile(new File(gitIndexFileEnvVariable));
+        }
+
+        git = Git.open(repositoryBuilder.getGitDir());
+        gitRepository = git.getRepository();
+    }
+
+    GitLogReader(Git git) {
+        this.git = git;
+        gitRepository = git.getRepository();
+    }
+
+    @Override
+    public void close() throws Exception {
+        git.close();
+    }
 
     // Based on
     // https://github.com/Cosium/git-code-format-maven-plugin/blob/master/src/main/java/com/cosium/code/format/AbstractMavenGitCodeFormatMojo.java
@@ -81,14 +110,12 @@ public class GitLogReader {
      * Returns the number of commits and earliest commit for a given path
      * TODO: Move to a different class???
      *
-     * @param repository
      * @param path
      * @return a LogInfo object
      * @throws GitAPIException
      */
-    public ScmLogInfo fileLog(Repository repository, String path) throws GitAPIException, IOException {
-        Git git = new Git(repository);
-        ObjectId branchId = repository.resolve("HEAD");
+    public ScmLogInfo fileLog(String path) throws GitAPIException, IOException {
+        ObjectId branchId = gitRepository.resolve("HEAD");
         Iterable<RevCommit> revCommits = git.log().add(branchId).addPath(path).call();
 
         int commitCount = 0;
@@ -101,8 +128,7 @@ public class GitLogReader {
         }
 
         // based on https://stackoverflow.com/a/59274329/346247
-        int mostRecentCommit = new Git(repository)
-                .log()
+        int mostRecentCommit = git.log()
                 .add(branchId)
                 .addPath(path)
                 .setMaxCount(1)
@@ -115,49 +141,47 @@ public class GitLogReader {
     }
 
     // based on https://stackoverflow.com/questions/27361538/how-to-show-changes-between-commits-with-jgit
-    public TreeMap<Integer, Integer> captureChangeCountByCommitTimestamp(Repository repository)
-            throws IOException, GitAPIException {
+    public TreeMap<Integer, Integer> captureChangeCountByCommitTimestamp() throws IOException, GitAPIException {
 
         TreeMap<Integer, Integer> changesByCommitTimestamp = new TreeMap<>();
 
-        try (Git git = new Git(repository)) {
-            ObjectId branchId = repository.resolve("HEAD");
-            Iterable<RevCommit> commits = git.log().add(branchId).call();
+        ObjectId branchId = gitRepository.resolve("HEAD");
+        Iterable<RevCommit> commits = git.log().add(branchId).call();
 
-            RevCommit newCommit = null;
+        RevCommit newCommit = null;
 
-            for (Iterator<RevCommit> iterator = commits.iterator(); iterator.hasNext(); ) {
-                RevCommit oldCommit = iterator.next();
+        for (Iterator<RevCommit> iterator = commits.iterator(); iterator.hasNext(); ) {
+            RevCommit oldCommit = iterator.next();
 
-                int count = 0;
-                if (null == newCommit) {
-                    newCommit = oldCommit;
-                    continue;
-                }
-
-                for (DiffEntry entry : getDiffEntries(git, newCommit, oldCommit)) {
-                    if (entry.getNewPath().endsWith(JAVA_FILE_TYPE)
-                            || entry.getOldPath().endsWith(JAVA_FILE_TYPE)) {
-                        count++;
-                    }
-                }
-
-                if (count > 0) {
-                    changesByCommitTimestamp.put(newCommit.getCommitTime(), count);
-                }
-
-                // Handle first / initial commit
-                if (!iterator.hasNext()) {
-                    changesByCommitTimestamp.putAll(walkFirstCommit(repository, oldCommit));
-                }
-
+            int count = 0;
+            if (null == newCommit) {
                 newCommit = oldCommit;
+                continue;
             }
+
+            for (DiffEntry entry : getDiffEntries(newCommit, oldCommit)) {
+                if (entry.getNewPath().endsWith(JAVA_FILE_TYPE)
+                        || entry.getOldPath().endsWith(JAVA_FILE_TYPE)) {
+                    count++;
+                }
+            }
+
+            if (count > 0) {
+                changesByCommitTimestamp.put(newCommit.getCommitTime(), count);
+            }
+
+            // Handle first / initial commit
+            if (!iterator.hasNext()) {
+                changesByCommitTimestamp.putAll(walkFirstCommit(oldCommit));
+            }
+
+            newCommit = oldCommit;
         }
+
         return changesByCommitTimestamp;
     }
 
-    private List<DiffEntry> getDiffEntries(Git git, RevCommit newCommit, RevCommit oldCommit) throws IOException {
+    private List<DiffEntry> getDiffEntries(RevCommit newCommit, RevCommit oldCommit) throws IOException {
         CanonicalTreeParser oldTreeIter = new CanonicalTreeParser();
         CanonicalTreeParser newTreeIter = new CanonicalTreeParser();
         try (ObjectReader reader = git.getRepository().newObjectReader()) {
@@ -172,11 +196,11 @@ public class GitLogReader {
         return df.scan(oldTreeIter, newTreeIter);
     }
 
-    Map<Integer, Integer> walkFirstCommit(Repository repository, RevCommit firstCommit) throws IOException {
+    Map<Integer, Integer> walkFirstCommit(RevCommit firstCommit) throws IOException {
         Map<Integer, Integer> changesByCommitTimestamp = new TreeMap<>();
         int firstCommitCount = 0;
         ObjectId treeId = firstCommit.getTree();
-        try (TreeWalk treeWalk = new TreeWalk(repository)) {
+        try (TreeWalk treeWalk = new TreeWalk(gitRepository)) {
             treeWalk.setRecursive(false);
             treeWalk.reset(treeId);
             while (treeWalk.next()) {

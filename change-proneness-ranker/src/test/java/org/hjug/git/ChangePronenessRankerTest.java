@@ -1,6 +1,5 @@
 package org.hjug.git;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -31,9 +30,9 @@ class ChangePronenessRankerTest {
         commitsWithChangeCounts.put(scmLogInfo.getEarliestCommit() + 5 * 60, 3);
         commitsWithChangeCounts.put(scmLogInfo.getEarliestCommit() + 10 * 60, 3);
 
-        when(repositoryLogReader.captureChangeCountByCommitTimestamp(any())).thenReturn(commitsWithChangeCounts);
+        when(repositoryLogReader.captureChangeCountByCommitTimestamp()).thenReturn(commitsWithChangeCounts);
 
-        changePronenessRanker = new ChangePronenessRanker(null, repositoryLogReader);
+        changePronenessRanker = new ChangePronenessRanker(repositoryLogReader);
         List<ScmLogInfo> scmLogInfos = new ArrayList<>();
         scmLogInfos.add(scmLogInfo);
         changePronenessRanker.rankChangeProneness(scmLogInfos);
@@ -57,8 +56,8 @@ class ChangePronenessRankerTest {
         commitsWithChangeCounts.put(scmLogInfo2.getEarliestCommit() + 5 * 60, 5);
         commitsWithChangeCounts.put(scmLogInfo2.getEarliestCommit() + 10 * 60, 5);
 
-        when(repositoryLogReader.captureChangeCountByCommitTimestamp(any())).thenReturn(commitsWithChangeCounts);
-        changePronenessRanker = new ChangePronenessRanker(null, repositoryLogReader);
+        when(repositoryLogReader.captureChangeCountByCommitTimestamp()).thenReturn(commitsWithChangeCounts);
+        changePronenessRanker = new ChangePronenessRanker(repositoryLogReader);
 
         List<ScmLogInfo> scmLogInfos = new ArrayList<>();
         scmLogInfos.add(scmLogInfo);

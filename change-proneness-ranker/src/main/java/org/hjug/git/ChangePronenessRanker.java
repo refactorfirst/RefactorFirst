@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.*;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jgit.api.errors.GitAPIException;
-import org.eclipse.jgit.lib.Repository;
 
 @Slf4j
 public class ChangePronenessRanker {
@@ -12,10 +11,10 @@ public class ChangePronenessRanker {
     private final TreeMap<Integer, Integer> changeCountsByTimeStamps = new TreeMap<>();
     private final Map<String, ScmLogInfo> cachedScmLogInfos = new HashMap<>();
 
-    public ChangePronenessRanker(Repository repository, GitLogReader repositoryLogReader) {
+    public ChangePronenessRanker(GitLogReader repositoryLogReader) {
         try {
             log.info("Capturing change count based on commit timestamps");
-            changeCountsByTimeStamps.putAll(repositoryLogReader.captureChangeCountByCommitTimestamp(repository));
+            changeCountsByTimeStamps.putAll(repositoryLogReader.captureChangeCountByCommitTimestamp());
         } catch (IOException | GitAPIException e) {
             log.error("Error reading from repository: {}", e.getMessage());
         }

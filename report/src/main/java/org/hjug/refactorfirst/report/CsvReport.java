@@ -11,6 +11,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import lombok.extern.slf4j.Slf4j;
 import org.hjug.cbc.CostBenefitCalculator;
+import org.hjug.cbc.RankedCycle;
 import org.hjug.cbc.RankedDisharmony;
 import org.hjug.git.GitLogReader;
 
@@ -83,14 +84,14 @@ public class CsvReport {
         }
 
         // actual calcualte
-        CostBenefitCalculator costBenefitCalculator = new CostBenefitCalculator(projectBaseDir);
-        try {
+        List<RankedDisharmony> rankedDisharmonies;
+        try (CostBenefitCalculator costBenefitCalculator = new CostBenefitCalculator(projectBaseDir)) {
             costBenefitCalculator.runPmdAnalysis();
-        } catch (IOException e) {
-            log.error("Error running PMD analysis.");
+            rankedDisharmonies = costBenefitCalculator.calculateGodClassCostBenefitValues();
+        } catch (Exception e) {
+            log.error("Error running analysis.");
             throw new RuntimeException(e);
         }
-        List<RankedDisharmony> rankedDisharmonies = costBenefitCalculator.calculateGodClassCostBenefitValues();
 
         rankedDisharmonies.sort(Comparator.comparing(RankedDisharmony::getPriority));
 

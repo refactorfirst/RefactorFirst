@@ -3,7 +3,6 @@ package org.hjug.refactorfirst.report;
 import static org.hjug.refactorfirst.report.ReportWriter.writeReportToDisk;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -154,18 +153,19 @@ public class SimpleHtmlReport {
             return;
         }
 
-        CostBenefitCalculator costBenefitCalculator = new CostBenefitCalculator(projectBaseDir);
-        try {
+        List<RankedDisharmony> rankedGodClassDisharmonies;
+        List<RankedDisharmony> rankedCBODisharmonies;
+        List<RankedCycle> rankedCycles;
+        try (CostBenefitCalculator costBenefitCalculator = new CostBenefitCalculator(projectBaseDir)) {
             costBenefitCalculator.runPmdAnalysis();
-        } catch (IOException e) {
-            log.error("Error running PMD analysis.");
+            rankedGodClassDisharmonies = costBenefitCalculator.calculateGodClassCostBenefitValues();
+            rankedCBODisharmonies = costBenefitCalculator.calculateCBOCostBenefitValues();
+            rankedCycles = runCycleAnalysis(costBenefitCalculator, outputDirectory);
+            classGraph = costBenefitCalculator.getClassReferencesGraph();
+        } catch (Exception e) {
+            log.error("Error running analysis.");
             throw new RuntimeException(e);
         }
-        List<RankedDisharmony> rankedGodClassDisharmonies = costBenefitCalculator.calculateGodClassCostBenefitValues();
-        List<RankedDisharmony> rankedCBODisharmonies = costBenefitCalculator.calculateCBOCostBenefitValues();
-
-        List<RankedCycle> rankedCycles = runCycleAnalysis(costBenefitCalculator, outputDirectory);
-        classGraph = costBenefitCalculator.getClassReferencesGraph();
 
         if (rankedGodClassDisharmonies.isEmpty() && rankedCBODisharmonies.isEmpty() && rankedCycles.isEmpty()) {
             stringBuilder

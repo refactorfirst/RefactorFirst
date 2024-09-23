@@ -22,6 +22,7 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.reporting.AbstractMavenReport;
 import org.apache.maven.reporting.MavenReportException;
 import org.hjug.cbc.CostBenefitCalculator;
+import org.hjug.cbc.RankedCycle;
 import org.hjug.cbc.RankedDisharmony;
 import org.hjug.gdg.GraphDataGenerator;
 import org.hjug.git.GitLogReader;
@@ -209,16 +210,16 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
             return;
         }
 
-        CostBenefitCalculator costBenefitCalculator = new CostBenefitCalculator(projectBaseDir);
-        try {
+        List<RankedDisharmony> rankedGodClassDisharmonies;
+        List<RankedDisharmony> rankedCBODisharmonies;
+        try (CostBenefitCalculator costBenefitCalculator = new CostBenefitCalculator(projectBaseDir)) {
             costBenefitCalculator.runPmdAnalysis();
-        } catch (IOException e) {
-            log.error("Error running PMD analysis.");
+            rankedGodClassDisharmonies = costBenefitCalculator.calculateGodClassCostBenefitValues();
+            rankedCBODisharmonies = costBenefitCalculator.calculateCBOCostBenefitValues();
+        } catch (Exception e) {
+            log.error("Error running analysis.");
             throw new RuntimeException(e);
         }
-        List<RankedDisharmony> rankedGodClassDisharmonies = costBenefitCalculator.calculateGodClassCostBenefitValues();
-
-        List<RankedDisharmony> rankedCBODisharmonies = costBenefitCalculator.calculateCBOCostBenefitValues();
 
         if (rankedGodClassDisharmonies.isEmpty() && rankedCBODisharmonies.isEmpty()) {
             mainSink.text("Contratulations!  " + projectName + " " + projectVersion
