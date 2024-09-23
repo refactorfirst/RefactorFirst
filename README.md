@@ -116,7 +116,7 @@ If you have IntelliJ Ultimate, you can install the [Method Reference Diagram](ht
 ## Additional Details
 This plugin will work on both single module and multi-module Maven projects that have a typical Maven project layout.
  
-This tool is based on the paper **[Prioritizing Design Debt Investment Opportunities](https://dl.acm.org/doi/10.1145/1985362.1985372)** by Nico Zazworka, Carolyn Seaman, and Forrest Shull.  The presentation based on the paper is available at [https://resources.sei.cmu.edu/asset_files/Presentation/2011_017_001_516911.pdf](https://insights.sei.cmu.edu/documents/1385/2011_101_001_424876.pdf) 
+This tool is based on the paper **[Prioritizing Design Debt Investment Opportunities](https://dl.acm.org/doi/10.1145/1985362.1985372)** by Nico Zazworka, Carolyn Seaman, and Forrest Shull.  The presentation based on the paper is available [here](https://insights.sei.cmu.edu/documents/1385/2011_101_001_424876.pdf). 
 
 ## Limitations
 * My time.  This is a passion project and is developed in my spare time.
