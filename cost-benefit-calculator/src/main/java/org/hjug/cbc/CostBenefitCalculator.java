@@ -249,7 +249,7 @@ public class CostBenefitCalculator implements AutoCloseable {
                         log.error("Error reading Git repository contents.", e);
                     } catch (NullPointerException e) {
                         log.info("Encountered nested class in a class containing a violation.  Class: {}", path);
-                        scmLogInfo = new ScmLogInfo(path, 0,0,0);
+                        scmLogInfo = new ScmLogInfo(path, 0, 0, 0);
                     }
                     return scmLogInfo;
                 })
