@@ -22,9 +22,12 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.reporting.AbstractMavenReport;
 import org.apache.maven.reporting.MavenReportException;
 import org.hjug.cbc.CostBenefitCalculator;
+import org.hjug.cbc.RankedCycle;
 import org.hjug.cbc.RankedDisharmony;
 import org.hjug.gdg.GraphDataGenerator;
 import org.hjug.git.GitLogReader;
+import org.jgrapht.Graph;
+import org.jgrapht.graph.DefaultWeightedEdge;
 
 @Slf4j
 @Mojo(
@@ -64,6 +67,14 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
         return "Ranks the disharmonies in a codebase.  The classes that should be refactored first "
                 + " have the highest priority values.";
     }
+
+    public final String[] cycleTableHeadings = {
+        "Cycle Name", "Priority", "Change Proneness Rank", "Class Count", "Relationship Count", "Minimum Cuts"
+    };
+
+    public final String[] classCycleTableHeadings = {"Classes", "Relationships"};
+
+    private Graph<String, DefaultWeightedEdge> classGraph;
 
     @Override
     public void executeReport(Locale locale) throws MavenReportException {
@@ -127,9 +138,6 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
          * @See https://maven.apache.org/doxia/developers/sink.html#How_to_inject_javascript_code_into_HTML
          */
         SinkEventAttributeSet githubButtonJS = new SinkEventAttributeSet();
-        // githubButtonJS.addAttribute(SinkEventAttributes.TYPE, "text/javascript");
-        // githubButtonJS.addAttribute("async", "");
-        // githubButtonJS.addAttribute("defer", "");
         githubButtonJS.addAttribute(SinkEventAttributes.SRC, "https://buttons.github.io/buttons.js");
 
         String script = "script";
@@ -211,18 +219,21 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
 
         List<RankedDisharmony> rankedGodClassDisharmonies;
         List<RankedDisharmony> rankedCBODisharmonies;
+        List<RankedCycle> rankedCycles;
         try (CostBenefitCalculator costBenefitCalculator = new CostBenefitCalculator(projectBaseDir)) {
             costBenefitCalculator.runPmdAnalysis();
             rankedGodClassDisharmonies = costBenefitCalculator.calculateGodClassCostBenefitValues();
             rankedCBODisharmonies = costBenefitCalculator.calculateCBOCostBenefitValues();
+            rankedCycles = runCycleAnalysis(costBenefitCalculator, outputDirectory.getPath());
+            classGraph = costBenefitCalculator.getClassReferencesGraph();
         } catch (Exception e) {
             log.error("Error running analysis.");
             throw new RuntimeException(e);
         }
 
-        if (rankedGodClassDisharmonies.isEmpty() && rankedCBODisharmonies.isEmpty()) {
+        if (rankedGodClassDisharmonies.isEmpty() && rankedCBODisharmonies.isEmpty() && rankedCycles.isEmpty()) {
             mainSink.text("Contratulations!  " + projectName + " " + projectVersion
-                    + " has no God classes or highly coupled classes!");
+                    + " has no God classes, highly coupled classes, or cycles!");
             mainSink.section1_();
             renderGitHubButtons(mainSink);
             mainSink.body_();
@@ -418,11 +429,174 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
         mainSink.tableRows_();
         mainSink.table_();
 
+        if (!rankedCycles.isEmpty()) {
+            mainSink.lineBreak();
+            mainSink.lineBreak();
+            mainSink.horizontalRule();
+            mainSink.lineBreak();
+            mainSink.lineBreak();
+
+            renderCycles(outputDirectory.getPath(), mainSink, rankedCycles, formatter);
+        }
+
         // Close
         mainSink.section1_();
         mainSink.body_();
 
         log.info("Done! View the report at target/site/{}", filename);
+    }
+
+    public List<RankedCycle> runCycleAnalysis(CostBenefitCalculator costBenefitCalculator, String outputDirectory) {
+        return costBenefitCalculator.runCycleAnalysis(outputDirectory, true);
+    }
+
+    private void renderCycles(
+            String outputDirectory, Sink mainSink, List<RankedCycle> rankedCycles, DateTimeFormatter formatter) {
+
+        SinkEventAttributeSet alignCenter = new SinkEventAttributeSet();
+        alignCenter.addAttribute(SinkEventAttributes.ALIGN, "center");
+
+        mainSink.division(alignCenter);
+        mainSink.section1();
+        mainSink.sectionTitle1();
+        mainSink.text("Class Cycles");
+        mainSink.sectionTitle1_();
+        mainSink.section1_();
+        mainSink.division_();
+
+        mainSink.division(alignCenter);
+        mainSink.section2();
+        mainSink.sectionTitle2();
+        mainSink.text("Class Cycles by the numbers: (Refactor starting with Priority 1)");
+        mainSink.sectionTitle2_();
+        mainSink.section2_();
+        mainSink.division_();
+
+        mainSink.table();
+        mainSink.tableRows(new int[] {Sink.JUSTIFY_LEFT}, true);
+
+        // Content
+        // header row
+
+        mainSink.tableRow();
+        for (String heading : cycleTableHeadings) {
+            drawTableHeaderCell(heading, mainSink);
+        }
+        mainSink.tableRow_();
+
+        for (RankedCycle rankedCycle : rankedCycles) {
+            mainSink.tableRow();
+
+            StringBuilder edgesToCut = new StringBuilder();
+            for (DefaultWeightedEdge minCutEdge : rankedCycle.getMinCutEdges()) {
+                edgesToCut.append(minCutEdge + ":" + (int) classGraph.getEdgeWeight(minCutEdge));
+            }
+
+            // "Cycle Name", "Priority", "Change Proneness Rank", "Class Count", "Relationship Count", "Min Cuts"
+            String[] rankedCycleData = {
+                rankedCycle.getCycleName(),
+                rankedCycle.getPriority().toString(),
+                rankedCycle.getChangePronenessRank().toString(),
+                String.valueOf(rankedCycle.getCycleNodes().size()),
+                String.valueOf(rankedCycle.getEdgeSet().size()),
+                edgesToCut.toString()
+            };
+
+            for (String rowData : rankedCycleData) {
+                drawCycleTableCell(rowData, mainSink);
+            }
+
+            mainSink.tableRow_();
+        }
+        mainSink.tableRows_();
+
+        mainSink.table_();
+
+        for (RankedCycle rankedCycle : rankedCycles) {
+            renderCycleTable(outputDirectory, mainSink, rankedCycle, formatter);
+        }
+    }
+
+    private void renderCycleTable(
+            String outputDirectory, Sink mainSink, RankedCycle cycle, DateTimeFormatter formatter) {
+
+        mainSink.lineBreak();
+        mainSink.lineBreak();
+        mainSink.lineBreak();
+        mainSink.lineBreak();
+        mainSink.lineBreak();
+
+        SinkEventAttributeSet alignCenter = new SinkEventAttributeSet();
+        alignCenter.addAttribute(SinkEventAttributes.ALIGN, "center");
+
+        mainSink.division(alignCenter);
+        mainSink.section2();
+        mainSink.sectionTitle2();
+        mainSink.text("Class Cycle : " + cycle.getCycleName());
+        mainSink.sectionTitle2_();
+        mainSink.section2_();
+        mainSink.division_();
+
+        renderCycleImage(cycle.getCycleName(), mainSink, outputDirectory);
+
+        mainSink.division(alignCenter);
+        mainSink.bold();
+        mainSink.text("\"*\" indicates relationship(s) to remove to decompose cycle");
+        mainSink.bold_();
+        mainSink.division_();
+
+        mainSink.table();
+        mainSink.tableRows(new int[] {Sink.JUSTIFY_LEFT}, true);
+
+        // Content
+        mainSink.tableRow();
+        for (String heading : classCycleTableHeadings) {
+            drawTableHeaderCell(heading, mainSink);
+        }
+        mainSink.tableRow_();
+
+        for (String vertex : cycle.getVertexSet()) {
+            mainSink.tableRow();
+            drawTableCell(vertex, mainSink);
+            StringBuilder edges = new StringBuilder();
+            for (org.jgrapht.graph.DefaultWeightedEdge edge : cycle.getEdgeSet()) {
+                if (edge.toString().startsWith("(" + vertex + " :")) {
+                    if (cycle.getMinCutEdges().contains(edge)) {
+                        edges.append(edge);
+                        edges.append(":")
+                                .append((int) classGraph.getEdgeWeight(edge))
+                                .append("*");
+                    } else {
+                        edges.append(edge);
+                        edges.append(":").append((int) classGraph.getEdgeWeight(edge));
+                    }
+                }
+            }
+            drawCycleTableCell(edges.toString(), mainSink);
+            mainSink.tableRow_();
+        }
+
+        mainSink.tableRows_();
+        mainSink.table_();
+    }
+
+    public void renderCycleImage(String cycleName, Sink mainSink, String outputDirectory) {
+        SinkEventAttributeSet alignCenter = new SinkEventAttributeSet();
+        alignCenter.addAttribute(SinkEventAttributes.ALIGN, "center");
+        mainSink.division(alignCenter);
+
+        SinkEventAttributeSet imageAttributes = new SinkEventAttributeSet();
+        imageAttributes.addAttribute(SinkEventAttributes.TYPE, "img");
+        imageAttributes.addAttribute(SinkEventAttributes.SRC, "./refactorFirst/cycles/graph" + cycleName + ".png");
+        imageAttributes.addAttribute(SinkEventAttributes.WIDTH, 1000);
+        imageAttributes.addAttribute(SinkEventAttributes.HEIGHT, 1000);
+        imageAttributes.addAttribute(SinkEventAttributes.ALT, "Cycle " + cycleName);
+
+        mainSink.unknown("img", new Object[] {HtmlMarkup.TAG_TYPE_SIMPLE}, imageAttributes);
+
+        mainSink.division_();
+        mainSink.lineBreak();
+        mainSink.lineBreak();
     }
 
     private void renderLegend(Sink mainSink, String legendHeading, String xAxis) {
@@ -474,6 +648,31 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
             mainSink.text(formatter.format((Instant) cellText));
         } else {
             mainSink.text(cellText.toString());
+        }
+
+        mainSink.tableCell_();
+    }
+
+    void drawCycleTableCell(String cellText, Sink mainSink) {
+        SinkEventAttributeSet align = new SinkEventAttributeSet();
+        align.addAttribute(SinkEventAttributes.ALIGN, "left");
+
+        mainSink.tableCell(align);
+
+        for (String string : cellText.split("\\(")) {
+            if (string.contains("*")) {
+                mainSink.bold();
+                mainSink.text("(" + string);
+                mainSink.bold_();
+            } else {
+                if (string.contains(")")) {
+                    mainSink.text("(" + string);
+                } else {
+                    mainSink.text(string);
+                }
+            }
+
+            mainSink.lineBreak();
         }
 
         mainSink.tableCell_();

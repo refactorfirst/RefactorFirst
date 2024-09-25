@@ -83,7 +83,6 @@ public class SimpleHtmlReport {
         "Cycle Name", "Priority", "Change Proneness Rank", "Class Count", "Relationship Count", "Minimum Cuts"
     };
 
-    //    public final String[] classCycleTableHeadings = {"Classes", "Relationships", "Min Cut Edges"};
     public final String[] classCycleTableHeadings = {"Classes", "Relationships"};
 
     private Graph<String, DefaultWeightedEdge> classGraph;
@@ -255,6 +254,7 @@ public class SimpleHtmlReport {
         for (String heading : cycleTableHeadings) {
             stringBuilder.append("<th>").append(heading).append("</th>");
         }
+        stringBuilder.append("</thead>");
 
         stringBuilder.append("<tbody>");
         for (RankedCycle rankedCycle : rankedCycles) {
@@ -284,9 +284,6 @@ public class SimpleHtmlReport {
         }
 
         stringBuilder.append("</tbody>");
-
-        stringBuilder.append("</tr></thead>");
-
         stringBuilder.append("</table>");
 
         for (RankedCycle rankedCycle : rankedCycles) {
@@ -319,6 +316,7 @@ public class SimpleHtmlReport {
         for (String heading : classCycleTableHeadings) {
             stringBuilder.append("<th>").append(heading).append("</th>");
         }
+        stringBuilder.append("</thead>");
 
         stringBuilder.append("<tbody>");
 
@@ -348,8 +346,6 @@ public class SimpleHtmlReport {
         }
 
         stringBuilder.append("</tbody>");
-
-        stringBuilder.append("</tr></thead>");
 
         stringBuilder.append("</table>");
     }
