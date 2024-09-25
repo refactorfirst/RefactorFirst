@@ -181,7 +181,7 @@ public class CostBenefitCalculator implements AutoCloseable {
             log.info("files to be scanned: " + Paths.get(repositoryPath));
 
             try (Stream<Path> files = Files.walk(Paths.get(repositoryPath))) {
-                files.forEach(file -> pmd.files().addFile(file));
+                files.filter(Files::isRegularFile).forEach(file -> pmd.files().addFile(file));
             }
 
             report = pmd.performAnalysisAndCollectReport();
