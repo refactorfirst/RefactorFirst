@@ -8,7 +8,7 @@ This tool for Java codebases will help you identify what you should refactor fir
 It scans your Git repository and runs:
 - PMD's God Class Rule
 - PMD's Coupling Between Objects
-- Performs cycle analysis based on source code using [JavaParser](https://javaparser.org/) and [JGraphT](https://jgrapht.org/)
+- Cycle analysis on your source code using [JavaParser](https://javaparser.org/) and [JGraphT](https://jgrapht.org/)
 
 Cycle analysis is performed based on class field types and method signature types at this time (more to come!).  
 
