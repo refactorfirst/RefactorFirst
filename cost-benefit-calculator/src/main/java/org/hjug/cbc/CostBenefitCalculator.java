@@ -236,25 +236,23 @@ public class CostBenefitCalculator implements AutoCloseable {
     }
 
     <T extends Disharmony> List<ScmLogInfo> getRankedChangeProneness(List<T> disharmonies) {
-        List<ScmLogInfo> scmLogInfos = new ArrayList<>();
         log.info("Calculating Change Proneness");
-        for (Disharmony disharmony : disharmonies) {
-            String path = disharmony.getFileName();
-            ScmLogInfo scmLogInfo = null;
-            try {
-                scmLogInfo = gitLogReader.fileLog(path);
-                log.info("Successfully fetched scmLogInfo for {}", scmLogInfo.getPath());
-            } catch (GitAPIException | IOException e) {
-                log.error("Error reading Git repository contents.", e);
-            } catch (NullPointerException e) {
-                log.error("Encountered nested class in a class containing a violation.  Class: {}", path);
-            }
 
-            if (null != scmLogInfo) {
-                log.info("adding {}", scmLogInfo.getPath());
-                scmLogInfos.add(scmLogInfo);
-            }
-        }
+        List<ScmLogInfo> scmLogInfos = disharmonies.parallelStream()
+                .map(disharmony -> {
+                    String path = disharmony.getFileName();
+                    ScmLogInfo scmLogInfo = null;
+                    try {
+                        scmLogInfo = gitLogReader.fileLog(path);
+                        log.info("Successfully fetched scmLogInfo for {}", scmLogInfo.getPath());
+                    } catch (GitAPIException | IOException e) {
+                        log.error("Error reading Git repository contents.", e);
+                    } catch (NullPointerException e) {
+                        log.error("Encountered nested class in a class containing a violation.  Class: {}", path);
+                    }
+                    return scmLogInfo;
+                })
+                .collect(Collectors.toList());
 
         changePronenessRanker.rankChangeProneness(scmLogInfos);
         return scmLogInfos;
