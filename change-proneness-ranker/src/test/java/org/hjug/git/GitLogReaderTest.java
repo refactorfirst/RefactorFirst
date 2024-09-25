@@ -40,7 +40,7 @@ public class GitLogReaderTest {
         // This path works when referencing the full Tobago repository
         // String filePath = "tobago-core/src/main/java/org/apache/myfaces/tobago/facelets/AttributeHandler.java";
 
-        GitLogReader gitLogReader = new GitLogReader();
+        GitLogReader gitLogReader = new GitLogReader(git);
 
         String attributeHandler = "AttributeHandler.java";
         InputStream resourceAsStream = getClass().getClassLoader().getResourceAsStream(attributeHandler);
@@ -59,7 +59,7 @@ public class GitLogReaderTest {
         git.add().addFilepattern(".").call();
         RevCommit secondCommit = git.commit().setMessage("message").call();
 
-        ScmLogInfo scmLogInfo = gitLogReader.fileLog(repository, attributeHandler);
+        ScmLogInfo scmLogInfo = gitLogReader.fileLog(attributeHandler);
 
         Assertions.assertEquals(2, scmLogInfo.getCommitCount());
         Assertions.assertEquals(firstCommit.getCommitTime(), scmLogInfo.getEarliestCommit());
@@ -68,7 +68,7 @@ public class GitLogReaderTest {
 
     @Test
     void testWalkFirstCommit() throws IOException, GitAPIException {
-        GitLogReader gitLogReader = new GitLogReader();
+        GitLogReader gitLogReader = new GitLogReader(git);
 
         String attributeHandler = "AttributeHandler.java";
         InputStream resourceAsStream = getClass().getClassLoader().getResourceAsStream(attributeHandler);
@@ -76,7 +76,7 @@ public class GitLogReaderTest {
         git.add().addFilepattern(".").call();
         RevCommit commit = git.commit().setMessage("message").call();
 
-        Map<Integer, Integer> result = gitLogReader.walkFirstCommit(repository, commit);
+        Map<Integer, Integer> result = gitLogReader.walkFirstCommit(commit);
 
         Assertions.assertTrue(result.containsKey(commit.getCommitTime()));
         Assertions.assertEquals(1, result.get(commit.getCommitTime()).intValue());
@@ -84,7 +84,7 @@ public class GitLogReaderTest {
 
     @Test
     void testCaptureChangCountByCommitTimestamp() throws Exception {
-        GitLogReader gitLogReader = new GitLogReader();
+        GitLogReader gitLogReader = new GitLogReader(git);
 
         String attributeHandler = "AttributeHandler.java";
         InputStream resourceAsStream = getClass().getClassLoader().getResourceAsStream(attributeHandler);
@@ -106,7 +106,7 @@ public class GitLogReaderTest {
         git.add().addFilepattern(".").call();
         RevCommit secondCommit = git.commit().setMessage("message").call();
 
-        Map<Integer, Integer> commitCounts = gitLogReader.captureChangeCountByCommitTimestamp(repository);
+        Map<Integer, Integer> commitCounts = gitLogReader.captureChangeCountByCommitTimestamp();
 
         Assertions.assertEquals(1, commitCounts.get(firstCommit.getCommitTime()).intValue());
         Assertions.assertEquals(

@@ -3,7 +3,6 @@ package org.hjug.refactorfirst.report;
 import static org.hjug.refactorfirst.report.ReportWriter.writeReportToDisk;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -83,14 +82,14 @@ public class CsvReport {
         }
 
         // actual calcualte
-        CostBenefitCalculator costBenefitCalculator = new CostBenefitCalculator(projectBaseDir);
-        try {
+        List<RankedDisharmony> rankedDisharmonies;
+        try (CostBenefitCalculator costBenefitCalculator = new CostBenefitCalculator(projectBaseDir)) {
             costBenefitCalculator.runPmdAnalysis();
-        } catch (IOException e) {
-            log.error("Error running PMD analysis.");
+            rankedDisharmonies = costBenefitCalculator.calculateGodClassCostBenefitValues();
+        } catch (Exception e) {
+            log.error("Error running analysis.");
             throw new RuntimeException(e);
         }
-        List<RankedDisharmony> rankedDisharmonies = costBenefitCalculator.calculateGodClassCostBenefitValues();
 
         rankedDisharmonies.sort(Comparator.comparing(RankedDisharmony::getPriority));
 

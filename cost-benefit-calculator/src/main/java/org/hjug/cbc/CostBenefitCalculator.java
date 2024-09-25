@@ -18,7 +18,6 @@ import lombok.extern.slf4j.Slf4j;
 import net.sourceforge.pmd.*;
 import net.sourceforge.pmd.lang.LanguageRegistry;
 import org.eclipse.jgit.api.errors.GitAPIException;
-import org.eclipse.jgit.lib.Repository;
 import org.hjug.cycledetector.CircularReferenceChecker;
 import org.hjug.git.ChangePronenessRanker;
 import org.hjug.git.GitLogReader;
@@ -33,14 +32,14 @@ import org.jgrapht.graph.AsUndirectedGraph;
 import org.jgrapht.graph.DefaultWeightedEdge;
 
 @Slf4j
-public class CostBenefitCalculator {
+public class CostBenefitCalculator implements AutoCloseable {
 
     private final Map<String, AsSubgraph<String, DefaultWeightedEdge>> renderedSubGraphs = new HashMap<>();
 
     private Report report;
     private String repositoryPath;
-    private final GitLogReader gitLogReader = new GitLogReader();
-    private Repository repository = null;
+    private GitLogReader gitLogReader;
+
     private final ChangePronenessRanker changePronenessRanker;
     private final JavaProjectParser javaProjectParser = new JavaProjectParser();
 
@@ -52,16 +51,22 @@ public class CostBenefitCalculator {
 
         log.info("Initiating Cost Benefit calculation");
         try {
-            repository = gitLogReader.gitRepository(new File(repositoryPath));
-            for (String file :
-                    gitLogReader.listRepositoryContentsAtHEAD(repository).keySet()) {
-                log.info("Files at HEAD: {}", file);
-            }
+            gitLogReader = new GitLogReader(new File(repositoryPath));
+            //            repository = gitLogReader.gitRepository(new File(repositoryPath));
+            //            for (String file :
+            //                    gitLogReader.listRepositoryContentsAtHEAD(repository).keySet()) {
+            //                log.info("Files at HEAD: {}", file);
+            //            }
         } catch (IOException e) {
             log.error("Failure to access Git repository", e);
         }
 
-        changePronenessRanker = new ChangePronenessRanker(repository, gitLogReader);
+        changePronenessRanker = new ChangePronenessRanker(gitLogReader);
+    }
+
+    @Override
+    public void close() throws Exception {
+        gitLogReader.close();
     }
 
     public List<RankedCycle> runCycleAnalysis(String outputDirectoryPath, boolean renderImages) {
@@ -148,7 +153,7 @@ public class CostBenefitCalculator {
 
     private boolean isDuplicateSubGraph(AsSubgraph<String, DefaultWeightedEdge> subGraph, String vertex) {
         if (!renderedSubGraphs.isEmpty()) {
-            for (AsSubgraph<String, DefaultWeightedEdge>  renderedSubGraph : renderedSubGraphs.values()) {
+            for (AsSubgraph<String, DefaultWeightedEdge> renderedSubGraph : renderedSubGraphs.values()) {
                 if (renderedSubGraph.vertexSet().size() == subGraph.vertexSet().size()
                         && renderedSubGraph.edgeSet().size()
                                 == subGraph.edgeSet().size()
@@ -176,7 +181,7 @@ public class CostBenefitCalculator {
             log.info("files to be scanned: " + Paths.get(repositoryPath));
 
             try (Stream<Path> files = Files.walk(Paths.get(repositoryPath))) {
-                files.forEach(file -> pmd.files().addFile(file));
+                files.filter(Files::isRegularFile).forEach(file -> pmd.files().addFile(file));
             }
 
             report = pmd.performAnalysisAndCollectReport();
@@ -231,25 +236,23 @@ public class CostBenefitCalculator {
     }
 
     <T extends Disharmony> List<ScmLogInfo> getRankedChangeProneness(List<T> disharmonies) {
-        List<ScmLogInfo> scmLogInfos = new ArrayList<>();
         log.info("Calculating Change Proneness");
-        for (Disharmony disharmony : disharmonies) {
-            String path = disharmony.getFileName();
-            ScmLogInfo scmLogInfo = null;
-            try {
-                scmLogInfo = gitLogReader.fileLog(repository, path);
-                log.info("Successfully fetched scmLogInfo for {}", scmLogInfo.getPath());
-            } catch (GitAPIException | IOException e) {
-                log.error("Error reading Git repository contents.", e);
-            } catch (NullPointerException e) {
-                log.error("Encountered nested class in a class containing a violation.  Class: {}", path);
-            }
 
-            if (null != scmLogInfo) {
-                log.info("adding {}", scmLogInfo.getPath());
-                scmLogInfos.add(scmLogInfo);
-            }
-        }
+        List<ScmLogInfo> scmLogInfos = disharmonies.parallelStream()
+                .map(disharmony -> {
+                    String path = disharmony.getFileName();
+                    ScmLogInfo scmLogInfo = null;
+                    try {
+                        scmLogInfo = gitLogReader.fileLog(path);
+                        log.info("Successfully fetched scmLogInfo for {}", scmLogInfo.getPath());
+                    } catch (GitAPIException | IOException e) {
+                        log.error("Error reading Git repository contents.", e);
+                    } catch (NullPointerException e) {
+                        log.error("Encountered nested class in a class containing a violation.  Class: {}", path);
+                    }
+                    return scmLogInfo;
+                })
+                .collect(Collectors.toList());
 
         changePronenessRanker.rankChangeProneness(scmLogInfos);
         return scmLogInfos;
