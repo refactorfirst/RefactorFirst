@@ -1,22 +1,40 @@
 # RefactorFirst
 
-This tool for Java codebases will help you identify the God Classes and classes with High Coupling you should refactor first.
-It runs PMD's God Class Rule and Coupling Between Objects rule and scans your Git repository history.
+This tool for Java codebases will help you identify classes you should refactor first:
+- God Classes
+- Highly Coupled classes
+- Classes Cycles (with cycle images!)
+
+It scans your Git repository and runs:
+- PMD's God Class Rule
+- PMD's Coupling Between Objects
+- Performs cycle analysis based on source code using [JavaParser](https://javaparser.org/) and [JGraphT](https://jgrapht.org/)
+
+Cycle analysis is performed based on class field types and method signature types at this time (more to come!).  
 
 The graphs generated in the report will look similar to this one:
 ![image info](./RefactorFirst_Sample_Report.png)
 
-## Please Note: Java 11 is now required to run RefactorFirst
+## Please Note: Java 11 (or newer) required to run RefactorFirst
 The change to require Java 11 is needed to address vulnerability CVE-2023-4759 in JGit  
-Java 21 features are not yet integrated since PMD APIs have changed.
+**Java 21 codebase analysis is supported!**
 
 ## There are several ways to run the analysis on your codebase:
 
-### From The Command Line
+### From The Command Line As an HTML Report
 Run the following command from the root of your project (the source code does not need to be built):
 
 ```bash
-mvn org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.5.0-M1:report
+mvn org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.5.0:htmlReport
+```
+View the report at ```target/site/refactor-first-report.html```
+
+### [As Part of GitHub Actions Output](https://github.blog/news-insights/product-news/supercharging-github-actions-with-job-summaries/)
+This will generate a simplified HTML report (no graphs or images) as the output of a GitHub Action step
+```bash
+mvn -B clean test \
+org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.5.0:simpleHtmlReport \
+&& echo "$(cat target/site/refactor-first-report.html)" >> $GITHUB_STEP_SUMMARY
 ```
 
 ### As Part of a Build
@@ -28,10 +46,10 @@ Add the following to your project in the build section.  **showDetails** will sh
         <plugin>
             <groupId>org.hjug.refactorfirst.plugin</groupId>
             <artifactId>refactor-first-maven-plugin</artifactId>
-            <version>0.5.0-M1</version>       
+            <version>0.5.0</version>       
             <!-- optional -->
             <configuration>
-                <showDetails>true</showDetails>
+                <showDetails>false</showDetails>
             </configuration>
         </plugin>
         ...
@@ -49,7 +67,7 @@ A RefactorFirst report will show up in the site report when you run ```mvn site`
         <plugin>
             <groupId>org.hjug.refactorfirst.plugin</groupId>
             <artifactId>refactor-first-maven-plugin</artifactId>
-            <version>0.5.0-M1</version>       
+            <version>0.5.0</version>       
         </plugin>
         ...
     </plugins>
@@ -78,11 +96,6 @@ you will need to add the following to your pom.xml:
   </build>
 ```
 
-### As an HTML Report
-```bash
-mvn org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.5.0-M1:htmlReport
-```
-View the report at ```target/site/refactor-first-report.html```
 
 ## But I'm using Gradle / my project layout isn't typical!
 I would like to create a Gradle plugin and (possibly) support non-conventional projects in the future, but in the meantime you can create a dummy POM file in the same directory as your .git directory:
@@ -100,7 +113,7 @@ I would like to create a Gradle plugin and (possibly) support non-conventional p
 and then (assuming Maven is installed) run
 
 ```bash
-mvn org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.5.0-M1:htmlReport
+mvn org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.5.0:htmlReport
 ```
 
 ## Viewing the Report
@@ -126,10 +139,10 @@ There is still much to be done.  Your feedback and collaboration would be greatl
 If you find this plugin useful, please star this repository and share with your friends & colleagues and on social media.
 
 ## Future Plans
-* Identify class cycles and prioritize them.
+* Improve class cycle analysis (only field member types and method signature types are currently supported).
 * Add a Gradle plugin.
-* Incorporate Unit Test coverage metrics to quickly identify the safety of refactoring a God class.
-* Incorporate bug counts per God class to the Impact (Y-Axis) calculation.
+* Incorporate Unit Test coverage metrics to quickly identify the safety of refactoring classes.
+* Incorporate bug counts per class to the Impact (Y-Axis) calculation.
 * Incorporate more disharmonies from Object Oriented Metrics In Practice (Lanza and Marinescu, 2004).
 
 ## Note:
