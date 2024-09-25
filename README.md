@@ -1,9 +1,9 @@
 # RefactorFirst
 
-This tool for Java codebases will help you identify classes you should refactor first:
+This tool for Java codebases will help you identify what you should refactor first:
 - God Classes
 - Highly Coupled classes
-- Classes Cycles (with cycle images!)
+- Class Cycles (with cycle images!)
 
 It scans your Git repository and runs:
 - PMD's God Class Rule
