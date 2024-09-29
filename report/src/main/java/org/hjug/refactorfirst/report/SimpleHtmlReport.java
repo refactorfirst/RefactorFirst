@@ -63,16 +63,16 @@ public class SimpleHtmlReport {
         "Class", "Priority", "Change Proneness Rank", "Coupling Count", "Most Recent Commit Date", "Commit Count"
     };
 
-    public final String[] cycleTableHeadings = {
-        "Cycle Name", "Priority", "Change Proneness Rank", "Class Count", "Relationship Count", "Minimum Cuts"
-    };
-
     public final String[] classCycleTableHeadings = {"Classes", "Relationships"};
 
     private Graph<String, DefaultWeightedEdge> classGraph;
 
+    private boolean showDetails = false;
+
     public void execute(
             boolean showDetails, String projectName, String projectVersion, String outputDirectory, File baseDir) {
+
+        this.showDetails = showDetails;
 
         final String[] godClassTableHeadings =
                 showDetails ? godClassDetailedTableHeadings : godClassSimpleTableHeadings;
@@ -143,7 +143,12 @@ public class SimpleHtmlReport {
             costBenefitCalculator.runPmdAnalysis();
             rankedGodClassDisharmonies = costBenefitCalculator.calculateGodClassCostBenefitValues();
             rankedCBODisharmonies = costBenefitCalculator.calculateCBOCostBenefitValues();
-            rankedCycles = runCycleAnalysis(costBenefitCalculator, outputDirectory);
+            if (showDetails) {
+                rankedCycles = costBenefitCalculator.runCycleAnalysisAndCalculateCycleChurn();
+            } else {
+                rankedCycles = costBenefitCalculator.runCycleAnalysis();
+            }
+
             classGraph = costBenefitCalculator.getClassReferencesGraph();
         } catch (Exception e) {
             log.error("Error running analysis.");
@@ -217,10 +222,6 @@ public class SimpleHtmlReport {
         log.info("Done! View the report at target/site/{}", filename);
     }
 
-    public List<RankedCycle> runCycleAnalysis(CostBenefitCalculator costBenefitCalculator, String outputDirectory) {
-        return costBenefitCalculator.runCycleAnalysis();
-    }
-
     private void renderCycles(
             String outputDirectory,
             StringBuilder stringBuilder,
@@ -232,6 +233,16 @@ public class SimpleHtmlReport {
         stringBuilder.append(
                 "<h2 align=\"center\">Class Cycles by the numbers: (Refactor starting with Priority 1)</h2>\n");
         stringBuilder.append("<table align=\"center\" border=\"5px\">\n");
+
+        String[] cycleTableHeadings;
+        if (showDetails) {
+            cycleTableHeadings = new String[] {
+                "Cycle Name", "Priority", "Change Proneness Rank", "Class Count", "Relationship Count", "Minimum Cuts"
+            };
+        } else {
+            cycleTableHeadings =
+                    new String[] {"Cycle Name", "Priority", "Class Count", "Relationship Count", "Minimum Cuts"};
+        }
 
         // Content
         stringBuilder.append("<thead>\n<tr>\n");
@@ -250,16 +261,28 @@ public class SimpleHtmlReport {
                 edgesToCut.append("</br>\n");
             }
 
-            // "Cycle Name", "Priority", "Change Proneness Rank", "Class Count", "Relationship Count", "Min Cuts"
-            String[] rankedCycleData = {
-                rankedCycle.getCycleName(),
-                rankedCycle.getPriority().toString(),
-                rankedCycle.getChangePronenessRank().toString(),
-                String.valueOf(rankedCycle.getCycleNodes().size()),
-                String.valueOf(rankedCycle.getEdgeSet().size()),
-                edgesToCut.toString()
-            };
-
+            String[] rankedCycleData;
+            if (showDetails) {
+                rankedCycleData = new String[] {
+                    // "Cycle Name", "Priority", "Change Proneness Rank", "Class Count", "Relationship Count", "Min
+                    // Cuts"
+                    rankedCycle.getCycleName(),
+                    rankedCycle.getPriority().toString(),
+                    rankedCycle.getChangePronenessRank().toString(),
+                    String.valueOf(rankedCycle.getCycleNodes().size()),
+                    String.valueOf(rankedCycle.getEdgeSet().size()),
+                    edgesToCut.toString()
+                };
+            } else {
+                rankedCycleData = new String[] {
+                    // "Cycle Name", "Priority", "Class Count", "Relationship Count", "Min Cuts"
+                    rankedCycle.getCycleName(),
+                    rankedCycle.getPriority().toString(),
+                    String.valueOf(rankedCycle.getCycleNodes().size()),
+                    String.valueOf(rankedCycle.getEdgeSet().size()),
+                    edgesToCut.toString()
+                };
+            }
             for (String rowData : rankedCycleData) {
                 drawTableCell(rowData, stringBuilder);
             }

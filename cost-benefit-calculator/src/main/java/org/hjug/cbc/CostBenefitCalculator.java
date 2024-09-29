@@ -73,73 +73,125 @@ public class CostBenefitCalculator implements AutoCloseable {
         StaticJavaParser.getParserConfiguration().setLanguageLevel(ParserConfiguration.LanguageLevel.BLEEDING_EDGE);
         List<RankedCycle> rankedCycles = new ArrayList<>();
         try {
-            Map<String, String> classNamesAndPaths = getClassNamesAndPaths();
-            classReferencesGraph = javaProjectParser.getClassReferences(repositoryPath);
-            CircularReferenceChecker circularReferenceChecker = new CircularReferenceChecker();
-            Map<String, AsSubgraph<String, DefaultWeightedEdge>> cyclesForEveryVertexMap =
-                    circularReferenceChecker.detectCycles(classReferencesGraph);
-            cyclesForEveryVertexMap.forEach((vertex, subGraph) -> {
-                int vertexCount = subGraph.vertexSet().size();
-                int edgeCount = subGraph.edgeSet().size();
-                double minCut = 0;
-                Set<DefaultWeightedEdge> minCutEdges;
-                if (vertexCount > 1 && edgeCount > 1 && !isDuplicateSubGraph(subGraph, vertex)) {
-                    renderedSubGraphs.put(vertex, subGraph);
-                    log.info("Vertex: " + vertex + " vertex count: " + vertexCount + " edge count: " + edgeCount);
-                    GusfieldGomoryHuCutTree<String, DefaultWeightedEdge> gusfieldGomoryHuCutTree =
-                            new GusfieldGomoryHuCutTree<>(new AsUndirectedGraph<>(subGraph));
-                    minCut = gusfieldGomoryHuCutTree.calculateMinCut();
-                    minCutEdges = gusfieldGomoryHuCutTree.getCutEdges();
-
-                    List<CycleNode> cycleNodes = subGraph.vertexSet().stream()
-                            .map(classInCycle -> new CycleNode(classInCycle, classNamesAndPaths.get(classInCycle)))
-                            .collect(Collectors.toList());
-                    List<ScmLogInfo> changeRanks = getRankedChangeProneness(cycleNodes);
-
-                    Map<String, CycleNode> cycleNodeMap = new HashMap<>();
-
-                    for (CycleNode cycleNode : cycleNodes) {
-                        cycleNodeMap.put(cycleNode.getFileName(), cycleNode);
-                    }
-
-                    for (ScmLogInfo changeRank : changeRanks) {
-                        CycleNode cycleNode = cycleNodeMap.get(changeRank.getPath());
-                        cycleNode.setScmLogInfo(changeRank);
-                    }
-
-                    // sum change proneness ranks
-                    int changePronenessRankSum = changeRanks.stream()
-                            .mapToInt(ScmLogInfo::getChangePronenessRank)
-                            .sum();
-                    rankedCycles.add(new RankedCycle(
-                            vertex,
-                            changePronenessRankSum,
-                            subGraph.vertexSet(),
-                            subGraph.edgeSet(),
-                            minCut,
-                            minCutEdges,
-                            cycleNodes));
-                }
-            });
-
-            rankedCycles.sort(Comparator.comparing(RankedCycle::getAverageChangeProneness));
-            int cpr = 1;
-            for (RankedCycle rankedCycle : rankedCycles) {
-                rankedCycle.setChangePronenessRank(cpr++);
-            }
-
-            rankedCycles.sort(Comparator.comparing(RankedCycle::getRawPriority).reversed());
-
-            int priority = 1;
-            for (RankedCycle rankedCycle : rankedCycles) {
-                rankedCycle.setPriority(priority++);
-            }
-
+            boolean calculateCycleChurn = false;
+            idenfifyRankedCycles(rankedCycles, calculateCycleChurn);
+            sortRankedCycles(rankedCycles, calculateCycleChurn);
+            setPriorities(rankedCycles);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
 
         return rankedCycles;
+    }
+
+    public List<RankedCycle> runCycleAnalysisAndCalculateCycleChurn() {
+        StaticJavaParser.getParserConfiguration().setLanguageLevel(ParserConfiguration.LanguageLevel.BLEEDING_EDGE);
+        List<RankedCycle> rankedCycles = new ArrayList<>();
+        try {
+            boolean calculateCycleChurn = true;
+            idenfifyRankedCycles(rankedCycles, calculateCycleChurn);
+            sortRankedCycles(rankedCycles, calculateCycleChurn);
+            setPriorities(rankedCycles);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        return rankedCycles;
+    }
+
+    private void idenfifyRankedCycles(List<RankedCycle> rankedCycles, boolean calculateChurnForCycles)
+            throws IOException {
+        Map<String, AsSubgraph<String, DefaultWeightedEdge>> cycles = getCycles();
+        Map<String, String> classNamesAndPaths = getClassNamesAndPaths();
+        cycles.forEach((vertex, subGraph) -> {
+            int vertexCount = subGraph.vertexSet().size();
+            int edgeCount = subGraph.edgeSet().size();
+
+            if (vertexCount > 1 && edgeCount > 1 && !isDuplicateSubGraph(subGraph, vertex)) {
+                renderedSubGraphs.put(vertex, subGraph);
+                log.info("Vertex: " + vertex + " vertex count: " + vertexCount + " edge count: " + edgeCount);
+                GusfieldGomoryHuCutTree<String, DefaultWeightedEdge> gusfieldGomoryHuCutTree =
+                        new GusfieldGomoryHuCutTree<>(new AsUndirectedGraph<>(subGraph));
+                double minCut = gusfieldGomoryHuCutTree.calculateMinCut();
+                Set<DefaultWeightedEdge> minCutEdges = gusfieldGomoryHuCutTree.getCutEdges();
+
+                List<CycleNode> cycleNodes = subGraph.vertexSet().stream()
+                        .map(classInCycle -> new CycleNode(classInCycle, classNamesAndPaths.get(classInCycle)))
+                        .collect(Collectors.toList());
+
+                rankedCycles.add(
+                        createRankedCycle(calculateChurnForCycles, vertex, subGraph, cycleNodes, minCut, minCutEdges));
+            }
+        });
+    }
+
+    private static void setPriorities(List<RankedCycle> rankedCycles) {
+        int priority = 1;
+        for (RankedCycle rankedCycle : rankedCycles) {
+            rankedCycle.setPriority(priority++);
+        }
+    }
+
+    private Map<String, AsSubgraph<String, DefaultWeightedEdge>> getCycles() throws IOException {
+        classReferencesGraph = javaProjectParser.getClassReferences(repositoryPath);
+        CircularReferenceChecker circularReferenceChecker = new CircularReferenceChecker();
+        Map<String, AsSubgraph<String, DefaultWeightedEdge>> cycles =
+                circularReferenceChecker.detectCycles(classReferencesGraph);
+        return cycles;
+    }
+
+    private static void sortRankedCycles(List<RankedCycle> rankedCycles, boolean calculateChurnForCycles) {
+        if (calculateChurnForCycles) {
+            rankedCycles.sort(Comparator.comparing(RankedCycle::getAverageChangeProneness));
+
+            int cpr = 1;
+            for (RankedCycle rankedCycle : rankedCycles) {
+                rankedCycle.setChangePronenessRank(cpr++);
+            }
+        } else {
+            rankedCycles.sort(Comparator.comparing(RankedCycle::getRawPriority).reversed());
+        }
+    }
+
+    private RankedCycle createRankedCycle(
+            boolean calculateChurnForCycles,
+            String vertex,
+            AsSubgraph<String, DefaultWeightedEdge> subGraph,
+            List<CycleNode> cycleNodes,
+            double minCut,
+            Set<DefaultWeightedEdge> minCutEdges) {
+        RankedCycle rankedCycle;
+        if (calculateChurnForCycles) {
+            List<ScmLogInfo> changeRanks = getRankedChangeProneness(cycleNodes);
+
+            Map<String, CycleNode> cycleNodeMap = new HashMap<>();
+
+            for (CycleNode cycleNode : cycleNodes) {
+                cycleNodeMap.put(cycleNode.getFileName(), cycleNode);
+            }
+
+            for (ScmLogInfo changeRank : changeRanks) {
+                CycleNode cycleNode = cycleNodeMap.get(changeRank.getPath());
+                cycleNode.setScmLogInfo(changeRank);
+            }
+
+            // sum change proneness ranks
+            int changePronenessRankSum = changeRanks.stream()
+                    .mapToInt(ScmLogInfo::getChangePronenessRank)
+                    .sum();
+            rankedCycle = new RankedCycle(
+                    vertex,
+                    changePronenessRankSum,
+                    subGraph.vertexSet(),
+                    subGraph.edgeSet(),
+                    minCut,
+                    minCutEdges,
+                    cycleNodes);
+        } else {
+            rankedCycle =
+                    new RankedCycle(vertex, subGraph.vertexSet(), subGraph.edgeSet(), minCut, minCutEdges, cycleNodes);
+        }
+        return rankedCycle;
     }
 
     private boolean isDuplicateSubGraph(AsSubgraph<String, DefaultWeightedEdge> subGraph, String vertex) {

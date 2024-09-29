@@ -12,7 +12,7 @@ import org.jgrapht.graph.DefaultWeightedEdge;
 public class RankedCycle {
 
     private final String cycleName;
-    private final Integer changePronenessRankSum;
+    private Integer changePronenessRankSum = 0;
 
     private final Set<String> vertexSet;
     private final Set<DefaultWeightedEdge> edgeSet;
@@ -23,8 +23,36 @@ public class RankedCycle {
     private float rawPriority;
     private Integer priority = 0;
     private float averageChangeProneness;
-    private Integer changePronenessRank;
+    private Integer changePronenessRank = 0;
     private float impact;
+
+    public RankedCycle(
+            String cycleName,
+            Set<String> vertexSet,
+            Set<DefaultWeightedEdge> edgeSet,
+            double minCutCount,
+            Set<DefaultWeightedEdge> minCutEdges,
+            List<CycleNode> cycleNodes) {
+        this.cycleNodes = cycleNodes;
+        this.cycleName = cycleName;
+        this.vertexSet = vertexSet;
+        this.edgeSet = edgeSet;
+        this.minCutCount = minCutCount;
+
+        if (null == minCutEdges) {
+            this.minCutEdges = new HashSet<>();
+        } else {
+            this.minCutEdges = minCutEdges;
+        }
+
+        if (minCutCount == 0.0) {
+            this.impact = (float) (vertexSet.size());
+        } else {
+            this.impact = (float) (vertexSet.size() / minCutCount);
+        }
+
+        this.rawPriority = this.impact;
+    }
 
     public RankedCycle(
             String cycleName,
