@@ -11,6 +11,8 @@ import org.hjug.cbc.CostBenefitCalculator;
 import org.hjug.cbc.RankedCycle;
 import org.hjug.cbc.RankedDisharmony;
 import org.hjug.gdg.GraphDataGenerator;
+import org.jgrapht.Graph;
+import org.jgrapht.graph.DefaultWeightedEdge;
 
 @Slf4j
 public class HtmlReport extends SimpleHtmlReport {
@@ -39,14 +41,13 @@ public class HtmlReport extends SimpleHtmlReport {
 
     @Override
     public void printHead(StringBuilder stringBuilder) {
-        stringBuilder.append("<link rel=\"stylesheet\" href=\"./css/maven-base.css\" />\n"
-                + "    <link rel=\"stylesheet\" href=\"./css/maven-theme.css\" />\n"
-                + "    <link rel=\"stylesheet\" href=\"./css/site.css\" />\n"
-                + "    <link rel=\"stylesheet\" href=\"./css/print.css\" media=\"print\" />\n"
-                + "<script async defer src=\"https://buttons.github.io/buttons.js\"></script>"
+        stringBuilder.append("<script async defer src=\"https://buttons.github.io/buttons.js\"></script>"
                 + "<script type=\"text/javascript\" src=\"https://www.gstatic.com/charts/loader.js\">"
-                + "</script><script type=\"text/javascript\" src=\"./gchart.js\"></script>"
-                + "<script type=\"text/javascript\" src=\"./gchart2.js\"></script>"
+                + "</script><script type=\"text/javascript\" src=\"./gchart.js\"></script>\n"
+                + "<script type=\"text/javascript\" src=\"./gchart2.js\"></script>\n"
+                + "<script src=\"https://d3js.org/d3.v5.min.js\"></script>\n"
+                + "<script src=\"https://unpkg.com/d3-graphviz@3.0.5/build/d3-graphviz.min.js\"></script>\n"
+                + "<script src=\"https://unpkg.com/@hpcc-js/wasm@0.3.11/dist/index.min.js\"></script>\n"
                 + "  </head>\n");
     }
 
@@ -57,24 +58,24 @@ public class HtmlReport extends SimpleHtmlReport {
                 .append(projectName)
                 .append(" ")
                 .append(projectVersion)
-                .append(" </title>");
+                .append(" </title>\n");
     }
 
     @Override
     void renderGithubButtons(StringBuilder stringBuilder) {
-        stringBuilder.append("<div align=\"center\">");
-        stringBuilder.append("Show RefactorFirst some &#10084;&#65039;");
-        stringBuilder.append("<br/>");
+        stringBuilder.append("<div align=\"center\">\n");
+        stringBuilder.append("Show RefactorFirst some &#10084;&#65039;\n");
+        stringBuilder.append("<br/>\n");
         stringBuilder.append(
-                "<a class=\"github-button\" href=\"https://github.com/refactorfirst/refactorfirst\" data-icon=\"octicon-star\" data-size=\"large\" data-show-count=\"true\" aria-label=\"Star refactorfirst/refactorfirst on GitHub\">Star</a>");
+                "<a class=\"github-button\" href=\"https://github.com/refactorfirst/refactorfirst\" data-icon=\"octicon-star\" data-size=\"large\" data-show-count=\"true\" aria-label=\"Star refactorfirst/refactorfirst on GitHub\">Star</a>\n");
         stringBuilder.append(
-                "<a class=\"github-button\" href=\"https://github.com/refactorfirst/refactorfirst/fork\" data-icon=\"octicon-repo-forked\" data-size=\"large\" data-show-count=\"true\" aria-label=\"Fork refactorfirst/refactorfirst on GitHub\">Fork</a>");
+                "<a class=\"github-button\" href=\"https://github.com/refactorfirst/refactorfirst/fork\" data-icon=\"octicon-repo-forked\" data-size=\"large\" data-show-count=\"true\" aria-label=\"Fork refactorfirst/refactorfirst on GitHub\">Fork</a>\n");
         stringBuilder.append(
-                "<a class=\"github-button\" href=\"https://github.com/refactorfirst/refactorfirst/subscription\" data-icon=\"octicon-eye\" data-size=\"large\" data-show-count=\"true\" aria-label=\"Watch refactorfirst/refactorfirst on GitHub\">Watch</a>");
+                "<a class=\"github-button\" href=\"https://github.com/refactorfirst/refactorfirst/subscription\" data-icon=\"octicon-eye\" data-size=\"large\" data-show-count=\"true\" aria-label=\"Watch refactorfirst/refactorfirst on GitHub\">Watch</a>\n");
         stringBuilder.append(
-                "<a class=\"github-button\" href=\"https://github.com/refactorfirst/refactorfirst/issues\" data-icon=\"octicon-issue-opened\" data-size=\"large\" data-show-count=\"false\" aria-label=\"Issue refactorfirst/refactorfirst on GitHub\">Issue</a>");
+                "<a class=\"github-button\" href=\"https://github.com/refactorfirst/refactorfirst/issues\" data-icon=\"octicon-issue-opened\" data-size=\"large\" data-show-count=\"false\" aria-label=\"Issue refactorfirst/refactorfirst on GitHub\">Issue</a>\n");
         stringBuilder.append(
-                "<a class=\"github-button\" href=\"https://github.com/sponsors/jimbethancourt\" data-icon=\"octicon-heart\" data-size=\"large\" aria-label=\"Sponsor @jimbethancourt on GitHub\">Sponsor</a>");
+                "<a class=\"github-button\" href=\"https://github.com/sponsors/jimbethancourt\" data-icon=\"octicon-heart\" data-size=\"large\" aria-label=\"Sponsor @jimbethancourt on GitHub\">Sponsor</a>\n");
         stringBuilder.append("</div>");
     }
 
@@ -156,7 +157,7 @@ public class HtmlReport extends SimpleHtmlReport {
             int maxGodClassPriority,
             StringBuilder stringBuilder) {
         writeGodClassGchartJs(rankedGodClassDisharmonies, maxGodClassPriority - 1, outputDirectory);
-        stringBuilder.append("<div id=\"series_chart_div\" align=\"center\"></div>");
+        stringBuilder.append("<div id=\"series_chart_div\" align=\"center\"></div>\n");
         renderGithubButtons(stringBuilder);
         stringBuilder.append(GOD_CLASS_CHART_LEGEND);
     }
@@ -168,23 +169,72 @@ public class HtmlReport extends SimpleHtmlReport {
             int maxCboPriority,
             StringBuilder stringBuilder) {
         writeGCBOGchartJs(rankedCBODisharmonies, maxCboPriority - 1, outputDirectory);
-        stringBuilder.append("<div id=\"series_chart_div_2\" align=\"center\"></div>");
+        stringBuilder.append("<div id=\"series_chart_div_2\" align=\"center\"></div>\n");
         renderGithubButtons(stringBuilder);
         stringBuilder.append(COUPLING_BETWEEN_OBJECT_CHART_LEGEND);
     }
 
     @Override
     public List<RankedCycle> runCycleAnalysis(CostBenefitCalculator costBenefitCalculator, String outputDirectory) {
-        return costBenefitCalculator.runCycleAnalysis(outputDirectory, true);
+        return costBenefitCalculator.runCycleAnalysis();
     }
 
     @Override
-    public void renderCycleImage(String cycleName, StringBuilder stringBuilder, String outputDirectory) {
-        stringBuilder.append("<div align=\"center\">");
-        stringBuilder.append("<img src=\"./refactorFirst/cycles/graph" + cycleName
-                + ".png\" width=\"1000\" height=\"1000\" alt=\"Cycle " + cycleName + "\">");
-        stringBuilder.append("</div>");
-        stringBuilder.append("<br/>");
-        stringBuilder.append("<br/>");
+    public void renderCycleImage(
+            Graph<String, DefaultWeightedEdge> classGraph, RankedCycle cycle, StringBuilder stringBuilder) {
+        String dot = buildDot(classGraph, cycle);
+
+        stringBuilder.append("<div align=\"center\" id=\"" + cycle.getCycleName() + "\"></div>\n");
+        stringBuilder.append("<script>\n");
+        stringBuilder.append("d3.select(\"#" + cycle.getCycleName() + "\")\n");
+        stringBuilder.append(".graphviz()\n");
+        stringBuilder.append(".renderDot(" + dot + ");\n");
+        stringBuilder.append("</script>\n");
+    }
+
+    String buildDot(Graph<String, DefaultWeightedEdge> classGraph, RankedCycle cycle) {
+        StringBuilder dot = new StringBuilder();
+
+        dot.append("'strict digraph G {\\n' +\n");
+
+        // render vertices
+        // e.g DownloadManager;
+        for (String vertex : cycle.getVertexSet()) {
+            dot.append("'");
+            dot.append(vertex);
+            dot.append(";\\n' +\n");
+        }
+
+        for (DefaultWeightedEdge edge : cycle.getEdgeSet()) {
+            // 'DownloadManager -> Download [ label="1" color="red" ];'
+
+            // render edge
+            String[] vertexes =
+                    edge.toString().replace("(", "").replace(")", "").split(":");
+
+            String start = vertexes[0].trim();
+            String end = vertexes[1].trim();
+
+            dot.append("'");
+            dot.append(start);
+            dot.append(" -> ");
+            dot.append(end);
+
+            // render edge attributes
+            dot.append(" [ ");
+            dot.append("label = \"");
+            dot.append((int) classGraph.getEdgeWeight(edge));
+            dot.append("\"");
+
+            if (cycle.getMinCutEdges().contains(edge)) {
+                dot.append(" color = \"red\"");
+            }
+
+            dot.append(" ];\\n' +\n");
+        }
+
+        dot.append("'}'");
+
+        return dot.toString();
     }
 }

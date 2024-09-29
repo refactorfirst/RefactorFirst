@@ -447,7 +447,7 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
     }
 
     public List<RankedCycle> runCycleAnalysis(CostBenefitCalculator costBenefitCalculator, String outputDirectory) {
-        return costBenefitCalculator.runCycleAnalysis(outputDirectory, true);
+        return costBenefitCalculator.runCycleAnalysis();
     }
 
     private void renderCycles(
