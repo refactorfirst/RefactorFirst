@@ -69,7 +69,7 @@ public class CostBenefitCalculator implements AutoCloseable {
         gitLogReader.close();
     }
 
-    public List<RankedCycle> runCycleAnalysis(String outputDirectoryPath, boolean renderImages) {
+    public List<RankedCycle> runCycleAnalysis() {
         StaticJavaParser.getParserConfiguration().setLanguageLevel(ParserConfiguration.LanguageLevel.BLEEDING_EDGE);
         List<RankedCycle> rankedCycles = new ArrayList<>();
         try {
@@ -84,15 +84,6 @@ public class CostBenefitCalculator implements AutoCloseable {
                 double minCut = 0;
                 Set<DefaultWeightedEdge> minCutEdges;
                 if (vertexCount > 1 && edgeCount > 1 && !isDuplicateSubGraph(subGraph, vertex)) {
-                    if (renderImages) {
-                        try {
-                            circularReferenceChecker.createImage(
-                                    outputDirectoryPath + "/refactorFirst/cycles", subGraph, vertex);
-                        } catch (IOException e) {
-                            throw new RuntimeException(e);
-                        }
-                    }
-
                     renderedSubGraphs.put(vertex, subGraph);
                     log.info("Vertex: " + vertex + " vertex count: " + vertexCount + " edge count: " + edgeCount);
                     GusfieldGomoryHuCutTree<String, DefaultWeightedEdge> gusfieldGomoryHuCutTree =

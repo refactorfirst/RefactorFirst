@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Map;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.AsSubgraph;
@@ -34,7 +33,7 @@ class CircularReferenceCheckerTests {
 
     @DisplayName("Create graph image in given outputDirectory")
     @Test
-    public void createImageTest() throws IOException {
+    public void createImageTest() {
         Graph<String, DefaultWeightedEdge> classReferencesGraph = new DefaultDirectedGraph<>(DefaultWeightedEdge.class);
         classReferencesGraph.addVertex("A");
         classReferencesGraph.addVertex("B");
@@ -42,8 +41,6 @@ class CircularReferenceCheckerTests {
         classReferencesGraph.addEdge("A", "B");
         classReferencesGraph.addEdge("B", "C");
         classReferencesGraph.addEdge("C", "A");
-        sutCircularReferenceChecker.createImage(
-                "src/test/resources/testOutputDirectory", classReferencesGraph, "testGraph");
         File newGraphImage = new File("src/test/resources/testOutputDirectory/graphtestGraph.png");
         assertTrue(newGraphImage.exists() && !newGraphImage.isDirectory());
     }

@@ -1,6 +1,5 @@
 package org.hjug.app;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -38,44 +37,36 @@ public class CircularReferenceDetectorApp {
             printCommandUsage();
         } else {
             String srcDirectoryPath = args[0];
-            String outputDirectoryPath = args[1];
             JavaProjectParser javaProjectParser = new JavaProjectParser();
             try {
                 Graph<String, DefaultWeightedEdge> classReferencesGraph =
                         javaProjectParser.getClassReferences(srcDirectoryPath);
-                detectAndStoreCyclesInDirectory(outputDirectoryPath, classReferencesGraph);
+                detectAndStoreCyclesInDirectory(classReferencesGraph);
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
     }
 
-    private void detectAndStoreCyclesInDirectory(
-            String outputDirectoryPath, Graph<String, DefaultWeightedEdge> classReferencesGraph) {
+    private void detectAndStoreCyclesInDirectory(Graph<String, DefaultWeightedEdge> classReferencesGraph) {
         CircularReferenceChecker circularReferenceChecker = new CircularReferenceChecker();
         Map<String, AsSubgraph<String, DefaultWeightedEdge>> cyclesForEveryVertexMap =
                 circularReferenceChecker.detectCycles(classReferencesGraph);
         cyclesForEveryVertexMap.forEach((vertex, subGraph) -> {
-            try {
-                int vertexCount = subGraph.vertexSet().size();
-                int edgeCount = subGraph.edgeSet().size();
-                if (vertexCount > 1 && edgeCount > 1 && !isDuplicateSubGraph(subGraph, vertex)) {
-                    circularReferenceChecker.createImage(outputDirectoryPath, subGraph, vertex);
-                    renderedSubGraphs.put(vertex, subGraph);
-                    System.out.println(
-                            "Vertex: " + vertex + " vertex count: " + vertexCount + " edge count: " + edgeCount);
-                    GusfieldGomoryHuCutTree<String, DefaultWeightedEdge> gusfieldGomoryHuCutTree =
-                            new GusfieldGomoryHuCutTree<>(new AsUndirectedGraph<>(subGraph));
-                    double minCut = gusfieldGomoryHuCutTree.calculateMinCut();
-                    System.out.println("Min cut weight: " + minCut);
-                    Set<DefaultWeightedEdge> minCutEdges = gusfieldGomoryHuCutTree.getCutEdges();
-                    System.out.println("Minimum Cut Edges:");
-                    for (DefaultWeightedEdge minCutEdge : minCutEdges) {
-                        System.out.println(minCutEdge);
-                    }
+            int vertexCount = subGraph.vertexSet().size();
+            int edgeCount = subGraph.edgeSet().size();
+            if (vertexCount > 1 && edgeCount > 1 && !isDuplicateSubGraph(subGraph, vertex)) {
+                renderedSubGraphs.put(vertex, subGraph);
+                System.out.println("Vertex: " + vertex + " vertex count: " + vertexCount + " edge count: " + edgeCount);
+                GusfieldGomoryHuCutTree<String, DefaultWeightedEdge> gusfieldGomoryHuCutTree =
+                        new GusfieldGomoryHuCutTree<>(new AsUndirectedGraph<>(subGraph));
+                double minCut = gusfieldGomoryHuCutTree.calculateMinCut();
+                System.out.println("Min cut weight: " + minCut);
+                Set<DefaultWeightedEdge> minCutEdges = gusfieldGomoryHuCutTree.getCutEdges();
+                System.out.println("Minimum Cut Edges:");
+                for (DefaultWeightedEdge minCutEdge : minCutEdges) {
+                    System.out.println(minCutEdge);
                 }
-            } catch (IOException e) {
-                e.printStackTrace();
             }
         });
     }
