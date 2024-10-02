@@ -14,10 +14,12 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import lombok.extern.slf4j.Slf4j;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultDirectedWeightedGraph;
 import org.jgrapht.graph.DefaultWeightedEdge;
 
+@Slf4j
 public class JavaProjectParser {
 
     /**
@@ -37,6 +39,7 @@ public class JavaProjectParser {
                 filesStream
                         .filter(path -> path.getFileName().toString().endsWith(".java"))
                         .forEach(path -> {
+                            log.info("Parsing {}", path);
                             List<String> types = getInstanceVarTypes(classNames, path.toFile());
                             types.addAll(getMethodArgumentTypes(classNames, path.toFile()));
                             if (!types.isEmpty()) {

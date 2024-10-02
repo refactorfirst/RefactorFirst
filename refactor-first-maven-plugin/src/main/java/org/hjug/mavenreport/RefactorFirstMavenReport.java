@@ -68,10 +68,6 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
                 + " have the highest priority values.";
     }
 
-    public final String[] cycleTableHeadings = {
-        "Cycle Name", "Priority", "Change Proneness Rank", "Class Count", "Relationship Count", "Minimum Cuts"
-    };
-
     public final String[] classCycleTableHeadings = {"Classes", "Relationships"};
 
     private Graph<String, DefaultWeightedEdge> classGraph;
@@ -164,6 +160,28 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
 
         mainSink.unknown(script, new Object[] {HtmlMarkup.TAG_TYPE_START}, cboJavascript);
         mainSink.unknown(script, new Object[] {HtmlMarkup.TAG_TYPE_END}, null);
+
+        SinkEventAttributeSet d3js = new SinkEventAttributeSet();
+        d3js.addAttribute(SinkEventAttributes.TYPE, "text/javascript");
+        d3js.addAttribute(SinkEventAttributes.SRC, "https://d3js.org/d3.v5.min.js");
+
+        mainSink.unknown(script, new Object[] {HtmlMarkup.TAG_TYPE_START}, d3js);
+        mainSink.unknown(script, new Object[] {HtmlMarkup.TAG_TYPE_END}, null);
+
+        SinkEventAttributeSet graphViz = new SinkEventAttributeSet();
+        graphViz.addAttribute(SinkEventAttributes.TYPE, "text/javascript");
+        graphViz.addAttribute(SinkEventAttributes.SRC, "https://unpkg.com/d3-graphviz@3.0.5/build/d3-graphviz.min.js");
+
+        mainSink.unknown(script, new Object[] {HtmlMarkup.TAG_TYPE_START}, graphViz);
+        mainSink.unknown(script, new Object[] {HtmlMarkup.TAG_TYPE_END}, null);
+
+        SinkEventAttributeSet wasm = new SinkEventAttributeSet();
+        wasm.addAttribute(SinkEventAttributes.TYPE, "text/javascript");
+        wasm.addAttribute(SinkEventAttributes.SRC, "https://unpkg.com/@hpcc-js/wasm@0.3.11/dist/index.min.js");
+
+        mainSink.unknown(script, new Object[] {HtmlMarkup.TAG_TYPE_START}, wasm);
+        mainSink.unknown(script, new Object[] {HtmlMarkup.TAG_TYPE_END}, null);
+
         mainSink.head_();
 
         mainSink.body();
@@ -472,11 +490,25 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
         mainSink.section2_();
         mainSink.division_();
 
+        mainSink.paragraph(alignCenter);
+        mainSink.text("Note: often only one minimum cut relationship needs to be removed");
+        mainSink.paragraph_();
+
         mainSink.table();
         mainSink.tableRows(new int[] {Sink.JUSTIFY_LEFT}, true);
 
         // Content
         // header row
+
+        String[] cycleTableHeadings;
+        if (showDetails) {
+            cycleTableHeadings = new String[] {
+                "Cycle Name", "Priority", "Change Proneness Rank", "Class Count", "Relationship Count", "Minimum Cuts"
+            };
+        } else {
+            cycleTableHeadings =
+                    new String[] {"Cycle Name", "Priority", "Class Count", "Relationship Count", "Minimum Cuts"};
+        }
 
         mainSink.tableRow();
         for (String heading : cycleTableHeadings) {
@@ -492,15 +524,27 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
                 edgesToCut.append(minCutEdge + ":" + (int) classGraph.getEdgeWeight(minCutEdge));
             }
 
-            // "Cycle Name", "Priority", "Change Proneness Rank", "Class Count", "Relationship Count", "Min Cuts"
-            String[] rankedCycleData = {
-                rankedCycle.getCycleName(),
-                rankedCycle.getPriority().toString(),
-                rankedCycle.getChangePronenessRank().toString(),
-                String.valueOf(rankedCycle.getCycleNodes().size()),
-                String.valueOf(rankedCycle.getEdgeSet().size()),
-                edgesToCut.toString()
-            };
+            String[] rankedCycleData;
+            if (showDetails) {
+                // "Cycle Name", "Priority", "Change Proneness Rank", "Class Count", "Relationship Count", "Min Cuts"
+                rankedCycleData = new String[] {
+                    rankedCycle.getCycleName(),
+                    rankedCycle.getPriority().toString(),
+                    rankedCycle.getChangePronenessRank().toString(),
+                    String.valueOf(rankedCycle.getCycleNodes().size()),
+                    String.valueOf(rankedCycle.getEdgeSet().size()),
+                    edgesToCut.toString()
+                };
+            } else {
+                // "Cycle Name", "Priority", "Class Count", "Relationship Count", "Min Cuts"
+                rankedCycleData = new String[] {
+                    rankedCycle.getCycleName(),
+                    rankedCycle.getPriority().toString(),
+                    String.valueOf(rankedCycle.getCycleNodes().size()),
+                    String.valueOf(rankedCycle.getEdgeSet().size()),
+                    edgesToCut.toString()
+                };
+            }
 
             for (String rowData : rankedCycleData) {
                 drawCycleTableCell(rowData, mainSink);
@@ -513,12 +557,11 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
         mainSink.table_();
 
         for (RankedCycle rankedCycle : rankedCycles) {
-            renderCycleTable(outputDirectory, mainSink, rankedCycle, formatter);
+            renderCycle(outputDirectory, mainSink, rankedCycle, formatter);
         }
     }
 
-    private void renderCycleTable(
-            String outputDirectory, Sink mainSink, RankedCycle cycle, DateTimeFormatter formatter) {
+    private void renderCycle(String outputDirectory, Sink mainSink, RankedCycle cycle, DateTimeFormatter formatter) {
 
         mainSink.lineBreak();
         mainSink.lineBreak();
@@ -537,7 +580,7 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
         mainSink.section2_();
         mainSink.division_();
 
-        renderCycleImage(cycle.getCycleName(), mainSink, outputDirectory);
+        renderCycleImage(classGraph, cycle, mainSink);
 
         mainSink.division(alignCenter);
         mainSink.bold();
@@ -578,25 +621,6 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
 
         mainSink.tableRows_();
         mainSink.table_();
-    }
-
-    public void renderCycleImage(String cycleName, Sink mainSink, String outputDirectory) {
-        SinkEventAttributeSet alignCenter = new SinkEventAttributeSet();
-        alignCenter.addAttribute(SinkEventAttributes.ALIGN, "center");
-        mainSink.division(alignCenter);
-
-        SinkEventAttributeSet imageAttributes = new SinkEventAttributeSet();
-        imageAttributes.addAttribute(SinkEventAttributes.TYPE, "img");
-        imageAttributes.addAttribute(SinkEventAttributes.SRC, "./refactorFirst/cycles/graph" + cycleName + ".png");
-        imageAttributes.addAttribute(SinkEventAttributes.WIDTH, 1000);
-        imageAttributes.addAttribute(SinkEventAttributes.HEIGHT, 1000);
-        imageAttributes.addAttribute(SinkEventAttributes.ALT, "Cycle " + cycleName);
-
-        mainSink.unknown("img", new Object[] {HtmlMarkup.TAG_TYPE_SIMPLE}, imageAttributes);
-
-        mainSink.division_();
-        mainSink.lineBreak();
-        mainSink.lineBreak();
     }
 
     private void renderLegend(Sink mainSink, String legendHeading, String xAxis) {
@@ -808,5 +832,91 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
         } catch (IOException e) {
             log.error("Error writing CBO chart script file", e);
         }
+    }
+
+    void renderCycleImage(Graph<String, DefaultWeightedEdge> classGraph, RankedCycle cycle, Sink mainSink) {
+
+        SinkEventAttributeSet graphDivAttrs = new SinkEventAttributeSet();
+        graphDivAttrs.addAttribute(SinkEventAttributes.ALIGN, "center");
+        graphDivAttrs.addAttribute(SinkEventAttributes.ID, cycle.getCycleName());
+        graphDivAttrs.addAttribute(SinkEventAttributes.STYLE, "border: thin solid black");
+
+        mainSink.division(graphDivAttrs);
+        mainSink.division_();
+
+        String dot = buildDot(classGraph, cycle);
+
+        StringBuilder d3chart = new StringBuilder();
+        d3chart.append("d3.select(\"#" + cycle.getCycleName() + "\")\n");
+        d3chart.append(".graphviz()\n");
+        d3chart.append(".width(screen.width - 300)\n");
+        d3chart.append(".height(screen.height)\n");
+        d3chart.append(".fit(true)\n");
+        d3chart.append(".renderDot(" + dot + ");\n");
+
+        SinkEventAttributeSet dotChartScript = new SinkEventAttributeSet();
+        dotChartScript.addAttribute(SinkEventAttributes.TYPE, "text/javascript");
+
+        String script = "script";
+        mainSink.unknown(script, new Object[] {HtmlMarkup.TAG_TYPE_START}, dotChartScript);
+
+        mainSink.rawText(d3chart.toString());
+        mainSink.unknown(script, new Object[] {HtmlMarkup.TAG_TYPE_END}, null);
+
+        SinkEventAttributeSet alignCenter = new SinkEventAttributeSet();
+        alignCenter.addAttribute(SinkEventAttributes.ALIGN, "center");
+
+        mainSink.paragraph(alignCenter);
+        mainSink.text("Red arrows represent relationship(s) to remove to decompose cycle");
+        mainSink.paragraph_();
+
+        mainSink.lineBreak();
+        mainSink.lineBreak();
+    }
+
+    String buildDot(Graph<String, DefaultWeightedEdge> classGraph, RankedCycle cycle) {
+        StringBuilder dot = new StringBuilder();
+
+        dot.append("'strict digraph G {\\n' +\n");
+
+        // render vertices
+        // e.g DownloadManager;
+        for (String vertex : cycle.getVertexSet()) {
+            dot.append("'");
+            dot.append(vertex);
+            dot.append(";\\n' +\n");
+        }
+
+        for (DefaultWeightedEdge edge : cycle.getEdgeSet()) {
+            // 'DownloadManager -> Download [ label="1" color="red" ];'
+
+            // render edge
+            String[] vertexes =
+                    edge.toString().replace("(", "").replace(")", "").split(":");
+
+            String start = vertexes[0].trim();
+            String end = vertexes[1].trim();
+
+            dot.append("'");
+            dot.append(start);
+            dot.append(" -> ");
+            dot.append(end);
+
+            // render edge attributes
+            dot.append(" [ ");
+            dot.append("label = \"");
+            dot.append((int) classGraph.getEdgeWeight(edge));
+            dot.append("\"");
+
+            if (cycle.getMinCutEdges().contains(edge)) {
+                dot.append(" color = \"red\"");
+            }
+
+            dot.append(" ];\\n' +\n");
+        }
+
+        dot.append("'}'");
+
+        return dot.toString();
     }
 }

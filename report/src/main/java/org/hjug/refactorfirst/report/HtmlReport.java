@@ -178,12 +178,22 @@ public class HtmlReport extends SimpleHtmlReport {
             Graph<String, DefaultWeightedEdge> classGraph, RankedCycle cycle, StringBuilder stringBuilder) {
         String dot = buildDot(classGraph, cycle);
 
-        stringBuilder.append("<div align=\"center\" id=\"" + cycle.getCycleName() + "\"></div>\n");
+        stringBuilder.append("<div align=\"center\" id=\"" + cycle.getCycleName()
+                + "\" style=\"border: thin solid black\"></div>\n");
         stringBuilder.append("<script>\n");
         stringBuilder.append("d3.select(\"#" + cycle.getCycleName() + "\")\n");
         stringBuilder.append(".graphviz()\n");
+        stringBuilder.append(".width(screen.width - 200)\n");
+        stringBuilder.append(".height(screen.height)\n");
+        stringBuilder.append(".fit(true)\n");
         stringBuilder.append(".renderDot(" + dot + ");\n");
         stringBuilder.append("</script>\n");
+
+        stringBuilder.append("<div align=\"center\">");
+        stringBuilder.append("<p>Red arrows represent relationship(s) to remove to decompose cycle</p>");
+        stringBuilder.append("</div>");
+        stringBuilder.append("<br/>");
+        stringBuilder.append("<br/>");
     }
 
     String buildDot(Graph<String, DefaultWeightedEdge> classGraph, RankedCycle cycle) {

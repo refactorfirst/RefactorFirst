@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>org.hjug.refactorfirst</groupId>
 		<artifactId>refactor-first</artifactId>
-		<version>0.5.1-SNAPSHOT</version>
+		<version>0.6.0-SNAPSHOT</version>
 	</parent>
 
 	<groupId>org.hjug.refactorfirst.circularreferencedetector</groupId>
@@ -13,6 +13,16 @@
 	<description>Tool to help detecting circular references by parsing a java project.</description>
 
 	<dependencies>
+		<dependency>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
+			<version>${lombok.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+			<version>1.7.26</version>
+		</dependency>
 		<dependency>
 			<groupId>org.jgrapht</groupId>
 			<artifactId>jgrapht-core</artifactId>
@@ -35,6 +45,7 @@
 			<version>5.9.0</version>
 			<scope>test</scope>
 		</dependency>
+
 	</dependencies>
 
 	<build>
