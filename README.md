@@ -25,7 +25,7 @@ The change to require Java 11 is needed to address vulnerability CVE-2023-4759 i
 Run the following command from the root of your project (the source code does not need to be built):
 
 ```bash
-mvn org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.5.0:htmlReport
+mvn org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.6.0:htmlReport
 ```
 View the report at ```target/site/refactor-first-report.html```
 
@@ -33,7 +33,7 @@ View the report at ```target/site/refactor-first-report.html```
 This will generate a simplified HTML report (no graphs or images) as the output of a GitHub Action step
 ```bash
 mvn -B clean test \
-org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.5.0:simpleHtmlReport \
+org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.6.0:simpleHtmlReport \
 && echo "$(cat target/site/refactor-first-report.html)" >> $GITHUB_STEP_SUMMARY
 ```
 
@@ -46,7 +46,7 @@ Add the following to your project in the build section.  **showDetails** will sh
         <plugin>
             <groupId>org.hjug.refactorfirst.plugin</groupId>
             <artifactId>refactor-first-maven-plugin</artifactId>
-            <version>0.5.0</version>       
+            <version>0.6.0</version>       
             <!-- optional -->
             <configuration>
                 <showDetails>false</showDetails>
@@ -67,7 +67,7 @@ A RefactorFirst report will show up in the site report when you run ```mvn site`
         <plugin>
             <groupId>org.hjug.refactorfirst.plugin</groupId>
             <artifactId>refactor-first-maven-plugin</artifactId>
-            <version>0.5.0</version>       
+            <version>0.6.0</version>       
         </plugin>
         ...
     </plugins>
@@ -113,7 +113,7 @@ I would like to create a Gradle plugin and (possibly) support non-conventional p
 and then (assuming Maven is installed) run
 
 ```bash
-mvn org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.5.0:htmlReport
+mvn org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.6.0:htmlReport
 ```
 
 ## Viewing the Report
