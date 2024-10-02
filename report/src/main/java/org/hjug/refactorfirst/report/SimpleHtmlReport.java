@@ -232,6 +232,8 @@ public class SimpleHtmlReport {
 
         stringBuilder.append(
                 "<h2 align=\"center\">Class Cycles by the numbers: (Refactor starting with Priority 1)</h2>\n");
+        stringBuilder.append(
+                "<p align=\"center\">Note: often only one minimum cut relationship needs to be removed</p>");
         stringBuilder.append("<table align=\"center\" border=\"5px\">\n");
 
         String[] cycleTableHeadings;
