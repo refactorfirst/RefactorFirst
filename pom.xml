@@ -4,7 +4,7 @@
 
     <groupId>org.hjug.refactorfirst</groupId>
     <artifactId>refactor-first</artifactId>
-    <version>0.6.1-SNAPSHOT</version>
+    <version>0.6.1</version>
     <packaging>pom</packaging>
 
     <url>https://github.com/refactorfirst/RefactorFirst</url>
@@ -41,7 +41,7 @@
         <connection>scm:git:https://github.com/refactorfirst/RefactorFirst</connection>
         <developerConnection>scm:git:https://github.com/refactorfirst/RefactorFirst</developerConnection>
         <url>https://github.com/refactorfirst/RefactorFirst</url>
-      <tag>HEAD</tag>
+      <tag>refactor-first-0.6.1</tag>
   </scm>
 
     <issueManagement>
