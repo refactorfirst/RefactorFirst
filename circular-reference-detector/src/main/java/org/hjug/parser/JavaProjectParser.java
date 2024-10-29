@@ -18,6 +18,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultDirectedWeightedGraph;
 import org.jgrapht.graph.DefaultWeightedEdge;
+import org.openrewrite.ExecutionContext;
+import org.openrewrite.InMemoryExecutionContext;
+import org.openrewrite.java.JavaParser;
 
 @Slf4j
 public class JavaProjectParser {
@@ -66,6 +69,20 @@ public class JavaProjectParser {
         return classReferencesGraph;
     }
 
+    List<String> getClassDeclarations(Path javaSrcFile, Path srcDirectory) {
+        org.openrewrite.java.JavaParser javaParser =
+                JavaParser.fromJavaVersion().build();
+        ExecutionContext ctx = new InMemoryExecutionContext(Throwable::printStackTrace);
+
+        CustomVisitor customVisitor = new CustomVisitor();
+
+        List<String> fqdns = new ArrayList<>();
+
+        javaParser.parse(List.of(javaSrcFile), srcDirectory, ctx).forEach(cu -> customVisitor.visit(cu, ctx));
+
+        return fqdns;
+    }
+
     /**
      * Get instance variables types of a java source file using java parser
      * @param classNamesToFilterBy - only add instance variable types which have these class names as type
@@ -76,6 +93,7 @@ public class JavaProjectParser {
         CompilationUnit compilationUnit;
         try {
             compilationUnit = StaticJavaParser.parse(javaSrcFile);
+
             return compilationUnit.findAll(FieldDeclaration.class).stream()
                     .map(f -> f.getVariables().get(0).getType())
                     .filter(v -> !v.isPrimitiveType())
