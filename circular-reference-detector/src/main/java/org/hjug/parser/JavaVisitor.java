@@ -11,7 +11,7 @@ import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.*;
 
 @Slf4j
-public class CustomVisitor extends JavaIsoVisitor<ExecutionContext> {
+public class JavaVisitor extends JavaIsoVisitor<ExecutionContext> {
 
     JavaFqnCapturingVisitor javaFqnCapturingVisitor = new JavaFqnCapturingVisitor();
 
@@ -96,6 +96,14 @@ public class CustomVisitor extends JavaIsoVisitor<ExecutionContext> {
         return memberReference;
     }
 
+    /**
+     * Variable type is B
+     * Owning type is A
+     *
+     * class A {
+     *     B b1, b2;
+     * }
+     */
     @Override
     public J.VariableDeclarations.NamedVariable visitVariable(
             J.VariableDeclarations.NamedVariable variable, ExecutionContext executionContext) {
@@ -104,24 +112,15 @@ public class CustomVisitor extends JavaIsoVisitor<ExecutionContext> {
         System.out.println("Variable type: " + visitVariable.getVariableType().getType());
         System.out.println("Owning type: " + visitVariable.getVariableType().getOwner());
 
+        //        visitVariable.getType()
+
         return visitVariable;
     }
 
-    @Override
-    public J.VariableDeclarations visitVariableDeclarations(
-            J.VariableDeclarations multiVariable, ExecutionContext executionContext) {
-
-        System.out.println("Variable declaration type: " + multiVariable.getType());
-        System.out.println("Variable declaration owning type: "
-                + multiVariable.getVariables().get(0).getVariableType().getOwner());
-
-        return super.visitVariableDeclarations(multiVariable, executionContext);
-    }
-
-    @Override
-    public J.NullableType visitNullableType(J.NullableType nullableType, ExecutionContext executionContext) {
-        return super.visitNullableType(nullableType, executionContext);
-    }
+    //    @Override
+    //    public J.NullableType visitNullableType(J.NullableType nullableType, ExecutionContext executionContext) {
+    //        return super.visitNullableType(nullableType, executionContext);
+    //    }
 
     @Override
     public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext executionContext) {

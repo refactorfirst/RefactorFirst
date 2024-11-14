@@ -74,11 +74,11 @@ public class JavaProjectParser {
                 JavaParser.fromJavaVersion().build();
         ExecutionContext ctx = new InMemoryExecutionContext(Throwable::printStackTrace);
 
-        CustomVisitor customVisitor = new CustomVisitor();
+        JavaVisitor javaVisitor = new JavaVisitor();
 
         List<String> fqdns = new ArrayList<>();
 
-        javaParser.parse(List.of(javaSrcFile), srcDirectory, ctx).forEach(cu -> customVisitor.visit(cu, ctx));
+        javaParser.parse(List.of(javaSrcFile), srcDirectory, ctx).forEach(cu -> javaVisitor.visit(cu, ctx));
 
         return fqdns;
     }

@@ -13,7 +13,7 @@ import org.openrewrite.java.tree.J;
  * @param <P>
  */
 @Getter
-public class JavaFqnCapturingVisitor<P> extends JavaIsoVisitor<P> implements FqnCapturingVisitor {
+public class JavaFqnCapturingVisitor<P> extends JavaIsoVisitor<P> implements FqnCapturingProcessor {
 
     // consider using ConcurrentHashMap to scale performance
     // package -> name, FQN

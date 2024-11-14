@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
@@ -13,7 +12,7 @@ import org.openrewrite.ExecutionContext;
 import org.openrewrite.InMemoryExecutionContext;
 import org.openrewrite.java.JavaParser;
 
-class CustomVisitorTest {
+class JavaVariableVisitorTest {
 
     @Test
     void visitClasses() throws IOException {
@@ -24,17 +23,11 @@ class CustomVisitorTest {
                 JavaParser.fromJavaVersion().build();
         ExecutionContext ctx = new InMemoryExecutionContext(Throwable::printStackTrace);
 
-        CustomVisitor customVisitor = new CustomVisitor();
-
-        List<String> fqdns = new ArrayList<>();
+        JavaVariableVisitor<ExecutionContext> javaVariableCapturingVisitor = new JavaVariableVisitor<>();
 
         List<Path> list = Files.walk(Paths.get(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
-        javaParser.parse(list, Paths.get(srcDirectory.getAbsolutePath()), ctx).forEach((cu) -> {
-            System.out.println(cu.getSourcePath());
-            customVisitor.visit(cu, ctx);
-            //                fqdns.addAll(customVisitor.getFqdns());
+        javaParser.parse(list, Paths.get(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> {
+            javaVariableCapturingVisitor.visit(cu, ctx);
         });
-
-        //        return fqdns;
     }
 }

@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 import org.openrewrite.java.tree.J;
 
-public interface FqnCapturingVisitor {
+public interface FqnCapturingProcessor {
 
     default J.ClassDeclaration captureClassDeclarations(
             J.ClassDeclaration classDecl, Map<String, Map<String, String>> fqns) {
