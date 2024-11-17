@@ -1,9 +1,6 @@
 package org.hjug.mavenreport;
 
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -147,20 +144,6 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
         mainSink.unknown(script, new Object[] {HtmlMarkup.TAG_TYPE_START}, googleChartImport);
         mainSink.unknown(script, new Object[] {HtmlMarkup.TAG_TYPE_END}, null);
 
-        SinkEventAttributeSet godClassJavascript = new SinkEventAttributeSet();
-        godClassJavascript.addAttribute(SinkEventAttributes.TYPE, "text/javascript");
-        godClassJavascript.addAttribute(SinkEventAttributes.SRC, "./godClassChart.js");
-
-        mainSink.unknown(script, new Object[] {HtmlMarkup.TAG_TYPE_START}, godClassJavascript);
-        mainSink.unknown(script, new Object[] {HtmlMarkup.TAG_TYPE_END}, null);
-
-        SinkEventAttributeSet cboJavascript = new SinkEventAttributeSet();
-        cboJavascript.addAttribute(SinkEventAttributes.TYPE, "text/javascript");
-        cboJavascript.addAttribute(SinkEventAttributes.SRC, "./cboChart.js");
-
-        mainSink.unknown(script, new Object[] {HtmlMarkup.TAG_TYPE_START}, cboJavascript);
-        mainSink.unknown(script, new Object[] {HtmlMarkup.TAG_TYPE_END}, null);
-
         SinkEventAttributeSet d3js = new SinkEventAttributeSet();
         d3js.addAttribute(SinkEventAttributes.TYPE, "text/javascript");
         d3js.addAttribute(SinkEventAttributes.SRC, "https://d3js.org/d3.v5.min.js");
@@ -289,12 +272,18 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
             mainSink.section2_();
             mainSink.division_();
 
-            writeGodClassGchartJs(rankedGodClassDisharmonies, maxGodClassPriority - 1);
+            String godClassScript = writeGodClassGchartJs(rankedGodClassDisharmonies, maxGodClassPriority - 1);
             SinkEventAttributeSet seriesChartDiv = new SinkEventAttributeSet();
             seriesChartDiv.addAttribute(SinkEventAttributes.ID, "series_chart_div");
             seriesChartDiv.addAttribute(SinkEventAttributes.ALIGN, "center");
             mainSink.division(seriesChartDiv);
             mainSink.division_();
+
+            SinkEventAttributeSet godClassJavascript = new SinkEventAttributeSet();
+            godClassJavascript.addAttribute(SinkEventAttributes.TYPE, "text/javascript");
+            mainSink.unknown(script, new Object[] {HtmlMarkup.TAG_TYPE_START}, godClassJavascript);
+            mainSink.rawText(godClassScript);
+            mainSink.unknown(script, new Object[] {HtmlMarkup.TAG_TYPE_END}, null);
 
             renderGitHubButtons(mainSink);
 
@@ -399,7 +388,14 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
             seriesChartDiv.addAttribute(SinkEventAttributes.ALIGN, "center");
             mainSink.division(seriesChartDiv);
             mainSink.division_();
-            writeGCBOGchartJs(rankedCBODisharmonies, maxCboPriority - 1);
+
+            String cboScript = writeGCBOGchartJs(rankedCBODisharmonies, maxCboPriority - 1);
+
+            SinkEventAttributeSet cboJavascript = new SinkEventAttributeSet();
+            cboJavascript.addAttribute(SinkEventAttributes.TYPE, "text/javascript");
+            mainSink.unknown(script, new Object[] {HtmlMarkup.TAG_TYPE_START}, cboJavascript);
+            mainSink.rawText(cboScript);
+            mainSink.unknown(script, new Object[] {HtmlMarkup.TAG_TYPE_END}, null);
 
             renderGitHubButtons(mainSink);
 
@@ -775,63 +771,22 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
         mainSink.unknown("a", new Object[] {HtmlMarkup.TAG_TYPE_END}, null);
     }
 
-    // TODO: Move to another class to allow use by Gradle plugin
-    void writeGodClassGchartJs(List<RankedDisharmony> rankedDisharmonies, int maxPriority) {
+    String writeGodClassGchartJs(List<RankedDisharmony> rankedDisharmonies, int maxPriority) {
         GraphDataGenerator graphDataGenerator = new GraphDataGenerator();
         String scriptStart = graphDataGenerator.getGodClassScriptStart();
         String bubbleChartData = graphDataGenerator.generateGodClassBubbleChartData(rankedDisharmonies, maxPriority);
         String scriptEnd = graphDataGenerator.getGodClassScriptEnd();
 
-        String javascriptCode = scriptStart + bubbleChartData + scriptEnd;
-
-        String reportOutputDirectory = project.getModel().getReporting().getOutputDirectory();
-        File reportOutputDir = new File(reportOutputDirectory);
-        if (!reportOutputDir.exists()) {
-            reportOutputDir.mkdirs();
-        }
-        String pathname = reportOutputDirectory + File.separator + "godClassChart.js";
-
-        File scriptFile = new File(pathname);
-        try {
-            scriptFile.createNewFile();
-        } catch (IOException e) {
-            log.error("Failure creating God Class chart script file", e);
-        }
-
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(scriptFile))) {
-            writer.write(javascriptCode);
-        } catch (IOException e) {
-            log.error("Error writing chart script file", e);
-        }
+        return scriptStart + bubbleChartData + scriptEnd;
     }
 
-    void writeGCBOGchartJs(List<RankedDisharmony> rankedDisharmonies, int maxPriority) {
+    String writeGCBOGchartJs(List<RankedDisharmony> rankedDisharmonies, int maxPriority) {
         GraphDataGenerator graphDataGenerator = new GraphDataGenerator();
         String scriptStart = graphDataGenerator.getCBOScriptStart();
         String bubbleChartData = graphDataGenerator.generateCBOBubbleChartData(rankedDisharmonies, maxPriority);
         String scriptEnd = graphDataGenerator.getCBOScriptEnd();
 
-        String javascriptCode = scriptStart + bubbleChartData + scriptEnd;
-
-        String reportOutputDirectory = project.getModel().getReporting().getOutputDirectory();
-        File reportOutputDir = new File(reportOutputDirectory);
-        if (!reportOutputDir.exists()) {
-            reportOutputDir.mkdirs();
-        }
-        String pathname = reportOutputDirectory + File.separator + "cboChart.js";
-
-        File scriptFile = new File(pathname);
-        try {
-            scriptFile.createNewFile();
-        } catch (IOException e) {
-            log.error("Failure creating CBO chart script file", e);
-        }
-
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(scriptFile))) {
-            writer.write(javascriptCode);
-        } catch (IOException e) {
-            log.error("Error writing CBO chart script file", e);
-        }
+        return scriptStart + bubbleChartData + scriptEnd;
     }
 
     void renderCycleImage(Graph<String, DefaultWeightedEdge> classGraph, RankedCycle cycle, Sink mainSink) {
