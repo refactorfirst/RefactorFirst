@@ -560,13 +560,15 @@ public class SimpleHtmlReport {
         // empty on purpose
     }
 
-    void writeGodClassGchartJs(
+    String writeGodClassGchartJs(
             List<RankedDisharmony> rankedDisharmonies, int maxPriority, String reportOutputDirectory) {
-        // empty on purpose
+        // return empty string on purpose
+        return "";
     }
 
-    void writeGCBOGchartJs(List<RankedDisharmony> rankedDisharmonies, int maxPriority, String reportOutputDirectory) {
-        // empty on purpose
+    String writeGCBOGchartJs(List<RankedDisharmony> rankedDisharmonies, int maxPriority, String reportOutputDirectory) {
+        // return empty string on purpose
+        return "";
     }
 
     void renderCBOChart(
