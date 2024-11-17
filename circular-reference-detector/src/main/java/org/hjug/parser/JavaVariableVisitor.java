@@ -50,14 +50,18 @@ public class JavaVariableVisitor<P> extends JavaIsoVisitor<P> {
         }
 
         // *should* always have get(0)
-        variableDeclarations.getVariables().get(0).getVariableType().getOwner();
+        System.out.println( "Varible Owner: " +
+            variableDeclarations.getVariables().get(0).getVariableType().getOwner());
 
-        for (J.VariableDeclarations.NamedVariable variable : variableDeclarations.getVariables()) {
+        System.out.println( "Varible Owner Class: " +
+                variableDeclarations.getVariables().get(0).getVariableType().getOwner().getClass());
+
+ /*       for (J.VariableDeclarations.NamedVariable variable : variableDeclarations.getVariables()) {
             System.out.println(
                     "Varible VariableType Owner: " + variable.getVariableType().getOwner());
             System.out.println("Varible type: " + variable.getType());
             System.out.println("Varible name: " + variable.getName());
-        }
+        }*/
 
         System.out.println("*************************");
         System.out.println(variableDeclarations.toString());
