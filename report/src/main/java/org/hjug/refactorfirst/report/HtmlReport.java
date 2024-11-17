@@ -1,9 +1,5 @@
 package org.hjug.refactorfirst.report;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
 import lombok.extern.slf4j.Slf4j;
@@ -78,64 +74,25 @@ public class HtmlReport extends SimpleHtmlReport {
         stringBuilder.append("</div>");
     }
 
-    // TODO: Move to another class to allow use by Gradle plugin
     @Override
-    void writeGodClassGchartJs(
+    String writeGodClassGchartJs(
             List<RankedDisharmony> rankedDisharmonies, int maxPriority, String reportOutputDirectory) {
         GraphDataGenerator graphDataGenerator = new GraphDataGenerator();
         String scriptStart = graphDataGenerator.getGodClassScriptStart();
         String bubbleChartData = graphDataGenerator.generateGodClassBubbleChartData(rankedDisharmonies, maxPriority);
         String scriptEnd = graphDataGenerator.getGodClassScriptEnd();
 
-        String javascriptCode = scriptStart + bubbleChartData + scriptEnd;
-
-        File reportOutputDir = new File(reportOutputDirectory);
-        if (!reportOutputDir.exists()) {
-            reportOutputDir.mkdirs();
-        }
-        String pathname = reportOutputDirectory + File.separator + "gchart.js";
-
-        File scriptFile = new File(pathname);
-        try {
-            scriptFile.createNewFile();
-        } catch (IOException e) {
-            log.error("Failure creating God Class chart script file", e);
-        }
-
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(scriptFile))) {
-            writer.write(javascriptCode);
-        } catch (IOException e) {
-            log.error("Error writing chart script file", e);
-        }
+        return scriptStart + bubbleChartData + scriptEnd;
     }
 
     @Override
-    void writeGCBOGchartJs(List<RankedDisharmony> rankedDisharmonies, int maxPriority, String reportOutputDirectory) {
+    String writeGCBOGchartJs(List<RankedDisharmony> rankedDisharmonies, int maxPriority, String reportOutputDirectory) {
         GraphDataGenerator graphDataGenerator = new GraphDataGenerator();
         String scriptStart = graphDataGenerator.getCBOScriptStart();
         String bubbleChartData = graphDataGenerator.generateCBOBubbleChartData(rankedDisharmonies, maxPriority);
         String scriptEnd = graphDataGenerator.getCBOScriptEnd();
 
-        String javascriptCode = scriptStart + bubbleChartData + scriptEnd;
-
-        File reportOutputDir = new File(reportOutputDirectory);
-        if (!reportOutputDir.exists()) {
-            reportOutputDir.mkdirs();
-        }
-        String pathname = reportOutputDirectory + File.separator + "gchart2.js";
-
-        File scriptFile = new File(pathname);
-        try {
-            scriptFile.createNewFile();
-        } catch (IOException e) {
-            log.error("Failure creating CBO chart script file", e);
-        }
-
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(scriptFile))) {
-            writer.write(javascriptCode);
-        } catch (IOException e) {
-            log.error("Error writing CBO chart script file", e);
-        }
+        return scriptStart + bubbleChartData + scriptEnd;
     }
 
     public String getName(Locale locale) {
@@ -155,8 +112,10 @@ public class HtmlReport extends SimpleHtmlReport {
             List<RankedDisharmony> rankedGodClassDisharmonies,
             int maxGodClassPriority,
             StringBuilder stringBuilder) {
-        writeGodClassGchartJs(rankedGodClassDisharmonies, maxGodClassPriority - 1, outputDirectory);
-        stringBuilder.append("<div id=\"series_chart_div\" align=\"center\"></div>\n");
+        String godClassChart =
+                writeGodClassGchartJs(rankedGodClassDisharmonies, maxGodClassPriority - 1, outputDirectory);
+        stringBuilder.append(
+                "<div id=\"series_chart_div\" align=\"center\"><script>" + godClassChart + "</script></div>\n");
         renderGithubButtons(stringBuilder);
         stringBuilder.append(GOD_CLASS_CHART_LEGEND);
     }
@@ -167,8 +126,9 @@ public class HtmlReport extends SimpleHtmlReport {
             List<RankedDisharmony> rankedCBODisharmonies,
             int maxCboPriority,
             StringBuilder stringBuilder) {
-        writeGCBOGchartJs(rankedCBODisharmonies, maxCboPriority - 1, outputDirectory);
-        stringBuilder.append("<div id=\"series_chart_div_2\" align=\"center\"></div>\n");
+        String cboChart = writeGCBOGchartJs(rankedCBODisharmonies, maxCboPriority - 1, outputDirectory);
+        stringBuilder.append(
+                "<div id=\"series_chart_div_2\" align=\"center\"><script>" + cboChart + "</script></div>\n");
         renderGithubButtons(stringBuilder);
         stringBuilder.append(COUPLING_BETWEEN_OBJECT_CHART_LEGEND);
     }
