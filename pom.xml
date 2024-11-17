@@ -337,21 +337,6 @@
                 </executions>
                 -->
             </plugin>
-            <plugin>
-                <groupId>org.owasp</groupId>
-                <artifactId>dependency-check-maven</artifactId>
-                <version>6.1.0</version>
-                <configuration>
-                    <failBuildOnCVSS>8.0</failBuildOnCVSS>
-                </configuration>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>check</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
             <!--TODO: Add the SNYK plugin-->
             <!-- https://github.com/snyk/snyk-maven-plugin -->
 
@@ -394,6 +379,28 @@
 
 
     <profiles>
+        <profile>
+            <id>local</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.owasp</groupId>
+                        <artifactId>dependency-check-maven</artifactId>
+                        <version>6.1.0</version>
+                        <configuration>
+                            <failBuildOnCVSS>8.0</failBuildOnCVSS>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>check</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
         <profile>
             <id>snapshot-release</id>
             <build>
