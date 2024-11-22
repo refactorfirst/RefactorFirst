@@ -37,4 +37,6 @@ class JavaVisitorTest {
 
         //        return fqdns;
     }
+
+    class Inner {}
 }
