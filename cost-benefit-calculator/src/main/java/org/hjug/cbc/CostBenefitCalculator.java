@@ -3,8 +3,6 @@ package org.hjug.cbc;
 import static net.sourceforge.pmd.RuleViolation.CLASS_NAME;
 import static net.sourceforge.pmd.RuleViolation.PACKAGE_NAME;
 
-import com.github.javaparser.ParserConfiguration;
-import com.github.javaparser.StaticJavaParser;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -70,7 +68,6 @@ public class CostBenefitCalculator implements AutoCloseable {
     }
 
     public List<RankedCycle> runCycleAnalysis() {
-        StaticJavaParser.getParserConfiguration().setLanguageLevel(ParserConfiguration.LanguageLevel.BLEEDING_EDGE);
         List<RankedCycle> rankedCycles = new ArrayList<>();
         try {
             boolean calculateCycleChurn = false;
@@ -85,7 +82,6 @@ public class CostBenefitCalculator implements AutoCloseable {
     }
 
     public List<RankedCycle> runCycleAnalysisAndCalculateCycleChurn() {
-        StaticJavaParser.getParserConfiguration().setLanguageLevel(ParserConfiguration.LanguageLevel.BLEEDING_EDGE);
         List<RankedCycle> rankedCycles = new ArrayList<>();
         try {
             boolean calculateCycleChurn = true;
@@ -135,9 +131,7 @@ public class CostBenefitCalculator implements AutoCloseable {
     private Map<String, AsSubgraph<String, DefaultWeightedEdge>> getCycles() throws IOException {
         classReferencesGraph = javaProjectParser.getClassReferences(repositoryPath);
         CircularReferenceChecker circularReferenceChecker = new CircularReferenceChecker();
-        Map<String, AsSubgraph<String, DefaultWeightedEdge>> cycles =
-                circularReferenceChecker.detectCycles(classReferencesGraph);
-        return cycles;
+        return circularReferenceChecker.detectCycles(classReferencesGraph);
     }
 
     private static void sortRankedCycles(List<RankedCycle> rankedCycles, boolean calculateChurnForCycles) {

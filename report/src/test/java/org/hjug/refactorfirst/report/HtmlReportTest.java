@@ -67,9 +67,9 @@ public class HtmlReportTest {
         expectedDot.append("'B;\\n' +\n");
         expectedDot.append("'C;\\n' +\n");
         // 'DownloadManager -> Download [ label = "1" color = "red" ];'
-        expectedDot.append("'A -> B [ label = \"2\" ];\\n' +\n");
-        expectedDot.append("'B -> C [ label = \"1\" color = \"red\" ];\\n' +\n");
-        expectedDot.append("'C -> A [ label = \"1\" color = \"red\" ];\\n' +\n");
+        expectedDot.append("'A -> B [ label = \"2\" weight = \"2\" ];\\n' +\n");
+        expectedDot.append("'B -> C [ label = \"1\" weight = \"1\" color = \"red\" ];\\n' +\n");
+        expectedDot.append("'C -> A [ label = \"1\" weight = \"1\" color = \"red\" ];\\n' +\n");
         expectedDot.append("'}'");
 
         assertEquals(expectedDot.toString(), dot);

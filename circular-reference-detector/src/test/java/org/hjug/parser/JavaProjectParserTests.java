@@ -30,22 +30,39 @@ class JavaProjectParserTests {
         assertNotNull(classReferencesGraph);
         assertEquals(5, classReferencesGraph.vertexSet().size());
         assertEquals(7, classReferencesGraph.edgeSet().size());
-        assertTrue(classReferencesGraph.containsVertex("A"));
-        assertTrue(classReferencesGraph.containsVertex("B"));
-        assertTrue(classReferencesGraph.containsVertex("C"));
-        assertTrue(classReferencesGraph.containsVertex("D"));
-        assertTrue(classReferencesGraph.containsVertex("E"));
-        assertTrue(classReferencesGraph.containsEdge("A", "B"));
-        assertTrue(classReferencesGraph.containsEdge("B", "C"));
-        assertTrue(classReferencesGraph.containsEdge("C", "A"));
-        assertTrue(classReferencesGraph.containsEdge("C", "E"));
-        assertTrue(classReferencesGraph.containsEdge("D", "A"));
-        assertTrue(classReferencesGraph.containsEdge("D", "C"));
-        assertTrue(classReferencesGraph.containsEdge("E", "D"));
+        assertTrue(classReferencesGraph.containsVertex("com.ideacrest.parser.testclasses.A"));
+        assertTrue(classReferencesGraph.containsVertex("com.ideacrest.parser.testclasses.B"));
+        assertTrue(classReferencesGraph.containsVertex("com.ideacrest.parser.testclasses.C"));
+        assertTrue(classReferencesGraph.containsVertex("com.ideacrest.parser.testclasses.D"));
+        assertTrue(classReferencesGraph.containsVertex("com.ideacrest.parser.testclasses.E"));
+        assertTrue(classReferencesGraph.containsEdge(
+                "com.ideacrest.parser.testclasses.A", "com.ideacrest.parser.testclasses.B"));
+        assertTrue(classReferencesGraph.containsEdge(
+                "com.ideacrest.parser.testclasses.B", "com.ideacrest.parser.testclasses.C"));
+        assertTrue(classReferencesGraph.containsEdge(
+                "com.ideacrest.parser.testclasses.C", "com.ideacrest.parser.testclasses.A"));
+        assertTrue(classReferencesGraph.containsEdge(
+                "com.ideacrest.parser.testclasses.C", "com.ideacrest.parser.testclasses.E"));
+        assertTrue(classReferencesGraph.containsEdge(
+                "com.ideacrest.parser.testclasses.D", "com.ideacrest.parser.testclasses.A"));
+        assertTrue(classReferencesGraph.containsEdge(
+                "com.ideacrest.parser.testclasses.D", "com.ideacrest.parser.testclasses.C"));
+        assertTrue(classReferencesGraph.containsEdge(
+                "com.ideacrest.parser.testclasses.E", "com.ideacrest.parser.testclasses.D"));
 
         // confirm edge weight calculations
-        assertEquals(1, getEdgeWeight(classReferencesGraph, "A", "B"));
-        assertEquals(2, getEdgeWeight(classReferencesGraph, "E", "D"));
+        assertEquals(
+                1,
+                getEdgeWeight(
+                        classReferencesGraph,
+                        "com.ideacrest.parser.testclasses.A",
+                        "com.ideacrest.parser.testclasses.B"));
+        assertEquals(
+                2,
+                getEdgeWeight(
+                        classReferencesGraph,
+                        "com.ideacrest.parser.testclasses.E",
+                        "com.ideacrest.parser.testclasses.D"));
     }
 
     private static double getEdgeWeight(

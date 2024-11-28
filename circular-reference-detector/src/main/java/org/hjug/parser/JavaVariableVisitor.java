@@ -1,5 +1,6 @@
 package org.hjug.parser;
 
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultDirectedWeightedGraph;
@@ -12,43 +13,48 @@ public class JavaVariableVisitor<P> extends JavaIsoVisitor<P> {
 
     Graph<String, DefaultWeightedEdge> classReferencesGraph =
             new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+    //    Collection<String> fqns;
 
-    /**
-     * Variable type is B
-     * Owning type is A
-     * <p>
-     * class A {
-     * B b1, b2;
-     * }
-     */
+    public JavaVariableVisitor() {}
+
+    public JavaVariableVisitor(Graph<String, DefaultWeightedEdge> classReferencesGraph) {
+        this.classReferencesGraph = classReferencesGraph;
+        //        this.fqns = fqns;
+    }
+
     @Override
     public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, P p) {
         J.VariableDeclarations variableDeclarations = super.visitVariableDeclarations(multiVariable, p);
 
-        System.out.println("*************************");
-        System.out.println(variableDeclarations);
-        System.out.println("*************************");
+        /*
+         * Handles
+         * java.lang.NullPointerException: Cannot invoke "org.openrewrite.java.tree.JavaType$Variable.getOwner()"
+         * because the return value of
+         * "org.openrewrite.java.tree.J$VariableDeclarations$NamedVariable.getVariableType()" is null
+         */
+        List<J.VariableDeclarations.NamedVariable> variables = variableDeclarations.getVariables();
+        if (null == variables || variables.isEmpty() || null == variables.get(0).getVariableType()) {
+            return variableDeclarations;
+        }
 
-        JavaType owner =
-                variableDeclarations.getVariables().get(0).getVariableType().getOwner();
+        JavaType owner = variables.get(0).getVariableType().getOwner();
         String ownerFqn = "";
 
         if (owner instanceof JavaType.Method) {
             JavaType.Method m = (JavaType.Method) owner;
-            //            System.out.println("Method owner: " + m.getDeclaringType().getFullyQualifiedName());
+            //            log.debug("Method owner: " + m.getDeclaringType().getFullyQualifiedName());
             ownerFqn = m.getDeclaringType().getFullyQualifiedName();
         } else if (owner instanceof JavaType.Class) {
             JavaType.Class c = (JavaType.Class) owner;
-            //            System.out.println("Method owner: " + c.getFullyQualifiedName());
+            //            log.debug("Method owner: " + c.getFullyQualifiedName());
             ownerFqn = c.getFullyQualifiedName();
         }
 
-        TypeTree typeTree = variableDeclarations.getTypeExpression();
+        log.debug("*************************");
+        log.debug("Processing " + ownerFqn + ":" + variableDeclarations);
+        log.debug("*************************");
 
-        // skip class definition to prevent all types from self-referencing
-        if (typeTree instanceof J.Identifier) {
-            return variableDeclarations;
-        }
+        TypeTree typeTree = variableDeclarations.getTypeExpression();
 
         JavaType javaType;
         if (null != typeTree) {
@@ -62,11 +68,21 @@ public class JavaVariableVisitor<P> extends JavaIsoVisitor<P> {
         // but I'm not sure how to get a cursor
         // All types, including primitives can be annotated
         for (J.Annotation annotation : variableDeclarations.getAllAnnotations()) {
+            if (annotation.getType() instanceof JavaType.Unknown) {
+                continue;
+            }
+
             JavaType.Class type = (JavaType.Class) annotation.getType();
             if (null != type) {
                 String annotationFqn = type.getFullyQualifiedName();
-                System.out.println("Variable Annotation FQN: " + annotationFqn);
+                log.debug("Variable Annotation FQN: " + annotationFqn);
                 addType(ownerFqn, annotationFqn);
+
+                if (null != annotation.getArguments()) {
+                    for (Expression argument : annotation.getArguments()) {
+                        processType(argument.getType(), ownerFqn);
+                    }
+                }
             }
         }
 
@@ -80,7 +96,6 @@ public class JavaVariableVisitor<P> extends JavaIsoVisitor<P> {
         return variableDeclarations;
     }
 
-    // processType methods are mutually recursive
     void processType(JavaType javaType, String ownerFqn) {
         if (javaType instanceof JavaType.Class) {
             processType((JavaType.Class) javaType, ownerFqn);
@@ -98,10 +113,10 @@ public class JavaVariableVisitor<P> extends JavaIsoVisitor<P> {
     private void processType(JavaType.Parameterized parameterized, String ownerFqn) {
         // List<A<E>> --> A
         processAnnotations(parameterized, ownerFqn);
-        System.out.println("Parameterized type FQN : " + parameterized.getFullyQualifiedName());
+        log.debug("Parameterized type FQN : " + parameterized.getFullyQualifiedName());
         addType(ownerFqn, parameterized.getFullyQualifiedName());
 
-        System.out.println("Nested Parameterized type parameters: " + parameterized.getTypeParameters());
+        log.debug("Nested Parameterized type parameters: " + parameterized.getTypeParameters());
         for (JavaType parameter : parameterized.getTypeParameters()) {
             processType(parameter, ownerFqn);
         }
@@ -109,21 +124,25 @@ public class JavaVariableVisitor<P> extends JavaIsoVisitor<P> {
 
     private void processType(JavaType.Array arrayType, String ownerFqn) {
         // D[] --> D
-        System.out.println("Array Element type: " + arrayType.getElemType());
+        log.debug("Array Element type: " + arrayType.getElemType());
         processType(arrayType.getElemType(), ownerFqn);
     }
 
     private void processType(JavaType.GenericTypeVariable typeVariable, String ownerFqn) {
-        System.out.println("Type parameter type name: " + typeVariable.getName());
+        log.debug("Type parameter type name: " + typeVariable.getName());
 
         for (JavaType bound : typeVariable.getBounds()) {
-            processType(bound, ownerFqn);
+            if (bound instanceof JavaType.Class) {
+                addType(((JavaType.Class) bound).getFullyQualifiedName(), ownerFqn);
+            } else if (bound instanceof JavaType.Parameterized) {
+                addType(((JavaType.Parameterized) bound).getFullyQualifiedName(), ownerFqn);
+            }
         }
     }
 
     private void processType(JavaType.Class classType, String ownerFqn) {
         processAnnotations(classType, ownerFqn);
-        System.out.println("Class type FQN: " + classType.getFullyQualifiedName());
+        log.debug("Class type FQN: " + classType.getFullyQualifiedName());
         addType(ownerFqn, classType.getFullyQualifiedName());
     }
 
@@ -131,21 +150,23 @@ public class JavaVariableVisitor<P> extends JavaIsoVisitor<P> {
         if (!fullyQualified.getAnnotations().isEmpty()) {
             for (JavaType.FullyQualified annotation : fullyQualified.getAnnotations()) {
                 String annotationFqn = annotation.getFullyQualifiedName();
-                System.out.println("Extra Annotation FQN: " + annotationFqn);
+                log.debug("Extra Annotation FQN: " + annotationFqn);
                 addType(ownerFqn, annotationFqn);
             }
         }
     }
 
     void addType(String ownerFqn, String typeFqn) {
-        classReferencesGraph.addVertex(ownerFqn);
-        classReferencesGraph.addVertex(typeFqn);
+        if (!ownerFqn.contains("java.lang") && !typeFqn.contains("java.lang")) {
+            classReferencesGraph.addVertex(ownerFqn);
+            classReferencesGraph.addVertex(typeFqn);
 
-        if (!classReferencesGraph.containsEdge(ownerFqn, typeFqn)) {
-            classReferencesGraph.addEdge(ownerFqn, typeFqn);
-        } else {
-            DefaultWeightedEdge edge = classReferencesGraph.getEdge(ownerFqn, typeFqn);
-            classReferencesGraph.setEdgeWeight(edge, classReferencesGraph.getEdgeWeight(edge) + 1);
+            if (!classReferencesGraph.containsEdge(ownerFqn, typeFqn)) {
+                classReferencesGraph.addEdge(ownerFqn, typeFqn);
+            } else {
+                DefaultWeightedEdge edge = classReferencesGraph.getEdge(ownerFqn, typeFqn);
+                classReferencesGraph.setEdgeWeight(edge, classReferencesGraph.getEdgeWeight(edge) + 1);
+            }
         }
     }
 }

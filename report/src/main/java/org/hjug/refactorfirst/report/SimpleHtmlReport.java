@@ -91,6 +91,7 @@ public class SimpleHtmlReport {
 
         printTitle(projectName, projectVersion, stringBuilder);
         printHead(stringBuilder);
+        printOpenBodyTag(stringBuilder);
         printBreadcrumbs(stringBuilder);
         printProjectHeader(projectName, projectVersion, stringBuilder);
 
@@ -268,7 +269,7 @@ public class SimpleHtmlReport {
                 rankedCycleData = new String[] {
                     // "Cycle Name", "Priority", "Change Proneness Rank", "Class Count", "Relationship Count", "Min
                     // Cuts"
-                    rankedCycle.getCycleName(),
+                    getClassName(rankedCycle.getCycleName()),
                     rankedCycle.getPriority().toString(),
                     rankedCycle.getChangePronenessRank().toString(),
                     String.valueOf(rankedCycle.getCycleNodes().size()),
@@ -309,8 +310,7 @@ public class SimpleHtmlReport {
         stringBuilder.append("<br/>\n");
         stringBuilder.append("<br/>\n");
 
-        stringBuilder.append("<h2 align=\"center\">Class Cycle : " + cycle.getCycleName() + "</h2>\n");
-        // renderCycleImage(cycle.getCycleName(), stringBuilder, outputDirectory);
+        stringBuilder.append("<h2 align=\"center\">Class Cycle : " + getClassName(cycle.getCycleName()) + "</h2>\n");
         renderCycleImage(classGraph, cycle, stringBuilder);
 
         stringBuilder.append("<div align=\"center\">");
@@ -509,9 +509,12 @@ public class SimpleHtmlReport {
         // empty on purpose
     }
 
+    public void printOpenBodyTag(StringBuilder stringBuilder) {
+        stringBuilder.append("  <body class=\"composite\">\n");
+    }
+
     public void printBreadcrumbs(StringBuilder stringBuilder) {
-        stringBuilder.append("  <body class=\"composite\">\n"
-                + "    <div id=\"banner\">\n"
+        stringBuilder.append("    <div id=\"banner\">\n"
                 + "    </div>\n"
                 + "    <div id=\"breadcrumbs\">\n"
                 + "      <div class=\"xleft\">\n");
@@ -577,5 +580,15 @@ public class SimpleHtmlReport {
             int maxCboPriority,
             StringBuilder stringBuilder) {
         // empty on purpose
+    }
+
+    String getClassName(String fqn) {
+        // handle no package
+        if (!fqn.contains(".")) {
+            return fqn;
+        }
+
+        int lastIndex = fqn.lastIndexOf(".");
+        return fqn.substring(lastIndex + 1);
     }
 }

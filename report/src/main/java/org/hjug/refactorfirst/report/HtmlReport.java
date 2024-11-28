@@ -12,6 +12,182 @@ import org.jgrapht.graph.DefaultWeightedEdge;
 @Slf4j
 public class HtmlReport extends SimpleHtmlReport {
 
+    int d3Threshold = 700;
+
+    // Created by generative AI and modified slightly
+    static final String SUGIYAMA_SIGMA_GRAPH = "<script>\n"
+            + "function sugiyamaLayout(graph) {\n" + "    var layers = [];\n"
+            + "    var nodeLevels = {};\n"
+            + "    var nodes = graph.nodes();\n"
+            + "    //var edges = graph.edges();\n"
+            + "\n"
+            + "    // Step 1: Assign levels to nodes\n"
+            + "    function assignLevels() {\n"
+            + "        var visited = {};\n"
+            + "        var stack = [];\n"
+            + "\n"
+            + "        function visit(node, level) {\n"
+            + "            if (visited[node]) return;\n"
+            + "            visited[node] = true;\n"
+            + "            nodeLevels[node] = level;\n"
+            + "            if (!layers[level]) layers[level] = [];\n"
+            + "            layers[level].push(node);\n"
+            + "            stack.push(node);\n"
+            + "            graph.forEachNeighbor(node, function (neighbor) {\n"
+            + "                visit(neighbor, level + 1);\n"
+            + "            });\n"
+            + "        }\n"
+            + "\n"
+            + "        nodes.forEach(function (node) {\n"
+            + "            if (!visited[node]) visit(node, 0);\n"
+            + "        });\n"
+            + "    }\n"
+            + "\n"
+            + "    // Step 2: Reduce edge crossings\n"
+            + "    function reduceCrossings() {\n"
+            + "        for (var i = 0; i < layers.length - 1; i++) {\n"
+            + "            var layer = layers[i];\n"
+            + "            var nextLayer = layers[i + 1];\n"
+            + "            var positions = {};\n"
+            + "\n"
+            + "            nextLayer.forEach(function (node, index) {\n"
+            + "                positions[node] = index;\n"
+            + "            });\n"
+            + "\n"
+            + "            layer.sort(function (a, b) {\n"
+            + "                var aPos = 0, bPos = 0;\n"
+            + "                graph.forEachNeighbor(a, function (neighbor) {\n"
+            + "                    aPos += positions[neighbor] || 0;\n"
+            + "                });\n"
+            + "                graph.forEachNeighbor(b, function (neighbor) {\n"
+            + "                    bPos += positions[neighbor] || 0;\n"
+            + "                });\n"
+            + "                return aPos - bPos;\n"
+            + "            });\n"
+            + "        }\n"
+            + "    }\n"
+            + "\n"
+            + "    // Step 3: Assign positions to nodes\n"
+            + "    function assignPositions() {\n"
+            + "        var yStep = 100;\n"
+            + "        var xStep = 2000;\n"
+            + "\n"
+            + "        layers.forEach(function (layer, level) {\n"
+            + "            var layerWidth = layer.length * xStep;\n"
+            + "            var offsetX = ((screen.width - 200) - layerWidth) / 2; // Centering the nodes\n"
+            + "\n"
+            + "            layer.forEach(function (node, index) {\n"
+            + "                graph.setNodeAttribute(node, 'x', offsetX + index * xStep);\n"
+            + "                graph.setNodeAttribute(node, 'y', -level * yStep);\n"
+            + "            });\n"
+            + "        });\n"
+            + "    }\n"
+            + "\n"
+            + "    assignLevels();\n"
+            + "    reduceCrossings();\n"
+            + "    assignPositions();\n"
+            + "}\n"
+            + "\n"
+            + "function renderGraph(dot) {\n"
+            + "    // Parse the DOT graph using graphlib-dot\n"
+            + "    const graphlibGraph = graphlibDot.read(dot);\n"
+            + "\n"
+            + "    // Convert graphlib graph to graphology graph\n"
+            + "    const graphologyGraph = new graphology.Graph();\n"
+            + "    graphlibGraph.nodes().forEach(node => {\n"
+            + "        const attrs = graphlibGraph.node(node);\n"
+            + "        graphologyGraph.addNode(node, {\n"
+            + "            label: node,\n"
+            + "            color: attrs.color,\n"
+            + "            // x: Math.random(),\n"
+            + "            // y: Math.random(),\n"
+            + "            size: 5,\n"
+            + "        });\n"
+            + "    });\n"
+            + "\n"
+            + "    graphlibGraph.edges().forEach(edge => {\n"
+            + "        const attrs = graphlibGraph.edge(edge);\n"
+            + "        graphologyGraph.addEdge(edge.v, edge.w, {\n"
+            + "            color: attrs.color,\n"
+            + "            size: 1,\n"
+            + "            type: 'arrow',\n"
+            + "        });\n"
+            + "    });\n"
+            + "\n"
+            + "    sugiyamaLayout(graphologyGraph)\n"
+            + "\n"
+            + "    return graphologyGraph;\n"
+            + "}\n"
+            + "</script>";
+
+    // Created by generative AI and modified
+    static final String POPUP_STYLE = "<style>\n" + "        /* Popup container */\n"
+            + "        .popup {\n"
+            + "            position: fixed;\n"
+            + "            display: none;\n"
+            + "            width: 95%;\n"
+            + "            height: 95%;\n"
+            + "            background-color: white;\n"
+            + "            border: 1px solid #ccc;\n"
+            + "            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);\n"
+            + "            top: 50%;\n"
+            + "            left: 50%;\n"
+            + "            transform: translate(-50%, -50%);\n"
+            + "            z-index: 1000;\n"
+            + "            padding: 20px;\n"
+            + "            box-sizing: border-box;\n"
+            + "        }\n"
+            + "\n"
+            + "        /* Popup overlay */\n"
+            + "        .overlay {\n"
+            + "            position: fixed;\n"
+            + "            display: none;\n"
+            + "            width: 100%;\n"
+            + "            height: 100%;\n"
+            + "            top: 0;\n"
+            + "            left: 0;\n"
+            + "            background: rgba(0, 0, 0, 0.5);\n"
+            + "            z-index: 999;\n"
+            + "        }\n"
+            + "\n"
+            + "        /* Close button */\n"
+            + "        .close-btn {\n"
+            + "            position: absolute;\n"
+            + "            top: 10px;\n"
+            + "            right: 10px;\n"
+            + "            cursor: pointer;\n"
+            + "        }\n"
+            + "    </style>";
+
+    // Created by generative AI and modified
+    static final String POPUP_FUNCTIONS = "<script>\n" + "    function showPopup(popupId, containerName, dot) {\n"
+            + "        document.getElementById('overlay').style.display = 'block';\n"
+            + "        document.getElementById(popupId).style.display = 'block';\n"
+            + "\n"
+            + "        var graph = renderGraph(dot);\n"
+            + "        var container = document.getElementById(containerName);\n"
+            + "\n"
+            + "        // Render with Sigma.js\n"
+            + "        new Sigma(graph, container);\n"
+            + "    }\n"
+            + "\n"
+            + "    function hidePopup() {\n"
+            + "        document.getElementById('overlay').style.display = 'none';\n"
+            + "        var popups = document.getElementsByClassName('popup');\n"
+            + "        for (var i = 0; i < popups.length; i++) {\n"
+            + "            popups[i].style.display = 'none';\n"
+            + "        }\n"
+            + "\n"
+            + "        // Clear the graph containers to remove the previous graphs\n"
+            + "        var containers = document.querySelectorAll('[id^=\"graph-container\"]');\n"
+            + "        containers.forEach(function(container) {\n"
+            + "            while (container.firstChild) {\n"
+            + "                container.removeChild(container.firstChild);\n"
+            + "            }\n"
+            + "        });\n"
+            + "    }\n"
+            + "</script>";
+
     public static final String GOD_CLASS_CHART_LEGEND =
             "       <h2>God Class Chart Legend:</h2>" + "       <table border=\"5px\">\n"
                     + "          <tbody>\n"
@@ -36,14 +212,32 @@ public class HtmlReport extends SimpleHtmlReport {
 
     @Override
     public void printHead(StringBuilder stringBuilder) {
-        stringBuilder.append("<script async defer src=\"https://buttons.github.io/buttons.js\"></script>"
-                + "<script type=\"text/javascript\" src=\"https://www.gstatic.com/charts/loader.js\">"
-                + "</script><script type=\"text/javascript\" src=\"./gchart.js\"></script>\n"
-                + "<script type=\"text/javascript\" src=\"./gchart2.js\"></script>\n"
+        stringBuilder.append("<script async defer src=\"https://buttons.github.io/buttons.js\"></script>\n"
+                // google chart import
+                + "<script type=\"text/javascript\" src=\"https://www.gstatic.com/charts/loader.js\"></script>\n"
+                // d3 dot graph imports
                 + "<script src=\"https://d3js.org/d3.v5.min.js\"></script>\n"
                 + "<script src=\"https://unpkg.com/d3-graphviz@3.0.5/build/d3-graphviz.min.js\"></script>\n"
                 + "<script src=\"https://unpkg.com/@hpcc-js/wasm@0.3.11/dist/index.min.js\"></script>\n"
-                + "  </head>\n");
+                // sigma graph imports - sigma, graphology, graphlib, and graphlib-dot
+                + "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/sigma.js/2.4.0/sigma.min.js\"></script>\n"
+                + "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/graphology/0.25.4/graphology.umd.min.js\"></script>\n"
+                // may only need graphlib-dot
+                + "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/graphlib/2.1.8/graphlib.min.js\"></script>\n"
+                + "<script src=\"https://cdn.jsdelivr.net/npm/graphlib-dot@0.6.4/dist/graphlib-dot.min.js\"></script>\n"
+                + SUGIYAMA_SIGMA_GRAPH
+                + POPUP_FUNCTIONS
+                + POPUP_STYLE
+                + "</head>\n");
+    }
+
+    public void printOpenBodyTag(StringBuilder stringBuilder) {
+        stringBuilder.append("  <body class=\"composite\">\n");
+        printOverlay(stringBuilder);
+    }
+
+    private void printOverlay(StringBuilder stringBuilder) {
+        stringBuilder.append("<div class=\"overlay\" id=\"overlay\" onclick=\"hidePopup()\"></div>");
     }
 
     @Override
@@ -138,22 +332,33 @@ public class HtmlReport extends SimpleHtmlReport {
             Graph<String, DefaultWeightedEdge> classGraph, RankedCycle cycle, StringBuilder stringBuilder) {
         String dot = buildDot(classGraph, cycle);
 
-        stringBuilder.append("<div align=\"center\" id=\"" + cycle.getCycleName()
-                + "\" style=\"border: thin solid black\"></div>\n");
-        stringBuilder.append("<script>\n");
-        stringBuilder.append("d3.select(\"#" + cycle.getCycleName() + "\")\n");
-        stringBuilder.append(".graphviz()\n");
-        stringBuilder.append(".width(screen.width - 200)\n");
-        stringBuilder.append(".height(screen.height)\n");
-        stringBuilder.append(".fit(true)\n");
-        stringBuilder.append(".renderDot(" + dot + ");\n");
-        stringBuilder.append("</script>\n");
+        String cycleName = getClassName(cycle.getCycleName()).replace("$", "_");
 
-        stringBuilder.append("<div align=\"center\">");
-        stringBuilder.append("<p>Red arrows represent relationship(s) to remove to decompose cycle</p>");
-        stringBuilder.append("</div>");
-        stringBuilder.append("<br/>");
-        stringBuilder.append("<br/>");
+        if (cycle.getCycleNodes().size() + cycle.getEdgeSet().size() < d3Threshold) {
+            stringBuilder.append(
+                    "<div align=\"center\" id=\"" + cycleName + "\" style=\"border: thin solid black\"></div>\n");
+            stringBuilder.append("<script>\n");
+            stringBuilder.append("d3.select(\"#" + cycleName + "\")\n");
+            stringBuilder.append(".graphviz()\n");
+            stringBuilder.append(".width(screen.width - 200)\n");
+            stringBuilder.append(".height(screen.height)\n");
+            stringBuilder.append(".fit(true)\n");
+            stringBuilder.append(".renderDot(" + dot + ");\n");
+            stringBuilder.append("</script>\n");
+        } else {
+            stringBuilder.append("<script>\n");
+            stringBuilder.append("const " + cycleName + "_dot =" + dot + "\n");
+            stringBuilder.append("</script>\n");
+            stringBuilder.append(generatePopup(cycleName));
+        }
+
+        stringBuilder.append("<div align=\"center\">\n");
+        stringBuilder.append(
+                "<p>Red lines represent relationship(s) to remove. Remove one to start decomposing the cycle.</p>\n");
+        stringBuilder.append("<p>Zoom in / out with your mouse wheel and click/move to drag the image.</p>\n");
+        stringBuilder.append("</div>\n");
+        stringBuilder.append("<br/>\n");
+        stringBuilder.append("<br/>\n");
     }
 
     String buildDot(Graph<String, DefaultWeightedEdge> classGraph, RankedCycle cycle) {
@@ -165,7 +370,7 @@ public class HtmlReport extends SimpleHtmlReport {
         // e.g DownloadManager;
         for (String vertex : cycle.getVertexSet()) {
             dot.append("'");
-            dot.append(vertex);
+            dot.append(getClassName(vertex));
             dot.append(";\\n' +\n");
         }
 
@@ -176,8 +381,8 @@ public class HtmlReport extends SimpleHtmlReport {
             String[] vertexes =
                     edge.toString().replace("(", "").replace(")", "").split(":");
 
-            String start = vertexes[0].trim();
-            String end = vertexes[1].trim();
+            String start = getClassName(vertexes[0].trim());
+            String end = getClassName(vertexes[1].trim());
 
             dot.append("'");
             dot.append(start);
@@ -185,9 +390,13 @@ public class HtmlReport extends SimpleHtmlReport {
             dot.append(end);
 
             // render edge attributes
+            int edgeWeight = (int) classGraph.getEdgeWeight(edge);
             dot.append(" [ ");
             dot.append("label = \"");
-            dot.append((int) classGraph.getEdgeWeight(edge));
+            dot.append(edgeWeight);
+            dot.append("\" ");
+            dot.append("weight = \"");
+            dot.append(edgeWeight);
             dot.append("\"");
 
             if (cycle.getMinCutEdges().contains(edge)) {
@@ -199,6 +408,16 @@ public class HtmlReport extends SimpleHtmlReport {
 
         dot.append("'}'");
 
-        return dot.toString();
+        return dot.toString().replace("$", "_");
+    }
+
+    String generatePopup(String cycleName) {
+        return "<button style=\"display: block; margin: 0 auto;\" onclick=\"showPopup('popup-" + cycleName
+                + "', 'graph-container-" + cycleName + "'," + cycleName + "_dot )\">Show " + cycleName
+                + " Cycle Popup</button>\n" + "\n"
+                + "<div class=\"popup\" id=\"popup-"
+                + cycleName + "\">\n" + "    <span class=\"close-btn\" onclick=\"hidePopup()\">×</span>\n"
+                + "    <div id=\"graph-container-"
+                + cycleName + "\" style=\"width: 100%; height: 100%;\"></div>\n" + "</div>";
     }
 }

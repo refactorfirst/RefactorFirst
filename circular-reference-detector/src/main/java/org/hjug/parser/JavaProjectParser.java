@@ -1,12 +1,6 @@
 package org.hjug.parser;
 
-import com.github.javaparser.StaticJavaParser;
-import com.github.javaparser.ast.CompilationUnit;
-import com.github.javaparser.ast.body.FieldDeclaration;
-import com.github.javaparser.ast.body.MethodDeclaration;
-import com.github.javaparser.ast.body.Parameter;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -27,6 +21,7 @@ public class JavaProjectParser {
 
     /**
      * Given a java source directory return a graph of class references
+     *
      * @param srcDirectory
      * @return
      * @throws IOException
@@ -37,125 +32,28 @@ public class JavaProjectParser {
         if (srcDirectory == null || srcDirectory.isEmpty()) {
             throw new IllegalArgumentException();
         } else {
-            List<String> classNames = getClassNames(srcDirectory);
-            try (Stream<Path> filesStream = Files.walk(Paths.get(srcDirectory))) {
-                filesStream
-                        .filter(path -> path.getFileName().toString().endsWith(".java"))
-                        .forEach(path -> {
-                            log.info("Parsing {}", path);
-                            List<String> types = getInstanceVarTypes(classNames, path.toFile());
-                            types.addAll(getMethodArgumentTypes(classNames, path.toFile()));
-                            if (!types.isEmpty()) {
-                                String className =
-                                        getClassName(path.getFileName().toString());
-                                classReferencesGraph.addVertex(className);
-                                types.forEach(classReferencesGraph::addVertex);
-                                types.forEach(type -> {
-                                    if (!classReferencesGraph.containsEdge(className, type)) {
-                                        classReferencesGraph.addEdge(className, type);
-                                    } else {
-                                        DefaultWeightedEdge edge = classReferencesGraph.getEdge(className, type);
-                                        classReferencesGraph.setEdgeWeight(
-                                                edge, classReferencesGraph.getEdgeWeight(edge) + 1);
-                                    }
-                                });
-                            }
-                        });
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
-            }
+            processWithOpenRewrite(srcDirectory, classReferencesGraph);
         }
 
         return classReferencesGraph;
     }
 
-    List<String> getClassDeclarations(Path javaSrcFile, Path srcDirectory) {
+    private void processWithOpenRewrite(String srcDir, Graph<String, DefaultWeightedEdge> classReferencesGraph)
+            throws IOException {
+        File srcDirectory = new File(srcDir);
+
         org.openrewrite.java.JavaParser javaParser =
                 JavaParser.fromJavaVersion().build();
         ExecutionContext ctx = new InMemoryExecutionContext(Throwable::printStackTrace);
 
-        JavaVisitor javaVisitor = new JavaVisitor();
+        JavaVariableVisitor<ExecutionContext> javaVariableCapturingVisitor =
+                new JavaVariableVisitor<>(classReferencesGraph);
 
-        List<String> fqdns = new ArrayList<>();
-
-        javaParser.parse(List.of(javaSrcFile), srcDirectory, ctx).forEach(cu -> javaVisitor.visit(cu, ctx));
-
-        return fqdns;
-    }
-
-    /**
-     * Get instance variables types of a java source file using java parser
-     * @param classNamesToFilterBy - only add instance variable types which have these class names as type
-     * @param file
-     * @return
-     */
-    private List<String> getInstanceVarTypes(List<String> classNamesToFilterBy, File javaSrcFile) {
-        CompilationUnit compilationUnit;
-        try {
-            compilationUnit = StaticJavaParser.parse(javaSrcFile);
-
-            return compilationUnit.findAll(FieldDeclaration.class).stream()
-                    .map(f -> f.getVariables().get(0).getType())
-                    .filter(v -> !v.isPrimitiveType())
-                    .map(Object::toString)
-                    .filter(classNamesToFilterBy::contains)
-                    .collect(Collectors.toList());
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
+        try (Stream<Path> walk = Files.walk(Paths.get(srcDirectory.getAbsolutePath()))) {
+            List<Path> list = walk.collect(Collectors.toList());
+            javaParser
+                    .parse(list, Paths.get(srcDirectory.getAbsolutePath()), ctx)
+                    .forEach(cu -> javaVariableCapturingVisitor.visit(cu, ctx));
         }
-        return new ArrayList<>();
-    }
-
-    /**
-     * Get parameter types of methods declared in a java source file using java parser
-     * @param classNamesToFilterBy - only add types which have these class names as type
-     * @param file
-     * @return
-     */
-    private List<String> getMethodArgumentTypes(List<String> classNamesToFilterBy, File javaSrcFile) {
-        CompilationUnit compilationUnit;
-        try {
-            compilationUnit = StaticJavaParser.parse(javaSrcFile);
-            return compilationUnit.findAll(MethodDeclaration.class).stream()
-                    .flatMap(f -> f.getParameters().stream()
-                            .map(Parameter::getType)
-                            .filter(type -> !type.isPrimitiveType())
-                            .collect(Collectors.toList())
-                            .stream())
-                    .map(Object::toString)
-                    .filter(classNamesToFilterBy::contains)
-                    .collect(Collectors.toList());
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
-        return new ArrayList<>();
-    }
-
-    /**
-     * Get all java classes in a source directory
-     *
-     * @param srcDirectory
-     * @return
-     * @throws IOException
-     */
-    private List<String> getClassNames(String srcDirectory) throws IOException {
-        try (Stream<Path> filesStream = Files.walk(Paths.get(srcDirectory))) {
-            return filesStream
-                    .map(path -> path.getFileName().toString())
-                    .filter(fileName -> fileName.endsWith(".java"))
-                    .map(this::getClassName)
-                    .collect(Collectors.toList());
-        }
-    }
-
-    /**
-     * Extract class name from java file name
-     * Example : MyJavaClass.java becomes MyJavaClass
-     *
-     * @param javaFileName
-     * @return
-     */
-    private String getClassName(String javaFileName) {
-        return javaFileName.substring(0, javaFileName.indexOf('.'));
     }
 }

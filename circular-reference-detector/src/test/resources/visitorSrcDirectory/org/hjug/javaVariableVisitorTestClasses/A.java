@@ -1,11 +1,17 @@
 package org.hjug.javaVariableVisitorTestClasses;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Map;
 import java.util.List;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
+
 public class A<T> {
 
-	public A(B cB, C cC){}
+//	public A(B cB, C cC){}
+
+	B<? extends C> crazyType;
 
 	@MyAnnotation
 	@MyOtherAnnotation
@@ -25,7 +31,7 @@ public class A<T> {
 	Map<A,B> map;
 	List<? extends List<? extends Number>> listOfListsOfNumbers;
 
-	C doSomething(B<C> paramB) {
+	C doSomething(@NonNull B<C> paramB) {
 		List<B<E>> list3;
 		A<E> a2;
 		B<C> b2;
