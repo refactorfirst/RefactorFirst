@@ -211,7 +211,7 @@ public class HtmlReport extends SimpleHtmlReport {
                     + "        <br/>";
 
     @Override
-    public void printHead(StringBuilder stringBuilder) {
+    public void printHead() {
         stringBuilder.append("<script async defer src=\"https://buttons.github.io/buttons.js\"></script>\n"
                 // google chart import
                 + "<script type=\"text/javascript\" src=\"https://www.gstatic.com/charts/loader.js\"></script>\n"
@@ -231,17 +231,18 @@ public class HtmlReport extends SimpleHtmlReport {
                 + "</head>\n");
     }
 
-    public void printOpenBodyTag(StringBuilder stringBuilder) {
+    @Override
+    public void printOpenBodyTag() {
         stringBuilder.append("  <body class=\"composite\">\n");
-        printOverlay(stringBuilder);
+        printOverlay();
     }
 
-    private void printOverlay(StringBuilder stringBuilder) {
+    private void printOverlay() {
         stringBuilder.append("<div class=\"overlay\" id=\"overlay\" onclick=\"hidePopup()\"></div>");
     }
 
     @Override
-    public void printTitle(String projectName, String projectVersion, StringBuilder stringBuilder) {
+    public void printTitle(String projectName, String projectVersion) {
         stringBuilder
                 .append("<title>Refactor First Report for ")
                 .append(projectName)
@@ -251,7 +252,7 @@ public class HtmlReport extends SimpleHtmlReport {
     }
 
     @Override
-    void renderGithubButtons(StringBuilder stringBuilder) {
+    void renderGithubButtons() {
         stringBuilder.append("<div align=\"center\">\n");
         stringBuilder.append("Show RefactorFirst some &#10084;&#65039;\n");
         stringBuilder.append("<br/>\n");
@@ -269,8 +270,7 @@ public class HtmlReport extends SimpleHtmlReport {
     }
 
     @Override
-    String writeGodClassGchartJs(
-            List<RankedDisharmony> rankedDisharmonies, int maxPriority, String reportOutputDirectory) {
+    String writeGodClassGchartJs(List<RankedDisharmony> rankedDisharmonies, int maxPriority) {
         GraphDataGenerator graphDataGenerator = new GraphDataGenerator();
         String scriptStart = graphDataGenerator.getGodClassScriptStart();
         String bubbleChartData = graphDataGenerator.generateGodClassBubbleChartData(rankedDisharmonies, maxPriority);
@@ -280,7 +280,7 @@ public class HtmlReport extends SimpleHtmlReport {
     }
 
     @Override
-    String writeGCBOGchartJs(List<RankedDisharmony> rankedDisharmonies, int maxPriority, String reportOutputDirectory) {
+    String writeGCBOGchartJs(List<RankedDisharmony> rankedDisharmonies, int maxPriority) {
         GraphDataGenerator graphDataGenerator = new GraphDataGenerator();
         String scriptStart = graphDataGenerator.getCBOScriptStart();
         String bubbleChartData = graphDataGenerator.generateCBOBubbleChartData(rankedDisharmonies, maxPriority);
@@ -301,35 +301,25 @@ public class HtmlReport extends SimpleHtmlReport {
     }
 
     @Override
-    void renderGodClassChart(
-            String outputDirectory,
-            List<RankedDisharmony> rankedGodClassDisharmonies,
-            int maxGodClassPriority,
-            StringBuilder stringBuilder) {
-        String godClassChart =
-                writeGodClassGchartJs(rankedGodClassDisharmonies, maxGodClassPriority - 1, outputDirectory);
+    void renderGodClassChart(List<RankedDisharmony> rankedGodClassDisharmonies, int maxGodClassPriority) {
+        String godClassChart = writeGodClassGchartJs(rankedGodClassDisharmonies, maxGodClassPriority - 1);
         stringBuilder.append(
                 "<div id=\"series_chart_div\" align=\"center\"><script>" + godClassChart + "</script></div>\n");
-        renderGithubButtons(stringBuilder);
+        renderGithubButtons();
         stringBuilder.append(GOD_CLASS_CHART_LEGEND);
     }
 
     @Override
-    void renderCBOChart(
-            String outputDirectory,
-            List<RankedDisharmony> rankedCBODisharmonies,
-            int maxCboPriority,
-            StringBuilder stringBuilder) {
-        String cboChart = writeGCBOGchartJs(rankedCBODisharmonies, maxCboPriority - 1, outputDirectory);
+    void renderCBOChart(List<RankedDisharmony> rankedCBODisharmonies, int maxCboPriority) {
+        String cboChart = writeGCBOGchartJs(rankedCBODisharmonies, maxCboPriority - 1);
         stringBuilder.append(
                 "<div id=\"series_chart_div_2\" align=\"center\"><script>" + cboChart + "</script></div>\n");
-        renderGithubButtons(stringBuilder);
+        renderGithubButtons();
         stringBuilder.append(COUPLING_BETWEEN_OBJECT_CHART_LEGEND);
     }
 
     @Override
-    public void renderCycleImage(
-            Graph<String, DefaultWeightedEdge> classGraph, RankedCycle cycle, StringBuilder stringBuilder) {
+    public void renderCycleImage(RankedCycle cycle) {
         String dot = buildDot(classGraph, cycle);
 
         String cycleName = getClassName(cycle.getCycleName()).replace("$", "_");
@@ -338,16 +328,17 @@ public class HtmlReport extends SimpleHtmlReport {
             stringBuilder.append(
                     "<div align=\"center\" id=\"" + cycleName + "\" style=\"border: thin solid black\"></div>\n");
             stringBuilder.append("<script>\n");
+            stringBuilder.append("const " + cycleName + "_dot = " + dot + "\n");
             stringBuilder.append("d3.select(\"#" + cycleName + "\")\n");
             stringBuilder.append(".graphviz()\n");
             stringBuilder.append(".width(screen.width - 200)\n");
             stringBuilder.append(".height(screen.height)\n");
             stringBuilder.append(".fit(true)\n");
-            stringBuilder.append(".renderDot(" + dot + ");\n");
+            stringBuilder.append(".renderDot(" + cycleName + "_dot);\n");
             stringBuilder.append("</script>\n");
         } else {
             stringBuilder.append("<script>\n");
-            stringBuilder.append("const " + cycleName + "_dot =" + dot + "\n");
+            stringBuilder.append("const " + cycleName + "_dot = " + dot + "\n");
             stringBuilder.append("</script>\n");
             stringBuilder.append(generatePopup(cycleName));
         }
@@ -364,27 +355,23 @@ public class HtmlReport extends SimpleHtmlReport {
     String buildDot(Graph<String, DefaultWeightedEdge> classGraph, RankedCycle cycle) {
         StringBuilder dot = new StringBuilder();
 
-        dot.append("'strict digraph G {\\n' +\n");
+        dot.append("`strict digraph G {\n");
 
         // render vertices
         // e.g DownloadManager;
         for (String vertex : cycle.getVertexSet()) {
-            dot.append("'");
             dot.append(getClassName(vertex));
-            dot.append(";\\n' +\n");
+            dot.append(";\n");
         }
 
         for (DefaultWeightedEdge edge : cycle.getEdgeSet()) {
-            // 'DownloadManager -> Download [ label="1" color="red" ];'
+            // DownloadManager -> Download [ label="1" color="red" ];
 
             // render edge
-            String[] vertexes =
-                    edge.toString().replace("(", "").replace(")", "").split(":");
-
+            String[] vertexes = extractVertexes(edge);
             String start = getClassName(vertexes[0].trim());
             String end = getClassName(vertexes[1].trim());
 
-            dot.append("'");
             dot.append(start);
             dot.append(" -> ");
             dot.append(end);
@@ -403,15 +390,16 @@ public class HtmlReport extends SimpleHtmlReport {
                 dot.append(" color = \"red\"");
             }
 
-            dot.append(" ];\\n' +\n");
+            dot.append(" ];\n");
         }
 
-        dot.append("'}'");
+        dot.append("}`;");
 
         return dot.toString().replace("$", "_");
     }
 
     String generatePopup(String cycleName) {
+        // Created by generative AI and modified
         return "<button style=\"display: block; margin: 0 auto;\" onclick=\"showPopup('popup-" + cycleName
                 + "', 'graph-container-" + cycleName + "'," + cycleName + "_dot )\">Show " + cycleName
                 + " Cycle Popup</button>\n" + "\n"

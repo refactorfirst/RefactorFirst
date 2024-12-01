@@ -50,11 +50,6 @@ public class CostBenefitCalculator implements AutoCloseable {
         log.info("Initiating Cost Benefit calculation");
         try {
             gitLogReader = new GitLogReader(new File(repositoryPath));
-            //            repository = gitLogReader.gitRepository(new File(repositoryPath));
-            //            for (String file :
-            //                    gitLogReader.listRepositoryContentsAtHEAD(repository).keySet()) {
-            //                log.info("Files at HEAD: {}", file);
-            //            }
         } catch (IOException e) {
             log.error("Failure to access Git repository", e);
         }
@@ -71,7 +66,7 @@ public class CostBenefitCalculator implements AutoCloseable {
         List<RankedCycle> rankedCycles = new ArrayList<>();
         try {
             boolean calculateCycleChurn = false;
-            idenfifyRankedCycles(rankedCycles, calculateCycleChurn);
+            identifyRankedCycles(rankedCycles, calculateCycleChurn);
             sortRankedCycles(rankedCycles, calculateCycleChurn);
             setPriorities(rankedCycles);
         } catch (IOException e) {
@@ -85,7 +80,7 @@ public class CostBenefitCalculator implements AutoCloseable {
         List<RankedCycle> rankedCycles = new ArrayList<>();
         try {
             boolean calculateCycleChurn = true;
-            idenfifyRankedCycles(rankedCycles, calculateCycleChurn);
+            identifyRankedCycles(rankedCycles, calculateCycleChurn);
             sortRankedCycles(rankedCycles, calculateCycleChurn);
             setPriorities(rankedCycles);
         } catch (IOException e) {
@@ -95,7 +90,7 @@ public class CostBenefitCalculator implements AutoCloseable {
         return rankedCycles;
     }
 
-    private void idenfifyRankedCycles(List<RankedCycle> rankedCycles, boolean calculateChurnForCycles)
+    private void identifyRankedCycles(List<RankedCycle> rankedCycles, boolean calculateChurnForCycles)
             throws IOException {
         Map<String, AsSubgraph<String, DefaultWeightedEdge>> cycles = getCycles();
         Map<String, String> classNamesAndPaths = getClassNamesAndPaths();
@@ -113,6 +108,7 @@ public class CostBenefitCalculator implements AutoCloseable {
 
                 List<CycleNode> cycleNodes = subGraph.vertexSet().stream()
                         .map(classInCycle -> new CycleNode(classInCycle, classNamesAndPaths.get(classInCycle)))
+                        //                        .peek(cycleNode -> log.info(cycleNode.toString()))
                         .collect(Collectors.toList());
 
                 rankedCycles.add(

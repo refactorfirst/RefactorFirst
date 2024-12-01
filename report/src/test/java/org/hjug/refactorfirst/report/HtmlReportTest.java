@@ -12,7 +12,7 @@ import org.jgrapht.graph.DefaultDirectedWeightedGraph;
 import org.jgrapht.graph.DefaultWeightedEdge;
 import org.junit.jupiter.api.Test;
 
-public class HtmlReportTest {
+class HtmlReportTest {
 
     private HtmlReport mavenReport = new HtmlReport();
 
@@ -62,15 +62,14 @@ public class HtmlReportTest {
         String dot = htmlReport.buildDot(classGraph, rankedCycle);
 
         StringBuilder expectedDot = new StringBuilder();
-        expectedDot.append("'strict digraph G {\\n' +\n");
-        expectedDot.append("'A;\\n' +\n");
-        expectedDot.append("'B;\\n' +\n");
-        expectedDot.append("'C;\\n' +\n");
-        // 'DownloadManager -> Download [ label = "1" color = "red" ];'
-        expectedDot.append("'A -> B [ label = \"2\" weight = \"2\" ];\\n' +\n");
-        expectedDot.append("'B -> C [ label = \"1\" weight = \"1\" color = \"red\" ];\\n' +\n");
-        expectedDot.append("'C -> A [ label = \"1\" weight = \"1\" color = \"red\" ];\\n' +\n");
-        expectedDot.append("'}'");
+        expectedDot.append("`strict digraph G {\n"
+                + "A;\n"
+                + "B;\n"
+                + "C;\n"
+                + "A -> B [ label = \"2\" weight = \"2\" ];\n"
+                + "B -> C [ label = \"1\" weight = \"1\" color = \"red\" ];\n"
+                + "C -> A [ label = \"1\" weight = \"1\" color = \"red\" ];\n"
+                + "}`;");
 
         assertEquals(expectedDot.toString(), dot);
     }
