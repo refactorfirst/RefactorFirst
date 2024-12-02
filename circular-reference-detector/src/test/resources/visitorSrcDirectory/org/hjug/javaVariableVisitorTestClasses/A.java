@@ -7,6 +7,7 @@ import java.util.List;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 
+@MyAnnotation
 public class A<T> {
 
 //	public A(B cB, C cC){}
@@ -31,12 +32,13 @@ public class A<T> {
 	Map<A,B> map;
 	List<? extends List<? extends Number>> listOfListsOfNumbers;
 
-	C doSomething(@NonNull B<C> paramB) {
+	F doSomething(@NonNull B<C> paramB) {
 		List<B<E>> list3;
 		A<E> a2;
 		B<C> b2;
 		C<A,B> c2;
-		return new C();
+		// G extends F
+		return new G();
 	}
 
 	class InnerClass{

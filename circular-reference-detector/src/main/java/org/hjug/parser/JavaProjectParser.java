@@ -46,14 +46,16 @@ public class JavaProjectParser {
                 JavaParser.fromJavaVersion().build();
         ExecutionContext ctx = new InMemoryExecutionContext(Throwable::printStackTrace);
 
-        JavaVariableVisitor<ExecutionContext> javaVariableCapturingVisitor =
-                new JavaVariableVisitor<>(classReferencesGraph);
+        JavaVariableTypeVisitor<ExecutionContext> javaVariableTypeVisitor =
+                new JavaVariableTypeVisitor<>(classReferencesGraph);
 
         try (Stream<Path> walk = Files.walk(Paths.get(srcDirectory.getAbsolutePath()))) {
             List<Path> list = walk.collect(Collectors.toList());
             javaParser
                     .parse(list, Paths.get(srcDirectory.getAbsolutePath()), ctx)
-                    .forEach(cu -> javaVariableCapturingVisitor.visit(cu, ctx));
+                    .forEach(cu -> javaVariableTypeVisitor.visit(cu, ctx));
         }
+
+        //TODO: classReferencesGraph.removeAllVertices(); if vertex package not in codebase
     }
 }
