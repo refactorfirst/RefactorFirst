@@ -30,6 +30,11 @@
         </dependency>
 
         <dependency>
+            <groupId>org.hjug.refactorfirst.circularreferencedetector</groupId>
+            <artifactId>circular-reference-detector</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>org.hjug.refactorfirst.costbenefitcalculator</groupId>
             <artifactId>cost-benefit-calculator</artifactId>
         </dependency>
@@ -42,6 +47,11 @@
         <dependency>
             <groupId>org.hjug.refactorfirst.plugin</groupId>
             <artifactId>refactor-first-maven-plugin</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.hjug.refactorfirst.report</groupId>
+            <artifactId>report</artifactId>
         </dependency>
     </dependencies>
 
