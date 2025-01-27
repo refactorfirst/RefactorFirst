@@ -1,0 +1,78 @@
+package org.hjug.parser.visitor;
+
+import lombok.Getter;
+import org.jgrapht.Graph;
+import org.jgrapht.graph.DefaultDirectedWeightedGraph;
+import org.jgrapht.graph.DefaultWeightedEdge;
+import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JavaType;
+import org.openrewrite.java.tree.NameTree;
+
+import java.util.List;
+
+public class JavaMethodDeclarationVisitor<P> extends JavaIsoVisitor<P> implements TypeProcessor {
+
+    @Getter
+    private Graph<String, DefaultWeightedEdge> classReferencesGraph =
+            new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+
+    public JavaMethodDeclarationVisitor() {
+    }
+
+    public JavaMethodDeclarationVisitor(Graph<String, DefaultWeightedEdge> classReferencesGraph) {
+        this.classReferencesGraph = classReferencesGraph;
+    }
+
+
+    @Override
+    public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, P p) {
+        J.MethodDeclaration methodDeclaration = super.visitMethodDeclaration(method, p);
+
+        String owner = methodDeclaration.getMethodType().getDeclaringType().getFullyQualifiedName();
+        JavaType returnType = methodDeclaration.getReturnTypeExpression().getType();
+
+        // skip primitive variable declarations
+        if (!(returnType instanceof JavaType.Primitive)) {
+            processType(owner, returnType);
+        }
+
+        for (J.Annotation leadingAnnotation : methodDeclaration.getLeadingAnnotations()) {
+            processType(owner, leadingAnnotation.getType());
+        }
+
+        if (null != methodDeclaration.getTypeParameters()) {
+            for (J.TypeParameter typeParameter : methodDeclaration.getTypeParameters()) {
+                processTypeParameter(owner, typeParameter);
+            }
+        }
+
+        // don't need to capture parameter declarations
+        // they are captured in JavaVariableTypeVisitor
+
+
+        List<NameTree> throwz = methodDeclaration.getThrows();
+        if (null != throwz && !throwz.isEmpty()) {
+            for (NameTree thrown : throwz) {
+                processType(owner, thrown.getType());
+            }
+        }
+
+        return methodDeclaration;
+    }
+
+    public void addType(String ownerFqn, String typeFqn) {
+        if (ownerFqn.equals(typeFqn)) return;
+
+        classReferencesGraph.addVertex(ownerFqn);
+        classReferencesGraph.addVertex(typeFqn);
+
+        if (!classReferencesGraph.containsEdge(ownerFqn, typeFqn)) {
+            classReferencesGraph.addEdge(ownerFqn, typeFqn);
+        } else {
+            DefaultWeightedEdge edge = classReferencesGraph.getEdge(ownerFqn, typeFqn);
+            classReferencesGraph.setEdgeWeight(edge, classReferencesGraph.getEdgeWeight(edge) + 1);
+        }
+    }
+
+}

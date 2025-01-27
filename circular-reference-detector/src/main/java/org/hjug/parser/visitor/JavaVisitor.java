@@ -1,4 +1,4 @@
-package org.hjug.parser;
+package org.hjug.parser.visitor;
 
 import java.util.*;
 
@@ -57,15 +57,5 @@ public class JavaVisitor<P> extends JavaIsoVisitor<P> {
         }
 
         return compilationUnit;
-    }
-
-    @Override
-    public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, P p) {
-        J.MethodDeclaration methodDeclaration = super.visitMethodDeclaration(method, p);
-
-        methodDeclaration.getLeadingAnnotations();
-        methodDeclaration.getReturnTypeExpression().getType();
-
-        return methodDeclaration;
     }
 }

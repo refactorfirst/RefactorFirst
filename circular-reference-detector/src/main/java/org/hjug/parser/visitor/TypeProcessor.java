@@ -1,49 +1,55 @@
-package org.hjug.parser;
+package org.hjug.parser.visitor;
 
 import lombok.extern.slf4j.Slf4j;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
+import org.openrewrite.java.tree.TypeTree;
 
 
 public interface TypeProcessor {
 
     @Slf4j
-    final class LogHolder{}
+    final class LogHolder {
+    }
 
-    default void processType(JavaType javaType, String ownerFqn) {
+    /**
+     * @param ownerFqn The FQN that is the source of the relationship
+     * @param javaType The type that is used/referenced by the source of the relationship
+     */
+    default void processType(String ownerFqn, JavaType javaType) {
         if (javaType instanceof JavaType.Class) {
-            processType((JavaType.Class) javaType, ownerFqn);
+            processType(ownerFqn, (JavaType.Class) javaType);
         } else if (javaType instanceof JavaType.Parameterized) {
             // A<E> --> A
-            processType((JavaType.Parameterized) javaType, ownerFqn);
+            processType(ownerFqn, (JavaType.Parameterized) javaType);
         } else if (javaType instanceof JavaType.GenericTypeVariable) {
             // T t;
-            processType((JavaType.GenericTypeVariable) javaType, ownerFqn);
+            processType(ownerFqn, (JavaType.GenericTypeVariable) javaType);
         } else if (javaType instanceof JavaType.Array) {
-            processType((JavaType.Array) javaType, ownerFqn);
+            processType(ownerFqn, (JavaType.Array) javaType);
         }
     }
 
-    private void processType(JavaType.Parameterized parameterized, String ownerFqn) {
+    private void processType(String ownerFqn, JavaType.Parameterized parameterized) {
         // List<A<E>> --> A
-        processAnnotations(parameterized, ownerFqn);
+        processAnnotations(ownerFqn, parameterized);
         LogHolder.log.debug("Parameterized type FQN : " + parameterized.getFullyQualifiedName());
         addType(ownerFqn, parameterized.getFullyQualifiedName());
 
         LogHolder.log.debug("Nested Parameterized type parameters: " + parameterized.getTypeParameters());
         for (JavaType parameter : parameterized.getTypeParameters()) {
-            processType(parameter, ownerFqn);
+            processType(ownerFqn, parameter);
         }
     }
 
-    private void processType(JavaType.Array arrayType, String ownerFqn) {
+    private void processType(String ownerFqn, JavaType.Array arrayType) {
         // D[] --> D
         LogHolder.log.debug("Array Element type: " + arrayType.getElemType());
-        processType(arrayType.getElemType(), ownerFqn);
+        processType(ownerFqn, arrayType.getElemType());
     }
 
-    private void processType(JavaType.GenericTypeVariable typeVariable, String ownerFqn) {
+    private void processType(String ownerFqn, JavaType.GenericTypeVariable typeVariable) {
         LogHolder.log.debug("Type parameter type name: " + typeVariable.getName());
 
         for (JavaType bound : typeVariable.getBounds()) {
@@ -55,13 +61,13 @@ public interface TypeProcessor {
         }
     }
 
-    private void processType(JavaType.Class classType, String ownerFqn) {
-        processAnnotations(classType, ownerFqn);
+    private void processType(String ownerFqn, JavaType.Class classType) {
+        processAnnotations(ownerFqn, classType);
         LogHolder.log.debug("Class type FQN: " + classType.getFullyQualifiedName());
         addType(ownerFqn, classType.getFullyQualifiedName());
     }
 
-    private void processAnnotations(JavaType.FullyQualified fullyQualified, String ownerFqn) {
+    private void processAnnotations(String ownerFqn, JavaType.FullyQualified fullyQualified) {
         if (!fullyQualified.getAnnotations().isEmpty()) {
             for (JavaType.FullyQualified annotation : fullyQualified.getAnnotations()) {
                 String annotationFqn = annotation.getFullyQualifiedName();
@@ -71,7 +77,7 @@ public interface TypeProcessor {
         }
     }
 
-    default void processAnnotation(J.Annotation annotation, String ownerFqn) {
+    default void processAnnotation(String ownerFqn, J.Annotation annotation) {
         if (annotation.getType() instanceof JavaType.Unknown) {
             return;
         }
@@ -84,12 +90,32 @@ public interface TypeProcessor {
 
             if (null != annotation.getArguments()) {
                 for (Expression argument : annotation.getArguments()) {
-                    processType(argument.getType(), ownerFqn);
+                    processType(ownerFqn, argument.getType());
                 }
             }
         }
     }
 
+    default void processTypeParameter(String ownerFqn, J.TypeParameter typeParameter) {
+
+        if (null != typeParameter.getBounds()) {
+            for (TypeTree bound : typeParameter.getBounds()) {
+                processType(ownerFqn, bound.getType());
+            }
+        }
+
+        if (!typeParameter.getAnnotations().isEmpty()) {
+            for (J.Annotation annotation : typeParameter.getAnnotations()) {
+                processAnnotation(ownerFqn, annotation);
+            }
+        }
+    }
+
+    /**
+     *
+     * @param ownerFqn The FQN that is the source of the relationship
+     * @param typeFqn The FQN of the type that is being used by the source
+     */
     void addType(String ownerFqn, String typeFqn);
 
 }

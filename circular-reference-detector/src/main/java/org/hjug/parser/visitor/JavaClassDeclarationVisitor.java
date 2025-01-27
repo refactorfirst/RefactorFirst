@@ -1,0 +1,101 @@
+package org.hjug.parser.visitor;
+
+import lombok.Getter;
+import org.jgrapht.Graph;
+import org.jgrapht.graph.DefaultDirectedWeightedGraph;
+import org.jgrapht.graph.DefaultWeightedEdge;
+import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JavaType;
+import org.openrewrite.java.tree.Statement;
+import org.openrewrite.java.tree.TypeTree;
+
+import java.util.List;
+
+public class JavaClassDeclarationVisitor<P> extends JavaIsoVisitor<P> implements TypeProcessor {
+
+
+    private final JavaMethodInvocationVisitor methodInvocationVisitor;
+
+    @Getter
+    private Graph<String, DefaultWeightedEdge> classReferencesGraph =
+            new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+
+    public JavaClassDeclarationVisitor() {
+        methodInvocationVisitor = new JavaMethodInvocationVisitor(classReferencesGraph);
+    }
+
+    public JavaClassDeclarationVisitor(Graph<String, DefaultWeightedEdge> classReferencesGraph) {
+        this.classReferencesGraph = classReferencesGraph;
+        methodInvocationVisitor = new JavaMethodInvocationVisitor(classReferencesGraph);
+    }
+
+    @Override
+    public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, P p) {
+        J.ClassDeclaration classDeclaration = super.visitClassDeclaration(classDecl, p);
+
+        JavaType.FullyQualified type = classDeclaration.getType();
+        String owningFqn = type.getFullyQualifiedName();
+
+        processType(owningFqn, type);
+
+        TypeTree extendsTypeTree = classDeclaration.getExtends();
+        if (null != extendsTypeTree) {
+            processType(owningFqn, extendsTypeTree.getType());
+        }
+
+        List<TypeTree> implementsTypeTree = classDeclaration.getImplements();
+        if (null != implementsTypeTree) {
+            for (TypeTree typeTree : implementsTypeTree) {
+                processType(owningFqn, typeTree.getType());
+            }
+        }
+
+        for (J.Annotation leadingAnnotation : classDeclaration.getLeadingAnnotations()) {
+            processAnnotation(owningFqn, leadingAnnotation);
+        }
+
+        if (null != classDeclaration.getTypeParameters()) {
+            for (J.TypeParameter typeParameter : classDeclaration.getTypeParameters()) {
+                processTypeParameter(owningFqn, typeParameter);
+            }
+        }
+
+        // process method invocations and lambda invocations
+        for (Statement statement : classDeclaration.getBody().getStatements()) {
+            if (statement instanceof J.MethodDeclaration) {
+                J.MethodDeclaration methodDeclaration = (J.MethodDeclaration) statement;
+                J.Block block = methodDeclaration.getBody();
+                if (null != block && null != block.getStatements()) {
+                    for (Statement statementInBlock : block.getStatements()) {
+                        if (statementInBlock instanceof J.MethodInvocation) {
+                            J.MethodInvocation methodInvocation = (J.MethodInvocation) statementInBlock;
+                            methodInvocationVisitor.visitMethodInvocation(owningFqn, methodInvocation);
+                        }
+                        if (statementInBlock instanceof J.Lambda) {
+                            J.Lambda lambda = (J.Lambda) statement;
+                            lambda.getParameters();
+                            lambda.getType();
+                            lambda.getBody();
+                        }
+                    }
+                }
+            }
+        }
+
+        return classDeclaration;
+    }
+
+    public void addType(String ownerFqn, String typeFqn) {
+        classReferencesGraph.addVertex(ownerFqn);
+        classReferencesGraph.addVertex(typeFqn);
+
+        if (!classReferencesGraph.containsEdge(ownerFqn, typeFqn)) {
+            classReferencesGraph.addEdge(ownerFqn, typeFqn);
+        } else {
+            DefaultWeightedEdge edge = classReferencesGraph.getEdge(ownerFqn, typeFqn);
+            classReferencesGraph.setEdgeWeight(edge, classReferencesGraph.getEdgeWeight(edge) + 1);
+        }
+    }
+
+}

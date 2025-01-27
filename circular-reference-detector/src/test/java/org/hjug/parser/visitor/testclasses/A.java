@@ -1,11 +1,8 @@
-package org.hjug.javaVariableVisitorTestClasses;
+package org.hjug.parser.visitor.testclasses;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.Map;
 import java.util.List;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
 
 @MyAnnotation
 public class A<T> {
@@ -21,8 +18,9 @@ public class A<T> {
 	@MyOtherAnnotation
 	C rawC;
 	B<B> b, b3;
-	C<B.InnerB, C> c;
+	C<B.InnerB, B> c;
 	D[] ds;
+	D d;
 
 	@MyAnnotation
 	B<C>[] arrayOfGenericBsWithCTypeParam;
@@ -32,12 +30,17 @@ public class A<T> {
 	Map<A,B> map;
 	List<? extends List<? extends Number>> listOfListsOfNumbers;
 
-	F doSomething(@NonNull B<C> paramB) {
+	@MyAnnotation
+	<T extends A, U extends B> F doSomething(B<C> paramB, C<B.InnerB, B> genericParam) {
 		List<B<E>> list3;
 		A<E> a2;
 		B<C> b2;
 		C<A,B> c2;
-		// G extends F
+
+		H h = new H();
+
+		B.<H>invocationTest(h);
+
 		return new G();
 	}
 

@@ -1,4 +1,4 @@
-package org.hjug.parser;
+package org.hjug.parser.visitor;
 
 import java.util.List;
 
@@ -69,7 +69,7 @@ public class JavaVariableTypeVisitor<P> extends JavaIsoVisitor<P> implements Typ
         // but I'm not sure how to get a cursor
         // All types, including primitives can be annotated
         for (J.Annotation annotation : variableDeclarations.getAllAnnotations()) {
-            processAnnotation(annotation, ownerFqn);
+            processAnnotation(ownerFqn, annotation);
         }
 
         // skip primitive variable declarations
@@ -77,7 +77,7 @@ public class JavaVariableTypeVisitor<P> extends JavaIsoVisitor<P> implements Typ
             return variableDeclarations;
         }
 
-        processType(javaType, ownerFqn);
+        processType(ownerFqn, javaType);
 
         return variableDeclarations;
     }

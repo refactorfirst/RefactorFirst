@@ -1,4 +1,4 @@
-package org.hjug.parser;
+package org.hjug.parser.visitor;
 
 import java.io.File;
 import java.io.IOException;
@@ -8,6 +8,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.ExecutionContext;
@@ -20,7 +21,7 @@ class JavaVisitorTest {
     @Test
     void visitClasses() throws IOException {
 
-        File srcDirectory = new File("src/test/resources/visitorSrcDirectory");
+        File srcDirectory = new File("src/test/java/org/hjug/parser/visitor/testclasses");
 
         org.openrewrite.java.JavaParser javaParser =
                 JavaParser.fromJavaVersion().build();
