@@ -6,7 +6,7 @@ import org.jgrapht.graph.DefaultWeightedEdge;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 
-// TODO: See RemoveMethodInvocationsVisitor for other visitor methods to override
+// See RemoveMethodInvocationsVisitor for other visitor methods to override
 // Custom visitor - not extending IsoVisitor on purpose since it does not provide caller information
 public class JavaMethodInvocationVisitor implements TypeProcessor {
 
@@ -31,19 +31,5 @@ public class JavaMethodInvocationVisitor implements TypeProcessor {
         }
 
         return methodInvocation;
-    }
-
-    public void addType(String invokingFqn, String typeFqn) {
-        if (invokingFqn.equals(typeFqn)) return;
-
-        classReferencesGraph.addVertex(invokingFqn);
-        classReferencesGraph.addVertex(typeFqn);
-
-        if (!classReferencesGraph.containsEdge(invokingFqn, typeFqn)) {
-            classReferencesGraph.addEdge(invokingFqn, typeFqn);
-        } else {
-            DefaultWeightedEdge edge = classReferencesGraph.getEdge(invokingFqn, typeFqn);
-            classReferencesGraph.setEdgeWeight(edge, classReferencesGraph.getEdgeWeight(edge) + 1);
-        }
     }
 }

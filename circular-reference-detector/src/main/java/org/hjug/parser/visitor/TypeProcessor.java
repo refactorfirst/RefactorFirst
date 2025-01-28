@@ -1,6 +1,8 @@
 package org.hjug.parser.visitor;
 
 import lombok.extern.slf4j.Slf4j;
+import org.jgrapht.Graph;
+import org.jgrapht.graph.DefaultWeightedEdge;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
@@ -111,11 +113,29 @@ public interface TypeProcessor {
         }
     }
 
+    Graph<String, DefaultWeightedEdge> getClassReferencesGraph();
+
     /**
      *
      * @param ownerFqn The FQN that is the source of the relationship
      * @param typeFqn The FQN of the type that is being used by the source
      */
-    void addType(String ownerFqn, String typeFqn);
+    default void addType(String ownerFqn, String typeFqn) {
+        if (ownerFqn.equals(typeFqn)) return;
+
+        Graph<String, DefaultWeightedEdge> graph = getClassReferencesGraph();
+
+        graph.addVertex(ownerFqn);
+        graph.addVertex(typeFqn);
+
+        if (!graph.containsEdge(ownerFqn, typeFqn)) {
+            graph.addEdge(ownerFqn, typeFqn);
+        } else {
+            DefaultWeightedEdge edge = graph.getEdge(ownerFqn, typeFqn);
+            graph.setEdgeWeight(edge, graph.getEdgeWeight(edge) + 1);
+        }
+    }
+
+
 
 }

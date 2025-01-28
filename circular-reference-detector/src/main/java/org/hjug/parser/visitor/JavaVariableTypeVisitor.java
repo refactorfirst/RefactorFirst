@@ -81,18 +81,4 @@ public class JavaVariableTypeVisitor<P> extends JavaIsoVisitor<P> implements Typ
 
         return variableDeclarations;
     }
-
-
-
-    public void addType(String ownerFqn, String typeFqn) {
-        classReferencesGraph.addVertex(ownerFqn);
-        classReferencesGraph.addVertex(typeFqn);
-
-        if (!classReferencesGraph.containsEdge(ownerFqn, typeFqn)) {
-            classReferencesGraph.addEdge(ownerFqn, typeFqn);
-        } else {
-            DefaultWeightedEdge edge = classReferencesGraph.getEdge(ownerFqn, typeFqn);
-            classReferencesGraph.setEdgeWeight(edge, classReferencesGraph.getEdgeWeight(edge) + 1);
-        }
-    }
 }

@@ -60,19 +60,4 @@ public class JavaMethodDeclarationVisitor<P> extends JavaIsoVisitor<P> implement
 
         return methodDeclaration;
     }
-
-    public void addType(String ownerFqn, String typeFqn) {
-        if (ownerFqn.equals(typeFqn)) return;
-
-        classReferencesGraph.addVertex(ownerFqn);
-        classReferencesGraph.addVertex(typeFqn);
-
-        if (!classReferencesGraph.containsEdge(ownerFqn, typeFqn)) {
-            classReferencesGraph.addEdge(ownerFqn, typeFqn);
-        } else {
-            DefaultWeightedEdge edge = classReferencesGraph.getEdge(ownerFqn, typeFqn);
-            classReferencesGraph.setEdgeWeight(edge, classReferencesGraph.getEdgeWeight(edge) + 1);
-        }
-    }
-
 }

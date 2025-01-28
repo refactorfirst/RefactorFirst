@@ -62,40 +62,41 @@ public class JavaClassDeclarationVisitor<P> extends JavaIsoVisitor<P> implements
         }
 
         // process method invocations and lambda invocations
-        for (Statement statement : classDeclaration.getBody().getStatements()) {
-            if (statement instanceof J.MethodDeclaration) {
-                J.MethodDeclaration methodDeclaration = (J.MethodDeclaration) statement;
-                J.Block block = methodDeclaration.getBody();
-                if (null != block && null != block.getStatements()) {
-                    for (Statement statementInBlock : block.getStatements()) {
-                        if (statementInBlock instanceof J.MethodInvocation) {
-                            J.MethodInvocation methodInvocation = (J.MethodInvocation) statementInBlock;
-                            methodInvocationVisitor.visitMethodInvocation(owningFqn, methodInvocation);
-                        }
-                        if (statementInBlock instanceof J.Lambda) {
-                            J.Lambda lambda = (J.Lambda) statement;
-                            lambda.getParameters();
-                            lambda.getType();
-                            lambda.getBody();
-                        }
-                    }
-                }
-            }
-        }
+        processInvocations(classDeclaration);
 
         return classDeclaration;
     }
 
-    public void addType(String ownerFqn, String typeFqn) {
-        classReferencesGraph.addVertex(ownerFqn);
-        classReferencesGraph.addVertex(typeFqn);
+    private void processInvocations(J.ClassDeclaration classDeclaration) {
+        JavaType.FullyQualified type = classDeclaration.getType();
+        String owningFqn = type.getFullyQualifiedName();
 
-        if (!classReferencesGraph.containsEdge(ownerFqn, typeFqn)) {
-            classReferencesGraph.addEdge(ownerFqn, typeFqn);
-        } else {
-            DefaultWeightedEdge edge = classReferencesGraph.getEdge(ownerFqn, typeFqn);
-            classReferencesGraph.setEdgeWeight(edge, classReferencesGraph.getEdgeWeight(edge) + 1);
+        for (Statement statement : classDeclaration.getBody().getStatements()) {
+            if (statement instanceof J.Block) {
+                //process an initializer
+                processBlock((J.Block) statement, owningFqn);
+            }
+            if (statement instanceof J.MethodDeclaration) {
+                J.MethodDeclaration methodDeclaration = (J.MethodDeclaration) statement;
+                processBlock(methodDeclaration.getBody(), owningFqn);
+            }
         }
     }
 
+    private void processBlock(J.Block block, String owningFqn) {
+        if (null != block && null != block.getStatements()) {
+            for (Statement statementInBlock : block.getStatements()) {
+                if (statementInBlock instanceof J.MethodInvocation) {
+                    J.MethodInvocation methodInvocation = (J.MethodInvocation) statementInBlock;
+                    methodInvocationVisitor.visitMethodInvocation(owningFqn, methodInvocation);
+                }
+                if (statementInBlock instanceof J.Lambda) {
+                    J.Lambda lambda = (J.Lambda) statementInBlock;
+                    lambda.getParameters();
+                    lambda.getType();
+                    lambda.getBody();
+                }
+            }
+        }
+    }
 }

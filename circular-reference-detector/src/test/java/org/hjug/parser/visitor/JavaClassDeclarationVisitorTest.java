@@ -35,11 +35,12 @@ class JavaClassDeclarationVisitorTest {
         Assertions.assertTrue(javaVariableCapturingVisitor.getClassReferencesGraph().containsVertex("org.hjug.parser.visitor.testclasses.A"));
         Assertions.assertTrue(javaVariableCapturingVisitor.getClassReferencesGraph().containsVertex("org.hjug.parser.visitor.testclasses.B"));
         Assertions.assertTrue(javaVariableCapturingVisitor.getClassReferencesGraph().containsVertex("org.hjug.parser.visitor.testclasses.C"));
-        Assertions.assertTrue(javaVariableCapturingVisitor.getClassReferencesGraph().containsVertex("org.hjug.parser.visitor.testclasses.D"));
+        //false because it doesn't reference any other classes
+        Assertions.assertFalse(javaVariableCapturingVisitor.getClassReferencesGraph().containsVertex("org.hjug.parser.visitor.testclasses.D"));
         Assertions.assertTrue(javaVariableCapturingVisitor.getClassReferencesGraph().containsVertex("org.hjug.parser.visitor.testclasses.MyAnnotation"));
-        Assertions.assertTrue(javaVariableCapturingVisitor.getClassReferencesGraph().containsVertex("org.hjug.parser.visitor.testclasses.E"));
+        //false because the class declaration doesn't reference any other classes
+        Assertions.assertFalse(javaVariableCapturingVisitor.getClassReferencesGraph().containsVertex("org.hjug.parser.visitor.testclasses.E"));
         Assertions.assertTrue(javaVariableCapturingVisitor.getClassReferencesGraph().containsVertex("org.hjug.parser.visitor.testclasses.F"));
         Assertions.assertTrue(javaVariableCapturingVisitor.getClassReferencesGraph().containsVertex("org.hjug.parser.visitor.testclasses.G"));
     }
-
 }
