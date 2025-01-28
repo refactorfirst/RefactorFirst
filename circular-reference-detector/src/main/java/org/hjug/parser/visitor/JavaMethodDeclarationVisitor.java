@@ -1,5 +1,6 @@
 package org.hjug.parser.visitor;
 
+import java.util.List;
 import lombok.Getter;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultDirectedWeightedGraph;
@@ -9,21 +10,17 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.NameTree;
 
-import java.util.List;
-
 public class JavaMethodDeclarationVisitor<P> extends JavaIsoVisitor<P> implements TypeProcessor {
 
     @Getter
     private Graph<String, DefaultWeightedEdge> classReferencesGraph =
             new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
 
-    public JavaMethodDeclarationVisitor() {
-    }
+    public JavaMethodDeclarationVisitor() {}
 
     public JavaMethodDeclarationVisitor(Graph<String, DefaultWeightedEdge> classReferencesGraph) {
         this.classReferencesGraph = classReferencesGraph;
     }
-
 
     @Override
     public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, P p) {
@@ -49,7 +46,6 @@ public class JavaMethodDeclarationVisitor<P> extends JavaIsoVisitor<P> implement
 
         // don't need to capture parameter declarations
         // they are captured in JavaVariableTypeVisitor
-
 
         List<NameTree> throwz = methodDeclaration.getThrows();
         if (null != throwz && !throwz.isEmpty()) {

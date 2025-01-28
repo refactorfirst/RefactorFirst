@@ -18,9 +18,11 @@ public class JavaMethodInvocationVisitor implements TypeProcessor {
     }
 
     public J.MethodInvocation visitMethodInvocation(String invokingFqn, J.MethodInvocation methodInvocation) {
+        // getDeclaringType() returns the type that declared the method being invoked
         processType(invokingFqn, methodInvocation.getMethodType().getDeclaringType());
 
-        if(null != methodInvocation.getTypeParameters() && !methodInvocation.getTypeParameters().isEmpty()) {
+        if (null != methodInvocation.getTypeParameters()
+                && !methodInvocation.getTypeParameters().isEmpty()) {
             for (Expression typeParameter : methodInvocation.getTypeParameters()) {
                 processType(invokingFqn, typeParameter.getType());
             }

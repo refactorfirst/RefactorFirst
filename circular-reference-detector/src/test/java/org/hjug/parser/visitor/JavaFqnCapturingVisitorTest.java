@@ -8,7 +8,6 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -41,9 +40,12 @@ class JavaFqnCapturingVisitorTest {
         Assertions.assertEquals("org.hjug.parser.visitor.testclasses.A.InnerClass", processed.get("A.InnerClass"));
         Assertions.assertEquals("org.hjug.parser.visitor.testclasses.A.InnerClass", processed.get("InnerClass"));
         Assertions.assertEquals(
-                "org.hjug.parser.visitor.testclasses.A.InnerClass.InnerInner", processed.get("A.InnerClass.InnerInner"));
-        Assertions.assertEquals("org.hjug.parser.visitor.testclasses.A.InnerClass.InnerInner", processed.get("InnerClass.InnerInner"));
-        Assertions.assertEquals("org.hjug.parser.visitor.testclasses.A.InnerClass.InnerInner", processed.get("InnerInner"));
+                "org.hjug.parser.visitor.testclasses.A.InnerClass.InnerInner",
+                processed.get("A.InnerClass.InnerInner"));
+        Assertions.assertEquals(
+                "org.hjug.parser.visitor.testclasses.A.InnerClass.InnerInner", processed.get("InnerClass.InnerInner"));
+        Assertions.assertEquals(
+                "org.hjug.parser.visitor.testclasses.A.InnerClass.InnerInner", processed.get("InnerInner"));
         Assertions.assertEquals(
                 "org.hjug.parser.visitor.testclasses.A.InnerClass.InnerInner.MegaInner",
                 processed.get("A.InnerClass.InnerInner.MegaInner"));
@@ -51,10 +53,14 @@ class JavaFqnCapturingVisitorTest {
                 "org.hjug.parser.visitor.testclasses.A.InnerClass.InnerInner.MegaInner",
                 processed.get("InnerClass.InnerInner.MegaInner"));
         Assertions.assertEquals(
-                "org.hjug.parser.visitor.testclasses.A.InnerClass.InnerInner.MegaInner", processed.get("InnerInner.MegaInner"));
-        Assertions.assertEquals("org.hjug.parser.visitor.testclasses.A.InnerClass.InnerInner.MegaInner", processed.get("MegaInner"));
-        Assertions.assertEquals("org.hjug.parser.visitor.testclasses.A.StaticInnerClass", processed.get("A.StaticInnerClass"));
-        Assertions.assertEquals("org.hjug.parser.visitor.testclasses.A.StaticInnerClass", processed.get("StaticInnerClass"));
+                "org.hjug.parser.visitor.testclasses.A.InnerClass.InnerInner.MegaInner",
+                processed.get("InnerInner.MegaInner"));
+        Assertions.assertEquals(
+                "org.hjug.parser.visitor.testclasses.A.InnerClass.InnerInner.MegaInner", processed.get("MegaInner"));
+        Assertions.assertEquals(
+                "org.hjug.parser.visitor.testclasses.A.StaticInnerClass", processed.get("A.StaticInnerClass"));
+        Assertions.assertEquals(
+                "org.hjug.parser.visitor.testclasses.A.StaticInnerClass", processed.get("StaticInnerClass"));
         Assertions.assertEquals("org.hjug.parser.visitor.testclasses.NonPublic", processed.get("NonPublic"));
     }
 }

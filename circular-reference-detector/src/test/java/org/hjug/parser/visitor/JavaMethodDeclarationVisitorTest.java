@@ -1,11 +1,5 @@
 package org.hjug.parser.visitor;
 
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
-import org.openrewrite.ExecutionContext;
-import org.openrewrite.InMemoryExecutionContext;
-import org.openrewrite.java.JavaParser;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -13,6 +7,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.openrewrite.ExecutionContext;
+import org.openrewrite.InMemoryExecutionContext;
+import org.openrewrite.java.JavaParser;
 
 class JavaMethodDeclarationVisitorTest {
 
@@ -32,13 +31,14 @@ class JavaMethodDeclarationVisitorTest {
             methodDeclarationVisitor.visit(cu, ctx);
         });
 
-
         methodDeclarationVisitor.getClassReferencesGraph();
 
-        Assertions.assertTrue(methodDeclarationVisitor.getClassReferencesGraph().containsVertex("org.hjug.parser.visitor.testclasses.A"));
+        Assertions.assertTrue(methodDeclarationVisitor
+                .getClassReferencesGraph()
+                .containsVertex("org.hjug.parser.visitor.testclasses.A"));
 
-        //TODO: Assert stuff
-     /*   Assertions.assertTrue(methodDeclarationVisitor.getClassReferencesGraph().containsVertex("org.hjug.javaVariableVisitorTestClasses.A"));
+        // TODO: Assert stuff
+        /*   Assertions.assertTrue(methodDeclarationVisitor.getClassReferencesGraph().containsVertex("org.hjug.javaVariableVisitorTestClasses.A"));
         Assertions.assertTrue(methodDeclarationVisitor.getClassReferencesGraph().containsVertex("org.hjug.javaVariableVisitorTestClasses.B"));
         Assertions.assertTrue(methodDeclarationVisitor.getClassReferencesGraph().containsVertex("org.hjug.javaVariableVisitorTestClasses.C"));
         Assertions.assertFalse(methodDeclarationVisitor.getClassReferencesGraph().containsVertex("org.hjug.javaVariableVisitorTestClasses.D"));
@@ -47,5 +47,4 @@ class JavaMethodDeclarationVisitorTest {
         Assertions.assertTrue(methodDeclarationVisitor.getClassReferencesGraph().containsVertex("org.hjug.javaVariableVisitorTestClasses.F"));
         Assertions.assertTrue(methodDeclarationVisitor.getClassReferencesGraph().containsVertex("org.hjug.javaVariableVisitorTestClasses.G"));*/
     }
-
 }

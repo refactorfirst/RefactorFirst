@@ -1,7 +1,6 @@
 package org.hjug.parser.visitor;
 
 import java.util.List;
-
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.jgrapht.Graph;
@@ -11,7 +10,7 @@ import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.*;
 
 @Slf4j
-public class JavaVariableTypeVisitor<P> extends JavaIsoVisitor<P> implements TypeProcessor{
+public class JavaVariableTypeVisitor<P> extends JavaIsoVisitor<P> implements TypeProcessor {
 
     @Getter
     private Graph<String, DefaultWeightedEdge> classReferencesGraph =

@@ -6,6 +6,5 @@ public class B<T> {
         return new D();
     }
 
-    static class InnerB extends A{}
-
+    static class InnerB extends A {}
 }

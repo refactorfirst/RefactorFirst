@@ -8,12 +8,10 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.TypeTree;
 
-
 public interface TypeProcessor {
 
     @Slf4j
-    final class LogHolder {
-    }
+    final class LogHolder {}
 
     /**
      * @param ownerFqn The FQN that is the source of the relationship
@@ -135,7 +133,4 @@ public interface TypeProcessor {
             graph.setEdgeWeight(edge, graph.getEdgeWeight(edge) + 1);
         }
     }
-
-
-
 }

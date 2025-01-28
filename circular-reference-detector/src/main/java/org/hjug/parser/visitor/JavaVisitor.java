@@ -1,7 +1,6 @@
 package org.hjug.parser.visitor;
 
 import java.util.*;
-
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.jgrapht.Graph;
@@ -53,7 +52,8 @@ public class JavaVisitor<P> extends JavaIsoVisitor<P> {
 
         for (J.ClassDeclaration aClass : compilationUnit.getClasses()) {
             classToSourceFileMapping.put(
-                    aClass.getType().getFullyQualifiedName(), compilationUnit.getSourcePath().toUri().toString());
+                    aClass.getType().getFullyQualifiedName(),
+                    compilationUnit.getSourcePath().toUri().toString());
         }
 
         return compilationUnit;

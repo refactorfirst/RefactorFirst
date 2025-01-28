@@ -1,5 +1,6 @@
 package org.hjug.parser.visitor;
 
+import java.util.List;
 import lombok.Getter;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultDirectedWeightedGraph;
@@ -10,10 +11,7 @@ import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Statement;
 import org.openrewrite.java.tree.TypeTree;
 
-import java.util.List;
-
 public class JavaClassDeclarationVisitor<P> extends JavaIsoVisitor<P> implements TypeProcessor {
-
 
     private final JavaMethodInvocationVisitor methodInvocationVisitor;
 
@@ -73,7 +71,6 @@ public class JavaClassDeclarationVisitor<P> extends JavaIsoVisitor<P> implements
 
         for (Statement statement : classDeclaration.getBody().getStatements()) {
             if (statement instanceof J.Block) {
-                //process an initializer
                 processBlock((J.Block) statement, owningFqn);
             }
             if (statement instanceof J.MethodDeclaration) {
@@ -92,9 +89,9 @@ public class JavaClassDeclarationVisitor<P> extends JavaIsoVisitor<P> implements
                 }
                 if (statementInBlock instanceof J.Lambda) {
                     J.Lambda lambda = (J.Lambda) statementInBlock;
-                    lambda.getParameters();
-                    lambda.getType();
-                    lambda.getBody();
+                    processType(owningFqn, lambda.getType());
+                    // FOLLOW UP: process body of lambda
+                    // lambda.getBody()
                 }
             }
         }

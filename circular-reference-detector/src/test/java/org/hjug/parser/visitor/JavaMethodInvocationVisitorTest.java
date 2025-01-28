@@ -1,5 +1,12 @@
 package org.hjug.parser.visitor;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultWeightedEdge;
 import org.junit.jupiter.api.Assertions;
@@ -8,14 +15,6 @@ import org.openrewrite.ExecutionContext;
 import org.openrewrite.InMemoryExecutionContext;
 import org.openrewrite.java.JavaParser;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.List;
-import java.util.stream.Collectors;
-
 class JavaMethodInvocationVisitorTest {
 
     @Test
@@ -23,8 +22,7 @@ class JavaMethodInvocationVisitorTest {
 
         File srcDirectory = new File("src/test/java/org/hjug/parser/visitor/testclasses/methodInvocation");
 
-        JavaParser javaParser =
-                JavaParser.fromJavaVersion().build();
+        JavaParser javaParser = JavaParser.fromJavaVersion().build();
         ExecutionContext ctx = new InMemoryExecutionContext(Throwable::printStackTrace);
 
         JavaClassDeclarationVisitor<ExecutionContext> classDeclarationVisitor = new JavaClassDeclarationVisitor<>();
@@ -39,12 +37,20 @@ class JavaMethodInvocationVisitorTest {
         Assertions.assertTrue(graph.containsVertex("org.hjug.parser.visitor.testclasses.methodInvocation.B"));
         Assertions.assertTrue(graph.containsVertex("org.hjug.parser.visitor.testclasses.methodInvocation.H"));
 
-        Assertions.assertEquals(1,
-                graph.getEdgeWeight(graph.getEdge("org.hjug.parser.visitor.testclasses.methodInvocation.A", "org.hjug.parser.visitor.testclasses.methodInvocation.B")));
-        Assertions.assertEquals(2,
-                graph.getEdgeWeight(graph.getEdge("org.hjug.parser.visitor.testclasses.methodInvocation.A", "org.hjug.parser.visitor.testclasses.methodInvocation.H")));
-        Assertions.assertEquals(1,
-                graph.getEdgeWeight(graph.getEdge("org.hjug.parser.visitor.testclasses.methodInvocation.H", "org.hjug.parser.visitor.testclasses.methodInvocation.B")));
-
+        Assertions.assertEquals(
+                1,
+                graph.getEdgeWeight(graph.getEdge(
+                        "org.hjug.parser.visitor.testclasses.methodInvocation.A",
+                        "org.hjug.parser.visitor.testclasses.methodInvocation.B")));
+        Assertions.assertEquals(
+                2,
+                graph.getEdgeWeight(graph.getEdge(
+                        "org.hjug.parser.visitor.testclasses.methodInvocation.A",
+                        "org.hjug.parser.visitor.testclasses.methodInvocation.H")));
+        Assertions.assertEquals(
+                1,
+                graph.getEdgeWeight(graph.getEdge(
+                        "org.hjug.parser.visitor.testclasses.methodInvocation.H",
+                        "org.hjug.parser.visitor.testclasses.methodInvocation.B")));
     }
 }

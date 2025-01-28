@@ -57,6 +57,6 @@ public class JavaProjectParser {
                     .forEach(cu -> javaVariableTypeVisitor.visit(cu, ctx));
         }
 
-        //TODO: classReferencesGraph.removeAllVertices(); if vertex package not in codebase
+        // TODO: classReferencesGraph.removeAllVertices(); if vertex package not in codebase
     }
 }
