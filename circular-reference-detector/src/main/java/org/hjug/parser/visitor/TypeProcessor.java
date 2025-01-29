@@ -111,6 +111,8 @@ public interface TypeProcessor {
         }
     }
 
+    Graph<String, DefaultWeightedEdge> getPackageReferencesGraph();
+
     Graph<String, DefaultWeightedEdge> getClassReferencesGraph();
 
     /**
@@ -121,16 +123,16 @@ public interface TypeProcessor {
     default void addType(String ownerFqn, String typeFqn) {
         if (ownerFqn.equals(typeFqn)) return;
 
-        Graph<String, DefaultWeightedEdge> graph = getClassReferencesGraph();
+        Graph<String, DefaultWeightedEdge> classReferencesGraph = getClassReferencesGraph();
 
-        graph.addVertex(ownerFqn);
-        graph.addVertex(typeFqn);
+        classReferencesGraph.addVertex(ownerFqn);
+        classReferencesGraph.addVertex(typeFqn);
 
-        if (!graph.containsEdge(ownerFqn, typeFqn)) {
-            graph.addEdge(ownerFqn, typeFqn);
+        if (!classReferencesGraph.containsEdge(ownerFqn, typeFqn)) {
+            classReferencesGraph.addEdge(ownerFqn, typeFqn);
         } else {
-            DefaultWeightedEdge edge = graph.getEdge(ownerFqn, typeFqn);
-            graph.setEdgeWeight(edge, graph.getEdgeWeight(edge) + 1);
+            DefaultWeightedEdge edge = classReferencesGraph.getEdge(ownerFqn, typeFqn);
+            classReferencesGraph.setEdgeWeight(edge, classReferencesGraph.getEdgeWeight(edge) + 1);
         }
     }
 }

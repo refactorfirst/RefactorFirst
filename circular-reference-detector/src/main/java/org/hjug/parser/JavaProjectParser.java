@@ -9,7 +9,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
-import org.hjug.parser.visitor.JavaVariableTypeVisitor;
+import org.hjug.parser.visitor.JavaVisitor;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultDirectedWeightedGraph;
 import org.jgrapht.graph.DefaultWeightedEdge;
@@ -39,23 +39,23 @@ public class JavaProjectParser {
         return classReferencesGraph;
     }
 
-    private void processWithOpenRewrite(String srcDir, Graph<String, DefaultWeightedEdge> classReferencesGraph)
+    private JavaVisitor processWithOpenRewrite(String srcDir, Graph<String, DefaultWeightedEdge> classReferencesGraph)
             throws IOException {
         File srcDirectory = new File(srcDir);
 
-        org.openrewrite.java.JavaParser javaParser =
-                JavaParser.fromJavaVersion().build();
+        JavaParser javaParser = JavaParser.fromJavaVersion().build();
         ExecutionContext ctx = new InMemoryExecutionContext(Throwable::printStackTrace);
 
-        JavaVariableTypeVisitor<ExecutionContext> javaVariableTypeVisitor =
-                new JavaVariableTypeVisitor<>(classReferencesGraph);
+        JavaVisitor<ExecutionContext> javaVisitor = new JavaVisitor<>(classReferencesGraph);
 
         try (Stream<Path> walk = Files.walk(Paths.get(srcDirectory.getAbsolutePath()))) {
             List<Path> list = walk.collect(Collectors.toList());
             javaParser
                     .parse(list, Paths.get(srcDirectory.getAbsolutePath()), ctx)
-                    .forEach(cu -> javaVariableTypeVisitor.visit(cu, ctx));
+                    .forEach(cu -> javaVisitor.visit(cu, ctx));
         }
+
+        return javaVisitor;
 
         // TODO: classReferencesGraph.removeAllVertices(); if vertex package not in codebase
     }

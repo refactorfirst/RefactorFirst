@@ -4,8 +4,8 @@ import java.util.List;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.jgrapht.Graph;
-import org.jgrapht.graph.DefaultDirectedWeightedGraph;
 import org.jgrapht.graph.DefaultWeightedEdge;
+import org.jgrapht.graph.SimpleDirectedWeightedGraph;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.*;
 
@@ -14,7 +14,11 @@ public class JavaVariableTypeVisitor<P> extends JavaIsoVisitor<P> implements Typ
 
     @Getter
     private Graph<String, DefaultWeightedEdge> classReferencesGraph =
-            new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+            new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+
+    @Getter
+    private Graph<String, DefaultWeightedEdge> packageReferencesGraph =
+            new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
 
     public JavaVariableTypeVisitor() {}
 

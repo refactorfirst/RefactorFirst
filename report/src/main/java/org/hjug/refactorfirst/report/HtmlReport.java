@@ -14,6 +14,7 @@ public class HtmlReport extends SimpleHtmlReport {
 
     int d3Threshold = 700;
 
+    // use Files.readString(Path.of(file))
     // Created by generative AI and modified slightly
     static final String SUGIYAMA_SIGMA_GRAPH = "<script>\n"
             + "function sugiyamaLayout(graph) {\n" + "    var layers = [];\n"

@@ -13,8 +13,14 @@ public class JavaMethodInvocationVisitor implements TypeProcessor {
     @Getter
     private Graph<String, DefaultWeightedEdge> classReferencesGraph;
 
-    public JavaMethodInvocationVisitor(Graph<String, DefaultWeightedEdge> classReferencesGraph) {
+    @Getter
+    private Graph<String, DefaultWeightedEdge> packageReferencesGraph;
+
+    public JavaMethodInvocationVisitor(
+            Graph<String, DefaultWeightedEdge> classReferencesGraph,
+            Graph<String, DefaultWeightedEdge> packageReferencesGraph) {
         this.classReferencesGraph = classReferencesGraph;
+        this.packageReferencesGraph = packageReferencesGraph;
     }
 
     public J.MethodInvocation visitMethodInvocation(String invokingFqn, J.MethodInvocation methodInvocation) {

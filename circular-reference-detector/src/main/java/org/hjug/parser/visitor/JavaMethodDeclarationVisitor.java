@@ -3,8 +3,8 @@ package org.hjug.parser.visitor;
 import java.util.List;
 import lombok.Getter;
 import org.jgrapht.Graph;
-import org.jgrapht.graph.DefaultDirectedWeightedGraph;
 import org.jgrapht.graph.DefaultWeightedEdge;
+import org.jgrapht.graph.SimpleDirectedWeightedGraph;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
@@ -14,12 +14,19 @@ public class JavaMethodDeclarationVisitor<P> extends JavaIsoVisitor<P> implement
 
     @Getter
     private Graph<String, DefaultWeightedEdge> classReferencesGraph =
-            new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+            new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+
+    @Getter
+    private Graph<String, DefaultWeightedEdge> packageReferencesGraph =
+            new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
 
     public JavaMethodDeclarationVisitor() {}
 
-    public JavaMethodDeclarationVisitor(Graph<String, DefaultWeightedEdge> classReferencesGraph) {
+    public JavaMethodDeclarationVisitor(
+            Graph<String, DefaultWeightedEdge> classReferencesGraph,
+            Graph<String, DefaultWeightedEdge> packageReferencesGraph) {
         this.classReferencesGraph = classReferencesGraph;
+        this.packageReferencesGraph = packageReferencesGraph;
     }
 
     @Override
