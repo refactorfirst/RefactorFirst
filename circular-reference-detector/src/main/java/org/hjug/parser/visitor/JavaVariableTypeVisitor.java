@@ -22,8 +22,10 @@ public class JavaVariableTypeVisitor<P> extends JavaIsoVisitor<P> implements Typ
 
     public JavaVariableTypeVisitor() {}
 
-    public JavaVariableTypeVisitor(Graph<String, DefaultWeightedEdge> classReferencesGraph) {
+    public JavaVariableTypeVisitor(Graph<String, DefaultWeightedEdge> classReferencesGraph,
+                                   Graph<String, DefaultWeightedEdge> packageReferencesGraph) {
         this.classReferencesGraph = classReferencesGraph;
+        this.packageReferencesGraph = packageReferencesGraph;
     }
 
     @Override

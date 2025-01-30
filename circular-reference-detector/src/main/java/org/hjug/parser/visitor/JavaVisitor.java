@@ -27,15 +27,12 @@ public class JavaVisitor<P> extends JavaIsoVisitor<P> implements TypeProcessor {
     private final Graph<String, DefaultWeightedEdge> packageReferencesGraph =
             new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
 
-    private JavaVariableTypeVisitor<P> javaVariableTypeVisitor;
-    private JavaClassDeclarationVisitor<P> javaClassDeclarationVisitor;
-    private JavaMethodDeclarationVisitor<P> javaMethodDeclarationVisitor;
+    private final JavaVariableTypeVisitor<P> javaVariableTypeVisitor;
+    private final JavaClassDeclarationVisitor<P> javaClassDeclarationVisitor;
+    private final JavaMethodDeclarationVisitor<P> javaMethodDeclarationVisitor;
 
-    public JavaVisitor() {}
-
-    public JavaVisitor(Graph<String, DefaultWeightedEdge> classReferencesGraph) {
-        this.classReferencesGraph = classReferencesGraph;
-        javaVariableTypeVisitor = new JavaVariableTypeVisitor<>(classReferencesGraph);
+    public JavaVisitor() {
+        javaVariableTypeVisitor = new JavaVariableTypeVisitor<>(classReferencesGraph, packageReferencesGraph);
         javaClassDeclarationVisitor = new JavaClassDeclarationVisitor<>(classReferencesGraph, packageReferencesGraph);
         javaMethodDeclarationVisitor = new JavaMethodDeclarationVisitor<>(classReferencesGraph, packageReferencesGraph);
     }

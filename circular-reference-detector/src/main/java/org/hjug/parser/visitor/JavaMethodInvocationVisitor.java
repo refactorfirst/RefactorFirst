@@ -1,6 +1,7 @@
 package org.hjug.parser.visitor;
 
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultWeightedEdge;
 import org.openrewrite.java.tree.Expression;
@@ -8,20 +9,13 @@ import org.openrewrite.java.tree.J;
 
 // See RemoveMethodInvocationsVisitor for other visitor methods to override
 // Custom visitor - not extending IsoVisitor on purpose since it does not provide caller information
+
+@RequiredArgsConstructor
+@Getter
 public class JavaMethodInvocationVisitor implements TypeProcessor {
 
-    @Getter
-    private Graph<String, DefaultWeightedEdge> classReferencesGraph;
-
-    @Getter
-    private Graph<String, DefaultWeightedEdge> packageReferencesGraph;
-
-    public JavaMethodInvocationVisitor(
-            Graph<String, DefaultWeightedEdge> classReferencesGraph,
-            Graph<String, DefaultWeightedEdge> packageReferencesGraph) {
-        this.classReferencesGraph = classReferencesGraph;
-        this.packageReferencesGraph = packageReferencesGraph;
-    }
+    private final Graph<String, DefaultWeightedEdge> classReferencesGraph;
+    private final Graph<String, DefaultWeightedEdge> packageReferencesGraph;
 
     public J.MethodInvocation visitMethodInvocation(String invokingFqn, J.MethodInvocation methodInvocation) {
         // getDeclaringType() returns the type that declared the method being invoked

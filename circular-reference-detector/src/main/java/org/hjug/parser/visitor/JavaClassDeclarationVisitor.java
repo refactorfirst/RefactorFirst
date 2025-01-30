@@ -31,6 +31,7 @@ public class JavaClassDeclarationVisitor<P> extends JavaIsoVisitor<P> implements
             Graph<String, DefaultWeightedEdge> classReferencesGraph,
             Graph<String, DefaultWeightedEdge> packageReferencesGraph) {
         this.classReferencesGraph = classReferencesGraph;
+        this.packageReferencesGraph = packageReferencesGraph;
         methodInvocationVisitor = new JavaMethodInvocationVisitor(classReferencesGraph, packageReferencesGraph);
     }
 
@@ -89,11 +90,13 @@ public class JavaClassDeclarationVisitor<P> extends JavaIsoVisitor<P> implements
     private void processBlock(J.Block block, String owningFqn) {
         if (null != block && null != block.getStatements()) {
             for (Statement statementInBlock : block.getStatements()) {
+                //TODO: handle case where method invocation result return value is an assignment
+
                 if (statementInBlock instanceof J.MethodInvocation) {
                     J.MethodInvocation methodInvocation = (J.MethodInvocation) statementInBlock;
                     methodInvocationVisitor.visitMethodInvocation(owningFqn, methodInvocation);
                 }
-                if (statementInBlock instanceof J.Lambda) {
+                else if (statementInBlock instanceof J.Lambda) {
                     J.Lambda lambda = (J.Lambda) statementInBlock;
                     processType(owningFqn, lambda.getType());
                 }

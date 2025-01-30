@@ -33,20 +33,20 @@ public class JavaProjectParser {
         if (srcDirectory == null || srcDirectory.isEmpty()) {
             throw new IllegalArgumentException();
         } else {
-            processWithOpenRewrite(srcDirectory, classReferencesGraph);
+            processWithOpenRewrite(srcDirectory);
         }
 
         return classReferencesGraph;
     }
 
-    private JavaVisitor processWithOpenRewrite(String srcDir, Graph<String, DefaultWeightedEdge> classReferencesGraph)
+    private JavaVisitor processWithOpenRewrite(String srcDir)
             throws IOException {
         File srcDirectory = new File(srcDir);
 
         JavaParser javaParser = JavaParser.fromJavaVersion().build();
         ExecutionContext ctx = new InMemoryExecutionContext(Throwable::printStackTrace);
 
-        JavaVisitor<ExecutionContext> javaVisitor = new JavaVisitor<>(classReferencesGraph);
+        JavaVisitor<ExecutionContext> javaVisitor = new JavaVisitor<>();
 
         try (Stream<Path> walk = Files.walk(Paths.get(srcDirectory.getAbsolutePath()))) {
             List<Path> list = walk.collect(Collectors.toList());
