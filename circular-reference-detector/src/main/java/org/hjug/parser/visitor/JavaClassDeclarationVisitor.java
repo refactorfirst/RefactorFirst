@@ -1,6 +1,7 @@
 package org.hjug.parser.visitor;
 
 import java.util.List;
+
 import lombok.Getter;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultWeightedEdge;
@@ -14,6 +15,7 @@ import org.openrewrite.java.tree.TypeTree;
 public class JavaClassDeclarationVisitor<P> extends JavaIsoVisitor<P> implements TypeProcessor {
 
     private final JavaMethodInvocationVisitor methodInvocationVisitor;
+    private final JavaNewClassVisitor newClassVisitor;
 
     @Getter
     private Graph<String, DefaultWeightedEdge> classReferencesGraph =
@@ -25,6 +27,7 @@ public class JavaClassDeclarationVisitor<P> extends JavaIsoVisitor<P> implements
 
     public JavaClassDeclarationVisitor() {
         methodInvocationVisitor = new JavaMethodInvocationVisitor(classReferencesGraph, packageReferencesGraph);
+        newClassVisitor = new JavaNewClassVisitor(classReferencesGraph, packageReferencesGraph);
     }
 
     public JavaClassDeclarationVisitor(
@@ -33,6 +36,7 @@ public class JavaClassDeclarationVisitor<P> extends JavaIsoVisitor<P> implements
         this.classReferencesGraph = classReferencesGraph;
         this.packageReferencesGraph = packageReferencesGraph;
         methodInvocationVisitor = new JavaMethodInvocationVisitor(classReferencesGraph, packageReferencesGraph);
+        newClassVisitor = new JavaNewClassVisitor(classReferencesGraph, packageReferencesGraph);
     }
 
     @Override
@@ -95,10 +99,12 @@ public class JavaClassDeclarationVisitor<P> extends JavaIsoVisitor<P> implements
                 if (statementInBlock instanceof J.MethodInvocation) {
                     J.MethodInvocation methodInvocation = (J.MethodInvocation) statementInBlock;
                     methodInvocationVisitor.visitMethodInvocation(owningFqn, methodInvocation);
-                }
-                else if (statementInBlock instanceof J.Lambda) {
+                } else if (statementInBlock instanceof J.Lambda) {
                     J.Lambda lambda = (J.Lambda) statementInBlock;
                     processType(owningFqn, lambda.getType());
+                } else if (statementInBlock instanceof J.NewClass) {
+                    J.NewClass newClass = (J.NewClass) statementInBlock;
+                    newClassVisitor.visitNewClass(owningFqn, newClass);
                 }
             }
         }

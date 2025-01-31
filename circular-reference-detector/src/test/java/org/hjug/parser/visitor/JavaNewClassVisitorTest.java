@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
 
 public class JavaNewClassVisitorTest {
 
-    //@Test
+    @Test
     void visitNewClass() throws IOException {
 
         File srcDirectory = new File("src/test/java/org/hjug/parser/visitor/testclasses/newClass");
@@ -26,15 +26,24 @@ public class JavaNewClassVisitorTest {
         JavaParser javaParser = JavaParser.fromJavaVersion().build();
         ExecutionContext ctx = new InMemoryExecutionContext(Throwable::printStackTrace);
 
-        JavaNewClassVisitor classDeclarationVisitor = new JavaNewClassVisitor();
+        JavaClassDeclarationVisitor classDeclarationVisitor = new JavaClassDeclarationVisitor();
+        JavaVariableTypeVisitor variableTypeVisitor = new JavaVariableTypeVisitor();
 
-//        List<Path> list = Files.walk(Paths.get(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
-//        javaParser.parse(list, Paths.get(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> {
-//            classDeclarationVisitor.visit(cu, ctx);
-//        });
-//
-//        Graph<String, DefaultWeightedEdge> graph = classDeclarationVisitor.getClassReferencesGraph();
-//        Assertions.assertTrue(graph.containsVertex("org.hjug.parser.visitor.testclasses.newClass.A"));
+        List<Path> list = Files.walk(Paths.get(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
+        javaParser.parse(list, Paths.get(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> {
+            classDeclarationVisitor.visit(cu, ctx);
+            variableTypeVisitor.visit(cu, ctx);
+        });
+
+        Graph<String, DefaultWeightedEdge> assignmentGraph = variableTypeVisitor.getClassReferencesGraph();
+        Assertions.assertTrue(assignmentGraph.containsVertex("org.hjug.parser.visitor.testclasses.newClass.A"));
+        Assertions.assertTrue(assignmentGraph.containsVertex("org.hjug.parser.visitor.testclasses.newClass.B"));
+        Assertions.assertTrue(assignmentGraph.containsVertex("org.hjug.parser.visitor.testclasses.newClass.C"));
+        Assertions.assertTrue(assignmentGraph.containsVertex("org.hjug.parser.visitor.testclasses.newClass.D"));
+
+        Graph<String, DefaultWeightedEdge> newInstanceGraph = classDeclarationVisitor.getClassReferencesGraph();
+        Assertions.assertTrue(newInstanceGraph.containsVertex("org.hjug.parser.visitor.testclasses.newClass.A"));
+        Assertions.assertTrue(newInstanceGraph.containsVertex("org.hjug.parser.visitor.testclasses.newClass.D"));
 
     }
 

@@ -1,6 +1,7 @@
 package org.hjug.parser.visitor;
 
 import java.util.List;
+
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.jgrapht.Graph;
@@ -20,12 +21,17 @@ public class JavaVariableTypeVisitor<P> extends JavaIsoVisitor<P> implements Typ
     private Graph<String, DefaultWeightedEdge> packageReferencesGraph =
             new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
 
-    public JavaVariableTypeVisitor() {}
+    private final JavaNewClassVisitor newClassVisitor;
+
+    public JavaVariableTypeVisitor() {
+        newClassVisitor = new JavaNewClassVisitor(classReferencesGraph, packageReferencesGraph);
+    }
 
     public JavaVariableTypeVisitor(Graph<String, DefaultWeightedEdge> classReferencesGraph,
                                    Graph<String, DefaultWeightedEdge> packageReferencesGraph) {
         this.classReferencesGraph = classReferencesGraph;
         this.packageReferencesGraph = packageReferencesGraph;
+        newClassVisitor = new JavaNewClassVisitor(classReferencesGraph, packageReferencesGraph);
     }
 
     @Override
@@ -83,6 +89,15 @@ public class JavaVariableTypeVisitor<P> extends JavaIsoVisitor<P> implements Typ
         }
 
         processType(ownerFqn, javaType);
+
+        // process variable instantiation if present
+        Expression initializer = variables.get(0).getInitializer();
+        if (null != initializer && null != initializer.getType()
+                && initializer instanceof J.NewClass) {
+            J.NewClass newClassType = (J.NewClass) initializer;
+            newClassVisitor.visitNewClass(ownerFqn, newClassType);
+        }
+
 
         return variableDeclarations;
     }

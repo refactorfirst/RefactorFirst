@@ -135,4 +135,6 @@ public interface TypeProcessor {
             classReferencesGraph.setEdgeWeight(edge, classReferencesGraph.getEdgeWeight(edge) + 1);
         }
     }
+
+    // TODO: process packages
 }

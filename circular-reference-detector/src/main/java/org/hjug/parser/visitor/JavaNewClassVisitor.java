@@ -1,14 +1,30 @@
 package org.hjug.parser.visitor;
 
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultWeightedEdge;
-import org.jgrapht.graph.SimpleDirectedWeightedGraph;
-import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 
-public class JavaNewClassVisitor {//<P> extends JavaIsoVisitor<P> implements TypeProcessor {
+@RequiredArgsConstructor
+@Getter
+public class JavaNewClassVisitor implements TypeProcessor {
 
-    // figure out later
+    private final Graph<String, DefaultWeightedEdge> classReferencesGraph;
+    private final Graph<String, DefaultWeightedEdge> packageReferencesGraph;
+
+    public J.NewClass visitNewClass(String invokingFqn, J.NewClass newClass) {
+
+        // getDeclaringType() returns the type that declared the method being invoked
+        processType(invokingFqn, newClass.getType());
+
+        for (Expression argument : newClass.getArguments()) {
+            processType(invokingFqn, argument.getType());
+        }
+
+        // TASK: process initializer block
+
+        return newClass;
+    }
 }
