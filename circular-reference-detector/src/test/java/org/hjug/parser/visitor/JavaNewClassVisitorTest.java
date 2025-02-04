@@ -43,8 +43,8 @@ public class JavaNewClassVisitorTest {
 
         Graph<String, DefaultWeightedEdge> newInstanceGraph = classDeclarationVisitor.getClassReferencesGraph();
         Assertions.assertTrue(newInstanceGraph.containsVertex("org.hjug.parser.visitor.testclasses.newClass.A"));
+        Assertions.assertFalse(newInstanceGraph.containsVertex("org.hjug.parser.visitor.testclasses.newClass.B"));
+        Assertions.assertFalse(newInstanceGraph.containsVertex("org.hjug.parser.visitor.testclasses.newClass.C"));
         Assertions.assertTrue(newInstanceGraph.containsVertex("org.hjug.parser.visitor.testclasses.newClass.D"));
-
     }
-
 }
