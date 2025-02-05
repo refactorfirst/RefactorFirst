@@ -28,10 +28,6 @@ public class JavaMethodInvocationVisitor implements TypeProcessor {
             }
         }
 
-        for (Expression argument : methodInvocation.getArguments()) {
-            processType(invokingFqn, argument.getType());
-        }
-
         return methodInvocation;
     }
 }

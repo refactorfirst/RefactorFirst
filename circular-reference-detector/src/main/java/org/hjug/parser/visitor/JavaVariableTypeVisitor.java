@@ -1,7 +1,6 @@
 package org.hjug.parser.visitor;
 
 import java.util.List;
-
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.jgrapht.Graph;
@@ -22,16 +21,20 @@ public class JavaVariableTypeVisitor<P> extends JavaIsoVisitor<P> implements Typ
             new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
 
     private final JavaNewClassVisitor newClassVisitor;
+    private final JavaMethodInvocationVisitor methodInvocationVisitor;
 
     public JavaVariableTypeVisitor() {
         newClassVisitor = new JavaNewClassVisitor(classReferencesGraph, packageReferencesGraph);
+        methodInvocationVisitor = new JavaMethodInvocationVisitor(classReferencesGraph, packageReferencesGraph);
     }
 
-    public JavaVariableTypeVisitor(Graph<String, DefaultWeightedEdge> classReferencesGraph,
-                                   Graph<String, DefaultWeightedEdge> packageReferencesGraph) {
+    public JavaVariableTypeVisitor(
+            Graph<String, DefaultWeightedEdge> classReferencesGraph,
+            Graph<String, DefaultWeightedEdge> packageReferencesGraph) {
         this.classReferencesGraph = classReferencesGraph;
         this.packageReferencesGraph = packageReferencesGraph;
         newClassVisitor = new JavaNewClassVisitor(classReferencesGraph, packageReferencesGraph);
+        methodInvocationVisitor = new JavaMethodInvocationVisitor(classReferencesGraph, packageReferencesGraph);
     }
 
     @Override
@@ -92,12 +95,13 @@ public class JavaVariableTypeVisitor<P> extends JavaIsoVisitor<P> implements Typ
 
         // process variable instantiation if present
         Expression initializer = variables.get(0).getInitializer();
-        if (null != initializer && null != initializer.getType()
-                && initializer instanceof J.NewClass) {
+        if (null != initializer && null != initializer.getType() && initializer instanceof J.MethodInvocation) {
+            J.MethodInvocation methodInvocation = (J.MethodInvocation) initializer;
+            methodInvocationVisitor.visitMethodInvocation(ownerFqn, methodInvocation);
+        } else if (null != initializer && null != initializer.getType() && initializer instanceof J.NewClass) {
             J.NewClass newClassType = (J.NewClass) initializer;
             newClassVisitor.visitNewClass(ownerFqn, newClassType);
         }
-
 
         return variableDeclarations;
     }

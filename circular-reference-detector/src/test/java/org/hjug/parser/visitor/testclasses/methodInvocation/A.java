@@ -2,7 +2,10 @@ package org.hjug.parser.visitor.testclasses.methodInvocation;
 
 public class A {
 
-    void doSomething() {
-        B.<H>invocationTest(new H());
+    A doSomething() {
+        B.<C>invocationTest(new D());
+        A a = B.<C>invocationTest(new D());
+        // TODO: add visitor for J.ReturnType
+        return B.<C>invocationTest(new D());
     }
 }

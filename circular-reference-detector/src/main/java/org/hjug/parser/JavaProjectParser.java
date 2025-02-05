@@ -13,6 +13,7 @@ import org.hjug.parser.visitor.JavaVisitor;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultDirectedWeightedGraph;
 import org.jgrapht.graph.DefaultWeightedEdge;
+import org.jgrapht.graph.SimpleDirectedWeightedGraph;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.InMemoryExecutionContext;
 import org.openrewrite.java.JavaParser;
@@ -29,7 +30,7 @@ public class JavaProjectParser {
      */
     public Graph<String, DefaultWeightedEdge> getClassReferences(String srcDirectory) throws IOException {
         Graph<String, DefaultWeightedEdge> classReferencesGraph =
-                new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+                new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
         if (srcDirectory == null || srcDirectory.isEmpty()) {
             throw new IllegalArgumentException();
         } else {
@@ -39,8 +40,7 @@ public class JavaProjectParser {
         return classReferencesGraph;
     }
 
-    private JavaVisitor processWithOpenRewrite(String srcDir)
-            throws IOException {
+    private JavaVisitor processWithOpenRewrite(String srcDir) throws IOException {
         File srcDirectory = new File(srcDir);
 
         JavaParser javaParser = JavaParser.fromJavaVersion().build();

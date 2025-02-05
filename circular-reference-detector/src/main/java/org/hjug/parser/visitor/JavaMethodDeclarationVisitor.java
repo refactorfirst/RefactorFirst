@@ -9,6 +9,7 @@ import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.NameTree;
+import org.openrewrite.java.tree.TypeTree;
 
 public class JavaMethodDeclarationVisitor<P> extends JavaIsoVisitor<P> implements TypeProcessor {
 
@@ -34,11 +35,16 @@ public class JavaMethodDeclarationVisitor<P> extends JavaIsoVisitor<P> implement
         J.MethodDeclaration methodDeclaration = super.visitMethodDeclaration(method, p);
 
         String owner = methodDeclaration.getMethodType().getDeclaringType().getFullyQualifiedName();
-        JavaType returnType = methodDeclaration.getReturnTypeExpression().getType();
 
-        // skip primitive variable declarations
-        if (!(returnType instanceof JavaType.Primitive)) {
-            processType(owner, returnType);
+        // if returnTypeExpression is null, a constructor declaration is being processed
+        TypeTree returnTypeExpression = methodDeclaration.getReturnTypeExpression();
+        if (returnTypeExpression != null) {
+            JavaType returnType = returnTypeExpression.getType();
+
+            // skip primitive variable declarations
+            if (!(returnType instanceof JavaType.Primitive)) {
+                processType(owner, returnType);
+            }
         }
 
         for (J.Annotation leadingAnnotation : methodDeclaration.getLeadingAnnotations()) {

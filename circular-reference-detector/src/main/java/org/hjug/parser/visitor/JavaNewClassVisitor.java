@@ -15,15 +15,13 @@ public class JavaNewClassVisitor implements TypeProcessor {
     private final Graph<String, DefaultWeightedEdge> packageReferencesGraph;
 
     public J.NewClass visitNewClass(String invokingFqn, J.NewClass newClass) {
-
-        // getDeclaringType() returns the type that declared the method being invoked
         processType(invokingFqn, newClass.getType());
 
         for (Expression argument : newClass.getArguments()) {
             processType(invokingFqn, argument.getType());
         }
 
-        // TASK: process initializer block
+        // TASK: process initializer block???
 
         return newClass;
     }

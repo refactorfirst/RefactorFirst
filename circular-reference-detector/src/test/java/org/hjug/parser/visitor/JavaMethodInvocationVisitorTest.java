@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultWeightedEdge;
+import org.jgrapht.graph.SimpleDirectedWeightedGraph;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.ExecutionContext;
@@ -25,20 +26,30 @@ class JavaMethodInvocationVisitorTest {
         JavaParser javaParser = JavaParser.fromJavaVersion().build();
         ExecutionContext ctx = new InMemoryExecutionContext(Throwable::printStackTrace);
 
-        JavaClassDeclarationVisitor<ExecutionContext> classDeclarationVisitor = new JavaClassDeclarationVisitor<>();
+        Graph<String, DefaultWeightedEdge> classReferencesGraph =
+                new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+
+        Graph<String, DefaultWeightedEdge> packageReferencesGraph =
+                new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+
+        JavaClassDeclarationVisitor<ExecutionContext> classDeclarationVisitor =
+                new JavaClassDeclarationVisitor<>(classReferencesGraph, packageReferencesGraph);
+        JavaVariableTypeVisitor<ExecutionContext> variableTypeVisitor =
+                new JavaVariableTypeVisitor<>(classReferencesGraph, packageReferencesGraph);
 
         List<Path> list = Files.walk(Paths.get(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
         javaParser.parse(list, Paths.get(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> {
             classDeclarationVisitor.visit(cu, ctx);
+            variableTypeVisitor.visit(cu, ctx);
         });
 
         Graph<String, DefaultWeightedEdge> graph = classDeclarationVisitor.getClassReferencesGraph();
         Assertions.assertTrue(graph.containsVertex("org.hjug.parser.visitor.testclasses.methodInvocation.A"));
         Assertions.assertTrue(graph.containsVertex("org.hjug.parser.visitor.testclasses.methodInvocation.B"));
-        Assertions.assertTrue(graph.containsVertex("org.hjug.parser.visitor.testclasses.methodInvocation.H"));
+        Assertions.assertTrue(graph.containsVertex("org.hjug.parser.visitor.testclasses.methodInvocation.C"));
 
         Assertions.assertEquals(
-                1,
+                2,
                 graph.getEdgeWeight(graph.getEdge(
                         "org.hjug.parser.visitor.testclasses.methodInvocation.A",
                         "org.hjug.parser.visitor.testclasses.methodInvocation.B")));
@@ -46,11 +57,6 @@ class JavaMethodInvocationVisitorTest {
                 2,
                 graph.getEdgeWeight(graph.getEdge(
                         "org.hjug.parser.visitor.testclasses.methodInvocation.A",
-                        "org.hjug.parser.visitor.testclasses.methodInvocation.H")));
-        Assertions.assertEquals(
-                1,
-                graph.getEdgeWeight(graph.getEdge(
-                        "org.hjug.parser.visitor.testclasses.methodInvocation.H",
-                        "org.hjug.parser.visitor.testclasses.methodInvocation.B")));
+                        "org.hjug.parser.visitor.testclasses.methodInvocation.C")));
     }
 }

@@ -3,9 +3,10 @@ package org.hjug.parser.visitor.testclasses.newClass;
 public class A {
 
     B newClassMethod() {
-        D d = null;
-        new D();
+        new C();
         C c = new C();
-        return new B(c, d);
+
+        // TODO: add visitor for J.ReturnType
+        return new B(c);
     }
 }
