@@ -33,7 +33,9 @@ public class JavaVisitor<P> extends JavaIsoVisitor<P> implements TypeProcessor {
         javaClassDeclarationVisitor = new JavaClassDeclarationVisitor<>(classReferencesGraph, packageReferencesGraph);
     }
 
-    public JavaVisitor(Graph<String, DefaultWeightedEdge> classReferencesGraph, Graph<String, DefaultWeightedEdge> packageReferencesGraph) {
+    public JavaVisitor(
+            Graph<String, DefaultWeightedEdge> classReferencesGraph,
+            Graph<String, DefaultWeightedEdge> packageReferencesGraph) {
         this.classReferencesGraph = classReferencesGraph;
         this.packageReferencesGraph = packageReferencesGraph;
         javaClassDeclarationVisitor = new JavaClassDeclarationVisitor<>(classReferencesGraph, packageReferencesGraph);
