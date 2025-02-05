@@ -24,32 +24,24 @@ public class JavaVisitor<P> extends JavaIsoVisitor<P> implements TypeProcessor {
             new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
 
     @Getter
-    private final Graph<String, DefaultWeightedEdge> packageReferencesGraph =
+    private Graph<String, DefaultWeightedEdge> packageReferencesGraph =
             new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
 
-    private final JavaVariableTypeVisitor<P> javaVariableTypeVisitor;
     private final JavaClassDeclarationVisitor<P> javaClassDeclarationVisitor;
-    private final JavaMethodDeclarationVisitor<P> javaMethodDeclarationVisitor;
 
     public JavaVisitor() {
-        javaVariableTypeVisitor = new JavaVariableTypeVisitor<>(classReferencesGraph, packageReferencesGraph);
         javaClassDeclarationVisitor = new JavaClassDeclarationVisitor<>(classReferencesGraph, packageReferencesGraph);
-        javaMethodDeclarationVisitor = new JavaMethodDeclarationVisitor<>(classReferencesGraph, packageReferencesGraph);
     }
 
-    @Override
-    public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, P p) {
-        return javaVariableTypeVisitor.visitVariableDeclarations(multiVariable, p);
+    public JavaVisitor(Graph<String, DefaultWeightedEdge> classReferencesGraph, Graph<String, DefaultWeightedEdge> packageReferencesGraph) {
+        this.classReferencesGraph = classReferencesGraph;
+        this.packageReferencesGraph = packageReferencesGraph;
+        javaClassDeclarationVisitor = new JavaClassDeclarationVisitor<>(classReferencesGraph, packageReferencesGraph);
     }
 
     @Override
     public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, P p) {
         return javaClassDeclarationVisitor.visitClassDeclaration(classDecl, p);
-    }
-
-    @Override
-    public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration methodDecl, P p) {
-        return javaMethodDeclarationVisitor.visitMethodDeclaration(methodDecl, p);
     }
 
     // Map each class to its source file

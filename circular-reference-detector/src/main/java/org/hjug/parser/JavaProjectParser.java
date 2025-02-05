@@ -9,9 +9,10 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
+import org.hjug.parser.visitor.JavaMethodDeclarationVisitor;
+import org.hjug.parser.visitor.JavaVariableTypeVisitor;
 import org.hjug.parser.visitor.JavaVisitor;
 import org.jgrapht.Graph;
-import org.jgrapht.graph.DefaultDirectedWeightedGraph;
 import org.jgrapht.graph.DefaultWeightedEdge;
 import org.jgrapht.graph.SimpleDirectedWeightedGraph;
 import org.openrewrite.ExecutionContext;
@@ -34,7 +35,7 @@ public class JavaProjectParser {
         if (srcDirectory == null || srcDirectory.isEmpty()) {
             throw new IllegalArgumentException();
         } else {
-            processWithOpenRewrite(srcDirectory);
+            classReferencesGraph = processWithOpenRewrite(srcDirectory).getClassReferencesGraph();
         }
 
         return classReferencesGraph;
@@ -46,13 +47,28 @@ public class JavaProjectParser {
         JavaParser javaParser = JavaParser.fromJavaVersion().build();
         ExecutionContext ctx = new InMemoryExecutionContext(Throwable::printStackTrace);
 
-        JavaVisitor<ExecutionContext> javaVisitor = new JavaVisitor<>();
+        final Graph<String, DefaultWeightedEdge> classReferencesGraph =
+                new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+
+        final Graph<String, DefaultWeightedEdge> packageReferencesGraph =
+                new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+
+        final JavaVisitor<ExecutionContext> javaVisitor =
+                new JavaVisitor<>(classReferencesGraph, packageReferencesGraph);
+        final JavaVariableTypeVisitor<ExecutionContext> javaVariableTypeVisitor =
+                new JavaVariableTypeVisitor<>(classReferencesGraph, packageReferencesGraph);
+        final JavaMethodDeclarationVisitor<ExecutionContext> javaMethodDeclarationVisitor =
+                new JavaMethodDeclarationVisitor<>(classReferencesGraph, packageReferencesGraph);
 
         try (Stream<Path> walk = Files.walk(Paths.get(srcDirectory.getAbsolutePath()))) {
             List<Path> list = walk.collect(Collectors.toList());
             javaParser
                     .parse(list, Paths.get(srcDirectory.getAbsolutePath()), ctx)
-                    .forEach(cu -> javaVisitor.visit(cu, ctx));
+                    .forEach(cu -> {
+                        javaVisitor.visit(cu, ctx);
+                        javaVariableTypeVisitor.visit(cu, ctx);
+                        javaMethodDeclarationVisitor.visit(cu, ctx);
+                    });
         }
 
         return javaVisitor;
