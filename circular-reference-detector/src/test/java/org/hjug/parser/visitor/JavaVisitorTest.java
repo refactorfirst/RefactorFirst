@@ -8,7 +8,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultWeightedEdge;
 import org.jgrapht.graph.SimpleDirectedWeightedGraph;
@@ -48,6 +47,5 @@ class JavaVisitorTest {
         });
 
         fqdns.addAll(javaVisitor.getPackagesInCodebase());
-
     }
 }

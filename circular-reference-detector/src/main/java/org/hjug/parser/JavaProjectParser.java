@@ -70,8 +70,6 @@ public class JavaProjectParser {
                     });
         }
 
-
-
         return javaVisitor;
 
         // TODO: classReferencesGraph.removeAllVertices(); if vertex package not in codebase

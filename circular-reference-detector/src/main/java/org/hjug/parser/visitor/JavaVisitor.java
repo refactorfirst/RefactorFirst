@@ -5,7 +5,6 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultWeightedEdge;
-import org.jgrapht.graph.SimpleDirectedWeightedGraph;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.*;
 
