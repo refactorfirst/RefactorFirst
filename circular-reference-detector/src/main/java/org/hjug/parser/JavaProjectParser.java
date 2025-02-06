@@ -13,8 +13,8 @@ import org.hjug.parser.visitor.JavaMethodDeclarationVisitor;
 import org.hjug.parser.visitor.JavaVariableTypeVisitor;
 import org.hjug.parser.visitor.JavaVisitor;
 import org.jgrapht.Graph;
+import org.jgrapht.graph.DefaultDirectedWeightedGraph;
 import org.jgrapht.graph.DefaultWeightedEdge;
-import org.jgrapht.graph.SimpleDirectedWeightedGraph;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.InMemoryExecutionContext;
 import org.openrewrite.java.JavaParser;
@@ -47,10 +47,10 @@ public class JavaProjectParser {
         ExecutionContext ctx = new InMemoryExecutionContext(Throwable::printStackTrace);
 
         final Graph<String, DefaultWeightedEdge> classReferencesGraph =
-                new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+                new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
 
         final Graph<String, DefaultWeightedEdge> packageReferencesGraph =
-                new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+                new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
 
         final JavaVisitor<ExecutionContext> javaVisitor =
                 new JavaVisitor<>(classReferencesGraph, packageReferencesGraph);

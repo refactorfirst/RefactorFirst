@@ -74,6 +74,7 @@
 
     <modules>
         <module>test-resources</module>
+        <module>dsm</module>
         <module>circular-reference-detector</module>
         <module>change-proneness-ranker</module>
         <module>effort-ranker</module>
@@ -142,6 +143,12 @@
                 <artifactId>org.eclipse.jgit</artifactId>
                 <version>6.10.0.202406032230-r</version>
                 <scope>compile</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.jgrapht</groupId>
+                <artifactId>jgrapht-core</artifactId>
+                <version>1.5.2</version>
             </dependency>
 
             <dependency>

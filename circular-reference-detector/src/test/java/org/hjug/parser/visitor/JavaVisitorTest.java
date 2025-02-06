@@ -8,6 +8,10 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import org.jgrapht.Graph;
+import org.jgrapht.graph.DefaultWeightedEdge;
+import org.jgrapht.graph.SimpleDirectedWeightedGraph;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.ExecutionContext;
@@ -26,7 +30,14 @@ class JavaVisitorTest {
                 JavaParser.fromJavaVersion().build();
         ExecutionContext ctx = new InMemoryExecutionContext(Throwable::printStackTrace);
 
-        JavaVisitor javaVisitor = new JavaVisitor();
+        final Graph<String, DefaultWeightedEdge> classReferencesGraph =
+                new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+
+        final Graph<String, DefaultWeightedEdge> packageReferencesGraph =
+                new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+
+        final JavaVisitor<ExecutionContext> javaVisitor =
+                new JavaVisitor<>(classReferencesGraph, packageReferencesGraph);
 
         List<String> fqdns = new ArrayList<>();
 
@@ -34,11 +45,9 @@ class JavaVisitorTest {
         javaParser.parse(list, Paths.get(srcDirectory.getAbsolutePath()), ctx).forEach((cu) -> {
             System.out.println(cu.getSourcePath());
             javaVisitor.visit(cu, ctx);
-            //                fqdns.addAll(customVisitor.getFqdns());
         });
 
-        //        return fqdns;
-    }
+        fqdns.addAll(javaVisitor.getPackagesInCodebase());
 
-    class Inner {}
+    }
 }
