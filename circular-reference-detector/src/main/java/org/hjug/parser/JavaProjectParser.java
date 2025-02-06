@@ -30,8 +30,7 @@ public class JavaProjectParser {
      * @throws IOException
      */
     public Graph<String, DefaultWeightedEdge> getClassReferences(String srcDirectory) throws IOException {
-        Graph<String, DefaultWeightedEdge> classReferencesGraph =
-                new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        Graph<String, DefaultWeightedEdge> classReferencesGraph;
         if (srcDirectory == null || srcDirectory.isEmpty()) {
             throw new IllegalArgumentException();
         } else {
@@ -70,6 +69,8 @@ public class JavaProjectParser {
                         javaMethodDeclarationVisitor.visit(cu, ctx);
                     });
         }
+
+
 
         return javaVisitor;
 
