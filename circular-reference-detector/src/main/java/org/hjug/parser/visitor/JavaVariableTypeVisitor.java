@@ -94,13 +94,15 @@ public class JavaVariableTypeVisitor<P> extends JavaIsoVisitor<P> implements Typ
         processType(ownerFqn, javaType);
 
         // process variable instantiation if present
-        Expression initializer = variables.get(0).getInitializer();
-        if (null != initializer && null != initializer.getType() && initializer instanceof J.MethodInvocation) {
-            J.MethodInvocation methodInvocation = (J.MethodInvocation) initializer;
-            methodInvocationVisitor.visitMethodInvocation(ownerFqn, methodInvocation);
-        } else if (null != initializer && null != initializer.getType() && initializer instanceof J.NewClass) {
-            J.NewClass newClassType = (J.NewClass) initializer;
-            newClassVisitor.visitNewClass(ownerFqn, newClassType);
+        for (J.VariableDeclarations.NamedVariable variable : variables) {
+            Expression initializer = variable.getInitializer();
+            if (null != initializer && null != initializer.getType() && initializer instanceof J.MethodInvocation) {
+                J.MethodInvocation methodInvocation = (J.MethodInvocation) initializer;
+                methodInvocationVisitor.visitMethodInvocation(ownerFqn, methodInvocation);
+            } else if (null != initializer && null != initializer.getType() && initializer instanceof J.NewClass) {
+                J.NewClass newClassType = (J.NewClass) initializer;
+                newClassVisitor.visitNewClass(ownerFqn, newClassType);
+            }
         }
 
         return variableDeclarations;

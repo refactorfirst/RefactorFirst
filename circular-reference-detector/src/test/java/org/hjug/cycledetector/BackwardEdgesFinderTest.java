@@ -1,12 +1,11 @@
 package org.hjug.cycledetector;
 
+import java.util.List;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultWeightedEdge;
 import org.jgrapht.graph.SimpleDirectedWeightedGraph;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-
-import java.util.List;
 
 class BackwardEdgesFinderTest {
 
@@ -34,5 +33,4 @@ class BackwardEdgesFinderTest {
         Assertions.assertEquals("(C : A)", backwardEdges.get(1).toString());
         Assertions.assertEquals(5, graph.getEdgeWeight(backwardEdges.get(1)));
     }
-
 }

@@ -1,10 +1,9 @@
 package org.hjug.cycledetector;
 
-import org.jgrapht.Graph;
-import org.jgrapht.graph.DefaultWeightedEdge;
-import org.jgrapht.alg.cycle.TarjanSimpleCycles;
-
 import java.util.*;
+import org.jgrapht.Graph;
+import org.jgrapht.alg.cycle.TarjanSimpleCycles;
+import org.jgrapht.graph.DefaultWeightedEdge;
 
 /*
 Prompt:

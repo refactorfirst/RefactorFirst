@@ -1,12 +1,11 @@
 package org.hjug.dsm;
 
+import java.util.*;
 import org.jgrapht.Graph;
 import org.jgrapht.Graphs;
+import org.jgrapht.alg.cycle.TarjanSimpleCycles;
 import org.jgrapht.graph.DefaultWeightedEdge;
 import org.jgrapht.graph.SimpleDirectedWeightedGraph;
-import org.jgrapht.alg.cycle.TarjanSimpleCycles;
-
-import java.util.*;
 
 /*
  * Generated with Generative AI using a prompt similar to the following:
@@ -26,8 +25,7 @@ include another method that returns the optimal edge above the diagonal to remov
 include a third method that identifies all minimum weight edges to remove above the diagonal.
  */
 
-
-//This is looking good, but is still a work in progress.  This may not be needed at all.
+// This is looking good, but is still a work in progress.  This may not be needed at all.
 public class DSM {
     private Graph<String, DefaultWeightedEdge> graph;
     private List<String> sortedActivities;
@@ -180,9 +178,9 @@ public class DSM {
         dsm.addActivity("H");
 
         dsm.addDependency("A", "B", 1);
-//        dsm.addDependency("A", "C", 6);
+        //        dsm.addDependency("A", "C", 6);
         dsm.addDependency("B", "C", 2);
-//        dsm.addDependency("B", "D", 3);
+        //        dsm.addDependency("B", "D", 3);
         dsm.addDependency("C", "D", 2);
         dsm.addDependency("D", "A", 2); // Adding a cycle
 
@@ -193,7 +191,6 @@ public class DSM {
         dsm.addDependency("A", "H", 7); // Adding a cycle
         dsm.addDependency("H", "D", 9); // Adding a cycle
         dsm.addDependency("C", "E", 9); // Adding a cycle
-
 
         dsm.orderVertices();
         dsm.printDSM();
