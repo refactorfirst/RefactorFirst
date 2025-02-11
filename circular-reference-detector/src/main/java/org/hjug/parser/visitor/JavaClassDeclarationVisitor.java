@@ -6,10 +6,7 @@ import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultWeightedEdge;
 import org.jgrapht.graph.SimpleDirectedWeightedGraph;
 import org.openrewrite.java.JavaIsoVisitor;
-import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.JavaType;
-import org.openrewrite.java.tree.Statement;
-import org.openrewrite.java.tree.TypeTree;
+import org.openrewrite.java.tree.*;
 
 public class JavaClassDeclarationVisitor<P> extends JavaIsoVisitor<P> implements TypeProcessor {
 
@@ -102,8 +99,28 @@ public class JavaClassDeclarationVisitor<P> extends JavaIsoVisitor<P> implements
                 } else if (statementInBlock instanceof J.NewClass) {
                     J.NewClass newClass = (J.NewClass) statementInBlock;
                     newClassVisitor.visitNewClass(owningFqn, newClass);
+                } else if (statementInBlock instanceof J.Return) {
+                    J.Return returnStmt = (J.Return) statementInBlock;
+                    visitReturn(owningFqn, returnStmt);
                 }
             }
         }
+    }
+
+
+    public J.Return visitReturn(String owningFqn, J.Return visitedReturn) {
+        Expression expression = visitedReturn.getExpression();
+        if(expression instanceof J.MethodInvocation) {
+            J.MethodInvocation methodInvocation = (J.MethodInvocation) expression;
+            methodInvocationVisitor.visitMethodInvocation(owningFqn, methodInvocation);
+        } else if (expression instanceof J.NewClass) {
+          J.NewClass newClass = (J.NewClass) expression;
+            newClassVisitor.visitNewClass(owningFqn, newClass);
+        } else if (expression instanceof J.Lambda) {
+            J.Lambda lambda = (J.Lambda) expression;
+            processType(owningFqn, lambda.getType());
+        }
+
+        return visitedReturn;
     }
 }

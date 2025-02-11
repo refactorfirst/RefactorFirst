@@ -42,7 +42,7 @@ class JavaClassDeclarationVisitorTest {
                 .getClassReferencesGraph()
                 .containsVertex("org.hjug.parser.visitor.testclasses.C"));
         // false because it doesn't reference any other classes
-        Assertions.assertFalse(javaVariableCapturingVisitor
+        Assertions.assertTrue(javaVariableCapturingVisitor
                 .getClassReferencesGraph()
                 .containsVertex("org.hjug.parser.visitor.testclasses.D"));
         Assertions.assertTrue(javaVariableCapturingVisitor

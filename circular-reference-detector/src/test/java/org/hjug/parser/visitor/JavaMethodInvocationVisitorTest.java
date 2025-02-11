@@ -49,12 +49,12 @@ class JavaMethodInvocationVisitorTest {
         Assertions.assertTrue(graph.containsVertex("org.hjug.parser.visitor.testclasses.methodInvocation.C"));
 
         Assertions.assertEquals(
-                2,
+                3,
                 graph.getEdgeWeight(graph.getEdge(
                         "org.hjug.parser.visitor.testclasses.methodInvocation.A",
                         "org.hjug.parser.visitor.testclasses.methodInvocation.B")));
         Assertions.assertEquals(
-                2,
+                3,
                 graph.getEdgeWeight(graph.getEdge(
                         "org.hjug.parser.visitor.testclasses.methodInvocation.A",
                         "org.hjug.parser.visitor.testclasses.methodInvocation.C")));

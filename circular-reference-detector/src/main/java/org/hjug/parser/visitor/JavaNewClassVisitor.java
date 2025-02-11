@@ -16,13 +16,7 @@ public class JavaNewClassVisitor implements TypeProcessor {
 
     public J.NewClass visitNewClass(String invokingFqn, J.NewClass newClass) {
         processType(invokingFqn, newClass.getType());
-
-        for (Expression argument : newClass.getArguments()) {
-            processType(invokingFqn, argument.getType());
-        }
-
         // TASK: process initializer block???
-
         return newClass;
     }
 }
