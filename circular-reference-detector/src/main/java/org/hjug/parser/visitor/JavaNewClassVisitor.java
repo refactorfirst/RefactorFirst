@@ -4,7 +4,6 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultWeightedEdge;
-import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 
 @RequiredArgsConstructor

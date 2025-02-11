@@ -107,14 +107,13 @@ public class JavaClassDeclarationVisitor<P> extends JavaIsoVisitor<P> implements
         }
     }
 
-
     public J.Return visitReturn(String owningFqn, J.Return visitedReturn) {
         Expression expression = visitedReturn.getExpression();
-        if(expression instanceof J.MethodInvocation) {
+        if (expression instanceof J.MethodInvocation) {
             J.MethodInvocation methodInvocation = (J.MethodInvocation) expression;
             methodInvocationVisitor.visitMethodInvocation(owningFqn, methodInvocation);
         } else if (expression instanceof J.NewClass) {
-          J.NewClass newClass = (J.NewClass) expression;
+            J.NewClass newClass = (J.NewClass) expression;
             newClassVisitor.visitNewClass(owningFqn, newClass);
         } else if (expression instanceof J.Lambda) {
             J.Lambda lambda = (J.Lambda) expression;
