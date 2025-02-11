@@ -36,12 +36,13 @@ public class BackwardEdgesFinder<V> {
             }
 
             for (DefaultWeightedEdge edge : cycleEdges) {
-                if (isBackwardEdge(edge, cycle)) {
+                if (isBackwardEdge(edge, cycle) && !backwardEdges.contains(edge)) {
                     backwardEdges.add(edge);
                 }
             }
         }
 
+        // The ordering is naive, but it's a start
         backwardEdges.sort(Comparator.comparingDouble(graph::getEdgeWeight));
         return backwardEdges;
     }
