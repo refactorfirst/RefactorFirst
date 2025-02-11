@@ -1,176 +1,203 @@
 package org.hjug.dsm;
 
-import java.util.*;
 import org.jgrapht.Graph;
-import org.jgrapht.alg.cycle.CycleDetector;
+import org.jgrapht.Graphs;
 import org.jgrapht.graph.DefaultWeightedEdge;
+import org.jgrapht.graph.SimpleDirectedWeightedGraph;
+import org.jgrapht.alg.cycle.TarjanSimpleCycles;
+
+import java.util.*;
 
 /*
-Based on https://sookocheff.com/post/dsm/improving-software-architecture-using-design-structure-matrix/#optimizing-processes
-and modified slightly
-Used the following prompt to generate this class with generative AI:
+ * Generated with Generative AI using a prompt similar to the following:
+Provide a complete implementation of a Numerical DSM with integer weighted edges in Java.
+Include as many comments as possible in the implementation to make it easy to understand.
+Use JGraphT classes and methods to the greatest extent possible.
+Construction of the DSM should take place as follows.
+First, Place nodes with empty rows at the top of the DSM.
+Second, Place nodes with empty columns on the right of the DSM.
+Third, identify strongly connected nodes and treat them as a single node using JGraphT's TarjanSimpleCycles class.
+Fourth, order all edges in the DSM with a topological sort that permits cycles in the graph after identifying strongly connected components.
+Fifth, Print the DSM in a method that performs no sorting or ordering - it should only print rows and columns.
+When the DSM is printed, label the columns and rows.
+Place dashes on the diagonal when printing.
+include a method tht returns all edges above the diagonal.
+include another method that returns the optimal edge above the diagonal to remove,
+include a third method that identifies all minimum weight edges to remove above the diagonal.
+ */
 
-Provide a complete java implementation of a dsm using jgrapht, labeling the rows and columns,
-with the node values representing the edge weight between nodes.
-Edge weights should be cast to integers.
-Identify which edge above the diagonal in the set of cycles contained in the graph that will be the easiest to remove first.
-Order nodes using the following logic:
-Order nodes with empty rows at the top of the DSM.
-Nodes with empty columns should be placed on the right of the DSM.
-Find any cycles in the remaining elements through a depth-first search.
-Group together all activities in a cycle as a single activity, and treat the group as its own step in the sequence.
-*/
+
+//This is looking good, but is still a work in progress.  This may not be needed at all.
 public class DSM {
+    private Graph<String, DefaultWeightedEdge> graph;
+    private List<String> sortedActivities;
 
-    static List<String> orderVertices(Graph<String, DefaultWeightedEdge> graph) {
-        List<String> orderedVertices = new ArrayList<>();
-        Set<String> vertices = graph.vertexSet();
-
-        // Find nodes with empty rows (no outgoing edges)
-        for (String vertex : vertices) {
-            if (graph.outgoingEdgesOf(vertex).isEmpty()) {
-                orderedVertices.add(vertex);
-            }
-        }
-
-        // Find nodes with empty columns (no incoming edges)
-        for (String vertex : vertices) {
-            if (graph.incomingEdgesOf(vertex).isEmpty() && !orderedVertices.contains(vertex)) {
-                orderedVertices.add(vertex);
-            }
-        }
-
-        // Find cycles in the remaining elements
-        CycleDetector<String, DefaultWeightedEdge> cycleDetector = new CycleDetector<>(graph);
-        Set<String> remainingVertices = new HashSet<>(vertices);
-        orderedVertices.forEach(remainingVertices::remove);
-
-        while (!remainingVertices.isEmpty()) {
-            String startVertex = remainingVertices.iterator().next();
-            Set<String> cycle = cycleDetector.findCyclesContainingVertex(startVertex);
-
-            if (!cycle.isEmpty()) {
-                orderedVertices.addAll(cycle);
-                remainingVertices.removeAll(cycle);
-            } else {
-                orderedVertices.add(startVertex);
-                remainingVertices.remove(startVertex);
-            }
-        }
-
-        return orderedVertices;
+    public DSM() {
+        graph = new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        sortedActivities = new ArrayList<>();
     }
 
-    public static DefaultWeightedEdge identifyOptimalBakcwardEdgeToRemove(
-            Graph<String, DefaultWeightedEdge> graph, List<String> orderedVertices) {
-        CycleDetector<String, DefaultWeightedEdge> cycleDetector = new CycleDetector<>(graph);
-        Set<String> cycleVertices = cycleDetector.findCycles();
-
-        if (!cycleVertices.isEmpty()) {
-            DefaultWeightedEdge minEdge = null;
-            double minWeight = Double.MAX_VALUE;
-
-            for (String vertex : cycleVertices) {
-                for (DefaultWeightedEdge edge : graph.edgesOf(vertex)) {
-                    if (cycleVertices.contains(graph.getEdgeTarget(edge))) {
-                        int rowIndex = orderedVertices.indexOf(graph.getEdgeSource(edge));
-                        int colIndex = orderedVertices.indexOf(graph.getEdgeTarget(edge));
-                        // Check if the edge is above the diagonal
-                        if (rowIndex < colIndex) {
-                            double weight = graph.getEdgeWeight(edge);
-                            if (weight < minWeight) {
-                                minWeight = weight;
-                                minEdge = edge;
-                            }
-                            // return immediately b/c we shouldn't have edge weight less than 1
-                            if (weight == 1) {
-                                return edge;
-                            }
-                        }
-                    }
-                }
-            }
-            return minEdge;
-        }
-        return null;
+    public void addActivity(String activity) {
+        graph.addVertex(activity);
     }
 
-    static List<DefaultWeightedEdge> identifyAllBackwardMinWeightEdgesToRemove(
-            Graph<String, DefaultWeightedEdge> graph, List<String> orderedVertices) {
-        CycleDetector<String, DefaultWeightedEdge> cycleDetector = new CycleDetector<>(graph);
-        Set<String> cycleVertices = cycleDetector.findCycles();
-
-        if (!cycleVertices.isEmpty()) {
-            List<DefaultWeightedEdge> edgesToRemove = new ArrayList<>();
-            double minWeight = Double.MAX_VALUE;
-
-            for (String vertex : cycleVertices) {
-                for (DefaultWeightedEdge edge : graph.edgesOf(vertex)) {
-                    if (cycleVertices.contains(graph.getEdgeTarget(edge))) {
-                        int rowIndex = orderedVertices.indexOf(graph.getEdgeSource(edge));
-                        int colIndex = orderedVertices.indexOf(graph.getEdgeTarget(edge));
-                        // Check if the edge is above the diagonal
-                        if (rowIndex < colIndex) {
-                            double weight = graph.getEdgeWeight(edge);
-                            if (weight < minWeight) {
-                                edgesToRemove.clear();
-                                minWeight = weight;
-                                edgesToRemove.add(edge);
-                            } else if (weight == minWeight && !edgesToRemove.contains(edge)) {
-                                edgesToRemove.add(edge);
-                            }
-                        }
-                    }
-                }
-            }
-            return edgesToRemove;
+    public void addDependency(String from, String to, int weight) {
+        DefaultWeightedEdge edge = graph.addEdge(from, to);
+        if (edge != null) {
+            graph.setEdgeWeight(edge, weight);
         }
-        return new ArrayList<>();
     }
 
-    static List<DefaultWeightedEdge> getAllBackwardEdges(
-            Graph<String, DefaultWeightedEdge> graph, List<String> orderedVertices) {
-        CycleDetector<String, DefaultWeightedEdge> cycleDetector = new CycleDetector<>(graph);
-        Set<String> cycleVertices = cycleDetector.findCycles();
-
-        if (!cycleVertices.isEmpty()) {
-            List<DefaultWeightedEdge> edgesToRemove = new ArrayList<>();
-
-            for (String vertex : cycleVertices) {
-                for (DefaultWeightedEdge edge : graph.edgesOf(vertex)) {
-                    if (cycleVertices.contains(graph.getEdgeTarget(edge))) {
-                        int rowIndex = orderedVertices.indexOf(graph.getEdgeSource(edge));
-                        int colIndex = orderedVertices.indexOf(graph.getEdgeTarget(edge));
-                        // Check if the edge is above the diagonal
-                        // and has not been added yet
-                        if (rowIndex < colIndex && !edgesToRemove.contains(edge)) {
-                            edgesToRemove.add(edge);
-                        }
-                    }
-                }
-            }
-            return edgesToRemove;
-        }
-        return new ArrayList<>();
+    public void orderVertices() {
+        List<Set<String>> sccs = findStronglyConnectedComponents();
+        sortedActivities = topologicalSort(sccs);
     }
 
-    public static void printDSM(Graph<String, DefaultWeightedEdge> graph, List<String> orderedVertices) {
-        // Print column labels
-        System.out.print("   ");
-        for (String vertex : orderedVertices) {
-            System.out.print(vertex + " ");
+    public void printDSM() {
+        System.out.println("Design Structure Matrix:");
+        System.out.print("  ");
+        for (String col : sortedActivities) {
+            System.out.print(col + " ");
         }
         System.out.println();
-
-        // Print rows with edge weights
-        for (String rowVertex : orderedVertices) {
-            System.out.print(rowVertex + " ");
-            for (String colVertex : orderedVertices) {
-                DefaultWeightedEdge edge = graph.getEdge(rowVertex, colVertex);
-                int weight = (edge != null) ? (int) graph.getEdgeWeight(edge) : 0;
-                System.out.print(weight + " ");
+        for (String row : sortedActivities) {
+            System.out.print(row + " ");
+            for (String col : sortedActivities) {
+                if (col.equals(row)) {
+                    System.out.print("- ");
+                } else {
+                    DefaultWeightedEdge edge = graph.getEdge(col, row); // Flipped matrix
+                    if (edge != null) {
+                        System.out.print((int) graph.getEdgeWeight(edge) + " ");
+                    } else {
+                        System.out.print("0 ");
+                    }
+                }
             }
             System.out.println();
         }
+    }
+
+    private List<Set<String>> findStronglyConnectedComponents() {
+        TarjanSimpleCycles<String, DefaultWeightedEdge> tarjan = new TarjanSimpleCycles<>(graph);
+        List<List<String>> cycles = tarjan.findSimpleCycles();
+        List<Set<String>> sccs = new ArrayList<>();
+        for (List<String> cycle : cycles) {
+            sccs.add(new HashSet<>(cycle));
+        }
+        return sccs;
+    }
+
+    private List<String> topologicalSort(List<Set<String>> sccs) {
+        List<String> sortedActivities = new ArrayList<>();
+        Set<String> visited = new HashSet<>();
+
+        for (Set<String> scc : sccs) {
+            for (String activity : scc) {
+                if (!visited.contains(activity)) {
+                    topologicalSortUtil(activity, visited, sortedActivities);
+                }
+            }
+        }
+
+        Collections.reverse(sortedActivities);
+        return sortedActivities;
+    }
+
+    private void topologicalSortUtil(String activity, Set<String> visited, List<String> sortedActivities) {
+        visited.add(activity);
+
+        for (String neighbor : Graphs.successorListOf(graph, activity)) {
+            if (!visited.contains(neighbor)) {
+                topologicalSortUtil(neighbor, visited, sortedActivities);
+            }
+        }
+
+        sortedActivities.add(activity);
+    }
+
+    public List<DefaultWeightedEdge> getEdgesAboveDiagonal() {
+        List<DefaultWeightedEdge> edgesAboveDiagonal = new ArrayList<>();
+
+        for (int i = 0; i < sortedActivities.size(); i++) {
+            for (int j = i + 1; j < sortedActivities.size(); j++) {
+                // source / destination vertex was flipped after solution generation
+                // to correctly identify the vertex above the diagonal to remove
+                DefaultWeightedEdge edge = graph.getEdge(sortedActivities.get(i), sortedActivities.get(j));
+                if (edge != null) {
+                    edgesAboveDiagonal.add(edge);
+                }
+            }
+        }
+
+        return edgesAboveDiagonal;
+    }
+
+    public DefaultWeightedEdge getOptimalEdgeAboveDiagonalToRemove() {
+        List<DefaultWeightedEdge> edgesAboveDiagonal = getEdgesAboveDiagonal();
+        DefaultWeightedEdge optimalEdge = null;
+        double minWeight = Double.MAX_VALUE;
+
+        for (DefaultWeightedEdge edge : edgesAboveDiagonal) {
+            double weight = graph.getEdgeWeight(edge);
+            if (weight < minWeight) {
+                minWeight = weight;
+                optimalEdge = edge;
+            }
+        }
+
+        return optimalEdge;
+    }
+
+    public List<DefaultWeightedEdge> getMinimumWeightEdgesToRemove() {
+        List<DefaultWeightedEdge> edgesAboveDiagonal = getEdgesAboveDiagonal();
+        List<DefaultWeightedEdge> minWeightEdges = new ArrayList<>();
+        double minWeight = Double.MAX_VALUE;
+
+        for (DefaultWeightedEdge edge : edgesAboveDiagonal) {
+            double weight = graph.getEdgeWeight(edge);
+            if (weight < minWeight) {
+                minWeight = weight;
+                minWeightEdges.clear();
+                minWeightEdges.add(edge);
+            } else if (weight == minWeight) {
+                minWeightEdges.add(edge);
+            }
+        }
+
+        return minWeightEdges;
+    }
+
+    public static void main(String[] args) {
+        DSM dsm = new DSM();
+        dsm.addActivity("A");
+        dsm.addActivity("B");
+        dsm.addActivity("C");
+        dsm.addActivity("D");
+        dsm.addActivity("E");
+        dsm.addActivity("F");
+        dsm.addActivity("G");
+        dsm.addActivity("H");
+
+        dsm.addDependency("A", "B", 1);
+//        dsm.addDependency("A", "C", 6);
+        dsm.addDependency("B", "C", 2);
+//        dsm.addDependency("B", "D", 3);
+        dsm.addDependency("C", "D", 2);
+        dsm.addDependency("D", "A", 2); // Adding a cycle
+
+        dsm.addDependency("C", "A", 7); // Adding a cycle
+        dsm.addDependency("G", "E", 2); // Adding a cycle
+        dsm.addDependency("E", "H", 2); // Adding a cycle
+        dsm.addDependency("H", "G", 5); // Adding a cycle
+        dsm.addDependency("A", "H", 7); // Adding a cycle
+        dsm.addDependency("H", "D", 9); // Adding a cycle
+        dsm.addDependency("C", "E", 9); // Adding a cycle
+
+
+        dsm.orderVertices();
+        dsm.printDSM();
+
+        System.out.println("Optimal edge above diagonal to remove: " + dsm.getOptimalEdgeAboveDiagonalToRemove());
     }
 }
