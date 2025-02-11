@@ -1,4 +1,4 @@
-package org.hjug.dsm;
+package org.hjug.cycledetector;
 
 import java.util.*;
 import org.jgrapht.Graph;
