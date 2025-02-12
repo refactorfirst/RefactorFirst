@@ -22,8 +22,7 @@ public class JavaClassDeclarationVisitor<P> extends JavaIsoVisitor<P> implements
         newClassVisitor = new JavaNewClassVisitor(classReferencesGraph);
     }
 
-    public JavaClassDeclarationVisitor(
-            Graph<String, DefaultWeightedEdge> classReferencesGraph) {
+    public JavaClassDeclarationVisitor(Graph<String, DefaultWeightedEdge> classReferencesGraph) {
         this.classReferencesGraph = classReferencesGraph;
         methodInvocationVisitor = new JavaMethodInvocationVisitor(classReferencesGraph);
         newClassVisitor = new JavaNewClassVisitor(classReferencesGraph);

@@ -6,7 +6,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
-
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultWeightedEdge;
 import org.junit.jupiter.api.Assertions;
@@ -73,7 +72,6 @@ class JavaProjectParserTest {
         return classReferencesGraph.getEdgeWeight(classReferencesGraph.getEdge(sourceVertex, targetVertex));
     }
 
-
     @Test
     void removeClassesNotInCodebase() throws IOException {
         File srcDirectory = new File("src/test/resources/javaSrcDirectory");
@@ -84,9 +82,9 @@ class JavaProjectParserTest {
         classReferencesGraph.addVertex("org.favioriteoss.AnotherFunClass");
 
         DefaultWeightedEdge edge1 =
-        classReferencesGraph.addEdge("com.ideacrest.parser.testclasses.A", "org.favioriteoss.FunClass");
+                classReferencesGraph.addEdge("com.ideacrest.parser.testclasses.A", "org.favioriteoss.FunClass");
         DefaultWeightedEdge edge2 =
-        classReferencesGraph.addEdge("com.ideacrest.parser.testclasses.A", "org.favioriteoss.AnotherFunClass");
+                classReferencesGraph.addEdge("com.ideacrest.parser.testclasses.A", "org.favioriteoss.AnotherFunClass");
 
         assertTrue(classReferencesGraph.containsVertex("org.favioriteoss.FunClass"));
         assertTrue(classReferencesGraph.containsVertex("org.favioriteoss.AnotherFunClass"));
@@ -101,5 +99,4 @@ class JavaProjectParserTest {
         assertFalse(classReferencesGraph.containsEdge(edge1));
         assertFalse(classReferencesGraph.containsEdge(edge2));
     }
-
 }

@@ -72,18 +72,18 @@ public class JavaProjectParser {
 
         removeClassesNotInCodebase(javaVisitor.getPackagesInCodebase(), classReferencesGraph);
 
-        return new GraphDTO(classReferencesGraph,
-                packageReferencesGraph,
-                javaVisitor.getClassToSourceFilePathMapping());
+        return new GraphDTO(
+                classReferencesGraph, packageReferencesGraph, javaVisitor.getClassToSourceFilePathMapping());
     }
 
     // remove node if package not in codebase
-    void removeClassesNotInCodebase(Set<String> packagesInCodebase, Graph<String, DefaultWeightedEdge> classReferencesGraph) {
+    void removeClassesNotInCodebase(
+            Set<String> packagesInCodebase, Graph<String, DefaultWeightedEdge> classReferencesGraph) {
 
         // collect nodes to remove
         Set<String> classesToRemove = new HashSet<>();
         for (String classFqn : classReferencesGraph.vertexSet()) {
-            if(!packagesInCodebase.contains(getPackage(classFqn))) {
+            if (!packagesInCodebase.contains(getPackage(classFqn))) {
                 classesToRemove.add(classFqn);
             }
         }
