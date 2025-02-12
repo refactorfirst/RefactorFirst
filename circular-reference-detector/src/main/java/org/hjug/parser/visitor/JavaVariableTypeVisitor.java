@@ -24,8 +24,8 @@ public class JavaVariableTypeVisitor<P> extends JavaIsoVisitor<P> implements Typ
     private final JavaMethodInvocationVisitor methodInvocationVisitor;
 
     public JavaVariableTypeVisitor() {
-        newClassVisitor = new JavaNewClassVisitor(classReferencesGraph, packageReferencesGraph);
-        methodInvocationVisitor = new JavaMethodInvocationVisitor(classReferencesGraph, packageReferencesGraph);
+        newClassVisitor = new JavaNewClassVisitor(classReferencesGraph);
+        methodInvocationVisitor = new JavaMethodInvocationVisitor(classReferencesGraph);
     }
 
     public JavaVariableTypeVisitor(
@@ -33,8 +33,8 @@ public class JavaVariableTypeVisitor<P> extends JavaIsoVisitor<P> implements Typ
             Graph<String, DefaultWeightedEdge> packageReferencesGraph) {
         this.classReferencesGraph = classReferencesGraph;
         this.packageReferencesGraph = packageReferencesGraph;
-        newClassVisitor = new JavaNewClassVisitor(classReferencesGraph, packageReferencesGraph);
-        methodInvocationVisitor = new JavaMethodInvocationVisitor(classReferencesGraph, packageReferencesGraph);
+        newClassVisitor = new JavaNewClassVisitor(classReferencesGraph);
+        methodInvocationVisitor = new JavaMethodInvocationVisitor(classReferencesGraph);
     }
 
     @Override

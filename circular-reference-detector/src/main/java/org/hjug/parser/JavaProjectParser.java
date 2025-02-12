@@ -40,7 +40,7 @@ public class JavaProjectParser {
         return classReferencesGraph;
     }
 
-    private JavaVisitor processWithOpenRewrite(String srcDir) throws IOException {
+    private GraphDTO processWithOpenRewrite(String srcDir) throws IOException {
         File srcDirectory = new File(srcDir);
 
         JavaParser javaParser = JavaParser.fromJavaVersion().build();
@@ -70,8 +70,34 @@ public class JavaProjectParser {
                     });
         }
 
-        return javaVisitor;
+        removeClassesNotInCodebase(javaVisitor.getPackagesInCodebase(), classReferencesGraph);
 
-        // TODO: classReferencesGraph.removeAllVertices(); if vertex package not in codebase
+        return new GraphDTO(classReferencesGraph,
+                packageReferencesGraph,
+                javaVisitor.getClassToSourceFilePathMapping());
+    }
+
+    // remove node if package not in codebase
+    void removeClassesNotInCodebase(Set<String> packagesInCodebase, Graph<String, DefaultWeightedEdge> classReferencesGraph) {
+
+        // collect nodes to remove
+        Set<String> classesToRemove = new HashSet<>();
+        for (String classFqn : classReferencesGraph.vertexSet()) {
+            if(!packagesInCodebase.contains(getPackage(classFqn))) {
+                classesToRemove.add(classFqn);
+            }
+        }
+
+        classReferencesGraph.removeAllVertices(classesToRemove);
+    }
+
+    String getPackage(String fqn) {
+        // handle no package
+        if (!fqn.contains(".")) {
+            return "";
+        }
+
+        int lastIndex = fqn.lastIndexOf(".");
+        return fqn.substring(0, lastIndex);
     }
 }

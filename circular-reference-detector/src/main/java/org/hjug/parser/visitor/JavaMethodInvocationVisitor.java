@@ -15,7 +15,6 @@ import org.openrewrite.java.tree.J;
 public class JavaMethodInvocationVisitor implements TypeProcessor {
 
     private final Graph<String, DefaultWeightedEdge> classReferencesGraph;
-    private final Graph<String, DefaultWeightedEdge> packageReferencesGraph;
 
     public J.MethodInvocation visitMethodInvocation(String invokingFqn, J.MethodInvocation methodInvocation) {
         // getDeclaringType() returns the type that declared the method being invoked

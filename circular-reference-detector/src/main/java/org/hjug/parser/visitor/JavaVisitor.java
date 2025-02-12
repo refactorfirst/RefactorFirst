@@ -11,12 +11,14 @@ import org.openrewrite.java.tree.*;
 @Slf4j
 public class JavaVisitor<P> extends JavaIsoVisitor<P> implements TypeProcessor {
 
+    // used to keep track of what packages are in the codebase
+    // used to remove the nodes that are not in the codebase
     @Getter
     private final Set<String> packagesInCodebase = new HashSet<>();
 
     // used for looking up files where classes reside
     @Getter
-    private final Map<String, String> classToSourceFileMapping = new HashMap<>();
+    private final Map<String, String> classToSourceFilePathMapping = new HashMap<>();
 
     @Getter
     private final Graph<String, DefaultWeightedEdge> classReferencesGraph;
@@ -31,7 +33,7 @@ public class JavaVisitor<P> extends JavaIsoVisitor<P> implements TypeProcessor {
             Graph<String, DefaultWeightedEdge> packageReferencesGraph) {
         this.classReferencesGraph = classReferencesGraph;
         this.packageReferencesGraph = packageReferencesGraph;
-        javaClassDeclarationVisitor = new JavaClassDeclarationVisitor<>(classReferencesGraph, packageReferencesGraph);
+        javaClassDeclarationVisitor = new JavaClassDeclarationVisitor<>(classReferencesGraph);
     }
 
     @Override
@@ -47,7 +49,7 @@ public class JavaVisitor<P> extends JavaIsoVisitor<P> implements TypeProcessor {
         packagesInCodebase.add(compilationUnit.getPackageDeclaration().getPackageName());
 
         for (J.ClassDeclaration aClass : compilationUnit.getClasses()) {
-            classToSourceFileMapping.put(
+            classToSourceFilePathMapping.put(
                     aClass.getType().getFullyQualifiedName(),
                     compilationUnit.getSourcePath().toUri().toString());
         }

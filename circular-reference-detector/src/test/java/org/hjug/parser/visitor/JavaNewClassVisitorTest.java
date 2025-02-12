@@ -33,7 +33,7 @@ public class JavaNewClassVisitorTest {
                 new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
 
         JavaClassDeclarationVisitor<ExecutionContext> classDeclarationVisitor =
-                new JavaClassDeclarationVisitor<>(classReferencesGraph, packageReferencesGraph);
+                new JavaClassDeclarationVisitor<>(classReferencesGraph);
         JavaVariableTypeVisitor<ExecutionContext> variableTypeVisitor =
                 new JavaVariableTypeVisitor<>(classReferencesGraph, packageReferencesGraph);
 

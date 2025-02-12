@@ -17,22 +17,16 @@ public class JavaClassDeclarationVisitor<P> extends JavaIsoVisitor<P> implements
     private Graph<String, DefaultWeightedEdge> classReferencesGraph =
             new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
 
-    @Getter
-    private Graph<String, DefaultWeightedEdge> packageReferencesGraph =
-            new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-
     public JavaClassDeclarationVisitor() {
-        methodInvocationVisitor = new JavaMethodInvocationVisitor(classReferencesGraph, packageReferencesGraph);
-        newClassVisitor = new JavaNewClassVisitor(classReferencesGraph, packageReferencesGraph);
+        methodInvocationVisitor = new JavaMethodInvocationVisitor(classReferencesGraph);
+        newClassVisitor = new JavaNewClassVisitor(classReferencesGraph);
     }
 
     public JavaClassDeclarationVisitor(
-            Graph<String, DefaultWeightedEdge> classReferencesGraph,
-            Graph<String, DefaultWeightedEdge> packageReferencesGraph) {
+            Graph<String, DefaultWeightedEdge> classReferencesGraph) {
         this.classReferencesGraph = classReferencesGraph;
-        this.packageReferencesGraph = packageReferencesGraph;
-        methodInvocationVisitor = new JavaMethodInvocationVisitor(classReferencesGraph, packageReferencesGraph);
-        newClassVisitor = new JavaNewClassVisitor(classReferencesGraph, packageReferencesGraph);
+        methodInvocationVisitor = new JavaMethodInvocationVisitor(classReferencesGraph);
+        newClassVisitor = new JavaNewClassVisitor(classReferencesGraph);
     }
 
     @Override

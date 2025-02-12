@@ -111,7 +111,9 @@ public interface TypeProcessor {
         }
     }
 
-    Graph<String, DefaultWeightedEdge> getPackageReferencesGraph();
+    default Graph<String, DefaultWeightedEdge> getPackageReferencesGraph(){
+        return null;
+    }
 
     Graph<String, DefaultWeightedEdge> getClassReferencesGraph();
 

@@ -11,7 +11,6 @@ import org.openrewrite.java.tree.J;
 public class JavaNewClassVisitor implements TypeProcessor {
 
     private final Graph<String, DefaultWeightedEdge> classReferencesGraph;
-    private final Graph<String, DefaultWeightedEdge> packageReferencesGraph;
 
     public J.NewClass visitNewClass(String invokingFqn, J.NewClass newClass) {
         processType(invokingFqn, newClass.getType());
