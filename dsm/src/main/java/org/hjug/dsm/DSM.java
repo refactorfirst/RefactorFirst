@@ -1,4 +1,4 @@
-package org.hjug.cycledetector;
+package org.hjug.dsm;
 
 import java.util.*;
 import org.jgrapht.Graph;
@@ -8,7 +8,7 @@ import org.jgrapht.graph.DefaultWeightedEdge;
 import org.jgrapht.graph.SimpleDirectedWeightedGraph;
 
 /*
- * Generated with Generative AI using a prompt similar to the following:
+Generated with Generative AI using a prompt similar to the following and iterated on:
 Provide a complete implementation of a Numerical DSM with integer weighted edges in Java.
 Include as many comments as possible in the implementation to make it easy to understand.
 Use JGraphT classes and methods to the greatest extent possible.
@@ -23,15 +23,23 @@ Place dashes on the diagonal when printing.
 include a method tht returns all edges above the diagonal.
 include another method that returns the optimal edge above the diagonal to remove,
 include a third method that identifies all minimum weight edges to remove above the diagonal.
+
+Used https://sookocheff.com/post/dsm/improving-software-architecture-using-design-structure-matrix/#optimizing-processes
+as a starting point.
  */
 
-// This is looking good, but is still a work in progress.  This may not be needed at all.
 public class DSM {
     private Graph<String, DefaultWeightedEdge> graph;
     private List<String> sortedActivities;
+    boolean activitiesSorted = false;
 
     public DSM() {
         graph = new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        sortedActivities = new ArrayList<>();
+    }
+
+    public DSM(Graph<String, DefaultWeightedEdge> graph) {
+        this.graph = graph;
         sortedActivities = new ArrayList<>();
     }
 
@@ -49,31 +57,11 @@ public class DSM {
     public void orderVertices() {
         List<Set<String>> sccs = findStronglyConnectedComponents();
         sortedActivities = topologicalSort(sccs);
-    }
-
-    public void printDSM() {
-        System.out.println("Design Structure Matrix:");
-        System.out.print("  ");
-        for (String col : sortedActivities) {
-            System.out.print(col + " ");
-        }
-        System.out.println();
-        for (String row : sortedActivities) {
-            System.out.print(row + " ");
-            for (String col : sortedActivities) {
-                if (col.equals(row)) {
-                    System.out.print("- ");
-                } else {
-                    DefaultWeightedEdge edge = graph.getEdge(col, row); // Flipped matrix
-                    if (edge != null) {
-                        System.out.print((int) graph.getEdgeWeight(edge) + " ");
-                    } else {
-                        System.out.print("0 ");
-                    }
-                }
-            }
-            System.out.println();
-        }
+        // reversing corrects rendering of the DSM
+        // with sources as rows and targets as columns
+        // was needed after AI solution was generated and iterated
+        Collections.reverse(sortedActivities);
+        activitiesSorted = true;
     }
 
     private List<Set<String>> findStronglyConnectedComponents() {
@@ -115,6 +103,10 @@ public class DSM {
     }
 
     public List<DefaultWeightedEdge> getEdgesAboveDiagonal() {
+        if (!activitiesSorted) {
+            orderVertices();
+        }
+
         List<DefaultWeightedEdge> edgesAboveDiagonal = new ArrayList<>();
 
         for (int i = 0; i < sortedActivities.size(); i++) {
@@ -132,22 +124,33 @@ public class DSM {
     }
 
     public DefaultWeightedEdge getOptimalEdgeAboveDiagonalToRemove() {
+        if (!activitiesSorted) {
+            orderVertices();
+        }
+
         List<DefaultWeightedEdge> edgesAboveDiagonal = getEdgesAboveDiagonal();
         DefaultWeightedEdge optimalEdge = null;
-        double minWeight = Double.MAX_VALUE;
+        int minWeight = Integer.MAX_VALUE;
 
         for (DefaultWeightedEdge edge : edgesAboveDiagonal) {
-            double weight = graph.getEdgeWeight(edge);
+            int weight = (int) graph.getEdgeWeight(edge);
             if (weight < minWeight) {
                 minWeight = weight;
                 optimalEdge = edge;
+                if (minWeight == 1) {
+                    break;
+                }
             }
         }
 
         return optimalEdge;
     }
 
-    public List<DefaultWeightedEdge> getMinimumWeightEdgesToRemove() {
+    public List<DefaultWeightedEdge> getMinimumWeightEdgesAboveDiagonal() {
+        if (!activitiesSorted) {
+            orderVertices();
+        }
+
         List<DefaultWeightedEdge> edgesAboveDiagonal = getEdgesAboveDiagonal();
         List<DefaultWeightedEdge> minWeightEdges = new ArrayList<>();
         double minWeight = Double.MAX_VALUE;
@@ -166,35 +169,32 @@ public class DSM {
         return minWeightEdges;
     }
 
-    public static void main(String[] args) {
-        DSM dsm = new DSM();
-        dsm.addActivity("A");
-        dsm.addActivity("B");
-        dsm.addActivity("C");
-        dsm.addActivity("D");
-        dsm.addActivity("E");
-        dsm.addActivity("F");
-        dsm.addActivity("G");
-        dsm.addActivity("H");
+    public void printDSM() {
+        if (!activitiesSorted) {
+            orderVertices();
+        }
 
-        dsm.addDependency("A", "B", 1);
-        //        dsm.addDependency("A", "C", 6);
-        dsm.addDependency("B", "C", 2);
-        //        dsm.addDependency("B", "D", 3);
-        dsm.addDependency("C", "D", 2);
-        dsm.addDependency("D", "A", 2); // Adding a cycle
-
-        dsm.addDependency("C", "A", 7); // Adding a cycle
-        dsm.addDependency("G", "E", 2); // Adding a cycle
-        dsm.addDependency("E", "H", 2); // Adding a cycle
-        dsm.addDependency("H", "G", 5); // Adding a cycle
-        dsm.addDependency("A", "H", 7); // Adding a cycle
-        dsm.addDependency("H", "D", 9); // Adding a cycle
-        dsm.addDependency("C", "E", 9); // Adding a cycle
-
-        dsm.orderVertices();
-        dsm.printDSM();
-
-        System.out.println("Optimal edge above diagonal to remove: " + dsm.getOptimalEdgeAboveDiagonalToRemove());
+        System.out.println("Design Structure Matrix:");
+        System.out.print("  ");
+        for (String col : sortedActivities) {
+            System.out.print(col + " ");
+        }
+        System.out.println();
+        for (String row : sortedActivities) {
+            System.out.print(row + " ");
+            for (String col : sortedActivities) {
+                if (col.equals(row)) {
+                    System.out.print("- ");
+                } else {
+                    DefaultWeightedEdge edge = graph.getEdge(row, col);
+                    if (edge != null) {
+                        System.out.print((int) graph.getEdgeWeight(edge) + " ");
+                    } else {
+                        System.out.print("0 ");
+                    }
+                }
+            }
+            System.out.println();
+        }
     }
 }
