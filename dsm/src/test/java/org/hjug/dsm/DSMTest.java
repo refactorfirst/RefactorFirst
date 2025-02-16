@@ -3,6 +3,7 @@ package org.hjug.dsm;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.List;
+
 import org.jgrapht.graph.DefaultWeightedEdge;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -46,13 +47,13 @@ class DSMTest {
         dsm.addDependency("H", "D", 9);
         dsm.addDependency("H", "G", 5);
 
-        //        dsm.printDSM();
+//                dsm.printDSM();
     }
 
     @Test
     void optimalBackwardEdgeToRemove() {
         // Identify which edge above the diagonal should be removed first
-        DefaultWeightedEdge edge = dsm.getOptimalEdgeAboveDiagonalToRemove();
+        DefaultWeightedEdge edge = dsm.getFirstLowestWeightEdgeAboveDiagonalToRemove();
         assertEquals("(D : C)", edge.toString());
     }
 
@@ -69,7 +70,7 @@ class DSMTest {
         dsm2.addDependency("C", "A", 1);
 
         // Identify which edge above the diagonal should be removed first
-        DefaultWeightedEdge edge = dsm2.getOptimalEdgeAboveDiagonalToRemove();
+        DefaultWeightedEdge edge = dsm2.getFirstLowestWeightEdgeAboveDiagonalToRemove();
         assertEquals("(C : A)", edge.toString());
     }
 
@@ -92,5 +93,16 @@ class DSMTest {
         assertEquals("(C : A)", edges.get(2).toString());
         assertEquals("(B : A)", edges.get(3).toString());
         assertEquals("(E : H)", edges.get(4).toString());
+    }
+
+    @Test
+    void getImpactOfEdgesAboveDiagonalIfRemoved() {
+        List<EdgeToRemoveInfo> infos = dsm.getImpactOfEdgesAboveDiagonalIfRemoved();
+        assertEquals(5, infos.size());
+
+        assertEquals("(D : C)", infos.get(0).getEdge().toString());
+        assertEquals(4, infos.get(0).getNewEdgeCount());
+        assertEquals(7, infos.get(0).getNewStronglyConnectedComponentCount());
+        assertEquals(3.7142857142857144, infos.get(0).getNewAverageStronglyConnectedComponentSize());
     }
 }
