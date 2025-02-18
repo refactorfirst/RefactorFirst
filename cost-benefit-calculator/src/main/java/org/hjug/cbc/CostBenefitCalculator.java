@@ -20,9 +20,9 @@ import org.hjug.cycledetector.CircularReferenceChecker;
 import org.hjug.git.ChangePronenessRanker;
 import org.hjug.git.GitLogReader;
 import org.hjug.git.ScmLogInfo;
+import org.hjug.graphbuilder.JavaGraphBuilder;
 import org.hjug.metrics.*;
 import org.hjug.metrics.rules.CBORule;
-import org.hjug.parser.JavaProjectParser;
 import org.jgrapht.Graph;
 import org.jgrapht.alg.flow.GusfieldGomoryHuCutTree;
 import org.jgrapht.graph.AsSubgraph;
@@ -32,14 +32,12 @@ import org.jgrapht.graph.DefaultWeightedEdge;
 @Slf4j
 public class CostBenefitCalculator implements AutoCloseable {
 
-    private final Map<String, AsSubgraph<String, DefaultWeightedEdge>> renderedSubGraphs = new HashMap<>();
-
     private Report report;
     private String repositoryPath;
     private GitLogReader gitLogReader;
 
     private final ChangePronenessRanker changePronenessRanker;
-    private final JavaProjectParser javaProjectParser = new JavaProjectParser();
+    private final JavaGraphBuilder javaGraphBuilder = new JavaGraphBuilder();
 
     @Getter
     private Graph<String, DefaultWeightedEdge> classReferencesGraph;
@@ -66,7 +64,7 @@ public class CostBenefitCalculator implements AutoCloseable {
         List<RankedCycle> rankedCycles = new ArrayList<>();
         try {
             boolean calculateCycleChurn = false;
-            identifyRankedCycles(rankedCycles, calculateCycleChurn);
+            identifyRankedCycles(rankedCycles);
             sortRankedCycles(rankedCycles, calculateCycleChurn);
             setPriorities(rankedCycles);
         } catch (IOException e) {
@@ -80,7 +78,7 @@ public class CostBenefitCalculator implements AutoCloseable {
         List<RankedCycle> rankedCycles = new ArrayList<>();
         try {
             boolean calculateCycleChurn = true;
-            identifyRankedCycles(rankedCycles, calculateCycleChurn);
+            identifyRankedCycles(rankedCycles);
             sortRankedCycles(rankedCycles, calculateCycleChurn);
             setPriorities(rankedCycles);
         } catch (IOException e) {
@@ -90,30 +88,25 @@ public class CostBenefitCalculator implements AutoCloseable {
         return rankedCycles;
     }
 
-    private void identifyRankedCycles(List<RankedCycle> rankedCycles, boolean calculateChurnForCycles)
-            throws IOException {
-        Map<String, AsSubgraph<String, DefaultWeightedEdge>> cycles = getCycles();
+    private void identifyRankedCycles(List<RankedCycle> rankedCycles) throws IOException {
+        classReferencesGraph = javaGraphBuilder.getClassReferences(repositoryPath);
+        CircularReferenceChecker circularReferenceChecker = new CircularReferenceChecker();
+        Map<String, AsSubgraph<String, DefaultWeightedEdge>> cycles =
+                circularReferenceChecker.getCycles(classReferencesGraph);
         Map<String, String> classNamesAndPaths = getClassNamesAndPaths();
         cycles.forEach((vertex, subGraph) -> {
-            int vertexCount = subGraph.vertexSet().size();
-            int edgeCount = subGraph.edgeSet().size();
+            Set<DefaultWeightedEdge> minCutEdges;
+            GusfieldGomoryHuCutTree<String, DefaultWeightedEdge> gusfieldGomoryHuCutTree =
+                    new GusfieldGomoryHuCutTree<>(new AsUndirectedGraph<>(subGraph));
+            double minCut = gusfieldGomoryHuCutTree.calculateMinCut();
+            minCutEdges = gusfieldGomoryHuCutTree.getCutEdges();
 
-            if (vertexCount > 1 && edgeCount > 1 && !isDuplicateSubGraph(subGraph, vertex)) {
-                renderedSubGraphs.put(vertex, subGraph);
-                log.info("Vertex: " + vertex + " vertex count: " + vertexCount + " edge count: " + edgeCount);
-                GusfieldGomoryHuCutTree<String, DefaultWeightedEdge> gusfieldGomoryHuCutTree =
-                        new GusfieldGomoryHuCutTree<>(new AsUndirectedGraph<>(subGraph));
-                double minCut = gusfieldGomoryHuCutTree.calculateMinCut();
-                Set<DefaultWeightedEdge> minCutEdges = gusfieldGomoryHuCutTree.getCutEdges();
+            List<CycleNode> cycleNodes = subGraph.vertexSet().stream()
+                    .map(classInCycle -> new CycleNode(classInCycle, classNamesAndPaths.get(classInCycle)))
+                    //                        .peek(cycleNode -> log.info(cycleNode.toString()))
+                    .collect(Collectors.toList());
 
-                List<CycleNode> cycleNodes = subGraph.vertexSet().stream()
-                        .map(classInCycle -> new CycleNode(classInCycle, classNamesAndPaths.get(classInCycle)))
-                        //                        .peek(cycleNode -> log.info(cycleNode.toString()))
-                        .collect(Collectors.toList());
-
-                rankedCycles.add(
-                        createRankedCycle(calculateChurnForCycles, vertex, subGraph, cycleNodes, minCut, minCutEdges));
-            }
+            rankedCycles.add(createRankedCycle(vertex, subGraph, cycleNodes, minCut, minCutEdges));
         });
     }
 
@@ -122,12 +115,6 @@ public class CostBenefitCalculator implements AutoCloseable {
         for (RankedCycle rankedCycle : rankedCycles) {
             rankedCycle.setPriority(priority++);
         }
-    }
-
-    private Map<String, AsSubgraph<String, DefaultWeightedEdge>> getCycles() throws IOException {
-        classReferencesGraph = javaProjectParser.getClassReferences(repositoryPath);
-        CircularReferenceChecker circularReferenceChecker = new CircularReferenceChecker();
-        return circularReferenceChecker.detectCycles(classReferencesGraph);
     }
 
     private static void sortRankedCycles(List<RankedCycle> rankedCycles, boolean calculateChurnForCycles) {
@@ -144,6 +131,16 @@ public class CostBenefitCalculator implements AutoCloseable {
     }
 
     private RankedCycle createRankedCycle(
+            String vertex,
+            AsSubgraph<String, DefaultWeightedEdge> subGraph,
+            List<CycleNode> cycleNodes,
+            double minCut,
+            Set<DefaultWeightedEdge> minCutEdges) {
+
+        return new RankedCycle(vertex, subGraph.vertexSet(), subGraph.edgeSet(), minCut, minCutEdges, cycleNodes);
+    }
+
+    private RankedCycle createRankedCycleWithChurn(
             boolean calculateChurnForCycles,
             String vertex,
             AsSubgraph<String, DefaultWeightedEdge> subGraph,
@@ -182,21 +179,6 @@ public class CostBenefitCalculator implements AutoCloseable {
                     new RankedCycle(vertex, subGraph.vertexSet(), subGraph.edgeSet(), minCut, minCutEdges, cycleNodes);
         }
         return rankedCycle;
-    }
-
-    private boolean isDuplicateSubGraph(AsSubgraph<String, DefaultWeightedEdge> subGraph, String vertex) {
-        if (!renderedSubGraphs.isEmpty()) {
-            for (AsSubgraph<String, DefaultWeightedEdge> renderedSubGraph : renderedSubGraphs.values()) {
-                if (renderedSubGraph.vertexSet().size() == subGraph.vertexSet().size()
-                        && renderedSubGraph.edgeSet().size()
-                                == subGraph.edgeSet().size()
-                        && renderedSubGraph.vertexSet().contains(vertex)) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
     }
 
     // copied from PMD's PmdTaskImpl.java and modified

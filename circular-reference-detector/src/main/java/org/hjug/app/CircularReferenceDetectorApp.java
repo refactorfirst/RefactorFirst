@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import org.hjug.cycledetector.CircularReferenceChecker;
-import org.hjug.parser.JavaProjectParser;
 import org.jgrapht.Graph;
 import org.jgrapht.alg.flow.GusfieldGomoryHuCutTree;
 import org.jgrapht.graph.AsSubgraph;
@@ -20,33 +19,6 @@ import org.jgrapht.graph.DefaultWeightedEdge;
 public class CircularReferenceDetectorApp {
 
     private Map<String, AsSubgraph> renderedSubGraphs = new HashMap<>();
-
-    //    public static void main(String[] args) {
-    //        CircularReferenceDetectorApp circularReferenceDetectorApp = new CircularReferenceDetectorApp();
-    //        circularReferenceDetectorApp.launchApp(args);
-    //    }
-
-    /**
-     * Parses source project files and creates a graph of class references of the java project.
-     * Detects cycles in the class references graph and stores the cycle graphs in the given output directory
-     *
-     * @param args
-     */
-    public void launchApp(String[] args) {
-        if (!validateArgs(args)) {
-            printCommandUsage();
-        } else {
-            String srcDirectoryPath = args[0];
-            JavaProjectParser javaProjectParser = new JavaProjectParser();
-            try {
-                Graph<String, DefaultWeightedEdge> classReferencesGraph =
-                        javaProjectParser.getClassReferences(srcDirectoryPath);
-                detectAndStoreCyclesInDirectory(classReferencesGraph);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-    }
 
     private void detectAndStoreCyclesInDirectory(Graph<String, DefaultWeightedEdge> classReferencesGraph) {
         CircularReferenceChecker circularReferenceChecker = new CircularReferenceChecker();

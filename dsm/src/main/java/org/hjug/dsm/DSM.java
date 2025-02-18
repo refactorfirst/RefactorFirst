@@ -1,7 +1,6 @@
 package org.hjug.dsm;
 
 import java.util.*;
-
 import lombok.Getter;
 import org.jgrapht.Graph;
 import org.jgrapht.Graphs;
@@ -37,6 +36,7 @@ public class DSM {
 
     @Getter
     int stronglyConnectedComponentCount = 0;
+
     @Getter
     double averageStronglyConnectedComponentSize = 0.0;
 
@@ -68,10 +68,8 @@ public class DSM {
         stronglyConnectedComponentCount = sccs.size();
 
         // capture the average size of the cycles
-        averageStronglyConnectedComponentSize = sccs.stream()
-                .mapToInt(Set::size)
-                .average()
-                .orElse(0.0);
+        averageStronglyConnectedComponentSize =
+                sccs.stream().mapToInt(Set::size).average().orElse(0.0);
 
         sortedActivities = topologicalSort(sccs, graph);
         // reversing corrects rendering of the DSM
@@ -107,7 +105,11 @@ public class DSM {
         return sortedActivities;
     }
 
-    private void topologicalSortUtil(String activity, Set<String> visited, List<String> sortedActivities, Graph<String, DefaultWeightedEdge> graph) {
+    private void topologicalSortUtil(
+            String activity,
+            Set<String> visited,
+            List<String> sortedActivities,
+            Graph<String, DefaultWeightedEdge> graph) {
         visited.add(activity);
 
         for (String neighbor : Graphs.successorListOf(graph, activity)) {
@@ -215,7 +217,6 @@ public class DSM {
         }
     }
 
-
     /**
      * Captures the impact of the removal of each edge above the diagonal.
      * This algorithm will have at worst a runtime of O(E^2 + EV):
@@ -230,7 +231,7 @@ public class DSM {
         // get edges above diagonal for DSM graph
         List<DefaultWeightedEdge> edgesAboveDiagonal = getEdgesAboveDiagonal();
 
-        //build the cloned graph
+        // build the cloned graph
         Graph<String, DefaultWeightedEdge> clonedGraph = new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
         graph.vertexSet().forEach(clonedGraph::addVertex);
         for (DefaultWeightedEdge weightedEdge : graph.edgeSet()) {
@@ -240,31 +241,31 @@ public class DSM {
         List<EdgeToRemoveInfo> edgesToRemove = new ArrayList<>();
         // capture impact of each edge on graph when removed
         for (DefaultWeightedEdge edge : edgesAboveDiagonal) {
-            //remove the edge
+            // remove the edge
             clonedGraph.removeEdge(edge);
 
-            //sort the graph
+            // sort the graph
             List<Set<String>> sccs = findStronglyConnectedComponents(clonedGraph);
             List<String> sortedClonedActivities = topologicalSort(sccs, clonedGraph);
             Collections.reverse(sortedClonedActivities);
 
             // get the number of edges above the diagonal
-            List<DefaultWeightedEdge> clonedGraphEdgesAboveDiagonal = getEdgesAboveDiagonal(clonedGraph, sortedClonedActivities);
+            List<DefaultWeightedEdge> clonedGraphEdgesAboveDiagonal =
+                    getEdgesAboveDiagonal(clonedGraph, sortedClonedActivities);
             int edgeCount = clonedGraphEdgesAboveDiagonal.size();
 
             // get the new number of cycles
             int cycleCount = sccs.size();
 
             // calculate the average size of the new cycle
-            double averageCycleSize = sccs.stream()
-                    .mapToInt(Set::size)
-                    .average()
-                    .orElse(0.0);
+            double averageCycleSize =
+                    sccs.stream().mapToInt(Set::size).average().orElse(0.0);
 
-            EdgeToRemoveInfo edgeToRemoveInfo = new EdgeToRemoveInfo(edge, graph.getEdgeWeight(edge), edgeCount, cycleCount, averageCycleSize);
+            EdgeToRemoveInfo edgeToRemoveInfo =
+                    new EdgeToRemoveInfo(edge, graph.getEdgeWeight(edge), edgeCount, cycleCount, averageCycleSize);
             edgesToRemove.add(edgeToRemoveInfo);
 
-            //add the edge back
+            // add the edge back
             clonedGraph.addEdge(graph.getEdgeSource(edge), graph.getEdgeTarget(edge), edge);
             clonedGraph.setEdgeWeight(edge, graph.getEdgeWeight(edge));
         }
@@ -273,7 +274,8 @@ public class DSM {
     }
 
     // only used by getImpactOfEdgesAboveDiagonalIfRemoved()
-    private List<DefaultWeightedEdge> getEdgesAboveDiagonal(Graph<String, DefaultWeightedEdge> graph, List<String> sortedActivities) {
+    private List<DefaultWeightedEdge> getEdgesAboveDiagonal(
+            Graph<String, DefaultWeightedEdge> graph, List<String> sortedActivities) {
 
         List<DefaultWeightedEdge> edgesAboveDiagonal = new ArrayList<>();
 
@@ -317,7 +319,3 @@ public class DSM {
         }
     }
 }
-
-
-
-

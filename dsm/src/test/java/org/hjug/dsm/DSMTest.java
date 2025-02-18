@@ -3,7 +3,6 @@ package org.hjug.dsm;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.List;
-
 import org.jgrapht.graph.DefaultWeightedEdge;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -47,7 +46,7 @@ class DSMTest {
         dsm.addDependency("H", "D", 9);
         dsm.addDependency("H", "G", 5);
 
-//                dsm.printDSM();
+        //                dsm.printDSM();
     }
 
     @Test

@@ -74,8 +74,9 @@
 
     <modules>
         <module>test-resources</module>
-        <module>dsm</module>
+        <module>codebase-graph-builder</module>
         <module>circular-reference-detector</module>
+        <module>dsm</module>
         <module>change-proneness-ranker</module>
         <module>effort-ranker</module>
         <module>cost-benefit-calculator</module>
@@ -136,6 +137,12 @@
                 <artifactId>test-resources</artifactId>
                 <version>${project.version}</version>
                 <scope>test</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.hjug.refactorfirst.codebasegraphbuilder</groupId>
+                <artifactId>codebase-graph-builder</artifactId>
+                <version>${project.version}</version>
             </dependency>
 
             <dependency>

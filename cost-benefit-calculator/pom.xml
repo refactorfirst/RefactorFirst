@@ -20,6 +20,11 @@
         </dependency>
 
         <dependency>
+            <groupId>org.hjug.refactorfirst.codebasegraphbuilder</groupId>
+            <artifactId>codebase-graph-builder</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>org.hjug.refactorfirst.changepronenessranker</groupId>
             <artifactId>change-proneness-ranker</artifactId>
         </dependency>
