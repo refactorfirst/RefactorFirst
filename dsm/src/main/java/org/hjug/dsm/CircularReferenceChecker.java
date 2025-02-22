@@ -1,4 +1,4 @@
-package org.hjug.cycledetector;
+package org.hjug.dsm;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -13,8 +13,17 @@ public class CircularReferenceChecker {
 
     private final Map<String, AsSubgraph<String, DefaultWeightedEdge>> uniqueSubGraphs = new HashMap<>();
 
+    /**
+     * Detects cycles in the graph that is passed in
+     * and returns the unique cycles in the graph as a map of subgraphs
+     *
+     * @param graph
+     * @return a Map of unique cycles in the graph
+     */
+
     public Map<String, AsSubgraph<String, DefaultWeightedEdge>> getCycles(Graph<String, DefaultWeightedEdge> graph) {
 
+        // use CycleDetector.findCycles()?
         Map<String, AsSubgraph<String, DefaultWeightedEdge>> cycles = detectCycles(graph);
 
         cycles.forEach((vertex, subGraph) -> {
@@ -23,7 +32,7 @@ public class CircularReferenceChecker {
 
             if (vertexCount > 1 && edgeCount > 1 && !isDuplicateSubGraph(subGraph, vertex)) {
                 uniqueSubGraphs.put(vertex, subGraph);
-                log.info("Vertex: " + vertex + " vertex count: " + vertexCount + " edge count: " + edgeCount);
+                log.debug("Vertex: {} vertex count: {} edge count: {}", vertex, vertexCount, edgeCount);
             }
         });
 
@@ -45,20 +54,13 @@ public class CircularReferenceChecker {
         return false;
     }
 
-    /**
-     * Detects cycles in the classReferencesGraph parameter
-     * and stores the cycles of a class as a subgraph in a Map
-     *
-     * @param classReferencesGraph
-     * @return a Map of Class and its Cycle Graph
-     */
-    public Map<String, AsSubgraph<String, DefaultWeightedEdge>> detectCycles(
-            Graph<String, DefaultWeightedEdge> classReferencesGraph) {
+    private Map<String, AsSubgraph<String, DefaultWeightedEdge>> detectCycles(
+            Graph<String, DefaultWeightedEdge> graph) {
         Map<String, AsSubgraph<String, DefaultWeightedEdge>> cyclesForEveryVertexMap = new HashMap<>();
-        CycleDetector<String, DefaultWeightedEdge> cycleDetector = new CycleDetector<>(classReferencesGraph);
+        CycleDetector<String, DefaultWeightedEdge> cycleDetector = new CycleDetector<>(graph);
         cycleDetector.findCycles().forEach(v -> {
             AsSubgraph<String, DefaultWeightedEdge> subGraph =
-                    new AsSubgraph<>(classReferencesGraph, cycleDetector.findCyclesContainingVertex(v));
+                    new AsSubgraph<>(graph, cycleDetector.findCyclesContainingVertex(v));
             cyclesForEveryVertexMap.put(v, subGraph);
         });
         return cyclesForEveryVertexMap;

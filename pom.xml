@@ -75,7 +75,6 @@
     <modules>
         <module>test-resources</module>
         <module>codebase-graph-builder</module>
-        <module>circular-reference-detector</module>
         <module>dsm</module>
         <module>change-proneness-ranker</module>
         <module>effort-ranker</module>
@@ -103,8 +102,8 @@
             </dependency>
 
             <dependency>
-                <groupId>org.hjug.refactorfirst.circularreferencedetector</groupId>
-                <artifactId>circular-reference-detector</artifactId>
+                <groupId>org.hjug.refactorfirst.dsm</groupId>
+                <artifactId>dsm</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

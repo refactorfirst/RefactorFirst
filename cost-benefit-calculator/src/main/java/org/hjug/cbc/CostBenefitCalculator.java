@@ -16,7 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.sourceforge.pmd.*;
 import net.sourceforge.pmd.lang.LanguageRegistry;
 import org.eclipse.jgit.api.errors.GitAPIException;
-import org.hjug.cycledetector.CircularReferenceChecker;
+import org.hjug.dsm.CircularReferenceChecker;
 import org.hjug.git.ChangePronenessRanker;
 import org.hjug.git.GitLogReader;
 import org.hjug.git.ScmLogInfo;

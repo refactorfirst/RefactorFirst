@@ -30,8 +30,8 @@
         </dependency>
 
         <dependency>
-            <groupId>org.hjug.refactorfirst.circularreferencedetector</groupId>
-            <artifactId>circular-reference-detector</artifactId>
+            <groupId>org.hjug.refactorfirst.dsm</groupId>
+            <artifactId>dsm</artifactId>
         </dependency>
 
         <dependency>

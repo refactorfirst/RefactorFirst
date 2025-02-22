@@ -22,9 +22,9 @@ class DSMTest {
         dsm.addDependency("A", "B", 1);
         dsm.addDependency("B", "C", 2);
         dsm.addDependency("C", "D", 3);
-        dsm.addDependency("D", "A", 4); // Adding a cycle
-        dsm.addDependency("C", "A", 5); // Adding a cycle
         dsm.addDependency("B", "A", 6); // Adding a cycle
+        dsm.addDependency("C", "A", 5); // Adding a cycle
+        dsm.addDependency("D", "A", 4); // Adding a cycle
 
         /*
               D C B A
@@ -40,8 +40,8 @@ class DSMTest {
         dsm.addActivity("H");
         dsm.addDependency("D", "C", 2);
         dsm.addDependency("A", "H", 7);
-        dsm.addDependency("E", "H", 2);
         dsm.addDependency("E", "C", 9);
+        dsm.addDependency("E", "H", 2);
         dsm.addDependency("G", "E", 2);
         dsm.addDependency("H", "D", 9);
         dsm.addDependency("H", "G", 5);
@@ -96,12 +96,39 @@ class DSMTest {
 
     @Test
     void getImpactOfEdgesAboveDiagonalIfRemoved() {
-        List<EdgeToRemoveInfo> infos = dsm.getImpactOfEdgesAboveDiagonalIfRemoved();
-        assertEquals(5, infos.size());
+        dsm = new DSM();
+        dsm.addActivity("A");
+        dsm.addActivity("B");
+        dsm.addActivity("C");
+        dsm.addActivity("D");
 
-        assertEquals("(D : C)", infos.get(0).getEdge().toString());
-        assertEquals(4, infos.get(0).getNewEdgeCount());
-        assertEquals(7, infos.get(0).getNewStronglyConnectedComponentCount());
-        assertEquals(3.7142857142857144, infos.get(0).getNewAverageStronglyConnectedComponentSize());
+        // Cycle 1
+        dsm.addDependency("A", "B", 1);
+        dsm.addDependency("B", "C", 2);
+        dsm.addDependency("C", "D", 3);
+        dsm.addDependency("B", "A", 6); // Adding a cycle
+        dsm.addDependency("C", "A", 5); // Adding a cycle
+        dsm.addDependency("D", "A", 4); // Adding a cycle
+
+        // Cycle 2
+        dsm.addActivity("E");
+        dsm.addActivity("F");
+        dsm.addActivity("G");
+        dsm.addActivity("H");
+        dsm.addDependency("E", "F", 2);
+        dsm.addDependency("F", "G", 7);
+        dsm.addDependency("G", "H", 9);
+        dsm.addDependency("H", "E", 9); // create cycle
+
+        List<EdgeToRemoveInfo> infos = dsm.getImpactOfEdgesAboveDiagonalIfRemoved();
+        assertEquals(4, infos.size());
+
+        assertEquals("(D : A)", infos.get(0).getEdge().toString());
+        assertEquals(2, infos.get(0).getNewCycleCount());
+        assertEquals(3.5, infos.get(0).getAverageCycleNodeCount());
+
+        assertEquals("(H : E)", infos.get(3).getEdge().toString());
+        assertEquals(1, infos.get(3).getNewCycleCount());
+        assertEquals(4.0, infos.get(3).getAverageCycleNodeCount());
     }
 }

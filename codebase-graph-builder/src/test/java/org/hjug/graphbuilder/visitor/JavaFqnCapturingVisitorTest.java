@@ -37,13 +37,15 @@ class JavaFqnCapturingVisitorTest {
         Map<String, Map<String, String>> fqns = javaFqnCapturingVisitor.getFqnMap();
         Map<String, String> processed = fqns.get("org.hjug.graphbuilder.visitor.testclasses");
         Assertions.assertEquals("org.hjug.graphbuilder.visitor.testclasses.A", processed.get("A"));
-        Assertions.assertEquals("org.hjug.graphbuilder.visitor.testclasses.A.InnerClass", processed.get("A.InnerClass"));
+        Assertions.assertEquals(
+                "org.hjug.graphbuilder.visitor.testclasses.A.InnerClass", processed.get("A.InnerClass"));
         Assertions.assertEquals("org.hjug.graphbuilder.visitor.testclasses.A.InnerClass", processed.get("InnerClass"));
         Assertions.assertEquals(
                 "org.hjug.graphbuilder.visitor.testclasses.A.InnerClass.InnerInner",
                 processed.get("A.InnerClass.InnerInner"));
         Assertions.assertEquals(
-                "org.hjug.graphbuilder.visitor.testclasses.A.InnerClass.InnerInner", processed.get("InnerClass.InnerInner"));
+                "org.hjug.graphbuilder.visitor.testclasses.A.InnerClass.InnerInner",
+                processed.get("InnerClass.InnerInner"));
         Assertions.assertEquals(
                 "org.hjug.graphbuilder.visitor.testclasses.A.InnerClass.InnerInner", processed.get("InnerInner"));
         Assertions.assertEquals(
@@ -56,7 +58,8 @@ class JavaFqnCapturingVisitorTest {
                 "org.hjug.graphbuilder.visitor.testclasses.A.InnerClass.InnerInner.MegaInner",
                 processed.get("InnerInner.MegaInner"));
         Assertions.assertEquals(
-                "org.hjug.graphbuilder.visitor.testclasses.A.InnerClass.InnerInner.MegaInner", processed.get("MegaInner"));
+                "org.hjug.graphbuilder.visitor.testclasses.A.InnerClass.InnerInner.MegaInner",
+                processed.get("MegaInner"));
         Assertions.assertEquals(
                 "org.hjug.graphbuilder.visitor.testclasses.A.StaticInnerClass", processed.get("A.StaticInnerClass"));
         Assertions.assertEquals(

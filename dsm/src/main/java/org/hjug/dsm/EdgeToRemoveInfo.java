@@ -7,7 +7,6 @@ import org.jgrapht.graph.DefaultWeightedEdge;
 public class EdgeToRemoveInfo {
     private final DefaultWeightedEdge edge;
     private final double edgeWeight;
-    private final int newEdgeCount;
-    private final int newStronglyConnectedComponentCount;
-    private final double newAverageStronglyConnectedComponentSize;
+    private final int newCycleCount;
+    private final double averageCycleNodeCount;
 }
