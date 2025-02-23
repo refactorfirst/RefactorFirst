@@ -19,6 +19,7 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.reporting.AbstractMavenReport;
 import org.apache.maven.reporting.MavenReportException;
 import org.hjug.cbc.CostBenefitCalculator;
+import org.hjug.cbc.CycleRanker;
 import org.hjug.cbc.RankedCycle;
 import org.hjug.cbc.RankedDisharmony;
 import org.hjug.gdg.GraphDataGenerator;
@@ -225,12 +226,14 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
             costBenefitCalculator.runPmdAnalysis();
             rankedGodClassDisharmonies = costBenefitCalculator.calculateGodClassCostBenefitValues();
             rankedCBODisharmonies = costBenefitCalculator.calculateCBOCostBenefitValues();
-            rankedCycles = runCycleAnalysis(costBenefitCalculator, outputDirectory.getPath());
-            classGraph = costBenefitCalculator.getClassReferencesGraph();
         } catch (Exception e) {
             log.error("Error running analysis.");
             throw new RuntimeException(e);
         }
+
+        CycleRanker cycleRanker = new CycleRanker(projectBaseDir);
+        rankedCycles = cycleRanker.runCycleAnalysis();
+        classGraph = cycleRanker.getClassReferencesGraph();
 
         if (rankedGodClassDisharmonies.isEmpty() && rankedCBODisharmonies.isEmpty() && rankedCycles.isEmpty()) {
             mainSink.text("Contratulations!  " + projectName + " " + projectVersion
@@ -458,10 +461,6 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
         mainSink.body_();
 
         log.info("Done! View the report at target/site/{}", filename);
-    }
-
-    public List<RankedCycle> runCycleAnalysis(CostBenefitCalculator costBenefitCalculator, String outputDirectory) {
-        return costBenefitCalculator.runCycleAnalysis();
     }
 
     private void renderCycles(

@@ -212,8 +212,8 @@ public class HtmlReport extends SimpleHtmlReport {
                     + "        <br/>";
 
     @Override
-    public void printHead() {
-        stringBuilder.append("<script async defer src=\"https://buttons.github.io/buttons.js\"></script>\n"
+    public String printHead() {
+        return "<script async defer src=\"https://buttons.github.io/buttons.js\"></script>\n"
                 // google chart import
                 + "<script type=\"text/javascript\" src=\"https://www.gstatic.com/charts/loader.js\"></script>\n"
                 // d3 dot graph imports
@@ -229,45 +229,33 @@ public class HtmlReport extends SimpleHtmlReport {
                 + SUGIYAMA_SIGMA_GRAPH
                 + POPUP_FUNCTIONS
                 + POPUP_STYLE
-                + "</head>\n");
+                + "</head>\n";
     }
 
     @Override
-    public void printOpenBodyTag() {
-        stringBuilder.append("  <body class=\"composite\">\n");
-        printOverlay();
+    public String printOpenBodyTag() {
+        return "  <body class=\"composite\">\n" + printOverlay();
     }
 
-    private void printOverlay() {
-        stringBuilder.append("<div class=\"overlay\" id=\"overlay\" onclick=\"hidePopup()\"></div>");
-    }
-
-    @Override
-    public void printTitle(String projectName, String projectVersion) {
-        stringBuilder
-                .append("<title>Refactor First Report for ")
-                .append(projectName)
-                .append(" ")
-                .append(projectVersion)
-                .append(" </title>\n");
+    private String printOverlay() {
+        return "<div class=\"overlay\" id=\"overlay\" onclick=\"hidePopup()\"></div>";
     }
 
     @Override
-    void renderGithubButtons() {
-        stringBuilder.append("<div align=\"center\">\n");
-        stringBuilder.append("Show RefactorFirst some &#10084;&#65039;\n");
-        stringBuilder.append("<br/>\n");
-        stringBuilder.append(
-                "<a class=\"github-button\" href=\"https://github.com/refactorfirst/refactorfirst\" data-icon=\"octicon-star\" data-size=\"large\" data-show-count=\"true\" aria-label=\"Star refactorfirst/refactorfirst on GitHub\">Star</a>\n");
-        stringBuilder.append(
-                "<a class=\"github-button\" href=\"https://github.com/refactorfirst/refactorfirst/fork\" data-icon=\"octicon-repo-forked\" data-size=\"large\" data-show-count=\"true\" aria-label=\"Fork refactorfirst/refactorfirst on GitHub\">Fork</a>\n");
-        stringBuilder.append(
-                "<a class=\"github-button\" href=\"https://github.com/refactorfirst/refactorfirst/subscription\" data-icon=\"octicon-eye\" data-size=\"large\" data-show-count=\"true\" aria-label=\"Watch refactorfirst/refactorfirst on GitHub\">Watch</a>\n");
-        stringBuilder.append(
-                "<a class=\"github-button\" href=\"https://github.com/refactorfirst/refactorfirst/issues\" data-icon=\"octicon-issue-opened\" data-size=\"large\" data-show-count=\"false\" aria-label=\"Issue refactorfirst/refactorfirst on GitHub\">Issue</a>\n");
-        stringBuilder.append(
-                "<a class=\"github-button\" href=\"https://github.com/sponsors/jimbethancourt\" data-icon=\"octicon-heart\" data-size=\"large\" aria-label=\"Sponsor @jimbethancourt on GitHub\">Sponsor</a>\n");
-        stringBuilder.append("</div>");
+    public String printTitle(String projectName, String projectVersion) {
+        return "<title>Refactor First Report for " + projectName + " " + projectVersion + " </title>\n";
+    }
+
+    @Override
+    String renderGithubButtons() {
+        return "<div align=\"center\">\n" + "Show RefactorFirst some &#10084;&#65039;\n"
+                + "<br/>\n"
+                + "<a class=\"github-button\" href=\"https://github.com/refactorfirst/refactorfirst\" data-icon=\"octicon-star\" data-size=\"large\" data-show-count=\"true\" aria-label=\"Star refactorfirst/refactorfirst on GitHub\">Star</a>\n"
+                + "<a class=\"github-button\" href=\"https://github.com/refactorfirst/refactorfirst/fork\" data-icon=\"octicon-repo-forked\" data-size=\"large\" data-show-count=\"true\" aria-label=\"Fork refactorfirst/refactorfirst on GitHub\">Fork</a>\n"
+                + "<a class=\"github-button\" href=\"https://github.com/refactorfirst/refactorfirst/subscription\" data-icon=\"octicon-eye\" data-size=\"large\" data-show-count=\"true\" aria-label=\"Watch refactorfirst/refactorfirst on GitHub\">Watch</a>\n"
+                + "<a class=\"github-button\" href=\"https://github.com/refactorfirst/refactorfirst/issues\" data-icon=\"octicon-issue-opened\" data-size=\"large\" data-show-count=\"false\" aria-label=\"Issue refactorfirst/refactorfirst on GitHub\">Issue</a>\n"
+                + "<a class=\"github-button\" href=\"https://github.com/sponsors/jimbethancourt\" data-icon=\"octicon-heart\" data-size=\"large\" aria-label=\"Sponsor @jimbethancourt on GitHub\">Sponsor</a>\n"
+                + "</div>";
     }
 
     @Override
@@ -302,29 +290,37 @@ public class HtmlReport extends SimpleHtmlReport {
     }
 
     @Override
-    void renderGodClassChart(List<RankedDisharmony> rankedGodClassDisharmonies, int maxGodClassPriority) {
+    String renderGodClassChart(List<RankedDisharmony> rankedGodClassDisharmonies, int maxGodClassPriority) {
+        StringBuilder stringBuilder = new StringBuilder();
+
         String godClassChart = writeGodClassGchartJs(rankedGodClassDisharmonies, maxGodClassPriority - 1);
         stringBuilder.append(
                 "<div id=\"series_chart_div\" align=\"center\"><script>" + godClassChart + "</script></div>\n");
-        renderGithubButtons();
+        stringBuilder.append(renderGithubButtons());
         stringBuilder.append(GOD_CLASS_CHART_LEGEND);
+
+        return stringBuilder.toString();
     }
 
     @Override
-    void renderCBOChart(List<RankedDisharmony> rankedCBODisharmonies, int maxCboPriority) {
+    String renderCBOChart(List<RankedDisharmony> rankedCBODisharmonies, int maxCboPriority) {
+        StringBuilder stringBuilder = new StringBuilder();
+
         String cboChart = writeGCBOGchartJs(rankedCBODisharmonies, maxCboPriority - 1);
         stringBuilder.append(
                 "<div id=\"series_chart_div_2\" align=\"center\"><script>" + cboChart + "</script></div>\n");
-        renderGithubButtons();
+        stringBuilder.append(renderGithubButtons());
         stringBuilder.append(COUPLING_BETWEEN_OBJECT_CHART_LEGEND);
+        return stringBuilder.toString();
     }
 
     @Override
-    public void renderCycleImage(RankedCycle cycle) {
+    public String renderCycleImage(RankedCycle cycle) {
         String dot = buildDot(classGraph, cycle);
 
         String cycleName = getClassName(cycle.getCycleName()).replace("$", "_");
 
+        StringBuilder stringBuilder = new StringBuilder();
         if (cycle.getCycleNodes().size() + cycle.getEdgeSet().size() < d3Threshold) {
             stringBuilder.append(
                     "<div align=\"center\" id=\"" + cycleName + "\" style=\"border: thin solid black\"></div>\n");
@@ -338,6 +334,7 @@ public class HtmlReport extends SimpleHtmlReport {
             stringBuilder.append(".renderDot(" + cycleName + "_dot);\n");
             stringBuilder.append("</script>\n");
         } else {
+            // revisit and add D3 popup button as well
             stringBuilder.append("<script>\n");
             stringBuilder.append("const " + cycleName + "_dot = " + dot + "\n");
             stringBuilder.append("</script>\n");
@@ -351,6 +348,8 @@ public class HtmlReport extends SimpleHtmlReport {
         stringBuilder.append("</div>\n");
         stringBuilder.append("<br/>\n");
         stringBuilder.append("<br/>\n");
+
+        return stringBuilder.toString();
     }
 
     String buildDot(Graph<String, DefaultWeightedEdge> classGraph, RankedCycle cycle) {

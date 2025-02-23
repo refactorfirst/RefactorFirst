@@ -20,7 +20,6 @@ public class CircularReferenceChecker {
      * @param graph
      * @return a Map of unique cycles in the graph
      */
-
     public Map<String, AsSubgraph<String, DefaultWeightedEdge>> getCycles(Graph<String, DefaultWeightedEdge> graph) {
 
         // use CycleDetector.findCycles()?
