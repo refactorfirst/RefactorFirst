@@ -6,6 +6,7 @@ import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultWeightedEdge;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JavaType;
 
 // See RemoveMethodInvocationsVisitor for other visitor methods to override
 // Custom visitor - not extending IsoVisitor on purpose since it does not provide caller information
@@ -18,7 +19,11 @@ public class JavaMethodInvocationVisitor implements TypeProcessor {
 
     public J.MethodInvocation visitMethodInvocation(String invokingFqn, J.MethodInvocation methodInvocation) {
         // getDeclaringType() returns the type that declared the method being invoked
-        processType(invokingFqn, methodInvocation.getMethodType().getDeclaringType());
+        JavaType.Method methodType = methodInvocation.getMethodType();
+        // sometimes methodType is null - not sure why
+        if (null != methodType && null != methodType.getDeclaringType()) {
+            processType(invokingFqn, methodType.getDeclaringType());
+        }
 
         if (null != methodInvocation.getTypeParameters()
                 && !methodInvocation.getTypeParameters().isEmpty()) {
