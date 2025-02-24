@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
+import org.hjug.cbc.CostBenefitCalculator;
 import org.hjug.cbc.CycleRanker;
 import org.hjug.cbc.RankedCycle;
 import org.hjug.cbc.RankedDisharmony;
@@ -142,14 +143,14 @@ public class SimpleHtmlReport {
         List<RankedDisharmony> rankedGodClassDisharmonies = List.of();
         List<RankedDisharmony> rankedCBODisharmonies = List.of();
         List<RankedCycle> rankedCycles;
-        //        try (CostBenefitCalculator costBenefitCalculator = new CostBenefitCalculator(projectBaseDir)) {
-        //            costBenefitCalculator.runPmdAnalysis();
-        //            rankedGodClassDisharmonies = costBenefitCalculator.calculateGodClassCostBenefitValues();
-        //            rankedCBODisharmonies = costBenefitCalculator.calculateCBOCostBenefitValues();
-        //        } catch (Exception e) {
-        //            log.error("Error running analysis.");
-        //            throw new RuntimeException(e);
-        //        }
+                try (CostBenefitCalculator costBenefitCalculator = new CostBenefitCalculator(projectBaseDir)) {
+                    costBenefitCalculator.runPmdAnalysis();
+                    rankedGodClassDisharmonies = costBenefitCalculator.calculateGodClassCostBenefitValues();
+                    rankedCBODisharmonies = costBenefitCalculator.calculateCBOCostBenefitValues();
+                } catch (Exception e) {
+                    log.error("Error running analysis.");
+                    throw new RuntimeException(e);
+                }
 
         CycleRanker cycleRanker = new CycleRanker(projectBaseDir);
         rankedCycles = cycleRanker.runCycleAnalysis();
