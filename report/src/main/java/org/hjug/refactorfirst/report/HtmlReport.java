@@ -352,6 +352,17 @@ public class HtmlReport extends SimpleHtmlReport {
         return stringBuilder.toString();
     }
 
+    String buildDot(Graph<String, DefaultWeightedEdge> classGraph) {
+
+        // render vertices
+        classGraph.vertexSet();
+
+        // render edges
+        classGraph.edgeSet();
+
+        return "";
+    }
+
     String buildDot(Graph<String, DefaultWeightedEdge> classGraph, RankedCycle cycle) {
         StringBuilder dot = new StringBuilder();
 

@@ -12,7 +12,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
-import org.hjug.cbc.CostBenefitCalculator;
 import org.hjug.cbc.CycleRanker;
 import org.hjug.cbc.RankedCycle;
 import org.hjug.cbc.RankedDisharmony;
@@ -28,7 +27,7 @@ import org.jgrapht.graph.DefaultWeightedEdge;
 public class SimpleHtmlReport {
 
     public static final String THE_BEGINNING =
-            "<html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\">\n" + "  <head>\n";
+            "<html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\">\n" + "\n";
 
     public static final String THE_END = "</div>\n" + "    </div>\n" + "  </body>\n" + "</html>\n";
 
@@ -75,18 +74,27 @@ public class SimpleHtmlReport {
     public void execute(
             boolean showDetails, String projectName, String projectVersion, String outputDirectory, File baseDir) {
 
-        final String[] godClassTableHeadings =
-                showDetails ? godClassDetailedTableHeadings : godClassSimpleTableHeadings;
-
         String filename = getOutputName() + ".html";
-
         log.info("Generating {} for {} - {}", filename, projectName, projectVersion);
 
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append(THE_BEGINNING);
 
+        stringBuilder.append("<head>");
         stringBuilder.append(printTitle(projectName, projectVersion));
         stringBuilder.append(printHead());
+        stringBuilder.append("</head>");
+        stringBuilder.append(generateReport(showDetails, projectName, projectVersion, baseDir));
+
+        stringBuilder.append(printProjectFooter());
+        stringBuilder.append(THE_END);
+
+        writeReportToDisk(outputDirectory, filename, stringBuilder);
+        log.info("Done! View the report at target/site/{}", filename);
+    }
+
+    public StringBuilder generateReport(boolean showDetails, String projectName, String projectVersion, File baseDir) {
+        StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append(printOpenBodyTag());
         stringBuilder.append(printBreadcrumbs());
         stringBuilder.append(printProjectHeader(projectName, projectVersion));
@@ -116,9 +124,8 @@ public class SimpleHtmlReport {
                     .append(projectVersion)
                     .append(".  ");
             stringBuilder.append("Please initialize a Git repository and perform an initial commit.");
-            stringBuilder.append(THE_END);
-            writeReportToDisk(outputDirectory, filename, stringBuilder);
-            return;
+
+            return stringBuilder;
         }
 
         String parentOfGitDir = gitDir.getParentFile().getPath();
@@ -129,21 +136,20 @@ public class SimpleHtmlReport {
             log.warn("Project Base Directory does not match Git Parent Directory");
             stringBuilder.append("Project Base Directory does not match Git Parent Directory.  "
                     + "Please refer to the report at the root of the site directory.");
-            stringBuilder.append(THE_END);
-            return;
+            return stringBuilder;
         }
 
         List<RankedDisharmony> rankedGodClassDisharmonies = List.of();
         List<RankedDisharmony> rankedCBODisharmonies = List.of();
         List<RankedCycle> rankedCycles;
-        try (CostBenefitCalculator costBenefitCalculator = new CostBenefitCalculator(projectBaseDir)) {
-            costBenefitCalculator.runPmdAnalysis();
-            rankedGodClassDisharmonies = costBenefitCalculator.calculateGodClassCostBenefitValues();
-            rankedCBODisharmonies = costBenefitCalculator.calculateCBOCostBenefitValues();
-        } catch (Exception e) {
-            log.error("Error running analysis.");
-            throw new RuntimeException(e);
-        }
+        //        try (CostBenefitCalculator costBenefitCalculator = new CostBenefitCalculator(projectBaseDir)) {
+        //            costBenefitCalculator.runPmdAnalysis();
+        //            rankedGodClassDisharmonies = costBenefitCalculator.calculateGodClassCostBenefitValues();
+        //            rankedCBODisharmonies = costBenefitCalculator.calculateCBOCostBenefitValues();
+        //        } catch (Exception e) {
+        //            log.error("Error running analysis.");
+        //            throw new RuntimeException(e);
+        //        }
 
         CycleRanker cycleRanker = new CycleRanker(projectBaseDir);
         rankedCycles = cycleRanker.runCycleAnalysis();
@@ -158,9 +164,7 @@ public class SimpleHtmlReport {
                     .append(" has no God classes, highly coupled classes, or cycles!");
             stringBuilder.append(renderGithubButtons());
             log.info("Done! No Disharmonies found!");
-            stringBuilder.append(THE_END);
-            writeReportToDisk(outputDirectory, filename, stringBuilder);
-            return;
+            return stringBuilder;
         }
 
         if (!rankedGodClassDisharmonies.isEmpty() && !rankedCBODisharmonies.isEmpty()) {
@@ -178,6 +182,8 @@ public class SimpleHtmlReport {
         }
 
         if (!rankedGodClassDisharmonies.isEmpty()) {
+            final String[] godClassTableHeadings =
+                    showDetails ? godClassDetailedTableHeadings : godClassSimpleTableHeadings;
             stringBuilder.append(renderGodClassInfo(showDetails, rankedGodClassDisharmonies, godClassTableHeadings));
         }
 
@@ -201,13 +207,9 @@ public class SimpleHtmlReport {
         }
 
         stringBuilder.append("</section>\n");
-        printProjectFooter(stringBuilder);
-        stringBuilder.append(THE_END);
 
         log.debug(stringBuilder.toString());
-
-        writeReportToDisk(outputDirectory, filename, stringBuilder);
-        log.info("Done! View the report at target/site/{}", filename);
+        return stringBuilder;
     }
 
     private String renderCycles(List<RankedCycle> rankedCycles) {
@@ -523,13 +525,12 @@ public class SimpleHtmlReport {
                 + "</h2>\n";
     }
 
-    public void printProjectFooter(StringBuilder stringBuilder) {
-        stringBuilder
-                .append("      <div class=\"clear\">\n" + "        <hr/>\n" + "      </div>\n")
-                .append("<span id=\"publishDate\">Last Published: ")
-                .append(formatter.format(Instant.now()))
-                .append("      <div class=\"clear\">\n" + "        <hr/>\n" + "      </div>\n")
-                .append("</span>");
+    public String printProjectFooter() {
+        return "      <div class=\"clear\">\n" + "        <hr/>\n" + "      </div>\n"
+                + "<span id=\"publishDate\">Last Published: "
+                + formatter.format(Instant.now())
+                + "      <div class=\"clear\">\n"
+                + "        <hr/>\n" + "      </div>\n" + "</span>";
     }
 
     String renderGithubButtons() {
