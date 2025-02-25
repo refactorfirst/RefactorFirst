@@ -232,6 +232,9 @@ public class DSM {
         // get edges above diagonal for DSM graph
         List<DefaultWeightedEdge> edgesAboveDiagonal = getEdgesAboveDiagonal();
 
+        Map<String, AsSubgraph<String, DefaultWeightedEdge>> allCycles =
+                new CircularReferenceChecker().getCycles(graph);
+
         // build the cloned graph
         Graph<String, DefaultWeightedEdge> clonedGraph = new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
         graph.vertexSet().forEach(clonedGraph::addVertex);
@@ -242,11 +245,19 @@ public class DSM {
         List<EdgeToRemoveInfo> edgesToRemove = new ArrayList<>();
         // capture impact of each edge on graph when removed
         for (DefaultWeightedEdge edge : edgesAboveDiagonal) {
+            int edgeInCyclesCount = 0;
+            for (AsSubgraph<String, DefaultWeightedEdge> cycle : allCycles.values()) {
+                if (cycle.containsEdge(edge)) {
+                    edgeInCyclesCount++;
+                }
+            }
+
             // remove the edge
             clonedGraph.removeEdge(edge);
 
             // identify updated cycles and calculate updated graph information
-            edgesToRemove.add(getEdgeToRemoveInfo(edge, new CircularReferenceChecker().getCycles(clonedGraph)));
+            edgesToRemove.add(getEdgeToRemoveInfo(
+                    edge, edgeInCyclesCount, new CircularReferenceChecker().getCycles(clonedGraph)));
 
             // add the edge back for next iteration
             clonedGraph.addEdge(graph.getEdgeSource(edge), graph.getEdgeTarget(edge), edge);
@@ -257,9 +268,11 @@ public class DSM {
     }
 
     private EdgeToRemoveInfo getEdgeToRemoveInfo(
-            DefaultWeightedEdge edge, Map<String, AsSubgraph<String, DefaultWeightedEdge>> cycles) {
+            DefaultWeightedEdge edge,
+            int edgeInCyclesCount,
+            Map<String, AsSubgraph<String, DefaultWeightedEdge>> cycles) {
         // get the new number of cycles
-        int cycleCount = cycles.size();
+        int newCycleCount = cycles.size();
 
         // calculate the average cycle node count
         double averageCycleNodeCount = cycles.values().stream()
@@ -268,6 +281,7 @@ public class DSM {
                 .orElse(0.0);
 
         // capture the what-if values
-        return new EdgeToRemoveInfo(edge, graph.getEdgeWeight(edge), cycleCount, averageCycleNodeCount);
+        return new EdgeToRemoveInfo(
+                edge, graph.getEdgeWeight(edge), edgeInCyclesCount, newCycleCount, averageCycleNodeCount);
     }
 }

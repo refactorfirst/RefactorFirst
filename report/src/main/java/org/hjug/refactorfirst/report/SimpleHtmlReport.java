@@ -16,6 +16,8 @@ import org.hjug.cbc.CostBenefitCalculator;
 import org.hjug.cbc.CycleRanker;
 import org.hjug.cbc.RankedCycle;
 import org.hjug.cbc.RankedDisharmony;
+import org.hjug.dsm.DSM;
+import org.hjug.dsm.EdgeToRemoveInfo;
 import org.hjug.git.GitLogReader;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultWeightedEdge;
@@ -67,6 +69,10 @@ public class SimpleHtmlReport {
     public final String[] classCycleTableHeadings = {"Classes", "Relationships"};
 
     Graph<String, DefaultWeightedEdge> classGraph;
+    DSM dsm;
+    List<DefaultWeightedEdge> edgesAboveDiagonal;
+
+    int pixels;
 
     DateTimeFormatter formatter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT)
             .withLocale(Locale.getDefault())
@@ -95,6 +101,13 @@ public class SimpleHtmlReport {
     }
 
     public StringBuilder generateReport(boolean showDetails, String projectName, String projectVersion, File baseDir) {
+        return generateReport(showDetails, projectName, projectVersion, baseDir, 200);
+    }
+
+    // pixels param is for SVG image pixel padding
+    public StringBuilder generateReport(
+            boolean showDetails, String projectName, String projectVersion, File baseDir, int pixels) {
+        this.pixels = pixels;
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append(printOpenBodyTag());
         stringBuilder.append(printBreadcrumbs());
@@ -143,18 +156,20 @@ public class SimpleHtmlReport {
         List<RankedDisharmony> rankedGodClassDisharmonies = List.of();
         List<RankedDisharmony> rankedCBODisharmonies = List.of();
         List<RankedCycle> rankedCycles;
-                try (CostBenefitCalculator costBenefitCalculator = new CostBenefitCalculator(projectBaseDir)) {
-                    costBenefitCalculator.runPmdAnalysis();
-                    rankedGodClassDisharmonies = costBenefitCalculator.calculateGodClassCostBenefitValues();
-                    rankedCBODisharmonies = costBenefitCalculator.calculateCBOCostBenefitValues();
-                } catch (Exception e) {
-                    log.error("Error running analysis.");
-                    throw new RuntimeException(e);
-                }
+        try (CostBenefitCalculator costBenefitCalculator = new CostBenefitCalculator(projectBaseDir)) {
+            costBenefitCalculator.runPmdAnalysis();
+            rankedGodClassDisharmonies = costBenefitCalculator.calculateGodClassCostBenefitValues();
+            rankedCBODisharmonies = costBenefitCalculator.calculateCBOCostBenefitValues();
+        } catch (Exception e) {
+            log.error("Error running analysis.");
+            throw new RuntimeException(e);
+        }
 
         CycleRanker cycleRanker = new CycleRanker(projectBaseDir);
         rankedCycles = cycleRanker.runCycleAnalysis();
         classGraph = cycleRanker.getClassReferencesGraph();
+        dsm = new DSM(classGraph);
+        edgesAboveDiagonal = dsm.getEdgesAboveDiagonal();
 
         if (rankedGodClassDisharmonies.isEmpty() && rankedCBODisharmonies.isEmpty() && rankedCycles.isEmpty()) {
             stringBuilder
@@ -217,9 +232,47 @@ public class SimpleHtmlReport {
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append(renderClassCycleSummary(rankedCycles));
 
+        stringBuilder.append("<br/>\n");
+
+        List<EdgeToRemoveInfo> edgeToRemoveInfos = dsm.getImpactOfEdgesAboveDiagonalIfRemoved();
+        stringBuilder.append("<br/>\n");
+        stringBuilder.append(renderEdgeToRemoveInfos(edgeToRemoveInfos));
+
         for (RankedCycle rankedCycle : rankedCycles) {
             stringBuilder.append(renderSingleCycle(rankedCycle));
         }
+
+        return stringBuilder.toString();
+    }
+
+    private String renderEdgeToRemoveInfos(List<EdgeToRemoveInfo> edges) {
+        StringBuilder stringBuilder = new StringBuilder();
+
+        stringBuilder.append("<div style=\"text-align: center;\"><h1>Backward Edge Removal Impact</h1></div>\n");
+
+        stringBuilder.append("<p align=\"center\">Hint: Remove first lowest edge weight</p>\n");
+        stringBuilder.append("<table align=\"center\" border=\"5px\">\n");
+
+        // Content
+        stringBuilder.append("<thead>\n<tr>\n");
+        for (String heading : getEdgesToRemoveInfoTableHeadings()) {
+            stringBuilder.append("<th>").append(heading).append("</th>\n");
+        }
+        stringBuilder.append("</thead>\n");
+
+        stringBuilder.append("<tbody>\n");
+        for (EdgeToRemoveInfo edge : edges) {
+            stringBuilder.append("<tr>\n");
+
+            for (String rowData : getEdgeToRemoveInfos(edge)) {
+                stringBuilder.append(drawTableCell(rowData));
+            }
+
+            stringBuilder.append("</tr>\n");
+        }
+
+        stringBuilder.append("</tbody>\n");
+        stringBuilder.append("</table>\n");
 
         return stringBuilder.toString();
     }
@@ -279,6 +332,21 @@ public class SimpleHtmlReport {
 
     private String[] getCycleSummaryTableHeadings() {
         return new String[] {"Cycle Name", "Priority", "Class Count", "Relationship Count", "Minimum Cuts"};
+    }
+
+    private String[] getEdgesToRemoveInfoTableHeadings() {
+        return new String[] {"Edge", "Edge Weight", "In # of Cycles", "New Cycle Count", "Average Cycle Node Count"};
+    }
+
+    private String[] getEdgeToRemoveInfos(EdgeToRemoveInfo edgeToRemoveInfo) {
+        return new String[] {
+            // "Edge", "Edge Weight", "In # of Cycles", "New Cycle Count", "Average Cycle Node Count"
+            renderEdge(edgeToRemoveInfo.getEdge()),
+            String.valueOf((int) edgeToRemoveInfo.getEdgeWeight()),
+            String.valueOf(edgeToRemoveInfo.getEdgeInCycleCount()),
+            String.valueOf(edgeToRemoveInfo.getNewCycleCount()),
+            String.valueOf(edgeToRemoveInfo.getAverageCycleNodeCount())
+        };
     }
 
     private String[] getRankedCycleSummaryData(RankedCycle rankedCycle, StringBuilder edgesToCut) {

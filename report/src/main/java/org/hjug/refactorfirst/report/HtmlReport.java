@@ -16,7 +16,7 @@ public class HtmlReport extends SimpleHtmlReport {
 
     // use Files.readString(Path.of(file))
     // Created by generative AI and modified slightly
-    static final String SUGIYAMA_SIGMA_GRAPH = "<script>\n"
+    public static final String SUGIYAMA_SIGMA_GRAPH = "<script>\n"
             + "function sugiyamaLayout(graph) {\n" + "    var layers = [];\n"
             + "    var nodeLevels = {};\n"
             + "    var nodes = graph.nodes();\n"
@@ -122,7 +122,7 @@ public class HtmlReport extends SimpleHtmlReport {
             + "</script>";
 
     // Created by generative AI and modified
-    static final String POPUP_STYLE = "<style>\n" + "        /* Popup container */\n"
+    public static final String POPUP_STYLE = "<style>\n" + "        /* Popup container */\n"
             + "        .popup {\n"
             + "            position: fixed;\n"
             + "            display: none;\n"
@@ -161,35 +161,36 @@ public class HtmlReport extends SimpleHtmlReport {
             + "    </style>";
 
     // Created by generative AI and modified
-    static final String POPUP_FUNCTIONS = "<script>\n" + "    function showPopup(popupId, containerName, dot) {\n"
-            + "        document.getElementById('overlay').style.display = 'block';\n"
-            + "        document.getElementById(popupId).style.display = 'block';\n"
-            + "\n"
-            + "        var graph = renderGraph(dot);\n"
-            + "        var container = document.getElementById(containerName);\n"
-            + "\n"
-            + "        // Render with Sigma.js\n"
-            + "        new Sigma(graph, container);\n"
-            + "    }\n"
-            + "\n"
-            + "    function hidePopup() {\n"
-            + "        document.getElementById('overlay').style.display = 'none';\n"
-            + "        var popups = document.getElementsByClassName('popup');\n"
-            + "        for (var i = 0; i < popups.length; i++) {\n"
-            + "            popups[i].style.display = 'none';\n"
-            + "        }\n"
-            + "\n"
-            + "        // Clear the graph containers to remove the previous graphs\n"
-            + "        var containers = document.querySelectorAll('[id^=\"graph-container\"]');\n"
-            + "        containers.forEach(function(container) {\n"
-            + "            while (container.firstChild) {\n"
-            + "                container.removeChild(container.firstChild);\n"
-            + "            }\n"
-            + "        });\n"
-            + "    }\n"
-            + "</script>";
+    public static final String POPUP_FUNCTIONS =
+            "<script>\n" + "    function showPopup(popupId, containerName, dot) {\n"
+                    + "        document.getElementById('overlay').style.display = 'block';\n"
+                    + "        document.getElementById(popupId).style.display = 'block';\n"
+                    + "\n"
+                    + "        var graph = renderGraph(dot);\n"
+                    + "        var container = document.getElementById(containerName);\n"
+                    + "\n"
+                    + "        // Render with Sigma.js\n"
+                    + "        new Sigma(graph, container);\n"
+                    + "    }\n"
+                    + "\n"
+                    + "    function hidePopup() {\n"
+                    + "        document.getElementById('overlay').style.display = 'none';\n"
+                    + "        var popups = document.getElementsByClassName('popup');\n"
+                    + "        for (var i = 0; i < popups.length; i++) {\n"
+                    + "            popups[i].style.display = 'none';\n"
+                    + "        }\n"
+                    + "\n"
+                    + "        // Clear the graph containers to remove the previous graphs\n"
+                    + "        var containers = document.querySelectorAll('[id^=\"graph-container\"]');\n"
+                    + "        containers.forEach(function(container) {\n"
+                    + "            while (container.firstChild) {\n"
+                    + "                container.removeChild(container.firstChild);\n"
+                    + "            }\n"
+                    + "        });\n"
+                    + "    }\n"
+                    + "</script>";
 
-    public static final String GOD_CLASS_CHART_LEGEND =
+    private static final String GOD_CLASS_CHART_LEGEND =
             "       <h2>God Class Chart Legend:</h2>" + "       <table border=\"5px\">\n"
                     + "          <tbody>\n"
                     + "            <tr><td><strong>X-Axis:</strong> Effort to refactor to a non-God class</td></tr>\n"
@@ -200,7 +201,7 @@ public class HtmlReport extends SimpleHtmlReport {
                     + "        </table>"
                     + "        <br/>";
 
-    public static final String COUPLING_BETWEEN_OBJECT_CHART_LEGEND =
+    private static final String COUPLING_BETWEEN_OBJECT_CHART_LEGEND =
             "       <h2>Coupling Between Objects Chart Legend:</h2>" + "       <table border=\"5px\">\n"
                     + "          <tbody>\n"
                     + "            <tr><td><strong>X-Axis:</strong> Number of objects the class is coupled to</td></tr>\n"
@@ -213,7 +214,9 @@ public class HtmlReport extends SimpleHtmlReport {
 
     @Override
     public String printHead() {
-        return "<script async defer src=\"https://buttons.github.io/buttons.js\"></script>\n"
+        // !Remember to update RefactorFirstMavenReport if this is modified
+        return // GH Buttons import
+        "<script async defer src=\"https://buttons.github.io/buttons.js\"></script>\n"
                 // google chart import
                 + "<script type=\"text/javascript\" src=\"https://www.gstatic.com/charts/loader.js\"></script>\n"
                 // d3 dot graph imports
@@ -228,8 +231,7 @@ public class HtmlReport extends SimpleHtmlReport {
                 + "<script src=\"https://cdn.jsdelivr.net/npm/graphlib-dot@0.6.4/dist/graphlib-dot.min.js\"></script>\n"
                 + SUGIYAMA_SIGMA_GRAPH
                 + POPUP_FUNCTIONS
-                + POPUP_STYLE
-                + "</head>\n";
+                + POPUP_STYLE;
     }
 
     @Override
@@ -328,7 +330,7 @@ public class HtmlReport extends SimpleHtmlReport {
             stringBuilder.append("const " + cycleName + "_dot = " + dot + "\n");
             stringBuilder.append("d3.select(\"#" + cycleName + "\")\n");
             stringBuilder.append(".graphviz()\n");
-            stringBuilder.append(".width(screen.width - 200)\n");
+            stringBuilder.append(".width(screen.width - " + pixels + ")\n");
             stringBuilder.append(".height(screen.height)\n");
             stringBuilder.append(".fit(true)\n");
             stringBuilder.append(".renderDot(" + cycleName + "_dot);\n");
