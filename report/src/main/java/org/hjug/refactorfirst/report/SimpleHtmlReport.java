@@ -499,7 +499,7 @@ public class SimpleHtmlReport {
         int maxCboPriority =
                 rankedCBODisharmonies.get(rankedCBODisharmonies.size() - 1).getPriority();
 
-        renderCBOChart(rankedCBODisharmonies, maxCboPriority);
+        stringBuilder.append(renderCBOChart(rankedCBODisharmonies, maxCboPriority));
 
         stringBuilder.append(
                 "<h2 align=\"center\">Highly Coupled classes by the numbers: (Refactor starting with Priority 1)</h2>");
