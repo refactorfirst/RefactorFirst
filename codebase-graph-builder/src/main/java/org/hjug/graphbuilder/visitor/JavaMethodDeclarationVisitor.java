@@ -34,7 +34,13 @@ public class JavaMethodDeclarationVisitor<P> extends JavaIsoVisitor<P> implement
     public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, P p) {
         J.MethodDeclaration methodDeclaration = super.visitMethodDeclaration(method, p);
 
-        String owner = methodDeclaration.getMethodType().getDeclaringType().getFullyQualifiedName();
+        JavaType.Method methodType = methodDeclaration.getMethodType();
+        if (null == methodType) {
+            // sometimes methodType is null, not sure why...
+            return methodDeclaration;
+        }
+
+        String owner = methodType.getDeclaringType().getFullyQualifiedName();
 
         // if returnTypeExpression is null, a constructor declaration is being processed
         TypeTree returnTypeExpression = methodDeclaration.getReturnTypeExpression();
