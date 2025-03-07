@@ -25,6 +25,10 @@
             <artifactId>jgrapht-core</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.jgrapht</groupId>
+            <artifactId>jgrapht-opt</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
             <version>1.7.26</version>

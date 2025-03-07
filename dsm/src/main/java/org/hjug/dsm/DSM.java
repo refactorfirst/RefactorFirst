@@ -1,13 +1,16 @@
 package org.hjug.dsm;
 
 import java.util.*;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import org.jgrapht.Graph;
 import org.jgrapht.Graphs;
-import org.jgrapht.alg.cycle.TarjanSimpleCycles;
+import org.jgrapht.alg.connectivity.KosarajuStrongConnectivityInspector;
+import org.jgrapht.alg.util.Triple;
 import org.jgrapht.graph.AsSubgraph;
 import org.jgrapht.graph.DefaultWeightedEdge;
 import org.jgrapht.graph.SimpleDirectedWeightedGraph;
+import org.jgrapht.opt.graph.sparse.SparseIntDirectedWeightedGraph;
 
 /*
 Generated with Generative AI using a prompt similar to the following and iterated on:
@@ -35,20 +38,22 @@ public class DSM {
     private List<String> sortedActivities;
     boolean activitiesSorted = false;
 
-    @Getter
-    int stronglyConnectedComponentCount = 0;
+    Map<String, Integer> vertexToInt = new HashMap<>();
+    Map<Integer, String> intToVertex = new HashMap<>();
+    List<Triple<Integer, Integer, Double>> sparseEdges = new ArrayList<>();
+    int vertexCount = 0;
 
     @Getter
-    double averageStronglyConnectedComponentSize = 0.0;
+    Map<String, AsSubgraph<String, DefaultWeightedEdge>> cycles;
 
     public DSM() {
-        graph = new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-        sortedActivities = new ArrayList<>();
+        this(new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class));
     }
 
     public DSM(Graph<String, DefaultWeightedEdge> graph) {
         this.graph = graph;
         sortedActivities = new ArrayList<>();
+        cycles = new CircularReferenceChecker().getCycles(graph);
     }
 
     public void addActivity(String activity) {
@@ -63,16 +68,9 @@ public class DSM {
     }
 
     private void orderVertices() {
-        List<Set<String>> sccs = findStronglyConnectedComponents(graph);
-
-        // capture the number of cycles
-        stronglyConnectedComponentCount = sccs.size();
-
-        // capture the average size of the cycles
-        averageStronglyConnectedComponentSize =
-                sccs.stream().mapToInt(Set::size).average().orElse(0.0);
-
-        sortedActivities = topologicalSort(sccs, graph);
+        SparseIntDirectedWeightedGraph sparseGraph = getSparseIntDirectedWeightedGraph();
+        List<Set<Integer>> sccs = findStronglyConnectedComponents(sparseGraph);
+        sortedActivities = convertIntToStringVertices(topologicalSort(sccs, sparseGraph));
         // reversing corrects rendering of the DSM
         // with sources as rows and targets as columns
         // was needed after AI solution was generated and iterated
@@ -80,22 +78,47 @@ public class DSM {
         activitiesSorted = true;
     }
 
-    private List<Set<String>> findStronglyConnectedComponents(Graph<String, DefaultWeightedEdge> graph) {
-        TarjanSimpleCycles<String, DefaultWeightedEdge> tarjan = new TarjanSimpleCycles<>(graph);
-        List<List<String>> cycles = tarjan.findSimpleCycles();
-        List<Set<String>> sccs = new ArrayList<>();
-        for (List<String> cycle : cycles) {
-            sccs.add(new HashSet<>(cycle));
+    private SparseIntDirectedWeightedGraph getSparseIntDirectedWeightedGraph() {
+        for (String vertex : graph.vertexSet()) {
+            vertexToInt.put(vertex, vertexCount);
+            intToVertex.put(vertexCount, vertex);
+            vertexCount++;
         }
-        return sccs;
+
+        // Create the list of sparseEdges for the SparseIntDirectedWeightedGraph
+        for (DefaultWeightedEdge edge : graph.edgeSet()) {
+            int source = vertexToInt.get(graph.getEdgeSource(edge));
+            int target = vertexToInt.get(graph.getEdgeTarget(edge));
+            double weight = graph.getEdgeWeight(edge);
+            sparseEdges.add(Triple.of(source, target, weight));
+        }
+
+        // Create the SparseIntDirectedWeightedGraph
+        return new SparseIntDirectedWeightedGraph(vertexCount, sparseEdges);
     }
 
-    private List<String> topologicalSort(List<Set<String>> sccs, Graph<String, DefaultWeightedEdge> graph) {
-        List<String> sortedActivities = new ArrayList<>();
-        Set<String> visited = new HashSet<>();
+    List<String> convertIntToStringVertices(List<Integer> intVertices) {
+        return intVertices.stream().map(intToVertex::get).collect(Collectors.toList());
+    }
 
-        for (Set<String> scc : sccs) {
-            for (String activity : scc) {
+    /**
+     * Kosaraju SCC detector avoids stack overflow.
+     * It is used by JGraphT's CycleDetector, and makes sense to use it here as well for consistency
+     * @param graph
+     * @return
+     */
+    private List<Set<Integer>> findStronglyConnectedComponents(Graph<Integer, Integer> graph) {
+        KosarajuStrongConnectivityInspector<Integer, Integer> kosaraju =
+                new KosarajuStrongConnectivityInspector<>(graph);
+        return kosaraju.stronglyConnectedSets();
+    }
+
+    private List<Integer> topologicalSort(List<Set<Integer>> sccs, Graph<Integer, Integer> graph) {
+        List<Integer> sortedActivities = new ArrayList<>();
+        Set<Integer> visited = new HashSet<>();
+
+        for (Set<Integer> scc : sccs) {
+            for (Integer activity : scc) {
                 if (!visited.contains(activity)) {
                     topologicalSortUtil(activity, visited, sortedActivities, graph);
                 }
@@ -107,13 +130,10 @@ public class DSM {
     }
 
     private void topologicalSortUtil(
-            String activity,
-            Set<String> visited,
-            List<String> sortedActivities,
-            Graph<String, DefaultWeightedEdge> graph) {
+            Integer activity, Set<Integer> visited, List<Integer> sortedActivities, Graph<Integer, Integer> graph) {
         visited.add(activity);
 
-        for (String neighbor : Graphs.successorListOf(graph, activity)) {
+        for (Integer neighbor : Graphs.successorListOf(graph, activity)) {
             if (!visited.contains(neighbor)) {
                 topologicalSortUtil(neighbor, visited, sortedActivities, graph);
             }
@@ -225,15 +245,25 @@ public class DSM {
 
     /**
      * Captures the impact of the removal of each edge above the diagonal.
+     * Limited to 50 by default
      *
      * @return List<EdgeToRemoveInfo> Impact of each edge if removed.
      */
-    public List<EdgeToRemoveInfo> getImpactOfEdgesAboveDiagonalIfRemoved() {
+    public List<EdgeToRemoveInfo> getImpactOfEdgesAboveDiagonalIfRemoved(int limit) {
         // get edges above diagonal for DSM graph
-        List<DefaultWeightedEdge> edgesAboveDiagonal = getEdgesAboveDiagonal();
+        List<DefaultWeightedEdge> edgesAboveDiagonal;
+        List<DefaultWeightedEdge> allEdgesAboveDiagonal = getEdgesAboveDiagonal();
 
-        Map<String, AsSubgraph<String, DefaultWeightedEdge>> allCycles =
-                new CircularReferenceChecker().getCycles(graph);
+        if (limit == 0 || allEdgesAboveDiagonal.size() <= 50) {
+            edgesAboveDiagonal = allEdgesAboveDiagonal;
+        } else {
+            // get first 50 values of min weight
+            List<DefaultWeightedEdge> minimumWeightEdgesAboveDiagonal = getMinimumWeightEdgesAboveDiagonal();
+            int max = Math.min(minimumWeightEdgesAboveDiagonal.size(), 50);
+            edgesAboveDiagonal = minimumWeightEdgesAboveDiagonal.subList(0, max);
+        }
+
+        double avgCycleNodeCount = getAverageCycleNodeCount();
 
         // build the cloned graph
         Graph<String, DefaultWeightedEdge> clonedGraph = new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
@@ -246,7 +276,7 @@ public class DSM {
         // capture impact of each edge on graph when removed
         for (DefaultWeightedEdge edge : edgesAboveDiagonal) {
             int edgeInCyclesCount = 0;
-            for (AsSubgraph<String, DefaultWeightedEdge> cycle : allCycles.values()) {
+            for (AsSubgraph<String, DefaultWeightedEdge> cycle : cycles.values()) {
                 if (cycle.containsEdge(edge)) {
                     edgeInCyclesCount++;
                 }
@@ -257,31 +287,48 @@ public class DSM {
 
             // identify updated cycles and calculate updated graph information
             edgesToRemove.add(getEdgeToRemoveInfo(
-                    edge, edgeInCyclesCount, new CircularReferenceChecker().getCycles(clonedGraph)));
+                    edge, edgeInCyclesCount, avgCycleNodeCount, new CircularReferenceChecker().getCycles(clonedGraph)));
 
             // add the edge back for next iteration
             clonedGraph.addEdge(graph.getEdgeSource(edge), graph.getEdgeTarget(edge), edge);
             clonedGraph.setEdgeWeight(edge, graph.getEdgeWeight(edge));
         }
 
+        edgesToRemove.sort(Comparator.comparing(EdgeToRemoveInfo::getPayoff));
+        Collections.reverse(edgesToRemove);
         return edgesToRemove;
     }
 
     private EdgeToRemoveInfo getEdgeToRemoveInfo(
             DefaultWeightedEdge edge,
             int edgeInCyclesCount,
+            double currentAvgCycleNodeCount,
             Map<String, AsSubgraph<String, DefaultWeightedEdge>> cycles) {
         // get the new number of cycles
         int newCycleCount = cycles.size();
 
         // calculate the average cycle node count
-        double averageCycleNodeCount = cycles.values().stream()
+        double newAverageCycleNodeCount = getAverageCycleNodeCount(cycles);
+
+        // capture the what-if values
+        double edgeWeight = graph.getEdgeWeight(edge);
+
+        double impact = (currentAvgCycleNodeCount - newAverageCycleNodeCount) / edgeWeight;
+        return new EdgeToRemoveInfo(
+                edge, edgeWeight, edgeInCyclesCount, newCycleCount, newAverageCycleNodeCount, impact);
+    }
+
+    public static double getAverageCycleNodeCount(Map<String, AsSubgraph<String, DefaultWeightedEdge>> cycles) {
+        return cycles.values().stream()
                 .mapToInt(cycle -> cycle.vertexSet().size())
                 .average()
                 .orElse(0.0);
+    }
 
-        // capture the what-if values
-        return new EdgeToRemoveInfo(
-                edge, graph.getEdgeWeight(edge), edgeInCyclesCount, newCycleCount, averageCycleNodeCount);
+    public double getAverageCycleNodeCount() {
+        return cycles.values().stream()
+                .mapToInt(cycle -> cycle.vertexSet().size())
+                .average()
+                .orElse(0.0);
     }
 }

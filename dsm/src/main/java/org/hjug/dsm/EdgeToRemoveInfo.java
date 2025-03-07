@@ -10,4 +10,5 @@ public class EdgeToRemoveInfo {
     private final int edgeInCycleCount;
     private final int newCycleCount;
     private final double averageCycleNodeCount;
+    private final double payoff; // impact / effort
 }

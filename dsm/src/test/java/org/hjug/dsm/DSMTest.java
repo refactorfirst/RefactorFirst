@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.List;
 import org.jgrapht.graph.DefaultWeightedEdge;
+import org.jgrapht.graph.SimpleDirectedWeightedGraph;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -96,7 +97,7 @@ class DSMTest {
 
     @Test
     void getImpactOfEdgesAboveDiagonalIfRemoved() {
-        dsm = new DSM();
+        dsm = new DSM(new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class));
         dsm.addActivity("A");
         dsm.addActivity("B");
         dsm.addActivity("C");
@@ -120,15 +121,14 @@ class DSMTest {
         dsm.addDependency("G", "H", 9);
         dsm.addDependency("H", "E", 9); // create cycle
 
-        List<EdgeToRemoveInfo> infos = dsm.getImpactOfEdgesAboveDiagonalIfRemoved();
-        assertEquals(4, infos.size());
+        dsm.addDependency("A", "E", 9);
+        dsm.addDependency("E", "A", 3); // create cycle between cycles
 
-        assertEquals("(D : A)", infos.get(0).getEdge().toString());
+        List<EdgeToRemoveInfo> infos = dsm.getImpactOfEdgesAboveDiagonalIfRemoved(50);
+        assertEquals(5, infos.size());
+
+        assertEquals("(H : E)", infos.get(0).getEdge().toString());
         assertEquals(2, infos.get(0).getNewCycleCount());
-        assertEquals(3.5, infos.get(0).getAverageCycleNodeCount());
-
-        assertEquals("(H : E)", infos.get(3).getEdge().toString());
-        assertEquals(1, infos.get(3).getNewCycleCount());
-        assertEquals(4.0, infos.get(3).getAverageCycleNodeCount());
+        assertEquals(4.5, infos.get(0).getAverageCycleNodeCount());
     }
 }
