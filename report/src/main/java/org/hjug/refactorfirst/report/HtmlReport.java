@@ -1,7 +1,9 @@
 package org.hjug.refactorfirst.report;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.hjug.cbc.RankedCycle;
 import org.hjug.cbc.RankedDisharmony;
@@ -317,8 +319,96 @@ public class HtmlReport extends SimpleHtmlReport {
     }
 
     @Override
-    public String renderCycleImage(RankedCycle cycle) {
-        String dot = buildDot(classGraph, cycle);
+    public String renderClassGraphDotImage() {
+        String dot = buildClassGraphDot(classGraph);
+
+        String classGraphName = "classGraph";
+
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append("<h1>Class Map</h1>");
+        if (classGraph.vertexSet().size() + classGraph.edgeSet().size() < d3Threshold) {
+            stringBuilder.append(
+                    "<div align=\"center\" id=\"" + classGraphName + "\" style=\"border: thin solid black\"></div>\n");
+            stringBuilder.append("<script>\n");
+            stringBuilder.append("const " + classGraphName + "_dot = " + dot + "\n");
+            stringBuilder.append("d3.select(\"#" + classGraphName + "\")\n");
+            stringBuilder.append(".graphviz()\n");
+            stringBuilder.append(".width(screen.width - " + pixels + ")\n");
+            stringBuilder.append(".height(screen.height)\n");
+            stringBuilder.append(".fit(true)\n");
+            stringBuilder.append(".renderDot(" + classGraphName + "_dot);\n");
+            stringBuilder.append("</script>\n");
+        } else {
+            // revisit and add D3 popup button as well
+            stringBuilder.append("<script>\n");
+            stringBuilder.append("const " + classGraphName + "_dot = " + dot + "\n");
+            stringBuilder.append("</script>\n");
+            stringBuilder.append(generatePopup(classGraphName));
+        }
+
+        stringBuilder.append("<div align=\"center\">\n");
+        stringBuilder.append(
+                "<p>Red lines represent back edges to remove. Remove one to start decomposing the cycle.</p>\n");
+        stringBuilder.append("<p>Zoom in / out with your mouse wheel and click/move to drag the image.</p>\n");
+        stringBuilder.append("</div>\n");
+        stringBuilder.append("<br/>\n");
+        stringBuilder.append("<br/>\n");
+
+        return stringBuilder.toString();
+    }
+
+    String buildClassGraphDot(Graph<String, DefaultWeightedEdge> classGraph) {
+        StringBuilder dot = new StringBuilder();
+        dot.append("`strict digraph G {\n");
+
+        Set<String> vertexesToRender = new HashSet<>();
+        for (DefaultWeightedEdge edge : classGraph.edgeSet()) {
+            // DownloadManager -> Download [ label="1" color="red" ];
+
+            // render edge
+            String[] vertexes = extractVertexes(edge);
+            String start = getClassName(vertexes[0].trim()).replace("$", "_");
+            String end = getClassName(vertexes[1].trim()).replace("$", "_");
+
+            vertexesToRender.add(vertexes[0].trim());
+            vertexesToRender.add(vertexes[1].trim());
+
+            dot.append(start);
+            dot.append(" -> ");
+            dot.append(end);
+
+            // render edge attributes
+            int edgeWeight = (int) classGraph.getEdgeWeight(edge);
+            dot.append(" [ ");
+            dot.append("label = \"");
+            dot.append(edgeWeight);
+            dot.append("\" ");
+            dot.append("weight = \"");
+            dot.append(edgeWeight);
+            dot.append("\"");
+
+            if (edgesAboveDiagonal.contains(edge)) {
+                dot.append(" color = \"red\"");
+            }
+
+            dot.append(" ];\n");
+        }
+
+        // render vertices
+        // e.g DownloadManager;
+        //        for (String vertex : classGraph.vertexSet()) {
+        for (String vertex : vertexesToRender) {
+            dot.append(getClassName(vertex).replace("$", "_"));
+            dot.append(";\n");
+        }
+
+        dot.append("}`;");
+        return dot.toString();
+    }
+
+    @Override
+    public String renderCycleDotImage(RankedCycle cycle) {
+        String dot = buildCycleDot(classGraph, cycle);
 
         String cycleName = getClassName(cycle.getCycleName()).replace("$", "_");
 
@@ -345,7 +435,7 @@ public class HtmlReport extends SimpleHtmlReport {
 
         stringBuilder.append("<div align=\"center\">\n");
         stringBuilder.append(
-                "<p>Red lines represent relationship(s) to remove. Remove one to start decomposing the cycle.</p>\n");
+                "<p>Red lines represent back edges to remove. Remove one to start decomposing the cycle.</p>\n");
         stringBuilder.append("<p>Zoom in / out with your mouse wheel and click/move to drag the image.</p>\n");
         stringBuilder.append("</div>\n");
         stringBuilder.append("<br/>\n");
@@ -354,18 +444,7 @@ public class HtmlReport extends SimpleHtmlReport {
         return stringBuilder.toString();
     }
 
-    String buildDot(Graph<String, DefaultWeightedEdge> classGraph) {
-
-        // render vertices
-        classGraph.vertexSet();
-
-        // render edges
-        classGraph.edgeSet();
-
-        return "";
-    }
-
-    String buildDot(Graph<String, DefaultWeightedEdge> classGraph, RankedCycle cycle) {
+    String buildCycleDot(Graph<String, DefaultWeightedEdge> classGraph, RankedCycle cycle) {
         StringBuilder dot = new StringBuilder();
 
         dot.append("`strict digraph G {\n");
@@ -373,7 +452,7 @@ public class HtmlReport extends SimpleHtmlReport {
         // render vertices
         // e.g DownloadManager;
         for (String vertex : cycle.getVertexSet()) {
-            dot.append(getClassName(vertex));
+            dot.append(getClassName(vertex).replace("$", "_"));
             dot.append(";\n");
         }
 
@@ -382,8 +461,8 @@ public class HtmlReport extends SimpleHtmlReport {
 
             // render edge
             String[] vertexes = extractVertexes(edge);
-            String start = getClassName(vertexes[0].trim());
-            String end = getClassName(vertexes[1].trim());
+            String start = getClassName(vertexes[0].trim()).replace("$", "_");
+            String end = getClassName(vertexes[1].trim()).replace("$", "_");
 
             dot.append(start);
             dot.append(" -> ");
@@ -399,8 +478,12 @@ public class HtmlReport extends SimpleHtmlReport {
             dot.append(edgeWeight);
             dot.append("\"");
 
-            if (cycle.getMinCutEdges().contains(edge)) {
+            if (edgesAboveDiagonal.contains(edge)) {
                 dot.append(" color = \"red\"");
+            }
+
+            if (cycle.getMinCutEdges().contains(edge) && !edgesAboveDiagonal.contains(edge)) {
+                dot.append(" color = \"blue\"");
             }
 
             dot.append(" ];\n");

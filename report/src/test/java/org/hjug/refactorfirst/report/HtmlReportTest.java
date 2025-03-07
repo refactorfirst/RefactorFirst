@@ -38,7 +38,7 @@ class HtmlReportTest {
     }
 
     @Test
-    void buildDot() {
+    void buildCycleDot() {
         Graph<String, DefaultWeightedEdge> classGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
         classGraph.addVertex("A");
         classGraph.addVertex("B");
@@ -59,7 +59,7 @@ class HtmlReportTest {
                 cycleName, 0, classGraph.vertexSet(), classGraph.edgeSet(), minCutCount, minCutEdges, cycleNodes);
 
         HtmlReport htmlReport = new HtmlReport();
-        String dot = htmlReport.buildDot(classGraph, rankedCycle);
+        String dot = htmlReport.buildCycleDot(classGraph, rankedCycle);
 
         StringBuilder expectedDot = new StringBuilder();
         expectedDot.append("`strict digraph G {\n"
@@ -67,8 +67,8 @@ class HtmlReportTest {
                 + "B;\n"
                 + "C;\n"
                 + "A -> B [ label = \"2\" weight = \"2\" ];\n"
-                + "B -> C [ label = \"1\" weight = \"1\" color = \"red\" ];\n"
-                + "C -> A [ label = \"1\" weight = \"1\" color = \"red\" ];\n"
+                + "B -> C [ label = \"1\" weight = \"1\" color = \"blue\" ];\n"
+                + "C -> A [ label = \"1\" weight = \"1\" color = \"blue\" ];\n"
                 + "}`;");
 
         assertEquals(expectedDot.toString(), dot);

@@ -48,6 +48,7 @@ public class RefactorFirstHtmlReport extends AbstractMojo {
                         .getReporting()
                         .getOutputDirectory()
                         .replace("${project.basedir}" + File.separator, ""),
-                project.getBasedir());
+                project.getBasedir(),
+                50);
     }
 }

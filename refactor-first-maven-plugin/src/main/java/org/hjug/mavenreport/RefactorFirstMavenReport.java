@@ -54,9 +54,8 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
 
         Sink mainSink = getSink();
         printHead(mainSink);
-        // TODO: pass in the screen width to have d3.js render SVGs within the bounds of the screen
         String report = htmlReport
-                .generateReport(showDetails, projectName, projectVersion, project.getBasedir(), 300)
+                .generateReport(showDetails, projectName, projectVersion, project.getBasedir(), 300, 50)
                 .toString();
 
         mainSink.rawText(report);
