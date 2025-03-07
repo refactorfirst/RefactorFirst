@@ -12,9 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.hjug.dsm.CircularReferenceChecker;
 import org.hjug.graphbuilder.JavaGraphBuilder;
 import org.jgrapht.Graph;
-import org.jgrapht.alg.flow.GusfieldGomoryHuCutTree;
 import org.jgrapht.graph.AsSubgraph;
-import org.jgrapht.graph.AsUndirectedGraph;
 import org.jgrapht.graph.DefaultWeightedEdge;
 
 @RequiredArgsConstructor
@@ -47,18 +45,19 @@ public class CycleRanker {
                 circularReferenceChecker.getCycles(classReferencesGraph);
         Map<String, String> classNamesAndPaths = getClassNamesAndPaths();
         cycles.forEach((vertex, subGraph) -> {
-            Set<DefaultWeightedEdge> minCutEdges;
+            // TODO: Calculate min cuts for smaller graphs - has a runtime of O(V^4) for a graph
+            /*Set<DefaultWeightedEdge> minCutEdges;
             GusfieldGomoryHuCutTree<String, DefaultWeightedEdge> gusfieldGomoryHuCutTree =
                     new GusfieldGomoryHuCutTree<>(new AsUndirectedGraph<>(subGraph));
             double minCut = gusfieldGomoryHuCutTree.calculateMinCut();
-            minCutEdges = gusfieldGomoryHuCutTree.getCutEdges();
+            minCutEdges = gusfieldGomoryHuCutTree.getCutEdges();*/
 
             List<CycleNode> cycleNodes = subGraph.vertexSet().stream()
                     .map(classInCycle -> new CycleNode(classInCycle, classNamesAndPaths.get(classInCycle)))
                     //                        .peek(cycleNode -> log.info(cycleNode.toString()))
                     .collect(Collectors.toList());
 
-            rankedCycles.add(createRankedCycle(vertex, subGraph, cycleNodes, minCut, minCutEdges));
+            rankedCycles.add(createRankedCycle(vertex, subGraph, cycleNodes, 0.0, new HashSet<>()));
         });
     }
 
