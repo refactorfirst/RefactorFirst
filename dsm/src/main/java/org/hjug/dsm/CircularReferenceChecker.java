@@ -22,6 +22,10 @@ public class CircularReferenceChecker {
      */
     public Map<String, AsSubgraph<String, DefaultWeightedEdge>> getCycles(Graph<String, DefaultWeightedEdge> graph) {
 
+        if (!uniqueSubGraphs.isEmpty()) {
+            return uniqueSubGraphs;
+        }
+
         // use CycleDetector.findCycles()?
         Map<String, AsSubgraph<String, DefaultWeightedEdge>> cycles = detectCycles(graph);
 
