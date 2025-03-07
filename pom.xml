@@ -154,6 +154,11 @@
                 <artifactId>jgrapht-core</artifactId>
                 <version>1.5.2</version>
             </dependency>
+            <dependency>
+                <groupId>org.jgrapht</groupId>
+                <artifactId>jgrapht-opt</artifactId>
+                <version>1.5.2</version>
+            </dependency>
 
             <dependency>
                 <groupId>net.sourceforge.pmd</groupId>
