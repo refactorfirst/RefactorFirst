@@ -24,10 +24,19 @@ public class CycleRanker {
     @Getter
     private Graph<String, DefaultWeightedEdge> classReferencesGraph;
 
-    public List<RankedCycle> runCycleAnalysis() {
+    public void generateClassReferencesGraph() {
+        try {
+            classReferencesGraph = javaGraphBuilder.getClassReferences(repositoryPath);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public List<RankedCycle> performCycleAnalysis() {
         List<RankedCycle> rankedCycles = new ArrayList<>();
         try {
             boolean calculateCycleChurn = false;
+            generateClassReferencesGraph();
             identifyRankedCycles(rankedCycles);
             sortRankedCycles(rankedCycles, calculateCycleChurn);
             setPriorities(rankedCycles);
@@ -39,7 +48,6 @@ public class CycleRanker {
     }
 
     private void identifyRankedCycles(List<RankedCycle> rankedCycles) throws IOException {
-        classReferencesGraph = javaGraphBuilder.getClassReferences(repositoryPath);
         CircularReferenceChecker circularReferenceChecker = new CircularReferenceChecker();
         Map<String, AsSubgraph<String, DefaultWeightedEdge>> cycles =
                 circularReferenceChecker.getCycles(classReferencesGraph);

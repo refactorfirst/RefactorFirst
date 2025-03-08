@@ -25,6 +25,16 @@ public class ReportCommand implements Callable<Integer> {
     private boolean showDetails;
 
     @Option(
+            names = {"-eac", "--edge-analysis-count"},
+            description = "Back Edge Analysis Count")
+    protected int backEdgeAnalysisCount = 50;
+
+    @Option(
+            names = {"-c", "--analyze-cycles"},
+            description = "Analyze Cycles")
+    private boolean analyzeCycles = true;
+
+    @Option(
             names = {"-p", "--project"},
             description = "Project name")
     private String projectName;
@@ -52,6 +62,8 @@ public class ReportCommand implements Callable<Integer> {
             defaultValue = "HTML")
     private ReportType reportType;
 
+
+
     @Override
     public Integer call() {
 
@@ -61,11 +73,11 @@ public class ReportCommand implements Callable<Integer> {
         switch (reportType) {
             case SIMPLE_HTML:
                 SimpleHtmlReport simpleHtmlReport = new SimpleHtmlReport();
-                simpleHtmlReport.execute(showDetails, projectName, projectVersion, outputDirectory, baseDir, 50);
+                simpleHtmlReport.execute(backEdgeAnalysisCount, analyzeCycles, showDetails, projectName, projectVersion, outputDirectory, baseDir);
                 return 0;
             case HTML:
                 HtmlReport htmlReport = new HtmlReport();
-                htmlReport.execute(showDetails, projectName, projectVersion, outputDirectory, baseDir, 50);
+                htmlReport.execute(backEdgeAnalysisCount, analyzeCycles, showDetails, projectName, projectVersion, outputDirectory, baseDir);
                 return 0;
             case JSON:
                 JsonReportExecutor jsonReportExecutor = new JsonReportExecutor();

@@ -26,6 +26,9 @@ public class RefactorFirstSimpleHtmlReport extends AbstractMojo {
     @Parameter(property = "backEdgeAnalysisCount")
     private int backEdgeAnalysisCount = 50;
 
+    @Parameter(property = "analyzeCycles")
+    private boolean analyzeCycles = true;
+
     @Parameter(defaultValue = "${project.name}")
     private String projectName;
 
@@ -44,6 +47,8 @@ public class RefactorFirstSimpleHtmlReport extends AbstractMojo {
         log.info(outputDirectory.getPath());
         SimpleHtmlReport htmlReport = new SimpleHtmlReport();
         htmlReport.execute(
+                backEdgeAnalysisCount,
+                analyzeCycles,
                 showDetails,
                 projectName,
                 projectVersion,
@@ -51,7 +56,6 @@ public class RefactorFirstSimpleHtmlReport extends AbstractMojo {
                         .getReporting()
                         .getOutputDirectory()
                         .replace("${project.basedir}" + File.separator, ""),
-                project.getBasedir(),
-                backEdgeAnalysisCount);
+                project.getBasedir());
     }
 }

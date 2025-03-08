@@ -79,12 +79,13 @@ public class SimpleHtmlReport {
             .withZone(ZoneId.systemDefault());
 
     public void execute(
+            int edgeAnalysisCount,
+            boolean analyzeCycles,
             boolean showDetails,
             String projectName,
             String projectVersion,
             String outputDirectory,
-            File baseDir,
-            int edgeAnalysisCount) {
+            File baseDir) {
 
         String filename = getOutputName() + ".html";
         log.info("Generating {} for {} - {}", filename, projectName, projectVersion);
@@ -96,7 +97,8 @@ public class SimpleHtmlReport {
         stringBuilder.append(printTitle(projectName, projectVersion));
         stringBuilder.append(printHead());
         stringBuilder.append("</head>");
-        stringBuilder.append(generateReport(showDetails, projectName, projectVersion, baseDir, edgeAnalysisCount));
+        stringBuilder.append(
+                generateReport(showDetails, projectName, projectVersion, baseDir, edgeAnalysisCount, analyzeCycles));
 
         stringBuilder.append(printProjectFooter());
         stringBuilder.append(THE_END);
@@ -106,8 +108,13 @@ public class SimpleHtmlReport {
     }
 
     public StringBuilder generateReport(
-            boolean showDetails, String projectName, String projectVersion, File baseDir, int edgeAnalysisCount) {
-        return generateReport(showDetails, projectName, projectVersion, baseDir, 200, edgeAnalysisCount);
+            boolean showDetails,
+            String projectName,
+            String projectVersion,
+            File baseDir,
+            int edgeAnalysisCount,
+            boolean analyzeCycles) {
+        return generateReport(showDetails, projectName, projectVersion, baseDir, 200, edgeAnalysisCount, analyzeCycles);
     }
 
     // pixels param is for SVG image pixel padding
@@ -117,7 +124,8 @@ public class SimpleHtmlReport {
             String projectVersion,
             File baseDir,
             int pixels,
-            int edgeAnalysisCount) {
+            int edgeAnalysisCount,
+            boolean analyzeCycles) {
         this.pixels = pixels;
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append(printOpenBodyTag());
@@ -176,7 +184,12 @@ public class SimpleHtmlReport {
         }
 
         CycleRanker cycleRanker = new CycleRanker(projectBaseDir);
-        List<RankedCycle> rankedCycles = cycleRanker.runCycleAnalysis();
+        List<RankedCycle> rankedCycles = List.of();
+        if (analyzeCycles) {
+            rankedCycles = cycleRanker.performCycleAnalysis();
+        } else {
+            cycleRanker.generateClassReferencesGraph();
+        }
         classGraph = cycleRanker.getClassReferencesGraph();
         dsm = new DSM(classGraph);
         edgesAboveDiagonal = dsm.getEdgesAboveDiagonal();

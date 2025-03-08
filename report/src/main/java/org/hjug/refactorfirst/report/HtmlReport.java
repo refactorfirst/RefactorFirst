@@ -500,7 +500,7 @@ public class HtmlReport extends SimpleHtmlReport {
                 + "', 'graph-container-" + cycleName + "'," + cycleName + "_dot )\">Show " + cycleName
                 + " Cycle Popup</button>\n" + "\n"
                 + "<div class=\"popup\" id=\"popup-"
-                + cycleName + "\">\n" + "    <span class=\"close-btn\" onclick=\"hidePopup()\">×</span>\n"
+                + cycleName + "\">\n" + "    <span class=\"close-btn\" onclick=\"hidePopup()\">X</span>\n"
                 + "    <div id=\"graph-container-"
                 + cycleName + "\" style=\"width: 100%; height: 100%;\"></div>\n" + "</div>";
     }

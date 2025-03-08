@@ -29,6 +29,9 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
     @Parameter(property = "backEdgeAnalysisCount")
     protected int backEdgeAnalysisCount = 50;
 
+    @Parameter(property = "analyzeCycles")
+    private boolean analyzeCycles = true;
+
     @Parameter(defaultValue = "${project.name}")
     private String projectName;
 
@@ -59,7 +62,13 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
         printHead(mainSink);
         String report = htmlReport
                 .generateReport(
-                        showDetails, projectName, projectVersion, project.getBasedir(), 300, backEdgeAnalysisCount)
+                        showDetails,
+                        projectName,
+                        projectVersion,
+                        project.getBasedir(),
+                        300,
+                        backEdgeAnalysisCount,
+                        analyzeCycles)
                 .toString();
 
         mainSink.rawText(report);
