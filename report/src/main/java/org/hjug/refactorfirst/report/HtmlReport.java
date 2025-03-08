@@ -326,7 +326,11 @@ public class HtmlReport extends SimpleHtmlReport {
 
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append("<h1 align=\"center\">Class Map</h1>");
-        stringBuilder.append("<div align=\"center\">Excludes classes that have no incoming and outgoing edges</div>");
+        stringBuilder.append("<div align=\"center\">Excludes classes that have no incoming and outgoing edges<br>");
+        stringBuilder.append("Red lines represent back edges to remove.<br>\n");
+        stringBuilder.append("Zoom in / out with your mouse wheel and click/move to drag the image.\n");
+        stringBuilder.append("</div>\n");
+
         if (classGraph.vertexSet().size() + classGraph.edgeSet().size() < d3Threshold) {
             stringBuilder.append(
                     "<div align=\"center\" id=\"" + classGraphName + "\" style=\"border: thin solid black\"></div>\n");
@@ -347,11 +351,6 @@ public class HtmlReport extends SimpleHtmlReport {
             stringBuilder.append(generatePopup(classGraphName));
         }
 
-        stringBuilder.append("<div align=\"center\">\n");
-        stringBuilder.append(
-                "<p>Red lines represent back edges to remove. Remove one to start decomposing the cycle.</p>\n");
-        stringBuilder.append("<p>Zoom in / out with your mouse wheel and click/move to drag the image.</p>\n");
-        stringBuilder.append("</div>\n");
         stringBuilder.append("<br/>\n");
         stringBuilder.append("<br/>\n");
 
