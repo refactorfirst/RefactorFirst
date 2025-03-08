@@ -245,8 +245,8 @@ public class DSM {
 
     /**
      * Captures the impact of the removal of each edge above the diagonal.
-     * Limited to 50 by default
      *
+     * @param limit the number of back edges to analyze
      * @return List<EdgeToRemoveInfo> Impact of each edge if removed.
      */
     public List<EdgeToRemoveInfo> getImpactOfEdgesAboveDiagonalIfRemoved(int limit) {
@@ -254,12 +254,12 @@ public class DSM {
         List<DefaultWeightedEdge> edgesAboveDiagonal;
         List<DefaultWeightedEdge> allEdgesAboveDiagonal = getEdgesAboveDiagonal();
 
-        if (limit == 0 || allEdgesAboveDiagonal.size() <= 50) {
+        if (limit == 0 || allEdgesAboveDiagonal.size() <= limit) {
             edgesAboveDiagonal = allEdgesAboveDiagonal;
         } else {
             // get first 50 values of min weight
             List<DefaultWeightedEdge> minimumWeightEdgesAboveDiagonal = getMinimumWeightEdgesAboveDiagonal();
-            int max = Math.min(minimumWeightEdgesAboveDiagonal.size(), 50);
+            int max = Math.min(minimumWeightEdgesAboveDiagonal.size(), limit);
             edgesAboveDiagonal = minimumWeightEdgesAboveDiagonal.subList(0, max);
         }
 

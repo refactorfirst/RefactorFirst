@@ -23,6 +23,9 @@ public class RefactorFirstHtmlReport extends AbstractMojo {
     @Parameter(property = "showDetails")
     private boolean showDetails = false;
 
+    @Parameter(property = "backEdgeAnalysisCount")
+    protected int backEdgeAnalysisCount = 50;
+
     @Parameter(defaultValue = "${project.name}")
     private String projectName;
 
@@ -49,6 +52,6 @@ public class RefactorFirstHtmlReport extends AbstractMojo {
                         .getOutputDirectory()
                         .replace("${project.basedir}" + File.separator, ""),
                 project.getBasedir(),
-                50);
+                backEdgeAnalysisCount);
     }
 }

@@ -181,26 +181,29 @@ public class SimpleHtmlReport {
         dsm = new DSM(classGraph);
         edgesAboveDiagonal = dsm.getEdgesAboveDiagonal();
 
-        stringBuilder.append(renderClassGraphDotImage());
+        List<EdgeToRemoveInfo> edgeToRemoveInfos = dsm.getImpactOfEdgesAboveDiagonalIfRemoved(edgeAnalysisCount);
 
-        if (rankedGodClassDisharmonies.isEmpty() && rankedCBODisharmonies.isEmpty() && rankedCycles.isEmpty()) {
+        if (edgeToRemoveInfos.isEmpty()
+                && rankedGodClassDisharmonies.isEmpty()
+                && rankedCBODisharmonies.isEmpty()
+                && rankedCycles.isEmpty()) {
             stringBuilder
                     .append("Congratulations!  ")
                     .append(projectName)
                     .append(" ")
                     .append(projectVersion)
-                    .append(" has no God classes, highly coupled classes, or cycles!");
+                    .append(" has no Back Edges, God classes, Highly Coupled Classes, or Cycles!");
             stringBuilder.append(renderGithubButtons());
             log.info("Done! No Disharmonies found!");
             return stringBuilder;
         }
 
-        // Display impact of each edge if removed
-        stringBuilder.append("<br/>\n");
-        List<EdgeToRemoveInfo> edgeToRemoveInfos = dsm.getImpactOfEdgesAboveDiagonalIfRemoved(edgeAnalysisCount);
-        stringBuilder.append(renderEdgeToRemoveInfos(edgeToRemoveInfos));
+        if (!edgeToRemoveInfos.isEmpty()) {
+            stringBuilder.append("<a href=\"#EDGES\">Back Edges</a>\n");
+            stringBuilder.append("<br/>\n");
+        }
 
-        if (!rankedGodClassDisharmonies.isEmpty() && !rankedCBODisharmonies.isEmpty()) {
+        if (!rankedGodClassDisharmonies.isEmpty()) {
             stringBuilder.append("<a href=\"#GOD\">God Classes</a>\n");
             stringBuilder.append("<br/>\n");
         }
@@ -213,6 +216,12 @@ public class SimpleHtmlReport {
         if (!rankedCycles.isEmpty()) {
             stringBuilder.append("<a href=\"#CYCLES\">Class Cycles</a>\n");
         }
+
+        stringBuilder.append(renderClassGraphDotImage());
+
+        // Display impact of each edge if removed
+        stringBuilder.append("<br/>\n");
+        stringBuilder.append(renderEdgeToRemoveInfos(edgeToRemoveInfos));
 
         if (!rankedGodClassDisharmonies.isEmpty()) {
             final String[] godClassTableHeadings =
@@ -261,7 +270,8 @@ public class SimpleHtmlReport {
     private String renderEdgeToRemoveInfos(List<EdgeToRemoveInfo> edges) {
         StringBuilder stringBuilder = new StringBuilder();
 
-        stringBuilder.append("<div style=\"text-align: center;\"><h1>Backward Edge Removal Impact</h1></div>\n");
+        stringBuilder.append(
+                "<div style=\"text-align: center;\"><a id=\"EDGES\"><h1>Backward Edge Removal Impact</h1></a></div>\n");
         stringBuilder.append("<div style=\"text-align: center;\">\n");
 
         stringBuilder
@@ -372,13 +382,19 @@ public class SimpleHtmlReport {
 
     private String[] getEdgesToRemoveInfoTableHeadings() {
         return new String[] {
-            "Edge", "Edge Weight", "In # of Cycles", "New Cycle Count", "New Avg Cycle Node Count", "Impact/Edge Weight"
+            "Edge",
+            "Edge Weight",
+            "In # of Cycles",
+            "New Cycle Count",
+            "New Avg Cycle Node Count",
+            "Avg Node &Delta; &divide; Effort"
         };
     }
 
     private String[] getEdgeToRemoveInfos(EdgeToRemoveInfo edgeToRemoveInfo) {
         return new String[] {
-            // "Edge", "Edge Weight", "In # of Cycles", "New Cycle Count", "New Avg Cycle Node Count"
+            // "Edge", "Edge Weight", "In # of Cycles", "New Cycle Count", "New Avg Cycle Node Count", "Avg Node Count /
+            // Effort"
             renderEdge(edgeToRemoveInfo.getEdge()),
             String.valueOf((int) edgeToRemoveInfo.getEdgeWeight()),
             String.valueOf(edgeToRemoveInfo.getEdgeInCycleCount()),

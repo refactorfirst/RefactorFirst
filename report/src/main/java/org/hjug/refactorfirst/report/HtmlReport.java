@@ -325,7 +325,8 @@ public class HtmlReport extends SimpleHtmlReport {
         String classGraphName = "classGraph";
 
         StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append("<h1>Class Map</h1>");
+        stringBuilder.append("<h1 align=\"center\">Class Map</h1>");
+        stringBuilder.append("<div align=\"center\">Excludes classes that have no incoming and outgoing edges</div>");
         if (classGraph.vertexSet().size() + classGraph.edgeSet().size() < d3Threshold) {
             stringBuilder.append(
                     "<div align=\"center\" id=\"" + classGraphName + "\" style=\"border: thin solid black\"></div>\n");
