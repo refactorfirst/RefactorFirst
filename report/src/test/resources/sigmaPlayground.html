@@ -8,12 +8,13 @@
     <script async defer src="https://buttons.github.io/buttons.js"></script>
     <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
     <script src="https://d3js.org/d3.v5.min.js"></script>
-    <script src="https://unpkg.com/d3-graphviz@3.0.5/build/d3-graphviz.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-graphviz/3.0.5/d3-graphviz.min.js"></script>
     <script src="https://unpkg.com/@hpcc-js/wasm@0.3.11/dist/index.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sigma.js/2.4.0/sigma.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/graphology/0.25.4/graphology.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/graphlib/2.1.8/graphlib.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/graphlib-dot@0.6.4/dist/graphlib-dot.min.js"></script>
+    <script src="https://unpkg.com/3d-force-graph"></script>
     <style>
         /* Popup container */
         .popup {
@@ -130,8 +131,6 @@
             // Parse the DOT graph using graphlib-dot
             const graphlibGraph = graphlibDot.read(dot);
 
-
-
             // Convert graphlib graph to graphology graph
             const graphologyGraph = new graphology.Graph();
 
@@ -182,6 +181,13 @@
     </script>
     <script>
         function showPopup(popupId, containerName, dot) {
+            // Add event listener for Escape key to close the popup
+            document.addEventListener('keydown', function(event) {
+                if (event.key === 'Escape') {
+                    hidePopup();
+                }
+            });
+
             document.getElementById('overlay').style.display = 'block';
             document.getElementById(popupId).style.display = 'block';
 
@@ -190,6 +196,51 @@
 
             // Render with Sigma.js
             new Sigma(graph, container);
+        }
+
+        function createForceGraph(popupId, containerName, dot) {
+            // Add event listener for Escape key to close the popup
+            document.addEventListener('keydown', function(event) {
+                if (event.key === 'Escape') {
+                    hidePopup();
+                }
+            });
+
+            document.getElementById('overlay').style.display = 'block';
+            document.getElementById(popupId).style.display = 'block';
+            var container = document.getElementById(containerName);
+
+            // Parse the DOT graph using graphlib-dot
+            const graphlibGraph = graphlibDot.read(dot);
+
+            var nodes = [];
+            var links = [];
+
+            graphlibGraph.nodes().forEach(function(node) {
+                var nodeData = graphlibGraph.node(node);
+                nodes.push({
+                    id: node,
+                    color: nodeData.color || 'white',
+
+                });
+            });
+
+            graphlibGraph.edges().forEach(function(edge) {
+                links.push({
+                    source: edge.v,
+                    target: edge.w,
+                    color: graphlibGraph.edge(edge).color || 'white' });
+            });
+
+            ForceGraph3D()(container)
+                .graphData({ nodes: nodes, links: links })
+                .nodeLabel('id')
+                .nodeAutoColorBy('color')
+                .linkAutoColorBy('color')
+                .linkDirectionalArrowLength(3.5)
+                .linkDirectionalArrowRelPos(1)
+                .width(container.clientWidth)
+                .height(container.clientHeight);
         }
 
         function hidePopup() {
@@ -204,6 +255,13 @@
             containers.forEach(function (container) {
                 while (container.firstChild) {
                     container.removeChild(container.firstChild);
+                }
+            });
+
+            // Remove the Escape key event listener
+            document.removeEventListener('keydown', function(event) {
+                if (event.key === 'Escape') {
+                    hidePopup();
                 }
             });
         }
@@ -228,1820 +286,313 @@ create a fully implemented html page that renders a DOT graph with sigma.js, gra
                 C -> A [color=cyan];
             }
         `;
-
-    const big_dot = 'strict digraph G {\n' +
-        '"UserPropertyDescriptor";\n' +
-        '"User";\n' +
-        '"TransientUserActionFactory";\n' +
-        '"Action";\n' +
-        '"TransientActionFactoryTest";\n' +
-        '"FreeStyleBuild";\n' +
-        '"FreeStyleProject";\n' +
-        '"Jenkins";\n' +
-        '"XStream2";\n' +
-        '"ACL";\n' +
-        '"ViewDescriptor";\n' +
-        '"ViewGroup";\n' +
-        '"View";\n' +
-        '"ViewsTabBar";\n' +
-        '"MyViewsTabBar";\n' +
-        '"ListViewColumn";\n' +
-        '"Descriptor";\n' +
-        '"DescribableList";\n' +
-        '"DependencyDeclarer";\n' +
-        '"DependencyGraph";\n' +
-        '"DependencyGraph_Dependency";\n' +
-        '"TaskListener";\n' +
-        '"ConsoleNote";\n' +
-        '"HMACConfidentialKey";\n' +
-        '"ConfidentialStore";\n' +
-        '"AbstractBuild";\n' +
-        '"Fingerprint_BuildPtr";\n' +
-        '"Item";\n' +
-        '"LazyBuildMixIn";\n' +
-        '"RunMap";\n' +
-        '"Job";\n' +
-        '"RunTest";\n' +
-        '"Run_ArtifactList";\n' +
-        '"Run_Artifact";\n' +
-        '"Run";\n' +
-        '"CauseTest";\n' +
-        '"Project";\n' +
-        '"Trigger";\n' +
-        '"ParameterizedJobMixIn";\n' +
-        '"BuildAuthorizationToken";\n' +
-        '"AbstractProject";\n' +
-        '"Maven_DescriptorImpl";\n' +
-        '"Maven_MavenInstallation";\n' +
-        '"Node";\n' +
-        '"Nodes";\n' +
-        '"ToolLocationNodeProperty_DescriptorImpl";\n' +
-        '"ToolInstallation";\n' +
-        '"NodeSpecific";\n' +
-        '"ToolProperty";\n' +
-        '"JDK";\n' +
-        '"Launcher";\n' +
-        '"LauncherDecorator";\n' +
-        '"Launcher_ProcStarter";\n' +
-        '"Proc";\n' +
-        '"ArgumentListBuilder";\n' +
-        '"Secret";\n' +
-        '"CryptoConfidentialKey";\n' +
-        '"EnvVarsFilterableBuilder";\n' +
-        '"EnvVarsFilterLocalRuleDescriptor";\n' +
-        '"DescriptorExtensionList";\n' +
-        '"ExtensionComponentSet";\n' +
-        '"ExtensionFinder";\n' +
-        '"Hudson";\n' +
-        '"TopLevelItem";\n' +
-        '"JobPropertyTest";\n' +
-        '"ModifiableTopLevelItemGroup";\n' +
-        '"TopLevelItemDescriptor";\n' +
-        '"DirectlyModifiableTopLevelItemGroup";\n' +
-        '"MyView";\n' +
-        '"ListView";\n' +
-        '"ViewJobFilter";\n' +
-        '"Items";\n' +
-        '"ItemGroupMixIn";\n' +
-        '"AllView";\n' +
-        '"Slave";\n' +
-        '"SlaveComputer";\n' +
-        '"FilePath";\n' +
-        '"Computer";\n' +
-        '"RetentionStrategy";\n' +
-        '"RetentionStrategy_Always";\n' +
-        '"DescriptorList";\n' +
-        '"CloudSlaveRetentionStrategy";\n' +
-        '"WorkUnit";\n' +
-        '"Executor";\n' +
-        '"Queue_Task";\n' +
-        '"Queue_Item";\n' +
-        '"Queue_ItemList";\n' +
-        '"Queue_LeftItem";\n' +
-        '"Queue";\n' +
-        '"WorkUnitContext";\n' +
-        '"ExecutorListener";\n' +
-        '"FutureImpl";\n' +
-        '"Queue_BuildableItem";\n' +
-        '"Label";\n' +
-        '"ModelObjectWithContextMenu_ContextMenu";\n' +
-        '"ModelObjectWithContextMenu_MenuItem";\n' +
-        '"ModelObject";\n' +
-        '"HistoryWidget";\n' +
-        '"HistoryPageEntry";\n' +
-        '"HistoryPageFilter";\n' +
-        '"ParameterValue";\n' +
-        '"ParametersAction";\n' +
-        '"ParametersDefinitionProperty";\n' +
-        '"ScheduleResult";\n' +
-        '"Queue_WaitingItem";\n' +
-        '"ParameterDefinition";\n' +
-        '"BuildWrapper";\n' +
-        '"BuildWrapperDescriptor";\n' +
-        '"Build";\n' +
-        '"BuildListener";\n' +
-        '"Cause";\n' +
-        '"CauseAction";\n' +
-        '"LabelVisitor";\n' +
-        '"LabelExpression_Implies";\n' +
-        '"LabelExpression_Iff";\n' +
-        '"LabelExpression_Or";\n' +
-        '"LabelExpression_And";\n' +
-        '"LabelExpression_Not";\n' +
-        '"LabelExpression_Paren";\n' +
-        '"LabelAtom";\n' +
-        '"LabelAtomProperty";\n' +
-        '"NodeProvisioner";\n' +
-        '"Cloud";\n' +
-        '"Cloud_CloudState";\n' +
-        '"CloudProvisioningListener";\n' +
-        '"NodeProvisioner_PlannedNode";\n' +
-        '"NodeProvisioner_Strategy";\n' +
-        '"NodeProvisioner_StrategyState";\n' +
-        '"LoadStatistics";\n' +
-        '"LoadStatistics_LoadStatisticsSnapshot_Builder";\n' +
-        '"Queue_NotWaitingItem";\n' +
-        '"CauseOfBlockage";\n' +
-        '"MappingWorksheet_Mapping";\n' +
-        '"MappingWorksheet_WorkChunk";\n' +
-        '"MappingWorksheet_ExecutorChunk";\n' +
-        '"MappingWorksheet_ExecutorSlot";\n' +
-        '"MappingWorksheet";\n' +
-        '"LoadPredictor";\n' +
-        '"Queue_JobOffer";\n' +
-        '"QueueTaskDispatcher";\n' +
-        '"Queue_StubItem";\n' +
-        '"Queue_StubTask";\n' +
-        '"FoldableAction";\n' +
-        '"Queue_QueueAction";\n' +
-        '"Queue_QueueDecisionHandler";\n' +
-        '"Queue_State";\n' +
-        '"QueueSorter";\n' +
-        '"ExtensionList";\n' +
-        '"Queue_BlockedItem";\n' +
-        '"LoadBalancer";\n' +
-        '"Queue_Snapshot";\n' +
-        '"QueueItemAuthenticator";\n' +
-        '"CauseOfInterruption";\n' +
-        '"InterruptedBuildAction";\n' +
-        '"AsynchronousExecution";\n' +
-        '"NodeProperty";\n' +
-        '"DumbSlave";\n' +
-        '"ComputerLauncher";\n' +
-        '"AbstractCloudSlave";\n' +
-        '"NodeMonitor";\n' +
-        '"AbstractNodeMonitorDescriptor";\n' +
-        '"AbstractNodeMonitorDescriptor_Record";\n' +
-        '"AbstractAsyncNodeMonitorDescriptor";\n' +
-        '"AbstractCIBase";\n' +
-        '"Computer_DisplayExecutor";\n' +
-        '"WorkspaceList";\n' +
-        '"WorkspaceList_Entry";\n' +
-        '"OneOffExecutor";\n' +
-        '"ComputerListener";\n' +
-        '"ConsoleLogFilter";\n' +
-        '"WorkspaceLocator";\n' +
-        '"PluginManager";\n' +
-        '"DownloadService_Downloadable";\n' +
-        '"UpdateSite";\n' +
-        '"PluginWrapper";\n' +
-        '"UpdateSite_Data";\n' +
-        '"UpdateSite_Warning";\n' +
-        '"UpdateSite_Plugin";\n' +
-        '"UpdateCenter_EnableJob";\n' +
-        '"UpdateCenter_UpdateCenterJob";\n' +
-        '"UpdateCenter_InstallationJob";\n' +
-        '"UpdateCenter";\n' +
-        '"UpdateCenter_PluginEntry";\n' +
-        '"UpdateCenter_HudsonDowngradeJob";\n' +
-        '"UpdateCenter_HudsonUpgradeJob";\n' +
-        '"UpdateCenter_ConnectionCheckJob";\n' +
-        '"UpdateCenter_UpdateCenterConfiguration";\n' +
-        '"UpdateCenter_DownloadJob";\n' +
-        '"UpdateSiteWarningsConfiguration";\n' +
-        '"PluginWrapper_PluginWrapperAdministrativeMonitor";\n' +
-        '"Plugin";\n' +
-        '"PluginManager_PluginInstanceStore";\n' +
-        '"ProxyConfiguration";\n' +
-        '"InitStrategy";\n' +
-        '"PluginStrategy";\n' +
-        '"PluginManager_FailedPlugin";\n' +
-        '"PluginManager_PMConstructor";\n' +
-        '"PluginManager_PMConstructor_3";\n' +
-        '"PluginManager_PMConstructor_2";\n' +
-        '"PluginManager_PMConstructor_1";\n' +
-        '"ItemListener";\n' +
-        '"EnvVarsFilterRuleWrapper";\n' +
-        '"EnvVarsFilterException";\n' +
-        '"EnvVarsFilterRule";\n' +
-        '"EnvVarsFilterRuleContext";\n' +
-        '"EnvVarsFilterGlobalRule";\n' +
-        '"ToolDescriptor";\n' +
-        '"NodeList";\n' +
-        '"NodeDescriptor";\n' +
-        '"ComputerSet";\n' +
-        '"LabelFinder";\n' +
-        '"Functions";\n' +
-        '"FormValidation_CheckMethod";\n' +
-        '"Functions_Tag";\n' +
-        '"Fingerprinter_DescriptorImpl";\n' +
-        '"BuildTrigger_DescriptorImpl";\n' +
-        '"BuildStepDescriptor";\n' +
-        '"ArtifactArchiver_DescriptorImpl";\n' +
-        '"WorkspaceListener";\n' +
-        '"BuildTrigger";\n' +
-        '"ParameterizedJobMixIn_ParameterizedJob";\n' +
-        '"WorkspaceList_Lease";\n' +
-        '"SCMDecisionHandler";\n' +
-        '"SubTaskContributor";\n' +
-        '"SCMTrigger";\n' +
-        '"SCMTrigger_DescriptorImpl";\n' +
-        '"SCMTrigger_Runner";\n' +
-        '"SCMTrigger_SCMTriggerCause";\n' +
-        '"SCMTrigger_BuildAction";\n' +
-        '"SCMTriggerItem";\n' +
-        '"TransientProjectActionFactory";\n' +
-        '"JobProperty";\n' +
-        '"WorkspaceBrowser";\n' +
-        '"TriggerDescriptor";\n' +
-        '"SCMCheckoutStrategy";\n' +
-        '"SCMCheckoutStrategyDescriptor";\n' +
-        '"AbstractBuild_AbstractBuildExecution";\n' +
-        '"BuildStepListener";\n' +
-        '"BuildStep";\n' +
-        '"BuildStep_PublisherList";\n' +
-        '"Publisher";\n' +
-        '"Publisher_DescriptorExtensionListImpl";\n' +
-        '"Builder";\n' +
-        '"BuildStepMonitor";\n' +
-        '"SCMListener";\n' +
-        '"ChangeLogSet";\n' +
-        '"RepositoryBrowser";\n' +
-        '"SCMDescriptor";\n' +
-        '"RepositoryBrowsers";\n' +
-        '"SCM";\n' +
-        '"AutoBrowserHolder";\n' +
-        '"RunListener";\n' +
-        '"Environment";\n' +
-        '"EnvironmentList";\n' +
-        '"AbstractBuild_TearDownCheckEnvironment";\n' +
-        '"DependencyRunner";\n' +
-        '"DependencyRunner_ProjectRunnable";\n' +
-        '"Maven";\n' +
-        '"GlobalSettingsProvider";\n' +
-        '"SettingsProvider";\n' +
-        '"BuildStatusSummaryTest";\n' +
-        '"RunListProgressiveRendering";\n' +
-        '"RunWithSCM";\n' +
-        '"ChangeLogSet_Entry";\n' +
-        '"ChangeLogAnnotator";\n' +
-        '"View_AsynchPeople";\n' +
-        '"RunList";\n' +
-        '"View_UserInfo";\n' +
-        '"View_People";\n' +
-        '"GlobalBuildDiscarderStrategy";\n' +
-        '"LogRotator";\n' +
-        '"ViewJob";\n' +
-        '"ViewJob_ReloadThread";\n' +
-        '"EnvironmentContributingAction";\n' +
-        '"EnvironmentContributor";\n' +
-        '"Run_StatusSummarizer";\n' +
-        '"ResultTrend";\n' +
-        '"CheckPoint";\n' +
-        '"AnnotatedLargeText";\n' +
-        '"ConsoleAnnotationOutputStream";\n' +
-        '"Fingerprinter_FingerprintAction";\n' +
-        '"Fingerprint";\n' +
-        '"FingerprintStorage";\n' +
-        '"FingerprintFacet";\n' +
-        '"TransientFingerprintFacetFactory";\n' +
-        '"VirtualFile";\n' +
-        '"ArtifactManagerFactory";\n' +
-        '"TransientBuildActionFactory";\n' +
-        '"ArtifactManager";\n' +
-        '"Run_RunExecution";\n' +
-        '"Run_RunExecution_CheckpointSet";\n' +
-        '"Fingerprint_ProjectRenameListener";\n' +
-        '"BuildCommand";\n' +
-        '"ParametersDefinitionProperty_DescriptorImpl";\n' +
-        '"HexStringConfidentialKey";\n' +
-        '"Job_1FeedItem";\n' +
-        '"PermalinkList";\n' +
-        '"PermalinkProjectAction_Permalink";\n' +
-        '"AbstractItem";\n' +
-        '"BuildDiscarderProperty";\n' +
-        '"BuildDiscarder";\n' +
-        '"SuggestedItem";\n' +
-        '"Items_AllItemsIterable_AllItemsIterator";\n' +
-        '"AutoCompletionCandidates";\n' +
-        '"GenericItemOptionHandler";\n' +
-        '"BuildVariableContributor";\n' +
-        '"AbstractBuild_DependencyChange";\n' +
-        '"ChangeLogParser";\n' +
-        '"DependencyGraph_DependencyGroup";\n' +
-        '"DescriptorVisibilityFilter";\n' +
-        '"Descriptor_NewInstanceBindInterceptor";\n' +
-        '"Descriptor_PropertyType";\n' +
-        '"ItemCategory";\n' +
-        '"ViewPropertyDescriptor";\n' +
-        '"ViewProperty";\n' +
-        '"HudsonFilter";\n' +
-        '"SecurityRealm_SecurityComponents";\n' +
-        '"TokenBasedRememberMeServices2";\n' +
-        '"SecurityRealm";\n' +
-        '"AuthenticationProcessingFilter2";\n' +
-        '"FederatedLoginService_FederatedIdentity";\n' +
-        '"FederatedLoginServiceUserProperty";\n' +
-        '"JenkinsLocationConfiguration";\n' +
-        '"TypedFilter";\n' +
-        '"LogRecorderManager";\n' +
-        '"LogRecorder";\n' +
-        '"AdministrativeMonitor";\n' +
-        '"OverallLoadStatistics";\n' +
-        '"FingerprintMap";\n' +
-        '"FingerprintMap_FingerprintParams";\n' +
-        '"ViewGroupMixIn";\n' +
-        '"Hudson_CloudList";\n' +
-        '"AuthorizationStrategy";\n' +
-        '"SetupWizard";\n' +
-        '"ApiTokenProperty";\n' +
-        '"ApiTokenStats";\n' +
-        '"ApiTokenStore";\n' +
-        '"FullControlOnceLoggedInAuthorizationStrategy";\n' +
-        '"SparseACL";\n' +
-        '"HudsonPrivateSecurityRealm";\n' +
-        '"PermissionAdder";\n' +
-        '"HudsonPrivateSecurityRealm_SignupInfo";\n' +
-        '"Actionable";\n' +
-        '"ImpersonatingUserDetailsService2";\n' +
-        '"UserProperty";\n' +
-        'BuildCommand -> Job [ label = "1" weight = "1" ];\n' +
-        'BuildCommand -> ParametersAction [ label = "1" weight = "1" ];\n' +
-        'BuildCommand -> ParametersDefinitionProperty [ label = "1" weight = "1" ];\n' +
-        'BuildCommand -> ParameterValue [ label = "3" weight = "3" ];\n' +
-        'BuildCommand -> ParameterDefinition [ label = "2" weight = "2" ];\n' +
-        'BuildCommand -> SCMTriggerItem [ label = "1" weight = "1" ];\n' +
-        'BuildCommand -> Queue_Item [ label = "1" weight = "1" ];\n' +
-        'Run -> BuildCommand [ label = "1" weight = "1" ];\n' +
-        'BuildCommand -> Run [ label = "1" weight = "1" ];\n' +
-        'GenericItemOptionHandler -> Jenkins [ label = "1" weight = "1" ];\n' +
-        'Item -> GenericItemOptionHandler [ label = "2" weight = "2" ];\n' +
-        'GenericItemOptionHandler -> Item [ label = "1" weight = "1" ];\n' +
-        'AnnotatedLargeText -> ConsoleAnnotationOutputStream [ label = "1" weight = "1" ];\n' +
-        'AnnotatedLargeText -> CryptoConfidentialKey [ label = "1" weight = "1" ];\n' +
-        'ConsoleAnnotationOutputStream -> ConsoleNote [ label = "1" weight = "1" ];\n' +
-        'ConsoleLogFilter -> AbstractBuild [ label = "1" weight = "1" ];\n' +
-        'ConsoleLogFilter -> Run [ label = "1" weight = "1" ];\n' +
-        'ConsoleLogFilter -> Computer [ label = "1" weight = "1" ];\n' +
-        'ConsoleNote -> HMACConfidentialKey [ label = "1" weight = "1" ];\n' +
-        'ConsoleNote -> Jenkins [ label = "1" weight = "1" ];\n' +
-        'DependencyRunner -> DependencyRunner_ProjectRunnable [ label = "2" weight = "2" ];\n' +
-        'DependencyRunner -> AbstractProject [ label = "5" weight = "5" ];\n' +
-        'AbstractProject -> DependencyRunner [ label = "1" weight = "1" ];\n' +
-        'DependencyRunner_ProjectRunnable -> AbstractProject [ label = "1" weight = "1" ];\n' +
-        'DescriptorExtensionList -> Jenkins [ label = "2" weight = "2" ];\n' +
-        'DescriptorExtensionList -> Hudson [ label = "2" weight = "2" ];\n' +
-        'Descriptor -> DescriptorExtensionList [ label = "4" weight = "4" ];\n' +
-        'DescriptorExtensionList -> ExtensionComponentSet [ label = "1" weight = "1" ];\n' +
-        'DescriptorExtensionList -> Descriptor [ label = "4" weight = "4" ];\n' +
-        'ExtensionFinder -> Hudson [ label = "4" weight = "4" ];\n' +
-        'ExtensionList -> Hudson [ label = "4" weight = "4" ];\n' +
-        'ExtensionList -> Jenkins [ label = "5" weight = "5" ];\n' +
-        'ExtensionList -> ExtensionComponentSet [ label = "2" weight = "2" ];\n' +
-        'ExtensionList -> ExtensionList [ label = "1" weight = "1" ];\n' +
-        'FilePath -> FilePath [ label = "27" weight = "27" ];\n' +
-        'FilePath -> TaskListener [ label = "4" weight = "4" ];\n' +
-        'FilePath -> Jenkins [ label = "1" weight = "1" ];\n' +
-        'FilePath -> Computer [ label = "1" weight = "1" ];\n' +
-        'Functions -> Jenkins [ label = "4" weight = "4" ];\n' +
-        'Functions -> Functions [ label = "1" weight = "1" ];\n' +
-        'Functions -> AbstractProject [ label = "5" weight = "5" ];\n' +
-        'Job -> Functions [ label = "1" weight = "1" ];\n' +
-        'Functions -> Job [ label = "1" weight = "1" ];\n' +
-        'Node -> Functions [ label = "1" weight = "1" ];\n' +
-        'Functions -> ExtensionList [ label = "2" weight = "2" ];\n' +
-        'Functions -> Descriptor [ label = "11" weight = "11" ];\n' +
-        'Functions -> Functions_Tag [ label = "4" weight = "4" ];\n' +
-        'Functions_Tag -> Descriptor [ label = "2" weight = "2" ];\n' +
-        'Functions_Tag -> Functions_Tag [ label = "1" weight = "1" ];\n' +
-        'Functions -> Action [ label = "3" weight = "3" ];\n' +
-        'Functions -> Item [ label = "8" weight = "8" ];\n' +
-        'Functions -> View [ label = "1" weight = "1" ];\n' +
-        'Functions -> FormValidation_CheckMethod [ label = "1" weight = "1" ];\n' +
-        'Functions -> Computer [ label = "1" weight = "1" ];\n' +
-        'Functions -> User [ label = "2" weight = "2" ];\n' +
-        'InitStrategy -> PluginManager [ label = "2" weight = "2" ];\n' +
-        'InitStrategy -> InitStrategy [ label = "2" weight = "2" ];\n' +
-        'Launcher -> TaskListener [ label = "2" weight = "2" ];\n' +
-        'Launcher -> EnvVarsFilterRuleWrapper [ label = "3" weight = "3" ];\n' +
-        'Launcher -> Launcher [ label = "4" weight = "4" ];\n' +
-        'Launcher -> Run [ label = "1" weight = "1" ];\n' +
-        'Launcher -> EnvVarsFilterableBuilder [ label = "1" weight = "1" ];\n' +
-        'Launcher -> Computer [ label = "1" weight = "1" ];\n' +
-        'Launcher_ProcStarter -> FilePath [ label = "2" weight = "2" ];\n' +
-        'Launcher_ProcStarter -> TaskListener [ label = "2" weight = "2" ];\n' +
-        'Launcher_ProcStarter -> EnvVarsFilterableBuilder [ label = "2" weight = "2" ];\n' +
-        'Launcher_ProcStarter -> ArgumentListBuilder [ label = "1" weight = "1" ];\n' +
-        'Launcher_ProcStarter -> Proc [ label = "1" weight = "1" ];\n' +
-        'Launcher_ProcStarter -> Launcher_ProcStarter [ label = "1" weight = "1" ];\n' +
-        'Launcher -> FilePath [ label = "12" weight = "12" ];\n' +
-        'Launcher -> Launcher_ProcStarter [ label = "1" weight = "1" ];\n' +
-        'Launcher -> Node [ label = "1" weight = "1" ];\n' +
-        'Launcher -> LauncherDecorator [ label = "1" weight = "1" ];\n' +
-        'LauncherDecorator -> Launcher [ label = "1" weight = "1" ];\n' +
-        'LauncherDecorator -> Node [ label = "1" weight = "1" ];\n' +
-        'LogRecorder -> AutoCompletionCandidates [ label = "1" weight = "1" ];\n' +
-        'LogRecorder -> LogRecorder [ label = "4" weight = "4" ];\n' +
-        'LogRecorder -> Computer [ label = "2" weight = "2" ];\n' +
-        'LogRecorderManager -> LogRecorder [ label = "6" weight = "6" ];\n' +
-        'LogRecorderManager -> ModelObjectWithContextMenu_ContextMenu [ label = "1" weight = "1" ];\n' +
-        'LogRecorderManager -> Jenkins [ label = "1" weight = "1" ];\n' +
-        'AbstractBuild -> ChangeLogParser [ label = "1" weight = "1" ];\n' +
-        'AbstractBuild -> ChangeLogSet [ label = "3" weight = "3" ];\n' +
-        'ChangeLogSet_Entry -> AbstractBuild [ label = "3" weight = "3" ];\n' +
-        'AbstractBuild -> Environment [ label = "2" weight = "2" ];\n' +
-        'AbstractProject -> AbstractBuild [ label = "12" weight = "12" ];\n' +
-        'AbstractBuild -> AbstractBuild [ label = "8" weight = "8" ];\n' +
-        'AbstractBuild -> Node [ label = "1" weight = "1" ];\n' +
-        'AbstractBuild -> FilePath [ label = "5" weight = "5" ];\n' +
-        'AbstractBuild -> User [ label = "1" weight = "1" ];\n' +
-        'AbstractBuild -> AbstractProject [ label = "34" weight = "34" ];\n' +
-        'AbstractBuild -> AbstractBuild_DependencyChange [ label = "3" weight = "3" ];\n' +
-        'AbstractBuild -> ChangeLogSet_Entry [ label = "1" weight = "1" ];\n' +
-        'AbstractBuild_AbstractBuildExecution -> Launcher [ label = "2" weight = "2" ];\n' +
-        'AbstractBuild_AbstractBuildExecution -> BuildListener [ label = "18" weight = "18" ];\n' +
-        'AbstractBuild_AbstractBuildExecution -> WorkspaceList_Lease [ label = "1" weight = "1" ];\n' +
-        'AbstractBuild_AbstractBuildExecution -> Executor [ label = "1" weight = "1" ];\n' +
-        'AbstractBuild_AbstractBuildExecution -> Computer [ label = "1" weight = "1" ];\n' +
-        'AbstractBuild_AbstractBuildExecution -> Node [ label = "5" weight = "5" ];\n' +
-        'AbstractBuild_AbstractBuildExecution -> WorkspaceList [ label = "1" weight = "1" ];\n' +
-        'AbstractBuild_AbstractBuildExecution -> FilePath [ label = "2" weight = "2" ];\n' +
-        'AbstractBuild_AbstractBuildExecution -> AbstractBuild_TearDownCheckEnvironment [ label = "1" weight = "1" ];\n' +
-        'AbstractBuild_AbstractBuildExecution -> LabelAtom [ label = "2" weight = "2" ];\n' +
-        'AbstractBuild_AbstractBuildExecution -> WorkspaceListener [ label = "1" weight = "1" ];\n' +
-        'AbstractBuild_AbstractBuildExecution -> Environment [ label = "4" weight = "4" ];\n' +
-        'AbstractBuild_AbstractBuildExecution -> BuildWrapper [ label = "1" weight = "1" ];\n' +
-        'AbstractBuild_AbstractBuildExecution -> RunListener [ label = "1" weight = "1" ];\n' +
-        'AbstractBuild_AbstractBuildExecution -> NodeProperty [ label = "2" weight = "2" ];\n' +
-        'AbstractBuild_AbstractBuildExecution -> AbstractBuild [ label = "1" weight = "1" ];\n' +
-        'AbstractBuild_AbstractBuildExecution -> AbstractProject [ label = "1" weight = "1" ];\n' +
-        'AbstractBuild_AbstractBuildExecution -> SCM [ label = "1" weight = "1" ];\n' +
-        'AbstractBuild_AbstractBuildExecution -> SCMListener [ label = "2" weight = "2" ];\n' +
-        'AbstractBuild_AbstractBuildExecution -> User [ label = "1" weight = "1" ];\n' +
-        'BuildStep -> AbstractBuild_AbstractBuildExecution [ label = "7" weight = "7" ];\n' +
-        'AbstractBuild_AbstractBuildExecution -> BuildStep [ label = "5" weight = "5" ];\n' +
-        'AbstractBuild_AbstractBuildExecution -> BuildStepMonitor [ label = "1" weight = "1" ];\n' +
-        'AbstractBuild_AbstractBuildExecution -> BuildStepListener [ label = "2" weight = "2" ];\n' +
-        'AbstractBuild_TearDownCheckEnvironment -> AbstractBuild [ label = "1" weight = "1" ];\n' +
-        'AbstractBuild_TearDownCheckEnvironment -> BuildListener [ label = "1" weight = "1" ];\n' +
-        'AbstractBuild -> TaskListener [ label = "1" weight = "1" ];\n' +
-        'AbstractBuild -> EnvironmentContributingAction [ label = "1" weight = "1" ];\n' +
-        'AbstractBuild -> Executor [ label = "2" weight = "2" ];\n' +
-        'AbstractBuild -> Action [ label = "1" weight = "1" ];\n' +
-        'AbstractBuild -> ParametersAction [ label = "2" weight = "2" ];\n' +
-        'AbstractBuild -> ParameterValue [ label = "2" weight = "2" ];\n' +
-        'AbstractBuild -> BuildWrapper [ label = "2" weight = "2" ];\n' +
-        'AbstractBuild -> BuildVariableContributor [ label = "1" weight = "1" ];\n' +
-        'AbstractBuild -> Fingerprinter_FingerprintAction [ label = "4" weight = "4" ];\n' +
-        'AbstractBuild -> Fingerprint [ label = "2" weight = "2" ];\n' +
-        'AbstractBuild -> Fingerprint_BuildPtr [ label = "2" weight = "2" ];\n' +
-        'AbstractBuild_DependencyChange -> AbstractProject [ label = "2" weight = "2" ];\n' +
-        'AbstractBuild_DependencyChange -> AbstractBuild [ label = "4" weight = "4" ];\n' +
-        'AbstractCIBase -> Label [ label = "1" weight = "1" ];\n' +
-        'AbstractCIBase -> View [ label = "1" weight = "1" ];\n' +
-        'AbstractCIBase -> Computer [ label = "12" weight = "12" ];\n' +
-        'AbstractCIBase -> Node [ label = "8" weight = "8" ];\n' +
-        'AbstractCIBase -> RetentionStrategy [ label = "1" weight = "1" ];\n' +
-        'AbstractItem -> Item [ label = "4" weight = "4" ];\n' +
-        'AbstractItem -> DirectlyModifiableTopLevelItemGroup [ label = "1" weight = "1" ];\n' +
-        'AbstractItem -> AbstractItem [ label = "5" weight = "5" ];\n' +
-        'Item -> AbstractItem [ label = "1" weight = "1" ];\n' +
-        'AbstractItem -> View [ label = "1" weight = "1" ];\n' +
-        'AbstractItem -> Queue [ label = "1" weight = "1" ];\n' +
-        'AbstractItem -> Queue_Item [ label = "1" weight = "1" ];\n' +
-        'AbstractItem -> Executor [ label = "4" weight = "4" ];\n' +
-        'AbstractItem -> Computer [ label = "1" weight = "1" ];\n' +
-        'AbstractItem -> WorkUnit [ label = "1" weight = "1" ];\n' +
-        'AbstractProject -> SCM [ label = "6" weight = "6" ];\n' +
-        'AbstractProject -> SCMCheckoutStrategy [ label = "2" weight = "2" ];\n' +
-        'AbstractProject -> LazyBuildMixIn [ label = "1" weight = "1" ];\n' +
-        'AbstractProject -> AbstractProject [ label = "17" weight = "17" ];\n' +
-        'AbstractProject -> RunMap [ label = "1" weight = "1" ];\n' +
-        'AbstractProject -> BuildAuthorizationToken [ label = "1" weight = "1" ];\n' +
-        'AbstractProject -> DescribableList [ label = "2" weight = "2" ];\n' +
-        'AbstractProject -> Trigger [ label = "6" weight = "6" ];\n' +
-        'AbstractProject -> TriggerDescriptor [ label = "2" weight = "2" ];\n' +
-        'AbstractProject -> Action [ label = "7" weight = "7" ];\n' +
-        'AbstractProject -> Jenkins [ label = "2" weight = "2" ];\n' +
-        'Item -> AbstractProject [ label = "1" weight = "1" ];\n' +
-        'AbstractProject -> Node [ label = "6" weight = "6" ];\n' +
-        'AbstractProject -> TaskListener [ label = "6" weight = "6" ];\n' +
-        'AbstractProject -> JDK [ label = "2" weight = "2" ];\n' +
-        'AbstractProject -> FilePath [ label = "10" weight = "10" ];\n' +
-        'AbstractProject -> Label [ label = "4" weight = "4" ];\n' +
-        'AbstractProject -> Executor [ label = "1" weight = "1" ];\n' +
-        'AbstractProject -> WorkspaceBrowser [ label = "2" weight = "2" ];\n' +
-        'AbstractProject -> JobProperty [ label = "3" weight = "3" ];\n' +
-        'AbstractProject -> TransientProjectActionFactory [ label = "1" weight = "1" ];\n' +
-        'AbstractProject -> Cause [ label = "4" weight = "4" ];\n' +
-        'Action -> AbstractProject [ label = "1" weight = "1" ];\n' +
-        'AbstractProject -> SCMTrigger [ label = "1" weight = "1" ];\n' +
-        'AbstractProject -> Queue_Task [ label = "2" weight = "2" ];\n' +
-        'AbstractProject -> Queue_Item [ label = "2" weight = "2" ];\n' +
-        'AbstractProject -> SubTaskContributor [ label = "1" weight = "1" ];\n' +
-        'AbstractProject -> Launcher [ label = "3" weight = "3" ];\n' +
-        'AbstractProject -> BuildListener [ label = "1" weight = "1" ];\n' +
-        'AbstractProject -> SCMDecisionHandler [ label = "1" weight = "1" ];\n' +
-        'AbstractProject -> WorkspaceList [ label = "2" weight = "2" ];\n' +
-        'AbstractProject -> WorkspaceList_Lease [ label = "1" weight = "1" ];\n' +
-        'AbstractProject -> Computer [ label = "2" weight = "2" ];\n' +
-        'AbstractProject -> Cloud [ label = "1" weight = "1" ];\n' +
-        'AbstractProject -> User [ label = "1" weight = "1" ];\n' +
-        'AbstractProject -> Descriptor [ label = "2" weight = "2" ];\n' +
-        'Trigger -> AbstractProject [ label = "1" weight = "1" ];\n' +
-        'AbstractProject -> BuildTrigger [ label = "4" weight = "4" ];\n' +
-        'AbstractProject -> DependencyGraph [ label = "3" weight = "3" ];\n' +
-        'Descriptor -> AbstractProject [ label = "2" weight = "2" ];\n' +
-        'AbstractProject -> WorkspaceListener [ label = "1" weight = "1" ];\n' +
-        'Actionable -> Action [ label = "20" weight = "20" ];\n' +
-        'Action -> Actionable [ label = "7" weight = "7" ];\n' +
-        'AdministrativeMonitor -> AbstractCIBase [ label = "1" weight = "1" ];\n' +
-        'AllView -> ViewGroup [ label = "1" weight = "1" ];\n' +
-        'AllView -> TopLevelItem [ label = "1" weight = "1" ];\n' +
-        'TopLevelItem -> AllView [ label = "1" weight = "1" ];\n' +
-        'AllView -> View [ label = "2" weight = "2" ];\n' +
-        'AllView -> AllView [ label = "1" weight = "1" ];\n' +
-        'Item -> AutoCompletionCandidates [ label = "2" weight = "2" ];\n' +
-        'AutoCompletionCandidates -> Item [ label = "1" weight = "1" ];\n' +
-        'AutoCompletionCandidates -> AutoCompletionCandidates [ label = "1" weight = "1" ];\n' +
-        'Project -> Build [ label = "3" weight = "3" ];\n' +
-        'BuildAuthorizationToken -> AbstractProject [ label = "1" weight = "1" ];\n' +
-        'BuildAuthorizationToken -> BuildAuthorizationToken [ label = "2" weight = "2" ];\n' +
-        'BuildAuthorizationToken -> Job [ label = "1" weight = "1" ];\n' +
-        'BuildListener -> Cause [ label = "2" weight = "2" ];\n' +
-        'BuildStepListener -> AbstractBuild [ label = "2" weight = "2" ];\n' +
-        'BuildStepListener -> BuildStep [ label = "2" weight = "2" ];\n' +
-        'BuildStepListener -> BuildListener [ label = "2" weight = "2" ];\n' +
-        'BuildVariableContributor -> AbstractBuild [ label = "1" weight = "1" ];\n' +
-        'Cause -> Run [ label = "4" weight = "4" ];\n' +
-        'Cause -> AbstractBuild [ label = "2" weight = "2" ];\n' +
-        'Cause -> Job [ label = "1" weight = "1" ];\n' +
-        'Cause -> TaskListener [ label = "1" weight = "1" ];\n' +
-        'CauseAction -> Cause [ label = "12" weight = "12" ];\n' +
-        'Cause -> CauseAction [ label = "3" weight = "3" ];\n' +
-        'CauseAction -> CauseAction [ label = "2" weight = "2" ];\n' +
-        'CauseAction -> Run [ label = "2" weight = "2" ];\n' +
-        'CauseAction -> Queue_Item [ label = "1" weight = "1" ];\n' +
-        'CauseAction -> Queue_Task [ label = "1" weight = "1" ];\n' +
-        'CauseAction -> Action [ label = "1" weight = "1" ];\n' +
-        'CheckPoint -> BuildListener [ label = "1" weight = "1" ];\n' +
-        'CheckPoint -> CheckPoint [ label = "3" weight = "3" ];\n' +
-        'Computer -> Executor [ label = "15" weight = "15" ];\n' +
-        'Computer -> OneOffExecutor [ label = "4" weight = "4" ];\n' +
-        'Computer -> WorkspaceList [ label = "1" weight = "1" ];\n' +
-        'Computer -> Action [ label = "3" weight = "3" ];\n' +
-        'Computer -> Node [ label = "14" weight = "14" ];\n' +
-        'Computer -> Jenkins [ label = "2" weight = "2" ];\n' +
-        'Computer -> Computer_DisplayExecutor [ label = "1" weight = "1" ];\n' +
-        'Computer -> Queue_BuildableItem [ label = "1" weight = "1" ];\n' +
-        'Computer -> AbstractCIBase [ label = "2" weight = "2" ];\n' +
-        'Computer -> NodeMonitor [ label = "1" weight = "1" ];\n' +
-        'Computer -> TaskListener [ label = "1" weight = "1" ];\n' +
-        'Computer -> NodeProperty [ label = "2" weight = "2" ];\n' +
-        'Computer -> WorkUnit [ label = "1" weight = "1" ];\n' +
-        'Computer -> Run [ label = "1" weight = "1" ];\n' +
-        'Computer -> AbstractProject [ label = "1" weight = "1" ];\n' +
-        'Computer -> AbstractBuild [ label = "1" weight = "1" ];\n' +
-        'Computer -> Computer [ label = "1" weight = "1" ];\n' +
-        'Computer_DisplayExecutor -> Executor [ label = "2" weight = "2" ];\n' +
-        'Computer_DisplayExecutor -> Computer_DisplayExecutor [ label = "1" weight = "1" ];\n' +
-        'ComputerSet -> DescribableList [ label = "1" weight = "1" ];\n' +
-        'ComputerSet -> NodeMonitor [ label = "11" weight = "11" ];\n' +
-        'ComputerSet -> Descriptor [ label = "4" weight = "4" ];\n' +
-        'ComputerSet -> ModelObjectWithContextMenu_ContextMenu [ label = "1" weight = "1" ];\n' +
-        'ComputerSet -> Computer [ label = "6" weight = "6" ];\n' +
-        'ComputerSet -> Jenkins [ label = "2" weight = "2" ];\n' +
-        'ComputerSet -> Node [ label = "3" weight = "3" ];\n' +
-        'ComputerSet -> NodeDescriptor [ label = "1" weight = "1" ];\n' +
-        'DependencyGraph -> AbstractProject [ label = "45" weight = "45" ];\n' +
-        'DependencyGraph -> DependencyGraph_DependencyGroup [ label = "15" weight = "15" ];\n' +
-        'DependencyGraph -> DependencyGraph_Dependency [ label = "3" weight = "3" ];\n' +
-        'DependencyGraph -> DependencyDeclarer [ label = "1" weight = "1" ];\n' +
-        'DependencyGraph -> DependencyGraph [ label = "1" weight = "1" ];\n' +
-        'DependencyGraph_Dependency -> AbstractProject [ label = "3" weight = "3" ];\n' +
-        'DependencyGraph_Dependency -> AbstractBuild [ label = "1" weight = "1" ];\n' +
-        'DependencyGraph_Dependency -> TaskListener [ label = "1" weight = "1" ];\n' +
-        'DependencyGraph_Dependency -> Action [ label = "1" weight = "1" ];\n' +
-        'DependencyGraph_Dependency -> DependencyGraph_Dependency [ label = "1" weight = "1" ];\n' +
-        'DependencyGraph_DependencyGroup -> DependencyGraph_Dependency [ label = "3" weight = "3" ];\n' +
-        'DependencyGraph_DependencyGroup -> AbstractProject [ label = "1" weight = "1" ];\n' +
-        'Descriptor -> FormValidation_CheckMethod [ label = "2" weight = "2" ];\n' +
-        'Descriptor -> Descriptor_PropertyType [ label = "3" weight = "3" ];\n' +
-        'Descriptor_PropertyType -> Descriptor [ label = "1" weight = "1" ];\n' +
-        'Descriptor -> Descriptor_NewInstanceBindInterceptor [ label = "1" weight = "1" ];\n' +
-        'Descriptor_NewInstanceBindInterceptor -> Descriptor [ label = "1" weight = "1" ];\n' +
-        'Descriptor -> PluginWrapper [ label = "1" weight = "1" ];\n' +
-        'Descriptor -> Descriptor [ label = "9" weight = "9" ];\n' +
-        'DescriptorVisibilityFilter -> Descriptor [ label = "2" weight = "2" ];\n' +
-        'Descriptor -> DescriptorVisibilityFilter [ label = "6" weight = "6" ];\n' +
-        'DescriptorVisibilityFilter -> ExtensionList [ label = "2" weight = "2" ];\n' +
-        'DescriptorVisibilityFilter -> DescriptorVisibilityFilter [ label = "5" weight = "5" ];\n' +
-        'DownloadService_Downloadable -> UpdateSite [ label = "2" weight = "2" ];\n' +
-        'DownloadService_Downloadable -> DownloadService_Downloadable [ label = "1" weight = "1" ];\n' +
-        'Environment -> AbstractBuild [ label = "1" weight = "1" ];\n' +
-        'Environment -> BuildListener [ label = "1" weight = "1" ];\n' +
-        'EnvironmentContributingAction -> Run [ label = "1" weight = "1" ];\n' +
-        'EnvironmentContributingAction -> AbstractBuild [ label = "1" weight = "1" ];\n' +
-        'EnvironmentContributor -> Run [ label = "1" weight = "1" ];\n' +
-        'EnvironmentContributor -> TaskListener [ label = "2" weight = "2" ];\n' +
-        'EnvironmentContributor -> Job [ label = "1" weight = "1" ];\n' +
-        'EnvironmentList -> Environment [ label = "5" weight = "5" ];\n' +
-        'Environment -> EnvironmentList [ label = "1" weight = "1" ];\n' +
-        'Executor -> Computer [ label = "3" weight = "3" ];\n' +
-        'Executor -> Queue [ label = "1" weight = "1" ];\n' +
-        'Executor -> AsynchronousExecution [ label = "3" weight = "3" ];\n' +
-        'Executor -> WorkUnit [ label = "3" weight = "3" ];\n' +
-        'Executor -> CauseOfInterruption [ label = "6" weight = "6" ];\n' +
-        'Executor -> Run [ label = "1" weight = "1" ];\n' +
-        'Executor -> TaskListener [ label = "1" weight = "1" ];\n' +
-        'Executor -> Action [ label = "1" weight = "1" ];\n' +
-        'Executor -> AbstractBuild [ label = "1" weight = "1" ];\n' +
-        'Executor -> Queue_Task [ label = "1" weight = "1" ];\n' +
-        'Executor -> Jenkins [ label = "1" weight = "1" ];\n' +
-        'Executor -> Executor [ label = "2" weight = "2" ];\n' +
-        'ExecutorListener -> Executor [ label = "4" weight = "4" ];\n' +
-        'ExecutorListener -> Queue_Task [ label = "4" weight = "4" ];\n' +
-        'Fingerprint_BuildPtr -> Run [ label = "2" weight = "2" ];\n' +
-        'Fingerprint_BuildPtr -> Jenkins [ label = "1" weight = "1" ];\n' +
-        'Fingerprint_BuildPtr -> Job [ label = "3" weight = "3" ];\n' +
-        'Fingerprint_BuildPtr -> Item [ label = "1" weight = "1" ];\n' +
-        'Item -> Fingerprint_BuildPtr [ label = "1" weight = "1" ];\n' +
-        'Fingerprint_ProjectRenameListener -> Item [ label = "2" weight = "2" ];\n' +
-        'Fingerprint_ProjectRenameListener -> Job [ label = "1" weight = "1" ];\n' +
-        'Fingerprint_ProjectRenameListener -> RunList [ label = "1" weight = "1" ];\n' +
-        'Run -> Fingerprint_ProjectRenameListener [ label = "1" weight = "1" ];\n' +
-        'Fingerprint_ProjectRenameListener -> Run [ label = "1" weight = "1" ];\n' +
-        'Fingerprint_ProjectRenameListener -> Fingerprint [ label = "2" weight = "2" ];\n' +
-        'Fingerprint -> Fingerprint_BuildPtr [ label = "2" weight = "2" ];\n' +
-        'Fingerprint -> FingerprintFacet [ label = "8" weight = "8" ];\n' +
-        'Fingerprint -> Run [ label = "5" weight = "5" ];\n' +
-        'Fingerprint -> Job [ label = "3" weight = "3" ];\n' +
-        'Fingerprint -> Jenkins [ label = "2" weight = "2" ];\n' +
-        'Fingerprint -> AbstractBuild [ label = "1" weight = "1" ];\n' +
-        'Fingerprint -> TransientFingerprintFacetFactory [ label = "1" weight = "1" ];\n' +
-        'FingerprintFacet -> Fingerprint [ label = "4" weight = "4" ];\n' +
-        'Fingerprint -> Action [ label = "1" weight = "1" ];\n' +
-        'Fingerprint -> FingerprintStorage [ label = "6" weight = "6" ];\n' +
-        'Fingerprint -> Fingerprint [ label = "3" weight = "3" ];\n' +
-        'Fingerprint -> Item [ label = "3" weight = "3" ];\n' +
-        'Fingerprint -> XStream2 [ label = "1" weight = "1" ];\n' +
-        'FingerprintMap -> AbstractBuild [ label = "2" weight = "2" ];\n' +
-        'FingerprintMap -> Run [ label = "1" weight = "1" ];\n' +
-        'FingerprintMap -> FingerprintMap_FingerprintParams [ label = "2" weight = "2" ];\n' +
-        'FingerprintMap_FingerprintParams -> Run [ label = "2" weight = "2" ];\n' +
-        'FreeStyleBuild -> FreeStyleProject [ label = "2" weight = "2" ];\n' +
-        'FreeStyleProject -> Jenkins [ label = "1" weight = "1" ];\n' +
-        'Hudson -> ItemListener [ label = "1" weight = "1" ];\n' +
-        'Hudson -> ComputerListener [ label = "1" weight = "1" ];\n' +
-        'Hudson -> PluginManager [ label = "1" weight = "1" ];\n' +
-        'Hudson -> Node [ label = "1" weight = "1" ];\n' +
-        'Hudson -> Slave [ label = "1" weight = "1" ];\n' +
-        'Hudson -> TopLevelItem [ label = "1" weight = "1" ];\n' +
-        'Hudson_CloudList -> Jenkins [ label = "1" weight = "1" ];\n' +
-        'Item -> Item [ label = "3" weight = "3" ];\n' +
-        'ItemGroupMixIn -> TopLevelItem [ label = "5" weight = "5" ];\n' +
-        'Item -> ItemGroupMixIn [ label = "2" weight = "2" ];\n' +
-        'ItemGroupMixIn -> Item [ label = "2" weight = "2" ];\n' +
-        'ItemGroupMixIn -> TopLevelItemDescriptor [ label = "2" weight = "2" ];\n' +
-        'TopLevelItem -> ItemGroupMixIn [ label = "2" weight = "2" ];\n' +
-        'Items -> TopLevelItemDescriptor [ label = "3" weight = "3" ];\n' +
-        'Items -> Item [ label = "9" weight = "9" ];\n' +
-        'Items -> ACL [ label = "1" weight = "1" ];\n' +
-        'Item -> Items [ label = "23" weight = "23" ];\n' +
-        'Items -> Jenkins [ label = "1" weight = "1" ];\n' +
-        'AbstractItem -> Items [ label = "2" weight = "2" ];\n' +
-        'TopLevelItem -> Items [ label = "2" weight = "2" ];\n' +
-        'Items -> DirectlyModifiableTopLevelItemGroup [ label = "2" weight = "2" ];\n' +
-        'Items_AllItemsIterable_AllItemsIterator -> Item [ label = "3" weight = "3" ];\n' +
-        'Item -> Items_AllItemsIterable_AllItemsIterator [ label = "1" weight = "1" ];\n' +
-        'Items -> XStream2 [ label = "1" weight = "1" ];\n' +
-        'ToolProperty -> JDK [ label = "1" weight = "1" ];\n' +
-        'JDK -> Node [ label = "2" weight = "2" ];\n' +
-        'JDK -> TaskListener [ label = "2" weight = "2" ];\n' +
-        'JDK -> Launcher [ label = "1" weight = "1" ];\n' +
-        'Job -> BuildDiscarder [ label = "4" weight = "4" ];\n' +
-        'Job -> JobProperty [ label = "14" weight = "14" ];\n' +
-        'Item -> Job [ label = "1" weight = "1" ];\n' +
-        'Run -> Job [ label = "25" weight = "25" ];\n' +
-        'Job -> Item [ label = "1" weight = "1" ];\n' +
-        'Job -> Node [ label = "1" weight = "1" ];\n' +
-        'Job -> TaskListener [ label = "1" weight = "1" ];\n' +
-        'Job -> Computer [ label = "1" weight = "1" ];\n' +
-        'Job -> EnvironmentContributor [ label = "1" weight = "1" ];\n' +
-        'Job -> BuildDiscarderProperty [ label = "1" weight = "1" ];\n' +
-        'Job -> LogRotator [ label = "1" weight = "1" ];\n' +
-        'JobProperty -> Job [ label = "3" weight = "3" ];\n' +
-        'Job -> Run [ label = "6" weight = "6" ];\n' +
-        'Job -> DirectlyModifiableTopLevelItemGroup [ label = "1" weight = "1" ];\n' +
-        'Job -> AbstractItem [ label = "1" weight = "1" ];\n' +
-        'Job -> PermalinkProjectAction_Permalink [ label = "2" weight = "2" ];\n' +
-        'Job -> Jenkins [ label = "1" weight = "1" ];\n' +
-        'Job -> PermalinkList [ label = "1" weight = "1" ];\n' +
-        'Job_1FeedItem -> ChangeLogSet_Entry [ label = "2" weight = "2" ];\n' +
-        'Job -> Job_1FeedItem [ label = "1" weight = "1" ];\n' +
-        'Job -> SCMTriggerItem [ label = "1" weight = "1" ];\n' +
-        'Job -> SCM [ label = "1" weight = "1" ];\n' +
-        'Job -> ChangeLogSet [ label = "1" weight = "1" ];\n' +
-        'ChangeLogSet_Entry -> Job [ label = "1" weight = "1" ];\n' +
-        'Job -> ChangeLogSet_Entry [ label = "1" weight = "1" ];\n' +
-        'Job -> ModelObjectWithContextMenu_ContextMenu [ label = "1" weight = "1" ];\n' +
-        'Job -> RunMap [ label = "1" weight = "1" ];\n' +
-        'Job -> DescribableList [ label = "1" weight = "1" ];\n' +
-        'Job -> HexStringConfidentialKey [ label = "1" weight = "1" ];\n' +
-        'JobProperty -> Action [ label = "1" weight = "1" ];\n' +
-        'JobProperty -> AbstractBuild [ label = "2" weight = "2" ];\n' +
-        'JobProperty -> BuildListener [ label = "2" weight = "2" ];\n' +
-        'JobProperty -> Launcher [ label = "1" weight = "1" ];\n' +
-        'JobProperty -> AbstractProject [ label = "2" weight = "2" ];\n' +
-        'Label -> Node [ label = "16" weight = "16" ];\n' +
-        'Label -> Cloud [ label = "4" weight = "4" ];\n' +
-        'Label -> LoadStatistics [ label = "1" weight = "1" ];\n' +
-        'Label -> NodeProvisioner [ label = "1" weight = "1" ];\n' +
-        'Label -> LabelAtom [ label = "4" weight = "4" ];\n' +
-        'Label -> Jenkins [ label = "2" weight = "2" ];\n' +
-        'Label -> Computer [ label = "4" weight = "4" ];\n' +
-        'ModelObject -> Label [ label = "1" weight = "1" ];\n' +
-        'Label -> ModelObject [ label = "1" weight = "1" ];\n' +
-        'Label -> AbstractProject [ label = "1" weight = "1" ];\n' +
-        'Label -> LabelVisitor [ label = "2" weight = "2" ];\n' +
-        'Label -> Label [ label = "5" weight = "5" ];\n' +
-        'Label -> ModelObjectWithContextMenu_ContextMenu [ label = "1" weight = "1" ];\n' +
-        'LabelFinder -> Node [ label = "1" weight = "1" ];\n' +
-        'LabelAtom -> DescribableList [ label = "1" weight = "1" ];\n' +
-        'LabelAtom -> LabelAtomProperty [ label = "2" weight = "2" ];\n' +
-        'LabelAtom -> Action [ label = "3" weight = "3" ];\n' +
-        'LabelAtom -> LabelVisitor [ label = "1" weight = "1" ];\n' +
-        'LabelAtom -> Jenkins [ label = "1" weight = "1" ];\n' +
-        'LabelAtom -> LabelAtom [ label = "1" weight = "1" ];\n' +
-        'LabelAtom -> XStream2 [ label = "1" weight = "1" ];\n' +
-        'LabelAtomProperty -> LabelAtom [ label = "1" weight = "1" ];\n' +
-        'LabelExpression_Not -> Label [ label = "2" weight = "2" ];\n' +
-        'LabelExpression_Not -> LabelVisitor [ label = "1" weight = "1" ];\n' +
-        'LabelExpression_Paren -> Label [ label = "2" weight = "2" ];\n' +
-        'LabelExpression_Paren -> LabelVisitor [ label = "1" weight = "1" ];\n' +
-        'LabelExpression_And -> Label [ label = "2" weight = "2" ];\n' +
-        'LabelExpression_And -> LabelVisitor [ label = "1" weight = "1" ];\n' +
-        'LabelExpression_Or -> Label [ label = "2" weight = "2" ];\n' +
-        'LabelExpression_Or -> LabelVisitor [ label = "1" weight = "1" ];\n' +
-        'LabelExpression_Iff -> Label [ label = "2" weight = "2" ];\n' +
-        'LabelExpression_Iff -> LabelVisitor [ label = "1" weight = "1" ];\n' +
-        'LabelExpression_Implies -> Label [ label = "2" weight = "2" ];\n' +
-        'LabelExpression_Implies -> LabelVisitor [ label = "1" weight = "1" ];\n' +
-        'LabelVisitor -> LabelAtom [ label = "1" weight = "1" ];\n' +
-        'LabelVisitor -> LabelExpression_Paren [ label = "1" weight = "1" ];\n' +
-        'LabelVisitor -> LabelExpression_Not [ label = "1" weight = "1" ];\n' +
-        'LabelVisitor -> LabelExpression_And [ label = "1" weight = "1" ];\n' +
-        'LabelVisitor -> LabelExpression_Or [ label = "1" weight = "1" ];\n' +
-        'LabelVisitor -> LabelExpression_Iff [ label = "1" weight = "1" ];\n' +
-        'LabelVisitor -> LabelExpression_Implies [ label = "1" weight = "1" ];\n' +
-        'ItemListener -> Item [ label = "16" weight = "16" ];\n' +
-        'ItemListener -> ItemListener [ label = "1" weight = "1" ];\n' +
-        'Run -> RunListener [ label = "7" weight = "7" ];\n' +
-        'RunListener -> TaskListener [ label = "4" weight = "4" ];\n' +
-        'RunListener -> AbstractBuild [ label = "1" weight = "1" ];\n' +
-        'RunListener -> Launcher [ label = "1" weight = "1" ];\n' +
-        'RunListener -> BuildListener [ label = "1" weight = "1" ];\n' +
-        'RunListener -> RunListener [ label = "1" weight = "1" ];\n' +
-        'RunListener -> Run [ label = "5" weight = "5" ];\n' +
-        'SCMListener -> Run [ label = "2" weight = "2" ];\n' +
-        'SCMListener -> SCM [ label = "2" weight = "2" ];\n' +
-        'SCMListener -> FilePath [ label = "1" weight = "1" ];\n' +
-        'SCMListener -> TaskListener [ label = "2" weight = "2" ];\n' +
-        'SCMListener -> ChangeLogSet [ label = "2" weight = "2" ];\n' +
-        'SCMListener -> AbstractBuild [ label = "1" weight = "1" ];\n' +
-        'SCMListener -> BuildListener [ label = "1" weight = "1" ];\n' +
-        'SCMListener -> Jenkins [ label = "1" weight = "1" ];\n' +
-        'SCMListener -> SCMListener [ label = "2" weight = "2" ];\n' +
-        'ListView -> DescribableList [ label = "2" weight = "2" ];\n' +
-        'ListView -> ViewJobFilter [ label = "5" weight = "5" ];\n' +
-        'ListView -> Descriptor [ label = "2" weight = "2" ];\n' +
-        'ListView -> ListViewColumn [ label = "3" weight = "3" ];\n' +
-        'ListView -> ViewGroup [ label = "1" weight = "1" ];\n' +
-        'ListView -> TopLevelItem [ label = "12" weight = "12" ];\n' +
-        'TopLevelItem -> ListView [ label = "3" weight = "3" ];\n' +
-        'LoadBalancer -> Queue_Task [ label = "1" weight = "1" ];\n' +
-        'LoadBalancer -> MappingWorksheet [ label = "1" weight = "1" ];\n' +
-        'LoadBalancer -> LoadBalancer [ label = "3" weight = "3" ];\n' +
-        'LoadStatistics -> LoadStatistics [ label = "1" weight = "1" ];\n' +
-        'LoadStatistics -> Queue_Item [ label = "1" weight = "1" ];\n' +
-        'LoadStatistics -> Queue_BuildableItem [ label = "2" weight = "2" ];\n' +
-        'LoadStatistics -> LoadStatistics_LoadStatisticsSnapshot_Builder [ label = "1" weight = "1" ];\n' +
-        'LoadStatistics -> Node [ label = "2" weight = "2" ];\n' +
-        'LoadStatistics_LoadStatisticsSnapshot_Builder -> Node [ label = "1" weight = "1" ];\n' +
-        'LoadStatistics_LoadStatisticsSnapshot_Builder -> Computer [ label = "1" weight = "1" ];\n' +
-        'LoadStatistics_LoadStatisticsSnapshot_Builder -> Executor [ label = "2" weight = "2" ];\n' +
-        'MyView -> ViewGroup [ label = "1" weight = "1" ];\n' +
-        'MyView -> TopLevelItem [ label = "2" weight = "2" ];\n' +
-        'TopLevelItem -> MyView [ label = "1" weight = "1" ];\n' +
-        'Node -> Computer [ label = "2" weight = "2" ];\n' +
-        'Node -> Jenkins [ label = "2" weight = "2" ];\n' +
-        'Node -> TaskListener [ label = "1" weight = "1" ];\n' +
-        'Node -> AbstractCIBase [ label = "1" weight = "1" ];\n' +
-        'Node -> LabelAtom [ label = "2" weight = "2" ];\n' +
-        'Node -> LabelFinder [ label = "1" weight = "1" ];\n' +
-        'Node -> Label [ label = "2" weight = "2" ];\n' +
-        'Node -> Queue_Task [ label = "1" weight = "1" ];\n' +
-        'Node -> Queue_BuildableItem [ label = "1" weight = "1" ];\n' +
-        'Node -> NodeProperty [ label = "5" weight = "5" ];\n' +
-        'Node -> CauseOfBlockage [ label = "1" weight = "1" ];\n' +
-        'Node -> TopLevelItem [ label = "1" weight = "1" ];\n' +
-        'NodeProperty -> Node [ label = "2" weight = "2" ];\n' +
-        'OneOffExecutor -> Computer [ label = "1" weight = "1" ];\n' +
-        'OverallLoadStatistics -> Queue_Item [ label = "1" weight = "1" ];\n' +
-        'ParameterDefinition -> ParameterValue [ label = "2" weight = "2" ];\n' +
-        'ParameterDefinition -> ParameterDefinition [ label = "2" weight = "2" ];\n' +
-        'ParameterDefinition -> DescriptorList [ label = "1" weight = "1" ];\n' +
-        'ParametersAction -> ParameterValue [ label = "16" weight = "16" ];\n' +
-        'ParametersAction -> AbstractBuild [ label = "4" weight = "4" ];\n' +
-        'ParametersAction -> Run [ label = "4" weight = "4" ];\n' +
-        'BuildWrapper -> ParametersAction [ label = "1" weight = "1" ];\n' +
-        'ParametersAction -> BuildWrapper [ label = "1" weight = "1" ];\n' +
-        'ParametersAction -> Label [ label = "1" weight = "1" ];\n' +
-        'ParametersAction -> Action [ label = "1" weight = "1" ];\n' +
-        'ParametersAction -> ParametersAction [ label = "5" weight = "5" ];\n' +
-        'ParameterValue -> ParametersAction [ label = "1" weight = "1" ];\n' +
-        'ParametersAction -> ParametersDefinitionProperty [ label = "1" weight = "1" ];\n' +
-        'ParametersDefinitionProperty -> ParameterDefinition [ label = "6" weight = "6" ];\n' +
-        'ParametersDefinitionProperty -> Job [ label = "1" weight = "1" ];\n' +
-        'ParametersDefinitionProperty -> AbstractProject [ label = "1" weight = "1" ];\n' +
-        'ParametersDefinitionProperty -> ParameterValue [ label = "4" weight = "4" ];\n' +
-        'ParametersDefinitionProperty -> Queue_WaitingItem [ label = "1" weight = "1" ];\n' +
-        'ParametersDefinitionProperty -> ScheduleResult [ label = "1" weight = "1" ];\n' +
-        'ParametersDefinitionProperty -> Queue_Item [ label = "1" weight = "1" ];\n' +
-        'ParametersDefinitionProperty_DescriptorImpl -> ParametersDefinitionProperty [ label = "1" weight = "1" ];\n' +
-        'Job -> ParametersDefinitionProperty_DescriptorImpl [ label = "1" weight = "1" ];\n' +
-        'ParameterValue -> AbstractBuild [ label = "4" weight = "4" ];\n' +
-        'ParameterValue -> Run [ label = "1" weight = "1" ];\n' +
-        'ParameterValue -> ParameterValue [ label = "1" weight = "1" ];\n' +
-        'PermalinkProjectAction_Permalink -> Job [ label = "1" weight = "1" ];\n' +
-        'PermalinkProjectAction_Permalink -> PermalinkProjectAction_Permalink [ label = "8" weight = "8" ];\n' +
-        'Project -> DescribableList [ label = "6" weight = "6" ];\n' +
-        'Project -> Builder [ label = "2" weight = "2" ];\n' +
-        'Project -> Descriptor [ label = "5" weight = "5" ];\n' +
-        'Project -> Project [ label = "3" weight = "3" ];\n' +
-        'Project -> Publisher [ label = "6" weight = "6" ];\n' +
-        'Project -> BuildWrapper [ label = "3" weight = "3" ];\n' +
-        'Item -> Project [ label = "1" weight = "1" ];\n' +
-        'Project -> DependencyGraph [ label = "1" weight = "1" ];\n' +
-        'Project -> Maven [ label = "1" weight = "1" ];\n' +
-        'Project -> Action [ label = "1" weight = "1" ];\n' +
-        'Project -> BuildStep [ label = "2" weight = "2" ];\n' +
-        'Project -> Trigger [ label = "1" weight = "1" ];\n' +
-        'CauseOfBlockage -> TaskListener [ label = "1" weight = "1" ];\n' +
-        'FoldableAction -> Queue_Item [ label = "1" weight = "1" ];\n' +
-        'FoldableAction -> Queue_Task [ label = "1" weight = "1" ];\n' +
-        'FoldableAction -> Action [ label = "1" weight = "1" ];\n' +
-        'FutureImpl -> Queue_Task [ label = "2" weight = "2" ];\n' +
-        'FutureImpl -> Executor [ label = "3" weight = "3" ];\n' +
-        'FutureImpl -> Queue [ label = "1" weight = "1" ];\n' +
-        'LoadPredictor -> MappingWorksheet [ label = "2" weight = "2" ];\n' +
-        'LoadPredictor -> Computer [ label = "2" weight = "2" ];\n' +
-        'MappingWorksheet -> MappingWorksheet_ExecutorChunk [ label = "3" weight = "3" ];\n' +
-        'MappingWorksheet -> MappingWorksheet_WorkChunk [ label = "2" weight = "2" ];\n' +
-        'MappingWorksheet -> Queue_BuildableItem [ label = "3" weight = "3" ];\n' +
-        'MappingWorksheet_ExecutorChunk -> Computer [ label = "1" weight = "1" ];\n' +
-        'MappingWorksheet_ExecutorChunk -> Node [ label = "1" weight = "1" ];\n' +
-        'MappingWorksheet_ExecutorChunk -> ACL [ label = "1" weight = "1" ];\n' +
-        'MappingWorksheet_ExecutorChunk -> MappingWorksheet_ExecutorSlot [ label = "1" weight = "1" ];\n' +
-        'MappingWorksheet_ExecutorChunk -> MappingWorksheet_WorkChunk [ label = "2" weight = "2" ];\n' +
-        'MappingWorksheet_ExecutorChunk -> WorkUnitContext [ label = "1" weight = "1" ];\n' +
-        'MappingWorksheet_WorkChunk -> Label [ label = "2" weight = "2" ];\n' +
-        'MappingWorksheet_WorkChunk -> MappingWorksheet_ExecutorChunk [ label = "4" weight = "4" ];\n' +
-        'MappingWorksheet_WorkChunk -> Node [ label = "1" weight = "1" ];\n' +
-        'MappingWorksheet_Mapping -> MappingWorksheet_ExecutorChunk [ label = "6" weight = "6" ];\n' +
-        'MappingWorksheet_Mapping -> MappingWorksheet_WorkChunk [ label = "1" weight = "1" ];\n' +
-        'MappingWorksheet_Mapping -> WorkUnitContext [ label = "1" weight = "1" ];\n' +
-        'MappingWorksheet_ExecutorSlot -> MappingWorksheet [ label = "2" weight = "2" ];\n' +
-        'MappingWorksheet -> Computer [ label = "3" weight = "3" ];\n' +
-        'MappingWorksheet -> MappingWorksheet_ExecutorSlot [ label = "6" weight = "6" ];\n' +
-        'MappingWorksheet -> LoadPredictor [ label = "1" weight = "1" ];\n' +
-        'MappingWorksheet_ExecutorSlot -> WorkUnit [ label = "1" weight = "1" ];\n' +
-        'QueueSorter -> Queue_BlockedItem [ label = "2" weight = "2" ];\n' +
-        'QueueSorter -> Queue_BuildableItem [ label = "1" weight = "1" ];\n' +
-        'QueueSorter -> ExtensionList [ label = "1" weight = "1" ];\n' +
-        'QueueSorter -> QueueSorter [ label = "1" weight = "1" ];\n' +
-        'QueueSorter -> Queue [ label = "1" weight = "1" ];\n' +
-        'QueueTaskDispatcher -> Node [ label = "2" weight = "2" ];\n' +
-        'QueueTaskDispatcher -> Queue_Task [ label = "1" weight = "1" ];\n' +
-        'QueueTaskDispatcher -> Queue_BuildableItem [ label = "1" weight = "1" ];\n' +
-        'QueueTaskDispatcher -> Queue_Item [ label = "1" weight = "1" ];\n' +
-        'ScheduleResult -> Queue_WaitingItem [ label = "1" weight = "1" ];\n' +
-        'ScheduleResult -> Queue_Item [ label = "1" weight = "1" ];\n' +
-        'SubTaskContributor -> AbstractProject [ label = "1" weight = "1" ];\n' +
-        'WorkUnit -> WorkUnitContext [ label = "2" weight = "2" ];\n' +
-        'WorkUnit -> Executor [ label = "2" weight = "2" ];\n' +
-        'WorkUnitContext -> Queue_BuildableItem [ label = "2" weight = "2" ];\n' +
-        'WorkUnitContext -> Queue_Task [ label = "1" weight = "1" ];\n' +
-        'WorkUnitContext -> FutureImpl [ label = "1" weight = "1" ];\n' +
-        'WorkUnitContext -> Action [ label = "1" weight = "1" ];\n' +
-        'WorkUnitContext -> WorkUnit [ label = "5" weight = "5" ];\n' +
-        'WorkUnitContext -> Executor [ label = "3" weight = "3" ];\n' +
-        'WorkUnitContext -> ExecutorListener [ label = "3" weight = "3" ];\n' +
-        'Queue -> Queue_WaitingItem [ label = "8" weight = "8" ];\n' +
-        'Queue -> Queue_ItemList [ label = "3" weight = "3" ];\n' +
-        'Queue -> Queue_BlockedItem [ label = "5" weight = "5" ];\n' +
-        'Queue -> Queue_BuildableItem [ label = "24" weight = "24" ];\n' +
-        'Queue -> Queue_Snapshot [ label = "14" weight = "14" ];\n' +
-        'Queue_JobOffer -> Executor [ label = "2" weight = "2" ];\n' +
-        'Queue_JobOffer -> WorkUnit [ label = "2" weight = "2" ];\n' +
-        'Queue_JobOffer -> Queue_BuildableItem [ label = "2" weight = "2" ];\n' +
-        'Queue_JobOffer -> Node [ label = "1" weight = "1" ];\n' +
-        'Queue_JobOffer -> CauseOfBlockage [ label = "1" weight = "1" ];\n' +
-        'Queue_JobOffer -> QueueTaskDispatcher [ label = "1" weight = "1" ];\n' +
-        'Queue -> LoadBalancer [ label = "3" weight = "3" ];\n' +
-        'Queue -> QueueSorter [ label = "3" weight = "3" ];\n' +
-        'Queue_State -> Queue_Item [ label = "1" weight = "1" ];\n' +
-        'Queue -> Queue_State [ label = "2" weight = "2" ];\n' +
-        'Queue -> Queue_Item [ label = "33" weight = "33" ];\n' +
-        'Queue -> AbstractProject [ label = "3" weight = "3" ];\n' +
-        'Queue -> Queue_Task [ label = "19" weight = "19" ];\n' +
-        'Queue -> Action [ label = "6" weight = "6" ];\n' +
-        'Queue -> Queue_QueueDecisionHandler [ label = "1" weight = "1" ];\n' +
-        'Queue -> Queue_QueueAction [ label = "2" weight = "2" ];\n' +
-        'Queue -> FoldableAction [ label = "1" weight = "1" ];\n' +
-        'Queue -> Queue_StubItem [ label = "3" weight = "3" ];\n' +
-        'Queue -> Item [ label = "1" weight = "1" ];\n' +
-        'Queue -> Computer [ label = "6" weight = "6" ];\n' +
-        'Queue -> Node [ label = "8" weight = "8" ];\n' +
-        'Queue -> Label [ label = "3" weight = "3" ];\n' +
-        'Queue -> Executor [ label = "3" weight = "3" ];\n' +
-        'Queue -> WorkUnit [ label = "2" weight = "2" ];\n' +
-        'Queue -> Queue_LeftItem [ label = "1" weight = "1" ];\n' +
-        'Queue -> CauseOfBlockage [ label = "8" weight = "8" ];\n' +
-        'Queue -> QueueTaskDispatcher [ label = "1" weight = "1" ];\n' +
-        'Queue -> Jenkins [ label = "10" weight = "10" ];\n' +
-        'Queue -> Queue [ label = "8" weight = "8" ];\n' +
-        'Queue -> Queue_JobOffer [ label = "3" weight = "3" ];\n' +
-        'Queue -> MappingWorksheet [ label = "1" weight = "1" ];\n' +
-        'Queue -> MappingWorksheet_Mapping [ label = "1" weight = "1" ];\n' +
-        'Queue -> WorkUnitContext [ label = "1" weight = "1" ];\n' +
-        'Queue_Task -> CauseOfBlockage [ label = "1" weight = "1" ];\n' +
-        'Queue_Task -> Queue_Item [ label = "2" weight = "2" ];\n' +
-        'Queue_Item -> Queue_Task [ label = "3" weight = "3" ];\n' +
-        'Queue_Item -> FutureImpl [ label = "3" weight = "3" ];\n' +
-        'Queue_Item -> Label [ label = "2" weight = "2" ];\n' +
-        'Queue_Item -> CauseAction [ label = "1" weight = "1" ];\n' +
-        'Queue_Item -> Cause [ label = "2" weight = "2" ];\n' +
-        'Queue_Item -> Action [ label = "4" weight = "4" ];\n' +
-        'Queue_Item -> Queue_Item [ label = "1" weight = "1" ];\n' +
-        'Queue_Item -> CauseOfBlockage [ label = "1" weight = "1" ];\n' +
-        'Queue_Item -> ParametersAction [ label = "1" weight = "1" ];\n' +
-        'Queue_Item -> ParameterValue [ label = "1" weight = "1" ];\n' +
-        'Queue_Item -> QueueItemAuthenticator [ label = "1" weight = "1" ];\n' +
-        'Queue_Item -> Queue [ label = "3" weight = "3" ];\n' +
-        'Queue_Item -> Queue_LeftItem [ label = "1" weight = "1" ];\n' +
-        'Queue_StubTask -> Queue_Task [ label = "1" weight = "1" ];\n' +
-        'Queue_StubItem -> Queue_StubTask [ label = "2" weight = "2" ];\n' +
-        'Queue_QueueAction -> Action [ label = "1" weight = "1" ];\n' +
-        'Queue_QueueDecisionHandler -> Queue_Task [ label = "1" weight = "1" ];\n' +
-        'Queue_QueueDecisionHandler -> Action [ label = "1" weight = "1" ];\n' +
-        'Queue_WaitingItem -> Queue_Task [ label = "1" weight = "1" ];\n' +
-        'Queue_WaitingItem -> Action [ label = "1" weight = "1" ];\n' +
-        'Queue_WaitingItem -> Queue_WaitingItem [ label = "1" weight = "1" ];\n' +
-        'Queue_WaitingItem -> Queue [ label = "2" weight = "2" ];\n' +
-        'Queue_NotWaitingItem -> Queue_WaitingItem [ label = "1" weight = "1" ];\n' +
-        'Queue_NotWaitingItem -> Queue_NotWaitingItem [ label = "1" weight = "1" ];\n' +
-        'Queue_BlockedItem -> CauseOfBlockage [ label = "4" weight = "4" ];\n' +
-        'Queue_BlockedItem -> Queue_WaitingItem [ label = "2" weight = "2" ];\n' +
-        'Queue_BlockedItem -> Queue_NotWaitingItem [ label = "2" weight = "2" ];\n' +
-        'Queue_BlockedItem -> Queue [ label = "2" weight = "2" ];\n' +
-        'Queue_BuildableItem -> CauseOfBlockage [ label = "2" weight = "2" ];\n' +
-        'Queue_BuildableItem -> Queue_WaitingItem [ label = "1" weight = "1" ];\n' +
-        'Queue_BuildableItem -> Queue_NotWaitingItem [ label = "1" weight = "1" ];\n' +
-        'Queue_BuildableItem -> Jenkins [ label = "1" weight = "1" ];\n' +
-        'Queue_BuildableItem -> Label [ label = "2" weight = "2" ];\n' +
-        'Queue_BuildableItem -> Node [ label = "2" weight = "2" ];\n' +
-        'Queue_BuildableItem -> Queue [ label = "2" weight = "2" ];\n' +
-        'Queue_LeftItem -> WorkUnitContext [ label = "2" weight = "2" ];\n' +
-        'Queue_LeftItem -> Queue_Item [ label = "1" weight = "1" ];\n' +
-        'Queue_LeftItem -> Queue [ label = "2" weight = "2" ];\n' +
-        'Queue_ItemList -> Queue_Task [ label = "6" weight = "6" ];\n' +
-        'Queue_Item -> Queue_ItemList [ label = "8" weight = "8" ];\n' +
-        'Queue_Snapshot -> Queue_WaitingItem [ label = "2" weight = "2" ];\n' +
-        'Queue_Snapshot -> Queue_BlockedItem [ label = "2" weight = "2" ];\n' +
-        'Queue_Snapshot -> Queue_BuildableItem [ label = "4" weight = "4" ];\n' +
-        'ResultTrend -> AbstractBuild [ label = "1" weight = "1" ];\n' +
-        'ResultTrend -> Run [ label = "6" weight = "6" ];\n' +
-        'Run -> Run [ label = "25" weight = "25" ];\n' +
-        'Run -> Run_RunExecution [ label = "6" weight = "6" ];\n' +
-        'Run -> ArtifactManager [ label = "2" weight = "2" ];\n' +
-        'Run -> Action [ label = "6" weight = "6" ];\n' +
-        'Run -> TransientBuildActionFactory [ label = "1" weight = "1" ];\n' +
-        'Run -> Computer [ label = "3" weight = "3" ];\n' +
-        'Run -> Executor [ label = "1" weight = "1" ];\n' +
-        'Run -> CauseAction [ label = "1" weight = "1" ];\n' +
-        'Run -> Cause [ label = "1" weight = "1" ];\n' +
-        'Run -> ArtifactManagerFactory [ label = "1" weight = "1" ];\n' +
-        'Run -> VirtualFile [ label = "4" weight = "4" ];\n' +
-        'Run -> Run_ArtifactList [ label = "1" weight = "1" ];\n' +
-        'Run_ArtifactList -> Run_Artifact [ label = "4" weight = "4" ];\n' +
-        'Run -> Fingerprinter_FingerprintAction [ label = "1" weight = "1" ];\n' +
-        'Run -> AnnotatedLargeText [ label = "1" weight = "1" ];\n' +
-        'Run -> CheckPoint [ label = "2" weight = "2" ];\n' +
-        'Run -> BuildListener [ label = "2" weight = "2" ];\n' +
-        'Run_RunExecution_CheckpointSet -> CheckPoint [ label = "3" weight = "3" ];\n' +
-        'Run_RunExecution_CheckpointSet -> BuildListener [ label = "1" weight = "1" ];\n' +
-        'Run_RunExecution -> Run_RunExecution_CheckpointSet [ label = "1" weight = "1" ];\n' +
-        'Run_RunExecution -> BuildListener [ label = "3" weight = "3" ];\n' +
-        'Run -> User [ label = "1" weight = "1" ];\n' +
-        'Run -> ConsoleLogFilter [ label = "1" weight = "1" ];\n' +
-        'Run -> BuildWrapper [ label = "1" weight = "1" ];\n' +
-        'Run -> TaskListener [ label = "2" weight = "2" ];\n' +
-        'Run_StatusSummarizer -> Run [ label = "1" weight = "1" ];\n' +
-        'Run_StatusSummarizer -> ResultTrend [ label = "1" weight = "1" ];\n' +
-        'Run -> ResultTrend [ label = "1" weight = "1" ];\n' +
-        'Run -> Run_StatusSummarizer [ label = "1" weight = "1" ];\n' +
-        'Run -> Node [ label = "1" weight = "1" ];\n' +
-        'Run -> EnvironmentContributor [ label = "1" weight = "1" ];\n' +
-        'Run -> EnvironmentContributingAction [ label = "1" weight = "1" ];\n' +
-        'Run -> Jenkins [ label = "1" weight = "1" ];\n' +
-        'Run -> XStream2 [ label = "1" weight = "1" ];\n' +
-        'Run -> RunMap [ label = "10" weight = "10" ];\n' +
-        'RunMap -> Job [ label = "1" weight = "1" ];\n' +
-        'Slave -> RetentionStrategy [ label = "5" weight = "5" ];\n' +
-        'Slave -> ComputerLauncher [ label = "6" weight = "6" ];\n' +
-        'Slave -> DescribableList [ label = "1" weight = "1" ];\n' +
-        'Slave -> NodeProperty [ label = "1" weight = "1" ];\n' +
-        'NodeProperty -> Slave [ label = "3" weight = "3" ];\n' +
-        'Slave -> TopLevelItem [ label = "1" weight = "1" ];\n' +
-        'Slave -> WorkspaceLocator [ label = "1" weight = "1" ];\n' +
-        'Slave -> FilePath [ label = "3" weight = "3" ];\n' +
-        'Slave -> SlaveComputer [ label = "2" weight = "2" ];\n' +
-        'Slave -> TaskListener [ label = "2" weight = "2" ];\n' +
-        'Slave -> Slave [ label = "2" weight = "2" ];\n' +
-        'Slave -> Descriptor [ label = "1" weight = "1" ];\n' +
-        'TaskListener -> ConsoleNote [ label = "1" weight = "1" ];\n' +
-        'TaskListener -> TaskListener [ label = "1" weight = "1" ];\n' +
-        'TopLevelItem -> TopLevelItemDescriptor [ label = "1" weight = "1" ];\n' +
-        'TopLevelItemDescriptor -> Descriptor [ label = "1" weight = "1" ];\n' +
-        'TopLevelItemDescriptor -> TopLevelItem [ label = "1" weight = "1" ];\n' +
-        'TransientBuildActionFactory -> Run [ label = "1" weight = "1" ];\n' +
-        'TransientBuildActionFactory -> AbstractBuild [ label = "1" weight = "1" ];\n' +
-        'TransientProjectActionFactory -> AbstractProject [ label = "1" weight = "1" ];\n' +
-        'TransientUserActionFactory -> User [ label = "1" weight = "1" color = "red" ];\n' +
-        'UpdateCenter -> UpdateCenter_UpdateCenterJob [ label = "14" weight = "14" ];\n' +
-        'UpdateCenter -> UpdateSite [ label = "21" weight = "21" ];\n' +
-        'UpdateCenter -> UpdateCenter_UpdateCenterConfiguration [ label = "5" weight = "5" ];\n' +
-        'UpdateCenter -> UpdateCenter [ label = "3" weight = "3" ];\n' +
-        'UpdateCenter -> UpdateSite_Plugin [ label = "19" weight = "19" ];\n' +
-        'UpdateCenter -> UpdateCenter_InstallationJob [ label = "3" weight = "3" ];\n' +
-        'UpdateCenter -> UpdateCenter_ConnectionCheckJob [ label = "3" weight = "3" ];\n' +
-        'UpdateCenter -> UpdateSite_Data [ label = "1" weight = "1" ];\n' +
-        'UpdateCenter -> UpdateCenter_HudsonUpgradeJob [ label = "1" weight = "1" ];\n' +
-        'UpdateCenter -> UpdateCenter_HudsonDowngradeJob [ label = "2" weight = "2" ];\n' +
-        'UpdateCenter -> UpdateCenter_PluginEntry [ label = "1" weight = "1" ];\n' +
-        'UpdateCenter -> PluginWrapper [ label = "1" weight = "1" ];\n' +
-        'UpdateCenter_UpdateCenterConfiguration -> UpdateCenter_ConnectionCheckJob [ label = "2" weight = "2" ];\n' +
-        'UpdateCenter_UpdateCenterConfiguration -> UpdateCenter_DownloadJob [ label = "6" weight = "6" ];\n' +
-        'UpdateCenter_UpdateCenterJob -> UpdateSite [ label = "2" weight = "2" ];\n' +
-        'UpdateCenter_ConnectionCheckJob -> UpdateSite [ label = "1" weight = "1" ];\n' +
-        'UpdateCenter_EnableJob -> UpdateSite [ label = "1" weight = "1" ];\n' +
-        'UpdateCenter_EnableJob -> UpdateSite_Plugin [ label = "1" weight = "1" ];\n' +
-        'UpdateCenter_EnableJob -> PluginWrapper [ label = "1" weight = "1" ];\n' +
-        'UpdateCenter_DownloadJob -> UpdateSite [ label = "1" weight = "1" ];\n' +
-        'UpdateCenter_InstallationJob -> UpdateSite_Plugin [ label = "4" weight = "4" ];\n' +
-        'UpdateCenter_InstallationJob -> PluginManager [ label = "1" weight = "1" ];\n' +
-        'UpdateCenter_InstallationJob -> PluginWrapper [ label = "3" weight = "3" ];\n' +
-        'UpdateCenter_InstallationJob -> UpdateSite [ label = "3" weight = "3" ];\n' +
-        'UpdateCenter_InstallationJob -> UpdateCenter_UpdateCenterJob [ label = "1" weight = "1" ];\n' +
-        'UpdateCenter_InstallationJob -> UpdateCenter_InstallationJob [ label = "1" weight = "1" ];\n' +
-        'UpdateCenter_HudsonUpgradeJob -> UpdateSite [ label = "2" weight = "2" ];\n' +
-        'UpdateCenter_HudsonDowngradeJob -> UpdateSite [ label = "2" weight = "2" ];\n' +
-        'UpdateCenter_PluginEntry -> UpdateSite_Plugin [ label = "2" weight = "2" ];\n' +
-        'UpdateCenter_PluginEntry -> UpdateCenter_PluginEntry [ label = "2" weight = "2" ];\n' +
-        'UpdateCenter -> Jenkins [ label = "1" weight = "1" ];\n' +
-        'UpdateCenter -> XStream2 [ label = "1" weight = "1" ];\n' +
-        'UpdateSite -> UpdateSite_Data [ label = "6" weight = "6" ];\n' +
-        'UpdateSite -> UpdateSite_Plugin [ label = "5" weight = "5" ];\n' +
-        'UpdateSite -> UpdateCenter [ label = "1" weight = "1" ];\n' +
-        'UpdateSite -> PluginWrapper [ label = "2" weight = "2" ];\n' +
-        'UpdateSite_Data -> UpdateSite_Plugin [ label = "2" weight = "2" ];\n' +
-        'UpdateSite_Data -> UpdateSite_Warning [ label = "1" weight = "1" ];\n' +
-        'UpdateSite_Warning -> UpdateSite_Warning [ label = "1" weight = "1" ];\n' +
-        'UpdateSite_Warning -> PluginWrapper [ label = "1" weight = "1" ];\n' +
-        'UpdateSite_Plugin -> UpdateSite_Plugin [ label = "10" weight = "10" ];\n' +
-        'UpdateSite_Plugin -> PluginManager [ label = "1" weight = "1" ];\n' +
-        'UpdateSite_Plugin -> PluginWrapper [ label = "6" weight = "6" ];\n' +
-        'UpdateSite_Plugin -> UpdateSite_Warning [ label = "3" weight = "3" ];\n' +
-        'UpdateSite_Plugin -> UpdateSiteWarningsConfiguration [ label = "1" weight = "1" ];\n' +
-        'UpdateSite_Plugin -> UpdateCenter [ label = "2" weight = "2" ];\n' +
-        'UpdateSite_Plugin -> UpdateCenter_InstallationJob [ label = "2" weight = "2" ];\n' +
-        'UpdateSite_Plugin -> UpdateCenter_UpdateCenterJob [ label = "1" weight = "1" ];\n' +
-        'UpdateSite_Plugin -> UpdateCenter_EnableJob [ label = "1" weight = "1" ];\n' +
-        'User -> XStream2 [ label = "1" weight = "1" ];\n' +
-        'User -> UserProperty [ label = "10" weight = "10" ];\n' +
-        'User -> UserPropertyDescriptor [ label = "2" weight = "2" ];\n' +
-        'User -> Jenkins [ label = "1" weight = "1" ];\n' +
-        'User -> SecurityRealm [ label = "1" weight = "1" ];\n' +
-        'User -> User [ label = "4" weight = "4" ];\n' +
-        'UserProperty -> User [ label = "3" weight = "3" ];\n' +
-        'User -> ImpersonatingUserDetailsService2 [ label = "1" weight = "1" ];\n' +
-        'User -> Run [ label = "3" weight = "3" ];\n' +
-        'User -> Cause [ label = "1" weight = "1" ];\n' +
-        'User -> AbstractProject [ label = "2" weight = "2" ];\n' +
-        'User -> Job [ label = "1" weight = "1" ];\n' +
-        'User -> ACL [ label = "1" weight = "1" ];\n' +
-        'User -> Action [ label = "4" weight = "4" ];\n' +
-        'User -> TransientUserActionFactory [ label = "1" weight = "1" color = "red" ];\n' +
-        'UserProperty -> UserPropertyDescriptor [ label = "1" weight = "1" ];\n' +
-        'UserPropertyDescriptor -> User [ label = "1" weight = "1" ];\n' +
-        'View -> ViewGroup [ label = "6" weight = "6" ];\n' +
-        'View -> DescribableList [ label = "1" weight = "1" ];\n' +
-        'View -> ViewProperty [ label = "1" weight = "1" ];\n' +
-        'View -> ViewPropertyDescriptor [ label = "3" weight = "3" ];\n' +
-        'View -> TopLevelItem [ label = "8" weight = "8" ];\n' +
-        'View -> View [ label = "9" weight = "9" ];\n' +
-        'View -> Computer [ label = "4" weight = "4" ];\n' +
-        'View -> Label [ label = "3" weight = "3" ];\n' +
-        'View -> Item [ label = "2" weight = "2" ];\n' +
-        'View -> Node [ label = "1" weight = "1" ];\n' +
-        'View -> Queue_Item [ label = "2" weight = "2" ];\n' +
-        'View -> Queue_Task [ label = "2" weight = "2" ];\n' +
-        'View -> AbstractProject [ label = "1" weight = "1" ];\n' +
-        'View -> Action [ label = "2" weight = "2" ];\n' +
-        'View_UserInfo -> User [ label = "2" weight = "2" ];\n' +
-        'View_UserInfo -> Job [ label = "2" weight = "2" ];\n' +
-        'View_UserInfo -> View_UserInfo [ label = "1" weight = "1" ];\n' +
-        'View_People -> View_UserInfo [ label = "6" weight = "6" ];\n' +
-        'View_People -> ModelObject [ label = "1" weight = "1" ];\n' +
-        'View_People -> Jenkins [ label = "1" weight = "1" ];\n' +
-        'View_People -> User [ label = "7" weight = "7" ];\n' +
-        'View_People -> View [ label = "1" weight = "1" ];\n' +
-        'Item -> View_People [ label = "2" weight = "2" ];\n' +
-        'View_People -> Item [ label = "2" weight = "2" ];\n' +
-        'View_People -> Job [ label = "2" weight = "2" ];\n' +
-        'View_People -> RunList [ label = "2" weight = "2" ];\n' +
-        'Run -> View_People [ label = "2" weight = "2" ];\n' +
-        'View_People -> Run [ label = "2" weight = "2" ];\n' +
-        'View_People -> RunWithSCM [ label = "2" weight = "2" ];\n' +
-        'View_People -> ChangeLogSet [ label = "2" weight = "2" ];\n' +
-        'ChangeLogSet_Entry -> View_People [ label = "2" weight = "2" ];\n' +
-        'View_People -> ChangeLogSet_Entry [ label = "2" weight = "2" ];\n' +
-        'View_AsynchPeople -> TopLevelItem [ label = "1" weight = "1" ];\n' +
-        'View_AsynchPeople -> User [ label = "6" weight = "6" ];\n' +
-        'View_AsynchPeople -> View_UserInfo [ label = "5" weight = "5" ];\n' +
-        'View_AsynchPeople -> ModelObject [ label = "1" weight = "1" ];\n' +
-        'View_AsynchPeople -> Jenkins [ label = "1" weight = "1" ];\n' +
-        'View_AsynchPeople -> View [ label = "1" weight = "1" ];\n' +
-        'View_AsynchPeople -> Item [ label = "1" weight = "1" ];\n' +
-        'View_AsynchPeople -> Job [ label = "2" weight = "2" ];\n' +
-        'View_AsynchPeople -> RunList [ label = "1" weight = "1" ];\n' +
-        'Run -> View_AsynchPeople [ label = "1" weight = "1" ];\n' +
-        'View_AsynchPeople -> Run [ label = "1" weight = "1" ];\n' +
-        'View_AsynchPeople -> RunWithSCM [ label = "1" weight = "1" ];\n' +
-        'View_AsynchPeople -> ChangeLogSet [ label = "1" weight = "1" ];\n' +
-        'ChangeLogSet_Entry -> View_AsynchPeople [ label = "1" weight = "1" ];\n' +
-        'View_AsynchPeople -> ChangeLogSet_Entry [ label = "1" weight = "1" ];\n' +
-        'View -> TopLevelItemDescriptor [ label = "1" weight = "1" ];\n' +
-        'View -> ItemCategory [ label = "1" weight = "1" ];\n' +
-        'View -> Run [ label = "2" weight = "2" ];\n' +
-        'View -> Job [ label = "1" weight = "1" ];\n' +
-        'View -> XStream2 [ label = "1" weight = "1" ];\n' +
-        'View -> ModelObjectWithContextMenu_ContextMenu [ label = "1" weight = "1" ];\n' +
-        'View -> DescriptorList [ label = "1" weight = "1" ];\n' +
-        'View -> ViewDescriptor [ label = "4" weight = "4" ];\n' +
-        'ViewDescriptor -> AutoCompletionCandidates [ label = "1" weight = "1" ];\n' +
-        'ViewDescriptor -> DirectlyModifiableTopLevelItemGroup [ label = "1" weight = "1" ];\n' +
-        'ViewDescriptor -> TopLevelItem [ label = "1" weight = "1" ];\n' +
-        'ViewDescriptor -> View [ label = "4" weight = "4" ];\n' +
-        'ViewGroup -> ViewDescriptor [ label = "1" weight = "1" ];\n' +
-        'ViewDescriptor -> ViewGroup [ label = "1" weight = "1" ];\n' +
-        'ViewGroup -> View [ label = "5" weight = "5" ];\n' +
-        'ViewGroupMixIn -> ViewGroup [ label = "2" weight = "2" ];\n' +
-        'ViewGroupMixIn -> View [ label = "13" weight = "13" ];\n' +
-        'ViewJob -> RunMap [ label = "1" weight = "1" ];\n' +
-        'Run -> ViewJob [ label = "2" weight = "2" ];\n' +
-        'ViewJob -> ViewJob_ReloadThread [ label = "1" weight = "1" ];\n' +
-        'ViewJob -> Jenkins [ label = "1" weight = "1" ];\n' +
-        'Item -> ViewJob [ label = "1" weight = "1" ];\n' +
-        'ViewJob -> ViewJob [ label = "1" weight = "1" ];\n' +
-        'ViewJob_ReloadThread -> ViewJob [ label = "2" weight = "2" ];\n' +
-        'ViewProperty -> View [ label = "2" weight = "2" ];\n' +
-        'ViewProperty -> ViewPropertyDescriptor [ label = "1" weight = "1" ];\n' +
-        'ViewPropertyDescriptor -> View [ label = "2" weight = "2" ];\n' +
-        'WorkspaceBrowser -> WorkspaceList [ label = "1" weight = "1" ];\n' +
-        'WorkspaceBrowser -> Job [ label = "1" weight = "1" ];\n' +
-        'WorkspaceListener -> AbstractProject [ label = "1" weight = "1" ];\n' +
-        'WorkspaceListener -> AbstractBuild [ label = "1" weight = "1" ];\n' +
-        'WorkspaceListener -> FilePath [ label = "1" weight = "1" ];\n' +
-        'WorkspaceListener -> BuildListener [ label = "1" weight = "1" ];\n' +
-        'NodeMonitor -> AbstractAsyncNodeMonitorDescriptor [ label = "2" weight = "2" ];\n' +
-        'AbstractAsyncNodeMonitorDescriptor -> Computer [ label = "9" weight = "9" ];\n' +
-        'NodeMonitor -> AbstractNodeMonitorDescriptor [ label = "2" weight = "2" ];\n' +
-        'AbstractNodeMonitorDescriptor -> AbstractNodeMonitorDescriptor_Record [ label = "3" weight = "3" ];\n' +
-        'AbstractNodeMonitorDescriptor -> Computer [ label = "7" weight = "7" ];\n' +
-        'AbstractNodeMonitorDescriptor -> NodeMonitor [ label = "1" weight = "1" ];\n' +
-        'AbstractNodeMonitorDescriptor_Record -> Computer [ label = "1" weight = "1" ];\n' +
-        'NodeMonitor -> Computer [ label = "1" weight = "1" ];\n' +
-        'NodeMonitor -> DescriptorList [ label = "1" weight = "1" ];\n' +
-        'NodeMonitor -> NodeMonitor [ label = "1" weight = "1" ];\n' +
-        'PermalinkProjectAction_Permalink -> PermalinkList [ label = "1" weight = "1" ];\n' +
-        'PermalinkList -> PermalinkProjectAction_Permalink [ label = "2" weight = "2" ];\n' +
-        'Plugin -> PluginWrapper [ label = "1" weight = "1" ];\n' +
-        'PluginManager -> PluginManager_PMConstructor_1 [ label = "1" weight = "1" ];\n' +
-        'PluginManager_PMConstructor_1 -> Jenkins [ label = "1" weight = "1" ];\n' +
-        'PluginManager -> PluginManager_PMConstructor_2 [ label = "1" weight = "1" ];\n' +
-        'PluginManager_PMConstructor_2 -> Jenkins [ label = "1" weight = "1" ];\n' +
-        'PluginManager -> PluginManager_PMConstructor_3 [ label = "1" weight = "1" ];\n' +
-        'PluginManager_PMConstructor_3 -> Jenkins [ label = "1" weight = "1" ];\n' +
-        'PluginManager -> PluginManager_PMConstructor [ label = "3" weight = "3" ];\n' +
-        'PluginManager_PMConstructor -> Jenkins [ label = "2" weight = "2" ];\n' +
-        'PluginManager -> Jenkins [ label = "5" weight = "5" ];\n' +
-        'PluginManager -> PluginManager [ label = "3" weight = "3" ];\n' +
-        'PluginManager -> PluginWrapper [ label = "29" weight = "29" ];\n' +
-        'PluginManager -> PluginManager_FailedPlugin [ label = "1" weight = "1" ];\n' +
-        'PluginManager -> PluginStrategy [ label = "1" weight = "1" ];\n' +
-        'PluginManager -> InitStrategy [ label = "1" weight = "1" ];\n' +
-        'Plugin -> PluginManager [ label = "2" weight = "2" ];\n' +
-        'PluginManager -> UpdateSite [ label = "5" weight = "5" ];\n' +
-        'PluginManager -> UpdateSite_Warning [ label = "1" weight = "1" ];\n' +
-        'PluginManager -> UpdateSite_Plugin [ label = "9" weight = "9" ];\n' +
-        'PluginManager -> UpdateCenter [ label = "4" weight = "4" ];\n' +
-        'PluginManager -> UpdateCenter_UpdateCenterJob [ label = "3" weight = "3" ];\n' +
-        'PluginManager -> ProxyConfiguration [ label = "1" weight = "1" ];\n' +
-        'PluginManager -> DownloadService_Downloadable [ label = "1" weight = "1" ];\n' +
-        'PluginManager_FailedPlugin -> PluginWrapper [ label = "2" weight = "2" ];\n' +
-        'PluginManager_PluginInstanceStore -> PluginWrapper [ label = "1" weight = "1" ];\n' +
-        'PluginManager_PluginInstanceStore -> Plugin [ label = "1" weight = "1" ];\n' +
-        'PluginStrategy -> PluginWrapper [ label = "4" weight = "4" ];\n' +
-        'PluginStrategy -> Hudson [ label = "1" weight = "1" ];\n' +
-        'PluginWrapper -> PluginManager [ label = "2" weight = "2" ];\n' +
-        'PluginWrapper -> PluginManager_PluginInstanceStore [ label = "1" weight = "1" ];\n' +
-        'PluginWrapper -> Plugin [ label = "3" weight = "3" ];\n' +
-        'PluginWrapper -> UpdateSite_Plugin [ label = "5" weight = "5" ];\n' +
-        'PluginWrapper -> PluginWrapper [ label = "8" weight = "8" ];\n' +
-        'PluginWrapper -> UpdateCenter [ label = "5" weight = "5" ];\n' +
-        'PluginWrapper -> PluginWrapper_PluginWrapperAdministrativeMonitor [ label = "1" weight = "1" ];\n' +
-        'PluginWrapper_PluginWrapperAdministrativeMonitor -> PluginWrapper [ label = "2" weight = "2" ];\n' +
-        'PluginWrapper -> Jenkins [ label = "1" weight = "1" ];\n' +
-        'PluginWrapper -> UpdateSite [ label = "2" weight = "2" ];\n' +
-        'PluginWrapper -> UpdateSite_Data [ label = "1" weight = "1" ];\n' +
-        'Proc -> TaskListener [ label = "1" weight = "1" ];\n' +
-        'ProxyConfiguration -> Secret [ label = "2" weight = "2" ];\n' +
-        'ProxyConfiguration -> ProxyConfiguration [ label = "2" weight = "2" ];\n' +
-        'ProxyConfiguration -> Jenkins [ label = "1" weight = "1" ];\n' +
-        'AutoBrowserHolder -> RepositoryBrowser [ label = "2" weight = "2" ];\n' +
-        'AutoBrowserHolder -> SCM [ label = "3" weight = "3" ];\n' +
-        'AutoBrowserHolder -> SCMDescriptor [ label = "1" weight = "1" ];\n' +
-        'AutoBrowserHolder -> AbstractProject [ label = "1" weight = "1" ];\n' +
-        'ChangeLogAnnotator -> Run [ label = "1" weight = "1" ];\n' +
-        'ChangeLogAnnotator -> ChangeLogSet_Entry [ label = "2" weight = "2" ];\n' +
-        'ChangeLogAnnotator -> AbstractBuild [ label = "1" weight = "1" ];\n' +
-        'ChangeLogAnnotator -> ChangeLogAnnotator [ label = "1" weight = "1" ];\n' +
-        'ChangeLogParser -> Run [ label = "1" weight = "1" ];\n' +
-        'ChangeLogParser -> RepositoryBrowser [ label = "1" weight = "1" ];\n' +
-        'ChangeLogParser -> AbstractBuild [ label = "1" weight = "1" ];\n' +
-        'ChangeLogSet -> Run [ label = "3" weight = "3" ];\n' +
-        'ChangeLogSet -> AbstractBuild [ label = "4" weight = "4" ];\n' +
-        'ChangeLogSet -> RepositoryBrowser [ label = "2" weight = "2" ];\n' +
-        'ChangeLogSet_Entry -> ChangeLogSet [ label = "5" weight = "5" ];\n' +
-        'ChangeLogSet_Entry -> ChangeLogAnnotator [ label = "1" weight = "1" ];\n' +
-        'ChangeLogSet_Entry -> RepositoryBrowser [ label = "1" weight = "1" ];\n' +
-        'RepositoryBrowsers -> Descriptor [ label = "4" weight = "4" ];\n' +
-        'RepositoryBrowsers -> RepositoryBrowser [ label = "4" weight = "4" ];\n' +
-        'RepositoryBrowser -> RepositoryBrowsers [ label = "3" weight = "3" ];\n' +
-        'SCM -> AutoBrowserHolder [ label = "1" weight = "1" ];\n' +
-        'SCM -> RepositoryBrowser [ label = "1" weight = "1" ];\n' +
-        'SCM -> Job [ label = "3" weight = "3" ];\n' +
-        'SCM -> FilePath [ label = "15" weight = "15" ];\n' +
-        'SCM -> Node [ label = "2" weight = "2" ];\n' +
-        'SCM -> AbstractProject [ label = "5" weight = "5" ];\n' +
-        'SCM -> Launcher [ label = "11" weight = "11" ];\n' +
-        'SCM -> TaskListener [ label = "10" weight = "10" ];\n' +
-        'SCM -> Run [ label = "4" weight = "4" ];\n' +
-        'SCM -> AbstractBuild [ label = "8" weight = "8" ];\n' +
-        'SCM -> BuildListener [ label = "3" weight = "3" ];\n' +
-        'SCM -> Descriptor [ label = "1" weight = "1" ];\n' +
-        'SCM -> SCMDescriptor [ label = "5" weight = "5" ];\n' +
-        'SCM -> TopLevelItemDescriptor [ label = "1" weight = "1" ];\n' +
-        'RepositoryBrowser -> SCMDescriptor [ label = "4" weight = "4" ];\n' +
-        'SCMDescriptor -> Job [ label = "1" weight = "1" ];\n' +
-        'SCMDescriptor -> AbstractProject [ label = "1" weight = "1" ];\n' +
-        'SuggestedItem -> SuggestedItem [ label = "2" weight = "2" ];\n' +
-        'SuggestedItem -> Item [ label = "2" weight = "2" ];\n' +
-        'Item -> SuggestedItem [ label = "1" weight = "1" ];\n' +
-        'ACL -> TopLevelItemDescriptor [ label = "3" weight = "3" ];\n' +
-        'ACL -> ViewGroup [ label = "3" weight = "3" ];\n' +
-        'ACL -> ViewDescriptor [ label = "3" weight = "3" ];\n' +
-        'ACL -> User [ label = "1" weight = "1" ];\n' +
-        'AuthenticationProcessingFilter2 -> User [ label = "1" weight = "1" ];\n' +
-        'AuthorizationStrategy -> AbstractProject [ label = "1" weight = "1" ];\n' +
-        'AuthorizationStrategy -> Job [ label = "1" weight = "1" ];\n' +
-        'AuthorizationStrategy -> View [ label = "1" weight = "1" ];\n' +
-        'AuthorizationStrategy -> ACL [ label = "1" weight = "1" ];\n' +
-        'AuthorizationStrategy -> AbstractItem [ label = "1" weight = "1" ];\n' +
-        'AuthorizationStrategy -> User [ label = "1" weight = "1" ];\n' +
-        'AuthorizationStrategy -> Computer [ label = "1" weight = "1" ];\n' +
-        'AuthorizationStrategy -> Cloud [ label = "1" weight = "1" ];\n' +
-        'AuthorizationStrategy -> Node [ label = "1" weight = "1" ];\n' +
-        'AuthorizationStrategy -> DescriptorList [ label = "1" weight = "1" ];\n' +
-        'AuthorizationStrategy -> AuthorizationStrategy [ label = "2" weight = "2" ];\n' +
-        'FederatedLoginServiceUserProperty -> FederatedLoginService_FederatedIdentity [ label = "1" weight = "1" ];\n' +
-        'FederatedLoginService_FederatedIdentity -> User [ label = "4" weight = "4" ];\n' +
-        'FederatedLoginService_FederatedIdentity -> FederatedLoginServiceUserProperty [ label = "1" weight = "1" ];\n' +
-        'FullControlOnceLoggedInAuthorizationStrategy -> SparseACL [ label = "2" weight = "2" ];\n' +
-        'FullControlOnceLoggedInAuthorizationStrategy -> Descriptor [ label = "1" weight = "1" ];\n' +
-        'FullControlOnceLoggedInAuthorizationStrategy -> AuthorizationStrategy [ label = "1" weight = "1" ];\n' +
-        'HudsonFilter -> Jenkins [ label = "1" weight = "1" ];\n' +
-        'HudsonFilter -> SecurityRealm [ label = "2" weight = "2" ];\n' +
-        'HudsonFilter -> SecurityRealm_SecurityComponents [ label = "1" weight = "1" ];\n' +
-        'HudsonPrivateSecurityRealm -> User [ label = "14" weight = "14" ];\n' +
-        'HudsonPrivateSecurityRealm -> FederatedLoginService_FederatedIdentity [ label = "1" weight = "1" ];\n' +
-        'HudsonPrivateSecurityRealm -> HudsonPrivateSecurityRealm_SignupInfo [ label = "5" weight = "5" ];\n' +
-        'HudsonPrivateSecurityRealm -> AuthorizationStrategy [ label = "1" weight = "1" ];\n' +
-        'HudsonPrivateSecurityRealm -> PermissionAdder [ label = "1" weight = "1" ];\n' +
-        'HudsonPrivateSecurityRealm_SignupInfo -> FederatedLoginService_FederatedIdentity [ label = "1" weight = "1" ];\n' +
-        'PermissionAdder -> AuthorizationStrategy [ label = "1" weight = "1" ];\n' +
-        'PermissionAdder -> User [ label = "1" weight = "1" ];\n' +
-        'SecurityRealm -> FederatedLoginService_FederatedIdentity [ label = "1" weight = "1" ];\n' +
-        'SecurityRealm -> SecurityRealm_SecurityComponents [ label = "2" weight = "2" ];\n' +
-        'SecurityRealm -> AuthenticationProcessingFilter2 [ label = "1" weight = "1" ];\n' +
-        'SecurityRealm -> SecurityRealm [ label = "2" weight = "2" ];\n' +
-        'SecurityRealm_SecurityComponents -> TokenBasedRememberMeServices2 [ label = "1" weight = "1" ];\n' +
-        'SecurityRealm -> DescriptorList [ label = "1" weight = "1" ];\n' +
-        'SparseACL -> ACL [ label = "2" weight = "2" ];\n' +
-        'TokenBasedRememberMeServices2 -> User [ label = "2" weight = "2" ];\n' +
-        'TokenBasedRememberMeServices2 -> Jenkins [ label = "2" weight = "2" ];\n' +
-        'TokenBasedRememberMeServices2 -> HMACConfidentialKey [ label = "1" weight = "1" ];\n' +
-        'AbstractCloudSlave -> ComputerLauncher [ label = "3" weight = "3" ];\n' +
-        'AbstractCloudSlave -> RetentionStrategy [ label = "2" weight = "2" ];\n' +
-        'NodeProperty -> AbstractCloudSlave [ label = "2" weight = "2" ];\n' +
-        'AbstractCloudSlave -> Computer [ label = "1" weight = "1" ];\n' +
-        'AbstractCloudSlave -> TaskListener [ label = "1" weight = "1" ];\n' +
-        'Cloud -> Label [ label = "2" weight = "2" ];\n' +
-        'Cloud -> Cloud_CloudState [ label = "2" weight = "2" ];\n' +
-        'Cloud -> DescriptorList [ label = "1" weight = "1" ];\n' +
-        'Cloud -> Cloud [ label = "1" weight = "1" ];\n' +
-        'Cloud_CloudState -> Label [ label = "2" weight = "2" ];\n' +
-        'CloudProvisioningListener -> Cloud [ label = "3" weight = "3" ];\n' +
-        'CloudProvisioningListener -> Label [ label = "2" weight = "2" ];\n' +
-        'CloudProvisioningListener -> Cloud_CloudState [ label = "1" weight = "1" ];\n' +
-        'CloudProvisioningListener -> NodeProvisioner_PlannedNode [ label = "5" weight = "5" ];\n' +
-        'CloudProvisioningListener -> Node [ label = "3" weight = "3" ];\n' +
-        'Computer -> CloudSlaveRetentionStrategy [ label = "2" weight = "2" ];\n' +
-        'CloudSlaveRetentionStrategy -> Node [ label = "2" weight = "2" ];\n' +
-        'ComputerLauncher -> SlaveComputer [ label = "6" weight = "6" ];\n' +
-        'ComputerLauncher -> TaskListener [ label = "4" weight = "4" ];\n' +
-        'ComputerLauncher -> DescriptorList [ label = "1" weight = "1" ];\n' +
-        'ComputerLauncher -> ComputerLauncher [ label = "1" weight = "1" ];\n' +
-        'ComputerListener -> Computer [ label = "9" weight = "9" ];\n' +
-        'ComputerListener -> TaskListener [ label = "4" weight = "4" ];\n' +
-        'ComputerListener -> FilePath [ label = "1" weight = "1" ];\n' +
-        'DumbSlave -> ComputerLauncher [ label = "3" weight = "3" ];\n' +
-        'DumbSlave -> RetentionStrategy [ label = "2" weight = "2" ];\n' +
-        'NodeProperty -> DumbSlave [ label = "1" weight = "1" ];\n' +
-        'Node -> NodeDescriptor [ label = "1" weight = "1" ];\n' +
-        'NodeDescriptor -> ComputerSet [ label = "1" weight = "1" ];\n' +
-        'NodeDescriptor -> DescriptorList [ label = "1" weight = "1" ];\n' +
-        'NodeDescriptor -> Node [ label = "1" weight = "1" ];\n' +
-        'NodeDescriptor -> NodeDescriptor [ label = "2" weight = "2" ];\n' +
-        'NodeList -> Node [ label = "6" weight = "6" ];\n' +
-        'Node -> NodeList [ label = "3" weight = "3" ];\n' +
-        'NodeProperty -> Queue_Task [ label = "1" weight = "1" ];\n' +
-        'NodeProperty -> Queue_BuildableItem [ label = "1" weight = "1" ];\n' +
-        'NodeProperty -> AbstractBuild [ label = "1" weight = "1" ];\n' +
-        'NodeProperty -> Launcher [ label = "1" weight = "1" ];\n' +
-        'NodeProperty -> BuildListener [ label = "1" weight = "1" ];\n' +
-        'NodeProperty -> TaskListener [ label = "1" weight = "1" ];\n' +
-        'NodeProvisioner_PlannedNode -> Node [ label = "2" weight = "2" ];\n' +
-        'NodeProvisioner -> LoadStatistics [ label = "2" weight = "2" ];\n' +
-        'NodeProvisioner -> Label [ label = "3" weight = "3" ];\n' +
-        'NodeProvisioner -> NodeProvisioner_PlannedNode [ label = "12" weight = "12" ];\n' +
-        'NodeProvisioner -> NodeProvisioner_StrategyState [ label = "1" weight = "1" ];\n' +
-        'NodeProvisioner -> Jenkins [ label = "1" weight = "1" ];\n' +
-        'NodeProvisioner -> Node [ label = "4" weight = "4" ];\n' +
-        'NodeProvisioner -> NodeProvisioner_Strategy [ label = "2" weight = "2" ];\n' +
-        'NodeProvisioner_Strategy -> NodeProvisioner_StrategyState [ label = "1" weight = "1" ];\n' +
-        'NodeProvisioner_StrategyState -> Label [ label = "2" weight = "2" ];\n' +
-        'NodeProvisioner_StrategyState -> NodeProvisioner_PlannedNode [ label = "5" weight = "5" ];\n' +
-        'NodeProvisioner_StrategyState -> Node [ label = "1" weight = "1" ];\n' +
-        'NodeProvisioner -> CloudProvisioningListener [ label = "5" weight = "5" ];\n' +
-        'NodeProvisioner -> Cloud [ label = "1" weight = "1" ];\n' +
-        'NodeSpecific -> Node [ label = "1" weight = "1" ];\n' +
-        'NodeSpecific -> TaskListener [ label = "1" weight = "1" ];\n' +
-        'Computer -> RetentionStrategy [ label = "4" weight = "4" ];\n' +
-        'RetentionStrategy -> DescriptorList [ label = "1" weight = "1" ];\n' +
-        'RetentionStrategy -> RetentionStrategy [ label = "2" weight = "2" ];\n' +
-        'RetentionStrategy -> Computer [ label = "1" weight = "1" ];\n' +
-        'RetentionStrategy -> RetentionStrategy_Always [ label = "1" weight = "1" ];\n' +
-        'RetentionStrategy_Always -> SlaveComputer [ label = "1" weight = "1" ];\n' +
-        'SlaveComputer -> ComputerLauncher [ label = "2" weight = "2" ];\n' +
-        'SlaveComputer -> TaskListener [ label = "3" weight = "3" ];\n' +
-        'SlaveComputer -> Slave [ label = "4" weight = "4" ];\n' +
-        'SlaveComputer -> ConsoleLogFilter [ label = "1" weight = "1" ];\n' +
-        'SlaveComputer -> Node [ label = "3" weight = "3" ];\n' +
-        'SlaveComputer -> ComputerListener [ label = "4" weight = "4" ];\n' +
-        'SlaveComputer -> Executor [ label = "4" weight = "4" ];\n' +
-        'SlaveComputer -> Queue_Task [ label = "4" weight = "4" ];\n' +
-        'SlaveComputer -> RetentionStrategy [ label = "3" weight = "3" ];\n' +
-        'SlaveComputer -> FilePath [ label = "1" weight = "1" ];\n' +
-        'WorkspaceList_Entry -> FilePath [ label = "3" weight = "3" ];\n' +
-        'WorkspaceList_Lease -> FilePath [ label = "4" weight = "4" ];\n' +
-        'WorkspaceList_Lease -> WorkspaceList_Lease [ label = "1" weight = "1" ];\n' +
-        'WorkspaceList -> WorkspaceList_Entry [ label = "5" weight = "5" ];\n' +
-        'WorkspaceList -> FilePath [ label = "10" weight = "10" ];\n' +
-        'ArtifactArchiver_DescriptorImpl -> AbstractProject [ label = "1" weight = "1" ];\n' +
-        'AbstractProject -> ArtifactArchiver_DescriptorImpl [ label = "1" weight = "1" ];\n' +
-        'Builder -> Build [ label = "1" weight = "1" ];\n' +
-        'Builder -> BuildListener [ label = "1" weight = "1" ];\n' +
-        'BuildStep -> AbstractBuild [ label = "2" weight = "2" ];\n' +
-        'BuildStep -> BuildListener [ label = "2" weight = "2" ];\n' +
-        'BuildStep -> Launcher [ label = "1" weight = "1" ];\n' +
-        'BuildStep -> AbstractProject [ label = "2" weight = "2" ];\n' +
-        'BuildStep -> Descriptor [ label = "1" weight = "1" ];\n' +
-        'BuildStep -> Builder [ label = "1" weight = "1" ];\n' +
-        'BuildStep -> BuildStep_PublisherList [ label = "1" weight = "1" ];\n' +
-        'BuildStep_PublisherList -> DescriptorList [ label = "1" weight = "1" ];\n' +
-        'BuildStep_PublisherList -> Publisher [ label = "6" weight = "6" ];\n' +
-        'BuildStep_PublisherList -> Descriptor [ label = "5" weight = "5" ];\n' +
-        'Publisher -> BuildStep_PublisherList [ label = "1" weight = "1" ];\n' +
-        'AbstractProject -> BuildStepDescriptor [ label = "2" weight = "2" ];\n' +
-        'BuildStepDescriptor -> Descriptor [ label = "4" weight = "4" ];\n' +
-        'BuildStep -> BuildStepDescriptor [ label = "4" weight = "4" ];\n' +
-        'BuildStepDescriptor -> BuildStepDescriptor [ label = "1" weight = "1" ];\n' +
-        'BuildStepMonitor -> BuildStep [ label = "1" weight = "1" ];\n' +
-        'BuildStepMonitor -> AbstractBuild [ label = "1" weight = "1" ];\n' +
-        'BuildStepMonitor -> Launcher [ label = "1" weight = "1" ];\n' +
-        'BuildStepMonitor -> BuildListener [ label = "1" weight = "1" ];\n' +
-        'BuildTrigger -> AbstractProject [ label = "8" weight = "8" ];\n' +
-        'BuildTrigger -> AbstractBuild [ label = "3" weight = "3" ];\n' +
-        'BuildTrigger -> Launcher [ label = "1" weight = "1" ];\n' +
-        'BuildTrigger -> BuildListener [ label = "3" weight = "3" ];\n' +
-        'BuildTrigger -> Job [ label = "3" weight = "3" ];\n' +
-        'BuildTrigger -> ParameterizedJobMixIn_ParameterizedJob [ label = "1" weight = "1" ];\n' +
-        'BuildTrigger -> BuildTrigger [ label = "1" weight = "1" ];\n' +
-        'BuildTrigger -> DependencyGraph [ label = "4" weight = "4" ];\n' +
-        'BuildTrigger -> DependencyGraph_Dependency [ label = "2" weight = "2" ];\n' +
-        'BuildTrigger -> Action [ label = "1" weight = "1" ];\n' +
-        'AbstractProject -> BuildTrigger_DescriptorImpl [ label = "2" weight = "2" ];\n' +
-        'BuildTrigger_DescriptorImpl -> AbstractProject [ label = "1" weight = "1" ];\n' +
-        'BuildTrigger_DescriptorImpl -> Item [ label = "2" weight = "2" ];\n' +
-        'BuildTrigger_DescriptorImpl -> Job [ label = "1" weight = "1" ];\n' +
-        'BuildWrapper -> AbstractBuild [ label = "6" weight = "6" ];\n' +
-        'BuildWrapper -> Launcher [ label = "4" weight = "4" ];\n' +
-        'BuildWrapper -> BuildListener [ label = "4" weight = "4" ];\n' +
-        'BuildWrapper -> Build [ label = "1" weight = "1" ];\n' +
-        'BuildWrapper -> AbstractProject [ label = "2" weight = "2" ];\n' +
-        'BuildWrapper -> Action [ label = "1" weight = "1" ];\n' +
-        'BuildWrapper -> BuildWrapperDescriptor [ label = "1" weight = "1" ];\n' +
-        'BuildWrapperDescriptor -> AbstractProject [ label = "1" weight = "1" ];\n' +
-        'Fingerprinter_DescriptorImpl -> AbstractProject [ label = "2" weight = "2" ];\n' +
-        'AbstractProject -> Fingerprinter_DescriptorImpl [ label = "1" weight = "1" ];\n' +
-        'Fingerprinter_FingerprintAction -> Run [ label = "4" weight = "4" ];\n' +
-        'Fingerprinter_FingerprintAction -> Fingerprint [ label = "5" weight = "5" ];\n' +
-        'Fingerprinter_FingerprintAction -> AbstractBuild [ label = "1" weight = "1" ];\n' +
-        'Fingerprinter_FingerprintAction -> Jenkins [ label = "1" weight = "1" ];\n' +
-        'Fingerprinter_FingerprintAction -> AbstractProject [ label = "1" weight = "1" ];\n' +
-        'Fingerprinter_FingerprintAction -> Fingerprint_BuildPtr [ label = "1" weight = "1" ];\n' +
-        'Fingerprinter_FingerprintAction -> Job [ label = "1" weight = "1" ];\n' +
-        'LogRotator -> Job [ label = "1" weight = "1" ];\n' +
-        'LogRotator -> Run [ label = "11" weight = "11" ];\n' +
-        'LogRotator -> RunList [ label = "2" weight = "2" ];\n' +
-        'Run -> LogRotator [ label = "2" weight = "2" ];\n' +
-        'Maven -> SettingsProvider [ label = "4" weight = "4" ];\n' +
-        'Maven -> GlobalSettingsProvider [ label = "4" weight = "4" ];\n' +
-        'Maven -> Maven_MavenInstallation [ label = "3" weight = "3" ];\n' +
-        'Maven -> AbstractBuild [ label = "2" weight = "2" ];\n' +
-        'Maven -> Launcher [ label = "2" weight = "2" ];\n' +
-        'Maven -> BuildListener [ label = "2" weight = "2" ];\n' +
-        'Maven -> ArgumentListBuilder [ label = "2" weight = "2" ];\n' +
-        'Maven -> Maven_DescriptorImpl [ label = "1" weight = "1" ];\n' +
-        'Maven_DescriptorImpl -> Maven_MavenInstallation [ label = "4" weight = "4" ];\n' +
-        'AbstractProject -> Maven_DescriptorImpl [ label = "1" weight = "1" ];\n' +
-        'ToolProperty -> Maven_MavenInstallation [ label = "1" weight = "1" ];\n' +
-        'Maven_MavenInstallation -> Launcher [ label = "3" weight = "3" ];\n' +
-        'Maven_MavenInstallation -> Node [ label = "1" weight = "1" ];\n' +
-        'Maven_MavenInstallation -> TaskListener [ label = "1" weight = "1" ];\n' +
-        'Maven_MavenInstallation -> Maven_MavenInstallation [ label = "1" weight = "1" ];\n' +
-        'Publisher -> Build [ label = "1" weight = "1" ];\n' +
-        'Publisher -> BuildListener [ label = "1" weight = "1" ];\n' +
-        'Publisher -> Project [ label = "1" weight = "1" ];\n' +
-        'Publisher_DescriptorExtensionListImpl -> Jenkins [ label = "1" weight = "1" ];\n' +
-        'Publisher_DescriptorExtensionListImpl -> Descriptor [ label = "5" weight = "5" ];\n' +
-        'Publisher_DescriptorExtensionListImpl -> Publisher [ label = "5" weight = "5" ];\n' +
-        'Publisher -> Publisher_DescriptorExtensionListImpl [ label = "1" weight = "1" ];\n' +
-        'ToolInstallation -> ToolDescriptor [ label = "3" weight = "3" ];\n' +
-        'ToolDescriptor -> DescribableList [ label = "1" weight = "1" ];\n' +
-        'ToolDescriptor -> ToolProperty [ label = "1" weight = "1" ];\n' +
-        'ToolInstallation -> DescribableList [ label = "1" weight = "1" ];\n' +
-        'ToolInstallation -> ToolProperty [ label = "6" weight = "6" ];\n' +
-        'ToolProperty -> ToolInstallation [ label = "1" weight = "1" ];\n' +
-        'ToolInstallation -> ToolInstallation [ label = "4" weight = "4" ];\n' +
-        'ToolInstallation -> Node [ label = "2" weight = "2" ];\n' +
-        'ToolInstallation -> TaskListener [ label = "3" weight = "3" ];\n' +
-        'ToolInstallation -> NodeSpecific [ label = "1" weight = "1" ];\n' +
-        'ToolInstallation -> AbstractBuild [ label = "1" weight = "1" ];\n' +
-        'ToolLocationNodeProperty_DescriptorImpl -> ToolInstallation [ label = "1" weight = "1" ];\n' +
-        'Node -> ToolLocationNodeProperty_DescriptorImpl [ label = "1" weight = "1" ];\n' +
-        'SCMTrigger -> Action [ label = "1" weight = "1" ];\n' +
-        'SCMTrigger -> SCMTrigger_DescriptorImpl [ label = "1" weight = "1" ];\n' +
-        'SCMTrigger_DescriptorImpl -> Item [ label = "3" weight = "3" ];\n' +
-        'SCMTrigger_DescriptorImpl -> SCMTriggerItem [ label = "1" weight = "1" ];\n' +
-        'SCMTrigger_DescriptorImpl -> SCMTrigger_Runner [ label = "1" weight = "1" ];\n' +
-        'SCMTrigger_BuildAction -> Run [ label = "4" weight = "4" ];\n' +
-        'SCMTrigger_BuildAction -> AbstractBuild [ label = "2" weight = "2" ];\n' +
-        'SCMTrigger_Runner -> Action [ label = "3" weight = "3" ];\n' +
-        'SCMTrigger_Runner -> SCMDecisionHandler [ label = "1" weight = "1" ];\n' +
-        'SCMTrigger_Runner -> SCMTriggerItem [ label = "1" weight = "1" ];\n' +
-        'SCMTrigger_Runner -> SCMTrigger_SCMTriggerCause [ label = "1" weight = "1" ];\n' +
-        'SCMTrigger_SCMTriggerCause -> Run [ label = "3" weight = "3" ];\n' +
-        'SCMTrigger_SCMTriggerCause -> SCMTrigger_BuildAction [ label = "1" weight = "1" ];\n' +
-        'Item -> Trigger [ label = "2" weight = "2" ];\n' +
-        'Trigger -> Action [ label = "1" weight = "1" ];\n' +
-        'Trigger -> Jenkins [ label = "1" weight = "1" ];\n' +
-        'Trigger -> SCMTrigger_DescriptorImpl [ label = "1" weight = "1" ];\n' +
-        'Trigger -> ParameterizedJobMixIn_ParameterizedJob [ label = "1" weight = "1" ];\n' +
-        'Trigger -> Trigger [ label = "1" weight = "1" ];\n' +
-        'Trigger -> TriggerDescriptor [ label = "4" weight = "4" ];\n' +
-        'Trigger -> Item [ label = "1" weight = "1" ];\n' +
-        'Trigger -> TopLevelItemDescriptor [ label = "1" weight = "1" ];\n' +
-        'TriggerDescriptor -> Item [ label = "1" weight = "1" ];\n' +
-        'ArgumentListBuilder -> ArgumentListBuilder [ label = "2" weight = "2" ];\n' +
-        'ArgumentListBuilder -> Secret [ label = "1" weight = "1" ];\n' +
-        'Descriptor -> DescribableList [ label = "6" weight = "6" ];\n' +
-        'DescribableList -> Descriptor [ label = "1" weight = "1" ];\n' +
-        'DescribableList -> AbstractProject [ label = "1" weight = "1" ];\n' +
-        'DescribableList -> DependencyGraph [ label = "1" weight = "1" ];\n' +
-        'DescribableList -> DependencyDeclarer [ label = "1" weight = "1" ];\n' +
-        'DescriptorList -> Descriptor [ label = "5" weight = "5" ];\n' +
-        'FormValidation_CheckMethod -> Descriptor [ label = "2" weight = "2" ];\n' +
-        'Run -> RunList [ label = "16" weight = "16" ];\n' +
-        'RunList -> Job [ label = "5" weight = "5" ];\n' +
-        'RunList -> View [ label = "1" weight = "1" ];\n' +
-        'RunList -> TopLevelItem [ label = "1" weight = "1" ];\n' +
-        'Job -> RunList [ label = "1" weight = "1" ];\n' +
-        'RunList -> Node [ label = "1" weight = "1" ];\n' +
-        'Secret -> Secret [ label = "2" weight = "2" ];\n' +
-        'Secret -> CryptoConfidentialKey [ label = "1" weight = "1" ];\n' +
-        'XStream2 -> Jenkins [ label = "1" weight = "1" ];\n' +
-        'ListViewColumn -> DescriptorList [ label = "1" weight = "1" ];\n' +
-        'ListViewColumn -> ListViewColumn [ label = "5" weight = "5" ];\n' +
-        'View -> ListViewColumn [ label = "1" weight = "1" ];\n' +
-        'ListViewColumn -> View [ label = "1" weight = "1" ];\n' +
-        'ListViewColumn -> Descriptor [ label = "2" weight = "2" ];\n' +
-        'View -> MyViewsTabBar [ label = "1" weight = "1" ];\n' +
-        'MyViewsTabBar -> View [ label = "1" weight = "1" ];\n' +
-        'ViewJobFilter -> TopLevelItem [ label = "2" weight = "2" ];\n' +
-        'ViewJobFilter -> View [ label = "1" weight = "1" ];\n' +
-        'View -> ViewsTabBar [ label = "1" weight = "1" ];\n' +
-        'ViewsTabBar -> View [ label = "1" weight = "1" ];\n' +
-        'ModelObject -> HistoryWidget [ label = "2" weight = "2" ];\n' +
-        'HistoryWidget -> HistoryPageFilter [ label = "4" weight = "4" ];\n' +
-        'HistoryWidget -> HistoryPageEntry [ label = "4" weight = "4" ];\n' +
-        'ExtensionComponentSet -> ExtensionComponentSet [ label = "4" weight = "4" ];\n' +
-        'ExtensionComponentSet -> ExtensionFinder [ label = "1" weight = "1" ];\n' +
-        'FingerprintStorage -> Fingerprint [ label = "3" weight = "3" ];\n' +
-        'FingerprintStorage -> TaskListener [ label = "2" weight = "2" ];\n' +
-        'FingerprintStorage -> FingerprintFacet [ label = "1" weight = "1" ];\n' +
-        'SetupWizard -> Jenkins [ label = "5" weight = "5" ];\n' +
-        'SetupWizard -> FilePath [ label = "4" weight = "4" ];\n' +
-        'SetupWizard -> HudsonPrivateSecurityRealm [ label = "3" weight = "3" ];\n' +
-        'SetupWizard -> User [ label = "4" weight = "4" ];\n' +
-        'SetupWizard -> FullControlOnceLoggedInAuthorizationStrategy [ label = "1" weight = "1" ];\n' +
-        'SetupWizard -> ApiTokenProperty [ label = "2" weight = "2" ];\n' +
-        'SetupWizard -> SetupWizard [ label = "1" weight = "1" ];\n' +
-        'SetupWizard -> UpdateSite [ label = "2" weight = "2" ];\n' +
-        'SetupWizard -> UpdateSite_Plugin [ label = "1" weight = "1" ];\n' +
-        'ArtifactManager -> Run [ label = "1" weight = "1" ];\n' +
-        'ArtifactManager -> FilePath [ label = "1" weight = "1" ];\n' +
-        'ArtifactManager -> Launcher [ label = "1" weight = "1" ];\n' +
-        'ArtifactManager -> BuildListener [ label = "1" weight = "1" ];\n' +
-        'ArtifactManagerFactory -> Run [ label = "1" weight = "1" ];\n' +
-        'BuildDiscarder -> Job [ label = "1" weight = "1" ];\n' +
-        'BuildDiscarderProperty -> BuildDiscarder [ label = "2" weight = "2" ];\n' +
-        'CauseOfInterruption -> TaskListener [ label = "1" weight = "1" ];\n' +
-        'DependencyDeclarer -> AbstractProject [ label = "1" weight = "1" ];\n' +
-        'DependencyDeclarer -> DependencyGraph [ label = "1" weight = "1" ];\n' +
-        'DirectlyModifiableTopLevelItemGroup -> TopLevelItem [ label = "2" weight = "2" ];\n' +
-        'TopLevelItem -> DirectlyModifiableTopLevelItemGroup [ label = "1" weight = "1" ];\n' +
-        'FingerprintFacet -> Action [ label = "1" weight = "1" ];\n' +
-        'GlobalBuildDiscarderStrategy -> Job [ label = "2" weight = "2" ];\n' +
-        'Job -> GlobalBuildDiscarderStrategy [ label = "2" weight = "2" ];\n' +
-        'Run -> GlobalBuildDiscarderStrategy [ label = "2" weight = "2" ];\n' +
-        'GlobalBuildDiscarderStrategy -> Run [ label = "2" weight = "2" ];\n' +
-        'InterruptedBuildAction -> CauseOfInterruption [ label = "1" weight = "1" ];\n' +
-        'CauseOfInterruption -> InterruptedBuildAction [ label = "1" weight = "1" ];\n' +
-        'ItemCategory -> TopLevelItemDescriptor [ label = "1" weight = "1" ];\n' +
-        'ItemCategory -> ExtensionList [ label = "1" weight = "1" ];\n' +
-        'ItemCategory -> ItemCategory [ label = "2" weight = "2" ];\n' +
-        'Jenkins -> Queue [ label = "1" weight = "1" ];\n' +
-        'Jenkins -> SetupWizard [ label = "1" weight = "1" ];\n' +
-        'Jenkins -> AuthorizationStrategy [ label = "2" weight = "2" ];\n' +
-        'Jenkins -> SecurityRealm [ label = "3" weight = "3" ];\n' +
-        'Jenkins -> TopLevelItem [ label = "17" weight = "17" ];\n' +
-        'Jenkins -> Jenkins [ label = "3" weight = "3" ];\n' +
-        'Jenkins -> JDK [ label = "3" weight = "3" ];\n' +
-        'Jenkins -> DependencyGraph [ label = "5" weight = "5" ];\n' +
-        'Jenkins -> ViewsTabBar [ label = "2" weight = "2" ];\n' +
-        'Jenkins -> MyViewsTabBar [ label = "2" weight = "2" ];\n' +
-        'Jenkins -> ExtensionList [ label = "6" weight = "6" ];\n' +
-        'Jenkins -> DescriptorExtensionList [ label = "1" weight = "1" ];\n' +
-        'Jenkins -> Node [ label = "6" weight = "6" ];\n' +
-        'Jenkins -> Computer [ label = "6" weight = "6" ];\n' +
-        'Jenkins -> Hudson_CloudList [ label = "1" weight = "1" ];\n' +
-        'Jenkins -> NodeList [ label = "1" weight = "1" ];\n' +
-        'Jenkins -> Nodes [ label = "1" weight = "1" ];\n' +
-        'Jenkins -> View [ label = "11" weight = "11" ];\n' +
-        'Jenkins -> ViewGroupMixIn [ label = "1" weight = "1" ];\n' +
-        'Jenkins -> FingerprintMap [ label = "1" weight = "1" ];\n' +
-        'Jenkins -> PluginManager [ label = "2" weight = "2" ];\n' +
-        'Jenkins -> SCMListener [ label = "1" weight = "1" ];\n' +
-        'Jenkins -> Label [ label = "8" weight = "8" ];\n' +
-        'Jenkins -> OverallLoadStatistics [ label = "1" weight = "1" ];\n' +
-        'Jenkins -> LoadStatistics [ label = "1" weight = "1" ];\n' +
-        'Jenkins -> NodeProvisioner [ label = "2" weight = "2" ];\n' +
-        'Jenkins -> Action [ label = "5" weight = "5" ];\n' +
-        'Jenkins -> DescribableList [ label = "2" weight = "2" ];\n' +
-        'Jenkins -> NodeProperty [ label = "2" weight = "2" ];\n' +
-        'Jenkins -> AdministrativeMonitor [ label = "5" weight = "5" ];\n' +
-        'Jenkins -> ItemGroupMixIn [ label = "1" weight = "1" ];\n' +
-        'Jenkins -> UpdateCenter [ label = "1" weight = "1" ];\n' +
-        'Jenkins -> ProxyConfiguration [ label = "2" weight = "2" ];\n' +
-        'Jenkins -> LogRecorderManager [ label = "2" weight = "2" ];\n' +
-        'Jenkins -> InitStrategy [ label = "2" weight = "2" ];\n' +
-        'Jenkins -> TypedFilter [ label = "1" weight = "1" ];\n' +
-        'Jenkins -> ComputerListener [ label = "1" weight = "1" ];\n' +
-        'Jenkins -> ItemListener [ label = "2" weight = "2" ];\n' +
-        'Jenkins -> Descriptor [ label = "11" weight = "11" ];\n' +
-        'Descriptor -> Jenkins [ label = "2" weight = "2" ];\n' +
-        'Jenkins -> PluginWrapper [ label = "3" weight = "3" ];\n' +
-        'Plugin -> Jenkins [ label = "3" weight = "3" ];\n' +
-        'Jenkins -> TaskListener [ label = "1" weight = "1" ];\n' +
-        'Jenkins -> Job [ label = "2" weight = "2" ];\n' +
-        'Jenkins -> LabelAtom [ label = "5" weight = "5" ];\n' +
-        'JDK -> Jenkins [ label = "1" weight = "1" ];\n' +
-        'Jenkins -> JenkinsLocationConfiguration [ label = "2" weight = "2" ];\n' +
-        'Jenkins -> WorkspaceLocator [ label = "1" weight = "1" ];\n' +
-        'Jenkins -> FilePath [ label = "1" weight = "1" ];\n' +
-        'Jenkins -> Item [ label = "7" weight = "7" ];\n' +
-        'Jenkins -> HudsonFilter [ label = "1" weight = "1" ];\n' +
-        'Jenkins -> ExtensionFinder [ label = "5" weight = "5" ];\n' +
-        'Jenkins -> ExtensionComponentSet [ label = "3" weight = "3" ];\n' +
-        'Item -> Jenkins [ label = "3" weight = "3" ];\n' +
-        'Jenkins -> TopLevelItemDescriptor [ label = "2" weight = "2" ];\n' +
-        'TopLevelItem -> Jenkins [ label = "3" weight = "3" ];\n' +
-        'Jenkins -> Fingerprint [ label = "1" weight = "1" ];\n' +
-        'Jenkins -> ModelObjectWithContextMenu_ContextMenu [ label = "2" weight = "2" ];\n' +
-        'Jenkins -> ModelObjectWithContextMenu_MenuItem [ label = "1" weight = "1" ];\n' +
-        'Jenkins -> ACL [ label = "1" weight = "1" ];\n' +
-        'Jenkins -> User [ label = "1" weight = "1" ];\n' +
-        'Jenkins -> XStream2 [ label = "1" weight = "1" ];\n' +
-        'JenkinsLocationConfiguration -> JenkinsLocationConfiguration [ label = "1" weight = "1" ];\n' +
-        'JenkinsLocationConfiguration -> XStream2 [ label = "1" weight = "1" ];\n' +
-        'LazyBuildMixIn -> RunMap [ label = "4" weight = "4" ];\n' +
-        'Run -> LazyBuildMixIn [ label = "7" weight = "7" ];\n' +
-        'Item -> LazyBuildMixIn [ label = "1" weight = "1" ];\n' +
-        'LazyBuildMixIn -> Item [ label = "1" weight = "1" ];\n' +
-        'ModelObjectWithContextMenu_ContextMenu -> ModelObjectWithContextMenu_MenuItem [ label = "7" weight = "7" ];\n' +
-        'Action -> ModelObjectWithContextMenu_ContextMenu [ label = "1" weight = "1" ];\n' +
-        'ModelObjectWithContextMenu_ContextMenu -> Action [ label = "2" weight = "2" ];\n' +
-        'ModelObjectWithContextMenu_ContextMenu -> Node [ label = "1" weight = "1" ];\n' +
-        'ModelObjectWithContextMenu_ContextMenu -> Computer [ label = "2" weight = "2" ];\n' +
-        'ModelObjectWithContextMenu_ContextMenu -> Job [ label = "1" weight = "1" ];\n' +
-        'ModelObjectWithContextMenu_MenuItem -> ModelObjectWithContextMenu_ContextMenu [ label = "1" weight = "1" ];\n' +
-        'ModelObjectWithContextMenu_MenuItem -> ModelObject [ label = "1" weight = "1" ];\n' +
-        'TopLevelItem -> ModifiableTopLevelItemGroup [ label = "1" weight = "1" ];\n' +
-        'ModifiableTopLevelItemGroup -> TopLevelItemDescriptor [ label = "1" weight = "1" ];\n' +
-        'Nodes -> Jenkins [ label = "2" weight = "2" ];\n' +
-        'Nodes -> Node [ label = "12" weight = "12" ];\n' +
-        'Node -> Nodes [ label = "1" weight = "1" ];\n' +
-        'ParameterizedJobMixIn -> Cause [ label = "3" weight = "3" ];\n' +
-        'ParameterizedJobMixIn -> Action [ label = "4" weight = "4" ];\n' +
-        'ParameterizedJobMixIn -> Queue_Item [ label = "2" weight = "2" ];\n' +
-        'ParameterizedJobMixIn -> Job [ label = "2" weight = "2" ];\n' +
-        'ParameterizedJobMixIn -> ParametersDefinitionProperty [ label = "3" weight = "3" ];\n' +
-        'ParameterizedJobMixIn -> ParameterValue [ label = "2" weight = "2" ];\n' +
-        'ParameterizedJobMixIn -> ParameterDefinition [ label = "1" weight = "1" ];\n' +
-        'ParameterizedJobMixIn -> ParameterizedJobMixIn_ParameterizedJob [ label = "2" weight = "2" ];\n' +
-        'ParameterizedJobMixIn -> BuildAuthorizationToken [ label = "1" weight = "1" ];\n' +
-        'Trigger -> ParameterizedJobMixIn [ label = "1" weight = "1" ];\n' +
-        'ParameterizedJobMixIn -> Trigger [ label = "1" weight = "1" ];\n' +
-        'ParameterizedJobMixIn_ParameterizedJob -> ParameterizedJobMixIn_ParameterizedJob [ label = "2" weight = "2" ];\n' +
-        'ParameterizedJobMixIn_ParameterizedJob -> Cause [ label = "2" weight = "2" ];\n' +
-        'ParameterizedJobMixIn_ParameterizedJob -> Action [ label = "1" weight = "1" ];\n' +
-        'AsynchronousExecution -> Executor [ label = "2" weight = "2" ];\n' +
-        'TransientFingerprintFacetFactory -> Fingerprint [ label = "1" weight = "1" ];\n' +
-        'TransientFingerprintFacetFactory -> FingerprintFacet [ label = "1" weight = "1" ];\n' +
-        'GlobalSettingsProvider -> AbstractBuild [ label = "3" weight = "3" ];\n' +
-        'GlobalSettingsProvider -> TaskListener [ label = "3" weight = "3" ];\n' +
-        'GlobalSettingsProvider -> GlobalSettingsProvider [ label = "2" weight = "2" ];\n' +
-        'GlobalSettingsProvider -> FilePath [ label = "2" weight = "2" ];\n' +
-        'SettingsProvider -> AbstractBuild [ label = "3" weight = "3" ];\n' +
-        'SettingsProvider -> TaskListener [ label = "3" weight = "3" ];\n' +
-        'SettingsProvider -> SettingsProvider [ label = "2" weight = "2" ];\n' +
-        'SettingsProvider -> FilePath [ label = "2" weight = "2" ];\n' +
-        'RunWithSCM -> User [ label = "2" weight = "2" ];\n' +
-        'Run -> RunWithSCM [ label = "1" weight = "1" ];\n' +
-        'RunWithSCM -> RunWithSCM [ label = "1" weight = "1" ];\n' +
-        'RunWithSCM -> ChangeLogSet [ label = "2" weight = "2" ];\n' +
-        'ChangeLogSet_Entry -> RunWithSCM [ label = "2" weight = "2" ];\n' +
-        'RunWithSCM -> ChangeLogSet_Entry [ label = "2" weight = "2" ];\n' +
-        'SCMCheckoutStrategy -> AbstractBuild [ label = "1" weight = "1" ];\n' +
-        'SCMCheckoutStrategy -> Launcher [ label = "1" weight = "1" ];\n' +
-        'SCMCheckoutStrategy -> BuildListener [ label = "1" weight = "1" ];\n' +
-        'SCMCheckoutStrategy -> AbstractProject [ label = "1" weight = "1" ];\n' +
-        'SCMCheckoutStrategy -> BuildWrapper [ label = "1" weight = "1" ];\n' +
-        'SCMCheckoutStrategy -> AbstractBuild_AbstractBuildExecution [ label = "1" weight = "1" ];\n' +
-        'SCMCheckoutStrategy -> SCMCheckoutStrategyDescriptor [ label = "1" weight = "1" ];\n' +
-        'SCMCheckoutStrategyDescriptor -> AbstractProject [ label = "2" weight = "2" ];\n' +
-        'SCMCheckoutStrategyDescriptor -> SCMCheckoutStrategyDescriptor [ label = "2" weight = "2" ];\n' +
-        'SCMDecisionHandler -> Item [ label = "3" weight = "3" ];\n' +
-        'SCMDecisionHandler -> SCMDecisionHandler [ label = "3" weight = "3" ];\n' +
-        'ApiTokenStats -> User [ label = "2" weight = "2" ];\n' +
-        'ApiTokenStats -> ApiTokenStats [ label = "3" weight = "3" ];\n' +
-        'ApiTokenStore -> Secret [ label = "4" weight = "4" ];\n' +
-        'ApiTokenProperty -> Secret [ label = "1" weight = "1" ];\n' +
-        'ApiTokenProperty -> ApiTokenStore [ label = "1" weight = "1" ];\n' +
-        'ApiTokenProperty -> ApiTokenStats [ label = "1" weight = "1" ];\n' +
-        'ApiTokenProperty -> User [ label = "3" weight = "3" ];\n' +
-        'ApiTokenProperty -> HMACConfidentialKey [ label = "1" weight = "1" ];\n' +
-        'ConfidentialStore -> Jenkins [ label = "1" weight = "1" ];\n' +
-        'ConfidentialStore -> ConfidentialStore [ label = "3" weight = "3" ];\n' +
-        'CryptoConfidentialKey -> ConfidentialStore [ label = "2" weight = "2" ];\n' +
-        'HexStringConfidentialKey -> ConfidentialStore [ label = "2" weight = "2" ];\n' +
-        'HMACConfidentialKey -> ConfidentialStore [ label = "3" weight = "3" ];\n' +
-        'ImpersonatingUserDetailsService2 -> User [ label = "1" weight = "1" ];\n' +
-        'QueueItemAuthenticator -> Queue_Item [ label = "2" weight = "2" ];\n' +
-        'QueueItemAuthenticator -> Queue_Task [ label = "2" weight = "2" ];\n' +
-        'TypedFilter -> ExtensionList [ label = "2" weight = "2" ];\n' +
-        'UpdateSiteWarningsConfiguration -> UpdateSite_Warning [ label = "6" weight = "6" ];\n' +
-        'UpdateSiteWarningsConfiguration -> UpdateSite [ label = "1" weight = "1" ];\n' +
-        'UpdateSiteWarningsConfiguration -> UpdateSite_Data [ label = "1" weight = "1" ];\n' +
-        'WorkspaceLocator -> TopLevelItem [ label = "1" weight = "1" ];\n' +
-        'WorkspaceLocator -> Node [ label = "1" weight = "1" ];\n' +
-        'EnvVarsFilterException -> EnvVarsFilterRule [ label = "2" weight = "2" ];\n' +
-        'EnvVarsFilterGlobalRule -> Run [ label = "1" weight = "1" ];\n' +
-        'EnvVarsFilterGlobalRule -> Launcher [ label = "1" weight = "1" ];\n' +
-        'EnvVarsFilterableBuilder -> EnvVarsFilterLocalRuleDescriptor [ label = "2" weight = "2" ];\n' +
-        'EnvVarsFilterLocalRuleDescriptor -> DescriptorExtensionList [ label = "1" weight = "1" ];\n' +
-        'EnvVarsFilterLocalRuleDescriptor -> EnvVarsFilterLocalRuleDescriptor [ label = "1" weight = "1" ];\n' +
-        'EnvVarsFilterRule -> EnvVarsFilterRuleContext [ label = "1" weight = "1" ];\n' +
-        'EnvVarsFilterRule -> Descriptor [ label = "1" weight = "1" ];\n' +
-        'EnvVarsFilterRuleContext -> Launcher [ label = "2" weight = "2" ];\n' +
-        'EnvVarsFilterRuleContext -> TaskListener [ label = "2" weight = "2" ];\n' +
-        'EnvVarsFilterRuleWrapper -> EnvVarsFilterRule [ label = "4" weight = "4" ];\n' +
-        'EnvVarsFilterRuleWrapper -> Run [ label = "1" weight = "1" ];\n' +
-        'EnvVarsFilterRuleWrapper -> Launcher [ label = "2" weight = "2" ];\n' +
-        'EnvVarsFilterRuleWrapper -> EnvVarsFilterGlobalRule [ label = "2" weight = "2" ];\n' +
-        'EnvVarsFilterRuleWrapper -> TaskListener [ label = "1" weight = "1" ];\n' +
-        'EnvVarsFilterRuleWrapper -> EnvVarsFilterRuleContext [ label = "1" weight = "1" ];\n' +
-        'EnvVarsFilterRuleWrapper -> EnvVarsFilterException [ label = "1" weight = "1" ];\n' +
-        'SCMTriggerItem -> Action [ label = "1" weight = "1" ];\n' +
-        'SCMTriggerItem -> TaskListener [ label = "1" weight = "1" ];\n' +
-        'SCMTriggerItem -> SCMTrigger [ label = "1" weight = "1" ];\n' +
-        'VirtualFile -> VirtualFile [ label = "6" weight = "6" ];\n' +
-        'VirtualFile -> FilePath [ label = "1" weight = "1" ];\n' +
-        'HistoryPageEntry -> Run [ label = "1" weight = "1" ];\n' +
-        'HistoryPageFilter -> HistoryPageEntry [ label = "4" weight = "4" ];\n' +
-        'HistoryPageFilter -> Queue_Item [ label = "6" weight = "6" ];\n' +
-        'HistoryPageFilter -> Run [ label = "5" weight = "5" ];\n' +
-        'HistoryPageFilter -> HistoryWidget [ label = "1" weight = "1" ];\n' +
-        'HistoryPageFilter -> Queue_Task [ label = "1" weight = "1" ];\n' +
-        'HistoryPageFilter -> ParametersAction [ label = "2" weight = "2" ];\n' +
-        'HistoryPageFilter -> AbstractBuild [ label = "1" weight = "1" ];\n' +
-        'HistoryPageFilter -> ParameterValue [ label = "2" weight = "2" ];\n' +
-        'Run -> RunListProgressiveRendering [ label = "2" weight = "2" ];\n' +
-        'RunListProgressiveRendering -> Run [ label = "2" weight = "2" ];\n' +
-        'BuildStatusSummaryTest -> Run [ label = "3" weight = "3" ];\n' +
-        'Run -> BuildStatusSummaryTest [ label = "1" weight = "1" ];\n' +
-        'RunTest -> Run [ label = "13" weight = "13" ];\n' +
-        'RunTest -> Run_ArtifactList [ label = "1" weight = "1" ];\n' +
-        'Run_Artifact -> RunTest [ label = "3" weight = "3" ];\n' +
-        'RunTest -> Job [ label = "6" weight = "6" ];\n' +
-        'Job -> RunTest [ label = "4" weight = "4" ];\n' +
-        'Run -> RunTest [ label = "4" weight = "4" ];\n' +
-        'RunTest -> Jenkins [ label = "3" weight = "3" ];\n' +
-        'CauseTest -> FreeStyleProject [ label = "12" weight = "12" ];\n' +
-        'CauseTest -> Run [ label = "3" weight = "3" ];\n' +
-        'CauseTest -> Cause [ label = "5" weight = "5" ];\n' +
-        'Run -> CauseTest [ label = "3" weight = "3" ];\n' +
-        'CauseTest -> TaskListener [ label = "1" weight = "1" ];\n' +
-        'CauseTest -> User [ label = "1" weight = "1" ];\n' +
-        'CauseTest -> Item [ label = "1" weight = "1" ];\n' +
-        'CauseTest -> FreeStyleBuild [ label = "8" weight = "8" ];\n' +
-        'CauseTest -> Project [ label = "1" weight = "1" ];\n' +
-        'Build -> CauseTest [ label = "2" weight = "2" ];\n' +
-        'TopLevelItem -> JobPropertyTest [ label = "1" weight = "1" ];\n' +
-        'JobPropertyTest -> Job [ label = "1" weight = "1" ];\n' +
-        'JobPropertyTest -> FreeStyleProject [ label = "2" weight = "2" ];\n' +
-        'TransientActionFactoryTest -> FreeStyleProject [ label = "3" weight = "3" ];\n' +
-        'Action -> TransientActionFactoryTest [ label = "2" weight = "2" ];\n' +
-        'TransientActionFactoryTest -> FreeStyleBuild [ label = "1" weight = "1" ];\n' +
-        '}'
+const mb_dot = `strict digraph G {
+AboutDialog -> MiscTools [ label = "10" weight = "10" color = "red" ];
+AboutDialog -> MainPanelView [ label = "1" weight = "1" color = "red" ];
+ChunkDownloader -> SecureSingleThreadNotifiable [ label = "1" weight = "1" ];
+ChunkDownloader -> Download [ label = "4" weight = "4" color = "red" ];
+ChunkDownloader -> ChunkWriterManager [ label = "2" weight = "2" ];
+ChunkDownloader -> SmartMegaProxyManager [ label = "4" weight = "4" color = "red" ];
+ChunkDownloader -> MainPanel [ label = "1" weight = "1" color = "red" ];
+ChunkDownloader -> ThrottledInputStream [ label = "1" weight = "1" ];
+ChunkDownloader -> ChunkInvalidException [ label = "1" weight = "1" ];
+ChunkDownloaderMono -> ChunkDownloader [ label = "2" weight = "2" ];
+ChunkDownloaderMono -> Download [ label = "3" weight = "3" color = "red" ];
+ChunkDownloaderMono -> CryptTools [ label = "2" weight = "2" color = "red" ];
+ChunkDownloaderMono -> ChunkInvalidException [ label = "1" weight = "1" ];
+ChunkUploader -> SecureSingleThreadNotifiable [ label = "1" weight = "1" ];
+ChunkUploader -> Upload [ label = "5" weight = "5" color = "red" ];
+ChunkUploader -> UploadMACGenerator [ label = "1" weight = "1" ];
+ChunkUploader -> ChunkWriterManager [ label = "1" weight = "1" ];
+ChunkUploader -> ThrottledOutputStream [ label = "1" weight = "1" ];
+ChunkUploader -> ChunkInvalidException [ label = "1" weight = "1" ];
+ChunkWriterManager -> SecureSingleThreadNotifiable [ label = "1" weight = "1" ];
+ChunkWriterManager -> Download [ label = "3" weight = "3" color = "red" ];
+ChunkWriterManager -> ChunkInvalidException [ label = "1" weight = "1" ];
+ClipboardChangeObservable -> ClipboardChangeObserver [ label = "2" weight = "2" ];
+ClipboardSpy -> SecureSingleThreadNotifiable [ label = "1" weight = "1" ];
+ClipboardSpy -> ClipboardChangeObservable [ label = "1" weight = "1" ];
+ClipboardSpy -> ClipboardChangeObserver [ label = "3" weight = "3" ];
+ClipboardSpy -> DBTools [ label = "1" weight = "1" ];
+ContextMenuMouseListener -> ContextMenuMouseListener__Actions [ label = "1" weight = "1" ];
+CryptTools -> MiscTools [ label = "14" weight = "14" ];
+CryptTools -> MainPanel [ label = "2" weight = "2" ];
+CryptTools -> GetMasterPasswordDialog [ label = "2" weight = "2" ];
+DBTools -> SqliteSingleton [ label = "36" weight = "36" ];
+Download -> Transference [ label = "1" weight = "1" ];
+Download -> SecureSingleThreadNotifiable [ label = "1" weight = "1" ];
+Download -> TransferenceManager [ label = "8" weight = "8" ];
+Download -> MiscTools [ label = "7" weight = "7" color = "red" ];
+Download -> DownloadView [ label = "6" weight = "6" ];
+Download -> MainPanel [ label = "3" weight = "3" color = "red" ];
+Download -> ProgressMeter [ label = "2" weight = "2" ];
+Download -> ChunkDownloader [ label = "10" weight = "10" ];
+Download -> ChunkWriterManager [ label = "2" weight = "2" ];
+Download -> MegaAPI [ label = "3" weight = "3" ];
+Download -> ChunkDownloaderMono [ label = "2" weight = "2" ];
+Download -> DBTools [ label = "2" weight = "2" ];
+Download -> APIException [ label = "5" weight = "5" ];
+Download -> CryptTools [ label = "2" weight = "2" color = "red" ];
+Download -> ChunkInvalidException [ label = "2" weight = "2" ];
+Download -> MainPanelView [ label = "1" weight = "1" color = "red" ];
+DownloadManager -> TransferenceManager [ label = "4" weight = "4" ];
+DownloadManager -> MiscTools [ label = "2" weight = "2" color = "red" ];
+DownloadManager -> Download [ label = "2" weight = "2" ];
+DownloadManager -> MainPanel [ label = "1" weight = "1" color = "red" ];
+DownloadManager -> Transference [ label = "8" weight = "8" ];
+DownloadManager -> APIException [ label = "3" weight = "3" ];
+DownloadView -> TransferenceView [ label = "1" weight = "1" ];
+DownloadView -> MiscTools [ label = "12" weight = "12" color = "red" ];
+DownloadView -> Download [ label = "6" weight = "6" color = "red" ];
+FileGrabberDialog -> MiscTools [ label = "8" weight = "8" color = "red" ];
+FileGrabberDialog -> MainPanel [ label = "1" weight = "1" color = "red" ];
+FileGrabberDialog -> MainPanelView [ label = "1" weight = "1" color = "red" ];
+FileGrabberDialog -> DBTools [ label = "1" weight = "1" ];
+FileGrabberDialog -> MegaAPI [ label = "2" weight = "2" ];
+FileMergerDialog -> MiscTools [ label = "3" weight = "3" color = "red" ];
+FileMergerDialog -> MainPanel [ label = "1" weight = "1" color = "red" ];
+FileMergerDialog -> MainPanelView [ label = "1" weight = "1" color = "red" ];
+FileSplitterDialog -> MiscTools [ label = "4" weight = "4" color = "red" ];
+FileSplitterDialog -> MainPanel [ label = "1" weight = "1" color = "red" ];
+FileSplitterDialog -> MainPanelView [ label = "1" weight = "1" color = "red" ];
+FolderLinkDialog -> MiscTools [ label = "5" weight = "5" color = "red" ];
+FolderLinkDialog -> MainPanelView [ label = "1" weight = "1" color = "red" ];
+FolderLinkDialog -> MegaAPI [ label = "2" weight = "2" ];
+FolderLinkDialog -> MegaMutableTreeNode [ label = "6" weight = "6" ];
+FolderLinkDialog -> MegaAPIException [ label = "1" weight = "1" ];
+Get2FACode -> MiscTools [ label = "1" weight = "1" color = "red" ];
+Get2FACode -> MainPanel [ label = "1" weight = "1" color = "red" ];
+GetMasterPasswordDialog -> MiscTools [ label = "2" weight = "2" color = "red" ];
+GetMasterPasswordDialog -> MainPanel [ label = "1" weight = "1" color = "red" ];
+GetMasterPasswordDialog -> CryptTools [ label = "1" weight = "1" color = "red" ];
+KissVideoStreamServer -> SecureSingleThreadNotifiable [ label = "1" weight = "1" ];
+KissVideoStreamServer -> MainPanelView [ label = "3" weight = "3" ];
+KissVideoStreamServer -> MainPanel [ label = "3" weight = "3" color = "red" ];
+KissVideoStreamServer -> ContentType [ label = "2" weight = "2" ];
+KissVideoStreamServer -> MegaAPI [ label = "4" weight = "4" ];
+KissVideoStreamServer -> APIException [ label = "2" weight = "2" ];
+KissVideoStreamServer -> StreamChunkManager [ label = "1" weight = "1" ];
+KissVideoStreamServer -> StreamChunkDownloader [ label = "4" weight = "4" ];
+KissVideoStreamServer -> CryptTools [ label = "1" weight = "1" color = "red" ];
+LabelTranslatorSingleton_LazyHolder -> LabelTranslatorSingleton [ label = "2" weight = "2" ];
+LinkGrabberDialog -> ClipboardChangeObserver [ label = "1" weight = "1" ];
+LinkGrabberDialog -> MiscTools [ label = "4" weight = "4" color = "red" ];
+LinkGrabberDialog -> ClipboardSpy [ label = "2" weight = "2" ];
+LinkGrabberDialog -> MainPanel [ label = "3" weight = "3" color = "red" ];
+LinkGrabberDialog -> MainPanelView [ label = "1" weight = "1" color = "red" ];
+LinkGrabberDialog -> CryptTools [ label = "1" weight = "1" color = "red" ];
+MainPanel -> MiscTools [ label = "9" weight = "9" color = "red" ];
+MainPanel -> SmartMegaProxyManager [ label = "3" weight = "3" color = "red" ];
+MainPanel -> MainPanelView [ label = "2" weight = "2" ];
+MainPanel -> SpeedMeter [ label = "3" weight = "3" ];
+MainPanel -> DownloadManager [ label = "2" weight = "2" ];
+MainPanel -> UploadManager [ label = "2" weight = "2" ];
+MainPanel -> StreamThrottlerSupervisor [ label = "2" weight = "2" ];
+MainPanel -> MegaAPI [ label = "8" weight = "8" ];
+MainPanel -> ClipboardSpy [ label = "2" weight = "2" ];
+MainPanel -> KissVideoStreamServer [ label = "2" weight = "2" ];
+MainPanel -> MegaProxyServer [ label = "3" weight = "3" ];
+MainPanel -> DBTools [ label = "25" weight = "25" ];
+MainPanel -> Transference [ label = "6" weight = "6" ];
+MainPanel -> Download [ label = "5" weight = "5" ];
+MainPanel -> Upload [ label = "5" weight = "5" ];
+MainPanel -> WarningExitMessage [ label = "2" weight = "2" ];
+MainPanelView -> MiscTools [ label = "7" weight = "7" color = "red" ];
+MainPanelView -> ClipboardSpy [ label = "4" weight = "4" ];
+MainPanelView -> MainPanel [ label = "4" weight = "4" color = "red" ];
+MainPanelView -> DownloadManager [ label = "2" weight = "2" ];
+MainPanelView -> TransferenceManager [ label = "1" weight = "1" ];
+MainPanelView -> FileGrabberDialog [ label = "6" weight = "6" ];
+MainPanelView -> MegaAPI [ label = "7" weight = "7" ];
+MainPanelView -> MegaDirNode [ label = "4" weight = "4" ];
+MainPanelView -> Upload [ label = "2" weight = "2" ];
+MainPanelView -> DBTools [ label = "3" weight = "3" ];
+MainPanelView -> LinkGrabberDialog [ label = "3" weight = "3" ];
+MainPanelView -> Download [ label = "1" weight = "1" ];
+MainPanelView -> FolderLinkDialog [ label = "3" weight = "3" ];
+MainPanelView -> SettingsDialog [ label = "2" weight = "2" ];
+MainPanelView -> AboutDialog [ label = "2" weight = "2" ];
+MainPanelView -> StreamerDialog [ label = "2" weight = "2" ];
+MainPanelView -> FileSplitterDialog [ label = "2" weight = "2" ];
+MainPanelView -> FileMergerDialog [ label = "2" weight = "2" ];
+MegaAPI -> CryptTools [ label = "4" weight = "4" color = "red" ];
+MegaAPI -> MiscTools [ label = "20" weight = "20" color = "red" ];
+MegaAPI -> SmartMegaProxyManager [ label = "4" weight = "4" color = "red" ];
+MegaAPI -> MainPanel [ label = "1" weight = "1" color = "red" ];
+MegaAPI -> MegaAPIException [ label = "9" weight = "9" ];
+MegaAPI -> Upload [ label = "1" weight = "1" ];
+MegaAPI -> ThrottledOutputStream [ label = "1" weight = "1" ];
+MegaAPIException -> APIException [ label = "2" weight = "2" ];
+MegaCrypterAPI -> CryptTools [ label = "1" weight = "1" ];
+MegaCrypterAPI -> MainPanelView [ label = "1" weight = "1" ];
+MegaCrypterAPI -> MiscTools [ label = "5" weight = "5" ];
+MegaCrypterAPI -> MegaCrypterAPIException [ label = "3" weight = "3" ];
+MegaCrypterAPIException -> APIException [ label = "2" weight = "2" ];
+MegaMutableTreeNode -> MegaMutableTreeNode_1 [ label = "1" weight = "1" ];
+MegaProxyServer -> MainPanelView [ label = "2" weight = "2" ];
+MegaProxyServer -> MainPanel [ label = "2" weight = "2" color = "red" ];
+MegaProxyServer_Handler -> MegaProxyServer_Handler_1 [ label = "1" weight = "1" ];
+MiscTools -> MegaMutableTreeNode [ label = "4" weight = "4" ];
+MiscTools -> SmartMegaProxyManager [ label = "4" weight = "4" ];
+MiscTools -> MainPanel [ label = "2" weight = "2" ];
+MiscTools -> MegaAPI [ label = "4" weight = "4" ];
+MiscTools -> GetMasterPasswordDialog [ label = "2" weight = "2" ];
+MiscTools -> DBTools [ label = "1" weight = "1" ];
+MiscTools -> Get2FACode [ label = "2" weight = "2" ];
+MiscTools -> MegaAPIException [ label = "1" weight = "1" ];
+ProgressMeter -> SecureSingleThreadNotifiable [ label = "1" weight = "1" ];
+ProgressMeter -> Transference [ label = "2" weight = "2" color = "red" ];
+SetMasterPasswordDialog -> MiscTools [ label = "1" weight = "1" color = "red" ];
+SetMasterPasswordDialog -> MainPanel [ label = "1" weight = "1" color = "red" ];
+SettingsDialog -> MiscTools [ label = "8" weight = "8" color = "red" ];
+SettingsDialog -> MainPanel [ label = "2" weight = "2" color = "red" ];
+SettingsDialog -> MainPanelView [ label = "1" weight = "1" color = "red" ];
+SettingsDialog -> DBTools [ label = "36" weight = "36" ];
+SettingsDialog -> MegaAPI [ label = "3" weight = "3" ];
+SettingsDialog -> Get2FACode [ label = "4" weight = "4" ];
+SettingsDialog -> GetMasterPasswordDialog [ label = "2" weight = "2" ];
+SettingsDialog -> SetMasterPasswordDialog [ label = "2" weight = "2" ];
+SmartMegaProxyManager -> MainPanel [ label = "2" weight = "2" ];
+SpeedMeter -> TransferenceManager [ label = "2" weight = "2" ];
+SpeedMeter -> Transference [ label = "5" weight = "5" ];
+SqliteSingleton_LazyHolder -> SqliteSingleton [ label = "2" weight = "2" ];
+StreamChunk -> StreamChunk_ByteArrayOutInputStream [ label = "2" weight = "2" ];
+StreamChunk -> ChunkInvalidException [ label = "1" weight = "1" ];
+StreamChunkDownloader -> StreamChunkManager [ label = "4" weight = "4" ];
+StreamChunkDownloader -> SmartMegaProxyManager [ label = "4" weight = "4" color = "red" ];
+StreamChunkDownloader -> MainPanel [ label = "1" weight = "1" color = "red" ];
+StreamChunkDownloader -> StreamChunk [ label = "2" weight = "2" ];
+StreamChunkManager -> SecureMultiThreadNotifiable [ label = "1" weight = "1" ];
+StreamChunkManager -> StreamChunk [ label = "4" weight = "4" ];
+StreamChunkManager -> KissVideoStreamServer [ label = "3" weight = "3" color = "red" ];
+StreamerDialog -> ClipboardChangeObserver [ label = "1" weight = "1" ];
+StreamerDialog -> MiscTools [ label = "3" weight = "3" color = "red" ];
+StreamerDialog -> ClipboardSpy [ label = "2" weight = "2" ];
+StreamerDialog -> MainPanelView [ label = "2" weight = "2" color = "red" ];
+StreamerDialog -> MainPanel [ label = "3" weight = "3" color = "red" ];
+StreamerDialog -> CryptTools [ label = "1" weight = "1" color = "red" ];
+StreamerDialog -> MegaAPI [ label = "3" weight = "3" ];
+StreamThrottlerSupervisor -> SecureMultiThreadNotifiable [ label = "1" weight = "1" ];
+StreamThrottlerSupervisor -> StreamThrottlerSupervisor_1 [ label = "1" weight = "1" ];
+ThrottledInputStream -> StreamThrottlerSupervisor [ label = "2" weight = "2" ];
+ThrottledOutputStream -> StreamThrottlerSupervisor [ label = "2" weight = "2" ];
+Transference -> ProgressMeter [ label = "1" weight = "1" ];
+Transference -> MainPanel [ label = "1" weight = "1" color = "red" ];
+Transference -> TransferenceView [ label = "1" weight = "1" ];
+TransferenceManager -> SecureSingleThreadNotifiable [ label = "1" weight = "1" ];
+TransferenceManager -> Transference [ label = "39" weight = "39" ];
+TransferenceManager -> MiscTools [ label = "2" weight = "2" color = "red" ];
+TransferenceManager -> MainPanel [ label = "3" weight = "3" color = "red" ];
+TransferenceManager -> BoundedExecutor [ label = "2" weight = "2" ];
+Upload -> Transference [ label = "1" weight = "1" ];
+Upload -> SecureSingleThreadNotifiable [ label = "1" weight = "1" ];
+Upload -> UploadView [ label = "6" weight = "6" ];
+Upload -> MiscTools [ label = "5" weight = "5" color = "red" ];
+Upload -> TransferenceManager [ label = "7" weight = "7" ];
+Upload -> MainPanel [ label = "3" weight = "3" color = "red" ];
+Upload -> ProgressMeter [ label = "2" weight = "2" ];
+Upload -> ChunkUploader [ label = "8" weight = "8" ];
+Upload -> UploadMACGenerator [ label = "2" weight = "2" ];
+Upload -> MegaAPI [ label = "3" weight = "3" color = "red" ];
+Upload -> DBTools [ label = "2" weight = "2" ];
+Upload -> Thumbnailer [ label = "4" weight = "4" ];
+Upload -> MegaAPIException [ label = "3" weight = "3" ];
+Upload -> ChunkInvalidException [ label = "1" weight = "1" ];
+UploadMACGenerator -> SecureSingleThreadNotifiable [ label = "1" weight = "1" ];
+UploadMACGenerator -> Upload [ label = "3" weight = "3" color = "red" ];
+UploadMACGenerator -> DBTools [ label = "1" weight = "1" ];
+UploadMACGenerator -> MiscTools [ label = "1" weight = "1" color = "red" ];
+UploadMACGenerator -> CryptTools [ label = "1" weight = "1" color = "red" ];
+UploadMACGenerator -> ChunkInvalidException [ label = "1" weight = "1" ];
+UploadManager -> TransferenceManager [ label = "4" weight = "4" ];
+UploadManager -> MiscTools [ label = "1" weight = "1" color = "red" ];
+UploadManager -> Upload [ label = "1" weight = "1" ];
+UploadManager -> MainPanel [ label = "1" weight = "1" color = "red" ];
+UploadManager -> Transference [ label = "3" weight = "3" ];
+UploadView -> TransferenceView [ label = "1" weight = "1" ];
+UploadView -> MiscTools [ label = "15" weight = "15" color = "red" ];
+UploadView -> Upload [ label = "6" weight = "6" color = "red" ];
+WarningExitMessage -> MiscTools [ label = "1" weight = "1" color = "red" ];
+WarningExitMessage -> MainPanel [ label = "3" weight = "3" color = "red" ];
+DBTools;
+BoundedExecutor;
+StreamThrottlerSupervisor;
+Get2FACode;
+MegaAPIException;
+SetMasterPasswordDialog;
+UploadMACGenerator;
+ChunkDownloaderMono;
+UploadManager;
+StreamerDialog;
+SecureMultiThreadNotifiable;
+ChunkWriterManager;
+LinkGrabberDialog;
+ClipboardChangeObservable;
+FileGrabberDialog;
+SecureSingleThreadNotifiable;
+MegaCrypterAPI;
+MegaDirNode;
+MegaProxyServer;
+ContextMenuMouseListener__Actions;
+MegaProxyServer_Handler_1;
+SqliteSingleton_LazyHolder;
+SettingsDialog;
+ProgressMeter;
+StreamChunk;
+CryptTools;
+FileMergerDialog;
+ClipboardSpy;
+WarningExitMessage;
+ContextMenuMouseListener;
+UploadView;
+Transference;
+TransferenceView;
+SmartMegaProxyManager;
+ThrottledOutputStream;
+MegaMutableTreeNode_1;
+LabelTranslatorSingleton;
+StreamChunkDownloader;
+ChunkInvalidException;
+ClipboardChangeObserver;
+AboutDialog;
+ContentType;
+SqliteSingleton;
+FileSplitterDialog;
+GetMasterPasswordDialog;
+Thumbnailer;
+DownloadView;
+MegaMutableTreeNode;
+Download;
+DownloadManager;
+MegaCrypterAPIException;
+SpeedMeter;
+MegaProxyServer_Handler;
+ChunkDownloader;
+LabelTranslatorSingleton_LazyHolder;
+StreamChunk_ByteArrayOutInputStream;
+KissVideoStreamServer;
+Upload;
+MegaAPI;
+FolderLinkDialog;
+APIException;
+MiscTools;
+MainPanel;
+MainPanelView;
+TransferenceManager;
+StreamChunkManager;
+ThrottledInputStream;
+ChunkUploader;
+StreamThrottlerSupervisor_1;
+}`;
 </script>
 <button style="display: block; margin: 0 auto;"
         onclick="showPopup('popup-cycleName', 'graph-container-cycleName', dot)">
     Show Graph Popup 1
+</button>
+
+<button style="display: block; margin: 0 auto;"
+        onclick="createForceGraph('popup-cycleName', 'graph-container-cycleName', mb_dot)">
+    Show 3D Graph
 </button>
 
 <div class="popup" id="popup-cycleName">
