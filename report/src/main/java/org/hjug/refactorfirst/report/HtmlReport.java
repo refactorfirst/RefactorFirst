@@ -223,7 +223,7 @@ public class HtmlReport extends SimpleHtmlReport {
                 + "<script type=\"text/javascript\" src=\"https://www.gstatic.com/charts/loader.js\"></script>\n"
                 // d3 dot graph imports
                 + "<script src=\"https://d3js.org/d3.v5.min.js\"></script>\n"
-                + "<script src=\"https://unpkg.com/d3-graphviz@3.0.5/build/d3-graphviz.min.js\"></script>\n"
+                + "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/d3-graphviz/3.0.5/d3-graphviz.min.js\"></script>\n"
                 + "<script src=\"https://unpkg.com/@hpcc-js/wasm@0.3.11/dist/index.min.js\"></script>\n"
                 // sigma graph imports - sigma, graphology, graphlib, and graphlib-dot
                 + "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/sigma.js/2.4.0/sigma.min.js\"></script>\n"

@@ -86,7 +86,7 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
         renderJsDeclaration(mainSink, "https://www.gstatic.com/charts/loader.js");
         // d3 dot graph imports
         renderJsDeclaration(mainSink, "https://d3js.org/d3.v5.min.js");
-        renderJsDeclaration(mainSink, "https://unpkg.com/d3-graphviz@3.0.5/build/d3-graphviz.min.js");
+        renderJsDeclaration(mainSink, "https://cdnjs.cloudflare.com/ajax/libs/d3-graphviz/3.0.5/d3-graphviz.min.js");
         renderJsDeclaration(mainSink, "https://unpkg.com/@hpcc-js/wasm@0.3.11/dist/index.min.js");
 
         // sigma graph imports - sigma, graphology, graphlib, and graphlib-dot
