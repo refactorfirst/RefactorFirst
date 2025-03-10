@@ -180,6 +180,8 @@
         }
     </script>
     <script type="module">
+        // SpriteText will only work as import
+        // this script block requires type=module since we are using an import
         import SpriteText from "https://esm.sh/three-spritetext";
 
         function createForceGraph(popupId, containerName, dot) {
@@ -304,6 +306,7 @@
                 .linkDirectionalParticles(Graph.linkDirectionalParticles());
         }
 
+        // needed to allow the button to open the graph
         window.createForceGraph = createForceGraph;
     </script>
 
