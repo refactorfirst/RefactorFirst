@@ -232,15 +232,85 @@
                     color: graphlibGraph.edge(edge).color || 'white' });
             });
 
-            ForceGraph3D()(container)
-                .graphData({ nodes: nodes, links: links })
+            const gData = {
+                nodes: nodes,
+                links: links
+            };
+
+            // cross-link node objects
+            gData.links.forEach(link => {
+                const a = gData.nodes.find(node => node.id === link.source);
+                const b = gData.nodes.find(node => node.id === link.target);
+                !a.neighbors && (a.neighbors = []);
+                !b.neighbors && (b.neighbors = []);
+                a.neighbors.push(b);
+                b.neighbors.push(a);
+
+                !a.links && (a.links = []);
+                !b.links && (b.links = []);
+                a.links.push(link);
+                b.links.push(link);
+            });
+
+            const highlightNodes = new Set();
+            const highlightLinks = new Set();
+            let hoverNode = null;
+
+            // ForceGraph3D()(container)
+            //     .graphData({ nodes: nodes, links: links })
+            //     .nodeLabel('id')
+            //     .nodeAutoColorBy('color')
+            //     .linkAutoColorBy('color')
+            //     .linkDirectionalArrowLength(3.5)
+            //     .linkDirectionalArrowRelPos(1)
+            //     .width(container.clientWidth)
+            //     .height(container.clientHeight);
+
+            const Graph = new ForceGraph3D(container)
+                .graphData(gData)
                 .nodeLabel('id')
-                .nodeAutoColorBy('color')
-                .linkAutoColorBy('color')
-                .linkDirectionalArrowLength(3.5)
-                .linkDirectionalArrowRelPos(1)
+                .nodeColor(node => highlightNodes.has(node) ? node === hoverNode ? 'rgb(255,0,0,1)' : 'rgba(255,160,0,0.8)' : 'rgba(0,255,255,0.6)')
+                .linkWidth(link => highlightLinks.has(link) ? 4 : 1)
+                .linkDirectionalParticles(link => highlightLinks.has(link) ? 4 : 0)
+                .linkDirectionalParticleWidth(4)
                 .width(container.clientWidth)
-                .height(container.clientHeight);
+                .height(container.clientHeight)
+                .onNodeHover(node => {
+                    // no state change
+                    if ((!node && !highlightNodes.size) || (node && hoverNode === node)) return;
+
+                    highlightNodes.clear();
+                    highlightLinks.clear();
+                    if (node) {
+                        highlightNodes.add(node);
+                        node.neighbors.forEach(neighbor => highlightNodes.add(neighbor));
+                        node.links.forEach(link => highlightLinks.add(link));
+                    }
+
+                    hoverNode = node || null;
+
+                    updateHighlight(Graph);
+                })
+                .onLinkHover(link => {
+                    highlightNodes.clear();
+                    highlightLinks.clear();
+
+                    if (link) {
+                        highlightLinks.add(link);
+                        highlightNodes.add(link.source);
+                        highlightNodes.add(link.target);
+                    }
+
+                    updateHighlight(Graph);
+                });
+        }
+
+        function updateHighlight(Graph) {
+            // trigger update of highlighted objects in scene
+            Graph
+                .nodeColor(Graph.nodeColor())
+                .linkWidth(Graph.linkWidth())
+                .linkDirectionalParticles(Graph.linkDirectionalParticles());
         }
 
         function hidePopup() {
