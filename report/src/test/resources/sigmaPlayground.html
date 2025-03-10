@@ -179,24 +179,8 @@
             return graphologyGraph;
         }
     </script>
-    <script>
-        function showPopup(popupId, containerName, dot) {
-            // Add event listener for Escape key to close the popup
-            document.addEventListener('keydown', function(event) {
-                if (event.key === 'Escape') {
-                    hidePopup();
-                }
-            });
-
-            document.getElementById('overlay').style.display = 'block';
-            document.getElementById(popupId).style.display = 'block';
-
-            var graph = renderGraph(dot);
-            var container = document.getElementById(containerName);
-
-            // Render with Sigma.js
-            new Sigma(graph, container);
-        }
+    <script type="module">
+        import SpriteText from "https://esm.sh/three-spritetext";
 
         function createForceGraph(popupId, containerName, dot) {
             // Add event listener for Escape key to close the popup
@@ -275,6 +259,13 @@
                 .linkDirectionalParticleWidth(4)
                 .width(container.clientWidth)
                 .height(container.clientHeight)
+                .nodeThreeObject(node => {
+                    const sprite = new SpriteText(node.id);
+                    sprite.material.depthWrite = false; // make sprite background transparent
+                    sprite.color = node.color;
+                    sprite.textHeight = 2;
+                    return sprite;
+                })
                 .onNodeHover(node => {
                     // no state change
                     if ((!node && !highlightNodes.size) || (node && hoverNode === node)) return;
@@ -311,6 +302,28 @@
                 .nodeColor(Graph.nodeColor())
                 .linkWidth(Graph.linkWidth())
                 .linkDirectionalParticles(Graph.linkDirectionalParticles());
+        }
+
+        window.createForceGraph = createForceGraph;
+    </script>
+
+    <script>
+        function showPopup(popupId, containerName, dot) {
+            // Add event listener for Escape key to close the popup
+            document.addEventListener('keydown', function(event) {
+                if (event.key === 'Escape') {
+                    hidePopup();
+                }
+            });
+
+            document.getElementById('overlay').style.display = 'block';
+            document.getElementById(popupId).style.display = 'block';
+
+            var graph = renderGraph(dot);
+            var container = document.getElementById(containerName);
+
+            // Render with Sigma.js
+            new Sigma(graph, container);
         }
 
         function hidePopup() {
