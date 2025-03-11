@@ -123,6 +123,165 @@ public class HtmlReport extends SimpleHtmlReport {
             + "}\n"
             + "</script>";
 
+    public static final String FORCE_3D_GRAPH =
+            "<script type=\"module\">\n" + "        // SpriteText will only work as import\n"
+                    + "        // this script block requires type=module since we are using an import\n"
+                    + "        import SpriteText from \"https://esm.sh/three-spritetext\";\n"
+                    + "\n"
+                    + "        function createForceGraph(popupId, containerName, dot) {\n"
+                    + "            // Add event listener for Escape key to close the popup\n"
+                    + "            document.addEventListener('keydown', function (event) {\n"
+                    + "                if (event.key === 'Escape') {\n"
+                    + "                    hidePopup();\n"
+                    + "                }\n"
+                    + "            });\n"
+                    + "\n"
+                    + "            document.getElementById('overlay').style.display = 'block';\n"
+                    + "            document.getElementById(popupId).style.display = 'block';\n"
+                    + "            var container = document.getElementById(containerName);\n"
+                    + "\n"
+                    + "            // Parse the DOT graph using graphlib-dot\n"
+                    + "            const graphlibGraph = graphlibDot.read(dot);\n"
+                    + "\n"
+                    + "            var nodes = [];\n"
+                    + "            var links = [];\n"
+                    + "\n"
+                    + "            graphlibGraph.nodes().forEach(function (node) {\n"
+                    + "                var nodeData = graphlibGraph.node(node);\n"
+                    + "                nodes.push({\n"
+                    + "                    id: node,\n"
+                    + "                    color: nodeData.color || 'white',\n"
+                    + "                });\n"
+                    + "            });\n"
+                    + "\n"
+                    + "            graphlibGraph.edges().forEach(function (edge) {\n"
+                    + "                links.push({\n"
+                    + "                    source: edge.v,\n"
+                    + "                    target: edge.w,\n"
+                    + "                    color: graphlibGraph.edge(edge).color || 'white',\n"
+                    + "                    weight: graphlibGraph.edge(edge).weight\n"
+                    + "                });\n"
+                    + "            });\n"
+                    + "\n"
+                    + "            const gData = {\n"
+                    + "                nodes: nodes,\n"
+                    + "                links: links\n"
+                    + "            };\n"
+                    + "\n"
+                    + "            // cross-link node objects\n"
+                    + "            gData.links.forEach(link => {\n"
+                    + "                const a = gData.nodes.find(node => node.id === link.source);\n"
+                    + "                const b = gData.nodes.find(node => node.id === link.target);\n"
+                    + "                !a.neighbors && (a.neighbors = []);\n"
+                    + "                !b.neighbors && (b.neighbors = []);\n"
+                    + "                a.neighbors.push(b);\n"
+                    + "                b.neighbors.push(a);\n"
+                    + "\n"
+                    + "                !a.links && (a.links = []);\n"
+                    + "                !b.links && (b.links = []);\n"
+                    + "                a.links.push(link);\n"
+                    + "                b.links.push(link);\n"
+                    + "            });\n"
+                    + "\n"
+                    + "            const highlightNodes = new Set();\n"
+                    + "            const highlightLinks = new Set();\n"
+                    + "            let hoverNode = null;\n"
+                    + "\n"
+                    + "            // ForceGraph3D()(container)\n"
+                    + "            //     .graphData({ nodes: nodes, links: links })\n"
+                    + "            //     .nodeLabel('id')\n"
+                    + "            //     .nodeAutoColorBy('color')\n"
+                    + "            //     .linkAutoColorBy('color')\n"
+                    + "            //     .linkDirectionalArrowLength(3.5)\n"
+                    + "            //     .linkDirectionalArrowRelPos(1)\n"
+                    + "            //     .width(container.clientWidth)\n"
+                    + "            //     .height(container.clientHeight);\n"
+                    + "\n"
+                    + "            const Graph = new ForceGraph3D(container)\n"
+                    + "                .graphData(gData)\n"
+                    + "                .nodeLabel('id')\n"
+                    + "                // uncomment when adding highlight control GUI\n"
+                    + "                // .nodeColor(node => highlightNodes.has(node) ? node === hoverNode ? 'rgb(255,0,0,1)' : 'rgba(255,160,0,0.8)' : 'rgba(0,255,255,0.6)')\n"
+                    + "                // .linkWidth(link => highlightLinks.has(link) ? 4 : 1)\n"
+                    + "                // .linkDirectionalParticles(link => highlightLinks.has(link) ? 4 : 0)\n"
+                    + "                .linkDirectionalParticleWidth(4)\n"
+                    + "                .width(container.clientWidth)\n"
+                    + "                .height(container.clientHeight)\n"
+                    + "                .nodeThreeObject(node => {\n"
+                    + "                    // use node labels instead of spheres\n"
+                    + "                    const sprite = new SpriteText(node.id);\n"
+                    + "                    sprite.material.depthWrite = false; // make sprite background transparent\n"
+                    + "                    sprite.color = node.color;\n"
+                    + "                    sprite.textHeight = 4;\n"
+                    + "                    return sprite;\n"
+                    + "                })\n"
+                    + "                // code to display weight as link text - may be too much for browsers to handle\n"
+                    + "                .linkThreeObjectExtend(true)\n"
+                    + "                .linkThreeObject(link => {\n"
+                    + "                    // extend link with text sprite\n"
+                    + "                    const sprite = new SpriteText(`${link.weight}`);\n"
+                    + "                    sprite.color = 'lightgrey';\n"
+                    + "                    sprite.textHeight = 3;\n"
+                    + "                    return sprite;\n"
+                    + "                })\n"
+                    + "                .linkPositionUpdate((sprite, { start, end }) => {\n"
+                    + "                    const middlePos = Object.assign(...['x', 'y', 'z'].map(c => ({\n"
+                    + "                        [c]: start[c] + (end[c] - start[c]) / 2 // calc middle point\n"
+                    + "                    })));\n"
+                    + "\n"
+                    + "                    // Position sprite\n"
+                    + "                    Object.assign(sprite.position, middlePos);\n"
+                    + "                })\n"
+                    + "                // code to highlight nodes & links\n"
+                    + "                // TODO: enable via control - see Manipulate Link Force Distance for example\n"
+                    + "                // .onNodeHover(node => {\n"
+                    + "                //     // no state change\n"
+                    + "                //     if ((!node && !highlightNodes.size) || (node && hoverNode === node)) return;\n"
+                    + "                //\n"
+                    + "                //     highlightNodes.clear();\n"
+                    + "                //     highlightLinks.clear();\n"
+                    + "                //     if (node) {\n"
+                    + "                //         highlightNodes.add(node);\n"
+                    + "                //         node.neighbors.forEach(neighbor => highlightNodes.add(neighbor));\n"
+                    + "                //         node.links.forEach(link => highlightLinks.add(link));\n"
+                    + "                //     }\n"
+                    + "                //\n"
+                    + "                //     hoverNode = node || null;\n"
+                    + "                //\n"
+                    + "                //     updateHighlight(Graph);\n"
+                    + "                // })\n"
+                    + "                // .onLinkHover(link => {\n"
+                    + "                //     highlightNodes.clear();\n"
+                    + "                //     highlightLinks.clear();\n"
+                    + "                //\n"
+                    + "                //     if (link) {\n"
+                    + "                //         highlightLinks.add(link);\n"
+                    + "                //         highlightNodes.add(link.source);\n"
+                    + "                //         highlightNodes.add(link.target);\n"
+                    + "                //     }\n"
+                    + "                //\n"
+                    + "                //     updateHighlight(Graph);\n"
+                    + "                // })\n"
+                    + "            ;\n"
+                    + "\n"
+                    + "            Graph\n"
+                    + "                .d3Force('link')\n"
+                    + "                .distance(link => (1/link.weight) * 200);\n"
+                    + "        }\n"
+                    + "\n"
+                    + "        // used by highlighting functionality\n"
+                    + "        function updateHighlight(Graph) {\n"
+                    + "            // trigger update of highlighted objects in scene\n"
+                    + "            Graph\n"
+                    + "                .nodeColor(Graph.nodeColor())\n"
+                    + "                .linkWidth(Graph.linkWidth())\n"
+                    + "                .linkDirectionalParticles(Graph.linkDirectionalParticles());\n"
+                    + "        }\n"
+                    + "\n"
+                    + "        // needed to allow the button to open the graph\n"
+                    + "        window.createForceGraph = createForceGraph;\n"
+                    + "    </script>";
+
     // Created by generative AI and modified
     public static final String POPUP_STYLE = "<style>\n" + "        /* Popup container */\n"
             + "        .popup {\n"
@@ -163,34 +322,47 @@ public class HtmlReport extends SimpleHtmlReport {
             + "    </style>";
 
     // Created by generative AI and modified
-    public static final String POPUP_FUNCTIONS =
-            "<script>\n" + "    function showPopup(popupId, containerName, dot) {\n"
-                    + "        document.getElementById('overlay').style.display = 'block';\n"
-                    + "        document.getElementById(popupId).style.display = 'block';\n"
-                    + "\n"
-                    + "        var graph = renderGraph(dot);\n"
-                    + "        var container = document.getElementById(containerName);\n"
-                    + "\n"
-                    + "        // Render with Sigma.js\n"
-                    + "        new Sigma(graph, container);\n"
-                    + "    }\n"
-                    + "\n"
-                    + "    function hidePopup() {\n"
-                    + "        document.getElementById('overlay').style.display = 'none';\n"
-                    + "        var popups = document.getElementsByClassName('popup');\n"
-                    + "        for (var i = 0; i < popups.length; i++) {\n"
-                    + "            popups[i].style.display = 'none';\n"
-                    + "        }\n"
-                    + "\n"
-                    + "        // Clear the graph containers to remove the previous graphs\n"
-                    + "        var containers = document.querySelectorAll('[id^=\"graph-container\"]');\n"
-                    + "        containers.forEach(function(container) {\n"
-                    + "            while (container.firstChild) {\n"
-                    + "                container.removeChild(container.firstChild);\n"
-                    + "            }\n"
-                    + "        });\n"
-                    + "    }\n"
-                    + "</script>";
+    public static final String POPUP_FUNCTIONS = "<script>\n"
+            + "    function showPopup(popupId, containerName, dot) {\n"
+            + "        // Add event listener for Escape key to close the popup\n"
+            + "        document.addEventListener('keydown', function (event) {\n"
+            + "            if (event.key === 'Escape') {\n"
+            + "                hidePopup();\n"
+            + "            }\n"
+            + "        });"
+            + "        "
+            + "        document.getElementById('overlay').style.display = 'block';\n"
+            + "        document.getElementById(popupId).style.display = 'block';\n"
+            + "\n"
+            + "        var graph = renderGraph(dot);\n"
+            + "        var container = document.getElementById(containerName);\n"
+            + "\n"
+            + "        // Render with Sigma.js\n"
+            + "        new Sigma(graph, container);\n"
+            + "    }\n"
+            + "\n"
+            + "    function hidePopup() {\n"
+            + "        document.getElementById('overlay').style.display = 'none';\n"
+            + "        var popups = document.getElementsByClassName('popup');\n"
+            + "        for (var i = 0; i < popups.length; i++) {\n"
+            + "            popups[i].style.display = 'none';\n"
+            + "        }\n"
+            + "\n"
+            + "        // Clear the graph containers to remove the previous graphs\n"
+            + "        var containers = document.querySelectorAll('[id^=\"graph-container\"]');\n"
+            + "        containers.forEach(function(container) {\n"
+            + "            while (container.firstChild) {\n"
+            + "                container.removeChild(container.firstChild);\n"
+            + "            }\n"
+            + "        });\n"
+            + "// Remove the Escape key event listener\n"
+            + "            document.removeEventListener('keydown', function (event) {\n"
+            + "                if (event.key === 'Escape') {\n"
+            + "                    hidePopup();\n"
+            + "                }\n"
+            + "            });"
+            + "    }\n"
+            + "</script>";
 
     private static final String GOD_CLASS_CHART_LEGEND =
             "       <h2>God Class Chart Legend:</h2>" + "       <table border=\"5px\">\n"
@@ -231,7 +403,9 @@ public class HtmlReport extends SimpleHtmlReport {
                 // may only need graphlib-dot
                 + "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/graphlib/2.1.8/graphlib.min.js\"></script>\n"
                 + "<script src=\"https://cdn.jsdelivr.net/npm/graphlib-dot@0.6.4/dist/graphlib-dot.min.js\"></script>\n"
+                + "<script src=\"https://unpkg.com/3d-force-graph\"></script>\n"
                 + SUGIYAMA_SIGMA_GRAPH
+                + FORCE_3D_GRAPH
                 + POPUP_FUNCTIONS
                 + POPUP_STYLE;
     }
@@ -327,6 +501,11 @@ public class HtmlReport extends SimpleHtmlReport {
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append("<h1 align=\"center\">Class Map</h1>");
         stringBuilder.append("<div align=\"center\">Excludes classes that have no incoming and outgoing edges<br>");
+        stringBuilder.append("<script>\n");
+        stringBuilder.append("const " + classGraphName + "_dot = " + dot + "\n");
+        stringBuilder.append("</script>\n");
+        stringBuilder.append(generateForce3DPopup(classGraphName));
+
         stringBuilder.append("Red lines represent back edges to remove.<br>\n");
         stringBuilder.append("Zoom in / out with your mouse wheel and click/move to drag the image.\n");
         stringBuilder.append("</div>\n");
@@ -335,7 +514,7 @@ public class HtmlReport extends SimpleHtmlReport {
             stringBuilder.append(
                     "<div align=\"center\" id=\"" + classGraphName + "\" style=\"border: thin solid black\"></div>\n");
             stringBuilder.append("<script>\n");
-            stringBuilder.append("const " + classGraphName + "_dot = " + dot + "\n");
+            //            stringBuilder.append("const " + classGraphName + "_dot = " + dot + "\n");
             stringBuilder.append("d3.select(\"#" + classGraphName + "\")\n");
             stringBuilder.append(".graphviz()\n");
             stringBuilder.append(".width(screen.width - " + pixels + ")\n");
@@ -345,10 +524,7 @@ public class HtmlReport extends SimpleHtmlReport {
             stringBuilder.append("</script>\n");
         } else {
             // revisit and add D3 popup button as well
-            stringBuilder.append("<script>\n");
-            stringBuilder.append("const " + classGraphName + "_dot = " + dot + "\n");
-            stringBuilder.append("</script>\n");
-            stringBuilder.append(generatePopup(classGraphName));
+            stringBuilder.append(generate2DPopup(classGraphName));
         }
 
         stringBuilder.append("<br/>\n");
@@ -413,11 +589,16 @@ public class HtmlReport extends SimpleHtmlReport {
         String cycleName = getClassName(cycle.getCycleName()).replace("$", "_");
 
         StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append("<script>\n");
+        stringBuilder.append("const " + cycleName + "_dot = " + dot + "\n");
+        stringBuilder.append("</script>\n");
+        stringBuilder.append(generateForce3DPopup(cycleName));
+
         if (cycle.getCycleNodes().size() + cycle.getEdgeSet().size() < d3Threshold) {
             stringBuilder.append(
                     "<div align=\"center\" id=\"" + cycleName + "\" style=\"border: thin solid black\"></div>\n");
             stringBuilder.append("<script>\n");
-            stringBuilder.append("const " + cycleName + "_dot = " + dot + "\n");
+            //            stringBuilder.append("const " + cycleName + "_dot = " + dot + "\n");
             stringBuilder.append("d3.select(\"#" + cycleName + "\")\n");
             stringBuilder.append(".graphviz()\n");
             stringBuilder.append(".width(screen.width - " + pixels + ")\n");
@@ -427,10 +608,8 @@ public class HtmlReport extends SimpleHtmlReport {
             stringBuilder.append("</script>\n");
         } else {
             // revisit and add D3 popup button as well
-            stringBuilder.append("<script>\n");
-            stringBuilder.append("const " + cycleName + "_dot = " + dot + "\n");
-            stringBuilder.append("</script>\n");
-            stringBuilder.append(generatePopup(cycleName));
+
+            stringBuilder.append(generate2DPopup(cycleName));
         }
 
         stringBuilder.append("<div align=\"center\">\n");
@@ -494,13 +673,24 @@ public class HtmlReport extends SimpleHtmlReport {
         return dot.toString().replace("$", "_");
     }
 
-    String generatePopup(String cycleName) {
+    String generate2DPopup(String cycleName) {
         // Created by generative AI and modified
         return "<button style=\"display: block; margin: 0 auto;\" onclick=\"showPopup('popup-" + cycleName
                 + "', 'graph-container-" + cycleName + "'," + cycleName + "_dot )\">Show " + cycleName
-                + " Cycle Popup</button>\n" + "\n"
+                + " 2D Popup</button>\n" + "\n"
                 + "<div class=\"popup\" id=\"popup-"
-                + cycleName + "\">\n" + "    <span class=\"close-btn\" onclick=\"hidePopup()\">X</span>\n"
+                + cycleName + "\">\n" + "    <span class=\"close-btn\" onclick=\"hidePopup()\">×</span>\n"
+                + "    <div id=\"graph-container-"
+                + cycleName + "\" style=\"width: 100%; height: 100%;\"></div>\n" + "</div>";
+    }
+
+    String generateForce3DPopup(String cycleName) {
+        // Created by generative AI and modified
+        return "<button style=\"display: block; margin: 0 auto;\" onclick=\"createForceGraph('popup-" + cycleName
+                + "', 'graph-container-" + cycleName + "'," + cycleName + "_dot )\">Show " + cycleName
+                + " 3D Popup</button>\n" + "\n"
+                + "<div class=\"popup\" id=\"popup-"
+                + cycleName + "\">\n" + "    <span class=\"close-btn\" onclick=\"hidePopup()\">×</span>\n"
                 + "    <div id=\"graph-container-"
                 + cycleName + "\" style=\"width: 100%; height: 100%;\"></div>\n" + "</div>";
     }

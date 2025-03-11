@@ -62,8 +62,6 @@ public class ReportCommand implements Callable<Integer> {
             defaultValue = "HTML")
     private ReportType reportType;
 
-
-
     @Override
     public Integer call() {
 
@@ -73,11 +71,25 @@ public class ReportCommand implements Callable<Integer> {
         switch (reportType) {
             case SIMPLE_HTML:
                 SimpleHtmlReport simpleHtmlReport = new SimpleHtmlReport();
-                simpleHtmlReport.execute(backEdgeAnalysisCount, analyzeCycles, showDetails, projectName, projectVersion, outputDirectory, baseDir);
+                simpleHtmlReport.execute(
+                        backEdgeAnalysisCount,
+                        analyzeCycles,
+                        showDetails,
+                        projectName,
+                        projectVersion,
+                        outputDirectory,
+                        baseDir);
                 return 0;
             case HTML:
                 HtmlReport htmlReport = new HtmlReport();
-                htmlReport.execute(backEdgeAnalysisCount, analyzeCycles, showDetails, projectName, projectVersion, outputDirectory, baseDir);
+                htmlReport.execute(
+                        backEdgeAnalysisCount,
+                        analyzeCycles,
+                        showDetails,
+                        projectName,
+                        projectVersion,
+                        outputDirectory,
+                        baseDir);
                 return 0;
             case JSON:
                 JsonReportExecutor jsonReportExecutor = new JsonReportExecutor();

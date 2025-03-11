@@ -95,8 +95,10 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
         // may only need graphlib-dot
         renderJsDeclaration(mainSink, "https://cdnjs.cloudflare.com/ajax/libs/graphlib/2.1.8/graphlib.min.js");
         renderJsDeclaration(mainSink, "https://cdn.jsdelivr.net/npm/graphlib-dot@0.6.4/dist/graphlib-dot.min.js");
+        renderJsDeclaration(mainSink, "https://unpkg.com/3d-force-graph");
 
         renderJsDeclaration(mainSink, HtmlReport.SUGIYAMA_SIGMA_GRAPH);
+        renderJsDeclaration(mainSink, HtmlReport.FORCE_3D_GRAPH);
         renderJsDeclaration(mainSink, HtmlReport.POPUP_FUNCTIONS);
 
         renderStyle(mainSink);
