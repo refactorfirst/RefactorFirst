@@ -1,0 +1,62 @@
+<head>
+    <style> body { margin: 0; } </style>
+
+    <script src="https://unpkg.com/3d-force-graph"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/graphlib/2.1.8/graphlib.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/graphlib-dot@0.6.4/dist/graphlib-dot.min.js"></script>
+</head>
+
+<body>
+<div id="3d-graph"></div>
+
+<script type="module">
+    import SpriteText from "https://esm.sh/three-spritetext";
+
+    const dot = `
+            digraph {
+                node [style=filled];
+                A [color=red];
+                B [color=green];
+                C [color=blue];
+                A -> B [color=purple];
+                B -> C [color=orange];
+                C -> A [color=cyan];
+            }`;
+
+    const graphlibGraph = graphlibDot.read(dot);
+
+    var nodes = [];
+    var links = [];
+
+    graphlibGraph.nodes().forEach(function(node) {
+        var nodeData = graphlibGraph.node(node);
+        nodes.push({
+            id: node,
+            color: nodeData.color || 'white',
+        });
+    });
+
+    graphlibGraph.edges().forEach(function(edge) {
+        links.push({
+            source: edge.v,
+            target: edge.w,
+            color: graphlibGraph.edge(edge).color || 'white'
+        });
+    });
+
+    const Graph = new ForceGraph3D(document.getElementById('3d-graph'))
+        .graphData({ nodes: nodes, links: links })
+        .nodeAutoColorBy('group')
+        .nodeThreeObject(node => {
+            const sprite = new SpriteText(node.id);
+            sprite.material.depthWrite = false; // make sprite background transparent
+            sprite.color = node.color;
+            sprite.textHeight = 8;
+            return sprite;
+        });
+
+    // Spread nodes a little wider
+    Graph.d3Force('charge').strength(-120);
+
+</script>
+</body>
