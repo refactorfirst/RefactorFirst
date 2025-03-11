@@ -29,6 +29,9 @@ public class RefactorFirstHtmlReport extends AbstractMojo {
     @Parameter(property = "analyzeCycles")
     private boolean analyzeCycles = true;
 
+    @Parameter(property = "minifyHtml")
+    private boolean minifyHtml = true;
+
     @Parameter(defaultValue = "${project.name}")
     private String projectName;
 
@@ -50,12 +53,13 @@ public class RefactorFirstHtmlReport extends AbstractMojo {
                 backEdgeAnalysisCount,
                 analyzeCycles,
                 showDetails,
+                minifyHtml,
                 projectName,
                 projectVersion,
+                project.getBasedir(),
                 project.getModel()
                         .getReporting()
                         .getOutputDirectory()
-                        .replace("${project.basedir}" + File.separator, ""),
-                project.getBasedir());
+                        .replace("${project.basedir}" + File.separator, ""));
     }
 }

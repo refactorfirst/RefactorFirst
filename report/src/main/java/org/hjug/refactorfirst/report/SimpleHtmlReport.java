@@ -2,6 +2,8 @@ package org.hjug.refactorfirst.report;
 
 import static org.hjug.refactorfirst.report.ReportWriter.writeReportToDisk;
 
+import in.wilsonl.minifyhtml.Configuration;
+import in.wilsonl.minifyhtml.MinifyHtml;
 import java.io.File;
 import java.nio.file.Paths;
 import java.time.Instant;
@@ -78,14 +80,22 @@ public class SimpleHtmlReport {
             .withLocale(Locale.getDefault())
             .withZone(ZoneId.systemDefault());
 
+    private final Configuration htmlMinifierConfig = new Configuration.Builder()
+            .setKeepHtmlAndHeadOpeningTags(true)
+            .setKeepComments(false)
+            .setMinifyJs(true)
+            .setMinifyCss(true)
+            .build();
+
     public void execute(
             int edgeAnalysisCount,
             boolean analyzeCycles,
             boolean showDetails,
+            boolean minifyHtml,
             String projectName,
             String projectVersion,
-            String outputDirectory,
-            File baseDir) {
+            File baseDir,
+            String outputDirectory) {
 
         String filename = getOutputName() + ".html";
         log.info("Generating {} for {} - {}", filename, projectName, projectVersion);
@@ -103,7 +113,13 @@ public class SimpleHtmlReport {
         stringBuilder.append(printProjectFooter());
         stringBuilder.append(THE_END);
 
-        writeReportToDisk(outputDirectory, filename, stringBuilder);
+        String reportHtml;
+        if (minifyHtml) {
+            reportHtml = MinifyHtml.minify(stringBuilder.toString(), htmlMinifierConfig);
+        } else {
+            reportHtml = stringBuilder.toString();
+        }
+        writeReportToDisk(outputDirectory, filename, reportHtml);
         log.info("Done! View the report at target/site/{}", filename);
     }
 

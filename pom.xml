@@ -161,6 +161,12 @@
             </dependency>
 
             <dependency>
+                <groupId>in.wilsonl.minifyhtml</groupId>
+                <artifactId>minify-html</artifactId>
+                <version>0.15.0</version>
+            </dependency>
+
+            <dependency>
                 <groupId>net.sourceforge.pmd</groupId>
                 <artifactId>pmd-java</artifactId>
                 <version>7.0.0-rc4</version>

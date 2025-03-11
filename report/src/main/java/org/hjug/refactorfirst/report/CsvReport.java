@@ -66,7 +66,7 @@ public class CsvReport {
                     .append(projectVersion)
                     .append(". ");
             contentBuilder.append("Please initialize a Git repository and perform an initial commit.");
-            writeReportToDisk(outputDirectory, filename, contentBuilder);
+            writeReportToDisk(outputDirectory, filename, contentBuilder.toString());
             return;
         }
 
@@ -103,7 +103,7 @@ public class CsvReport {
                     .append(" has no God classes!");
             log.info("Done! No God classes found!");
 
-            writeReportToDisk(outputDirectory, filename, contentBuilder);
+            writeReportToDisk(outputDirectory, filename, contentBuilder.toString());
             return;
         }
 
@@ -123,7 +123,7 @@ public class CsvReport {
 
         log.info(contentBuilder.toString());
 
-        writeReportToDisk(outputDirectory, filename, contentBuilder);
+        writeReportToDisk(outputDirectory, filename, contentBuilder.toString());
     }
 
     private DateTimeFormatter createFileDateTimeFormatter() {

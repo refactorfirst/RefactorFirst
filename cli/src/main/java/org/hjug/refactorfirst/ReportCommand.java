@@ -35,6 +35,11 @@ public class ReportCommand implements Callable<Integer> {
     private boolean analyzeCycles = true;
 
     @Option(
+            names = {"-m", "--minify-html"},
+            description = "Minify HTML output")
+    private boolean minifiyHtml = true;
+
+    @Option(
             names = {"-p", "--project"},
             description = "Project name")
     private String projectName;
@@ -75,10 +80,11 @@ public class ReportCommand implements Callable<Integer> {
                         backEdgeAnalysisCount,
                         analyzeCycles,
                         showDetails,
+                        minifiyHtml,
                         projectName,
                         projectVersion,
-                        outputDirectory,
-                        baseDir);
+                        baseDir,
+                        outputDirectory);
                 return 0;
             case HTML:
                 HtmlReport htmlReport = new HtmlReport();
@@ -86,10 +92,11 @@ public class ReportCommand implements Callable<Integer> {
                         backEdgeAnalysisCount,
                         analyzeCycles,
                         showDetails,
+                        minifiyHtml,
                         projectName,
                         projectVersion,
-                        outputDirectory,
-                        baseDir);
+                        baseDir,
+                        outputDirectory);
                 return 0;
             case JSON:
                 JsonReportExecutor jsonReportExecutor = new JsonReportExecutor();

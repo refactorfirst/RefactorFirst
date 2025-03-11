@@ -49,7 +49,7 @@ public class JsonReportExecutor {
         try {
             final String reportJson = MAPPER.writeValueAsString(report);
 
-            writeReportToDisk(outputDirectory, FILE_NAME, new StringBuilder(reportJson));
+            writeReportToDisk(outputDirectory, FILE_NAME, new StringBuilder(reportJson).toString());
         } catch (final JsonProcessingException jsonProcessingException) {
             final String errorMessage = "Could not generate a json report: " + jsonProcessingException;
 
@@ -64,7 +64,8 @@ public class JsonReportExecutor {
 
     private void writeErrorReport(final JsonReport errorReport, String outputDirectory) {
         try {
-            writeReportToDisk(outputDirectory, FILE_NAME, new StringBuilder(MAPPER.writeValueAsString(errorReport)));
+            writeReportToDisk(
+                    outputDirectory, FILE_NAME, new StringBuilder(MAPPER.writeValueAsString(errorReport)).toString());
         } catch (final JsonProcessingException jsonProcessingException) {
             log.error("failed to write error report: ", jsonProcessingException);
         }
