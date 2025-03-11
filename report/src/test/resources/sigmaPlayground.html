@@ -186,7 +186,7 @@
 
         function createForceGraph(popupId, containerName, dot) {
             // Add event listener for Escape key to close the popup
-            document.addEventListener('keydown', function(event) {
+            document.addEventListener('keydown', function (event) {
                 if (event.key === 'Escape') {
                     hidePopup();
                 }
@@ -202,20 +202,21 @@
             var nodes = [];
             var links = [];
 
-            graphlibGraph.nodes().forEach(function(node) {
+            graphlibGraph.nodes().forEach(function (node) {
                 var nodeData = graphlibGraph.node(node);
                 nodes.push({
                     id: node,
                     color: nodeData.color || 'white',
-
                 });
             });
 
-            graphlibGraph.edges().forEach(function(edge) {
+            graphlibGraph.edges().forEach(function (edge) {
                 links.push({
                     source: edge.v,
                     target: edge.w,
-                    color: graphlibGraph.edge(edge).color || 'white' });
+                    color: graphlibGraph.edge(edge).color || 'white',
+                    weight: graphlibGraph.edge(edge).weight
+                });
             });
 
             const gData = {
@@ -255,49 +256,75 @@
             const Graph = new ForceGraph3D(container)
                 .graphData(gData)
                 .nodeLabel('id')
-                .nodeColor(node => highlightNodes.has(node) ? node === hoverNode ? 'rgb(255,0,0,1)' : 'rgba(255,160,0,0.8)' : 'rgba(0,255,255,0.6)')
+                // .nodeColor(node => highlightNodes.has(node) ? node === hoverNode ? 'rgb(255,0,0,1)' : 'rgba(255,160,0,0.8)' : 'rgba(0,255,255,0.6)')
                 .linkWidth(link => highlightLinks.has(link) ? 4 : 1)
                 .linkDirectionalParticles(link => highlightLinks.has(link) ? 4 : 0)
                 .linkDirectionalParticleWidth(4)
                 .width(container.clientWidth)
                 .height(container.clientHeight)
                 .nodeThreeObject(node => {
+                    // use node labels instead of spheres
                     const sprite = new SpriteText(node.id);
                     sprite.material.depthWrite = false; // make sprite background transparent
                     sprite.color = node.color;
-                    sprite.textHeight = 2;
+                    sprite.textHeight = 4;
                     return sprite;
                 })
-                .onNodeHover(node => {
-                    // no state change
-                    if ((!node && !highlightNodes.size) || (node && hoverNode === node)) return;
-
-                    highlightNodes.clear();
-                    highlightLinks.clear();
-                    if (node) {
-                        highlightNodes.add(node);
-                        node.neighbors.forEach(neighbor => highlightNodes.add(neighbor));
-                        node.links.forEach(link => highlightLinks.add(link));
-                    }
-
-                    hoverNode = node || null;
-
-                    updateHighlight(Graph);
+                // code to display weight as link text - may be too much for browsers to handle
+                .linkThreeObjectExtend(true)
+                .linkThreeObject(link => {
+                    // extend link with text sprite
+                    const sprite = new SpriteText(`${link.weight}`);
+                    sprite.color = 'lightgrey';
+                    sprite.textHeight = 3;
+                    return sprite;
                 })
-                .onLinkHover(link => {
-                    highlightNodes.clear();
-                    highlightLinks.clear();
+                .linkPositionUpdate((sprite, { start, end }) => {
+                    const middlePos = Object.assign(...['x', 'y', 'z'].map(c => ({
+                        [c]: start[c] + (end[c] - start[c]) / 2 // calc middle point
+                    })));
 
-                    if (link) {
-                        highlightLinks.add(link);
-                        highlightNodes.add(link.source);
-                        highlightNodes.add(link.target);
-                    }
+                    // Position sprite
+                    Object.assign(sprite.position, middlePos);
+                })
+                // code to highlight nodes & links
+                // TODO: enable via control - see Manipulate Link Force Distance for example
+                // .onNodeHover(node => {
+                //     // no state change
+                //     if ((!node && !highlightNodes.size) || (node && hoverNode === node)) return;
+                //
+                //     highlightNodes.clear();
+                //     highlightLinks.clear();
+                //     if (node) {
+                //         highlightNodes.add(node);
+                //         node.neighbors.forEach(neighbor => highlightNodes.add(neighbor));
+                //         node.links.forEach(link => highlightLinks.add(link));
+                //     }
+                //
+                //     hoverNode = node || null;
+                //
+                //     updateHighlight(Graph);
+                // })
+                // .onLinkHover(link => {
+                //     highlightNodes.clear();
+                //     highlightLinks.clear();
+                //
+                //     if (link) {
+                //         highlightLinks.add(link);
+                //         highlightNodes.add(link.source);
+                //         highlightNodes.add(link.target);
+                //     }
+                //
+                //     updateHighlight(Graph);
+                // })
+            ;
 
-                    updateHighlight(Graph);
-                });
+            Graph
+                .d3Force('link')
+                .distance(link => (1/link.weight) * 200);
         }
 
+        // used by highlighting functionality
         function updateHighlight(Graph) {
             // trigger update of highlighted objects in scene
             Graph
@@ -313,7 +340,7 @@
     <script>
         function showPopup(popupId, containerName, dot) {
             // Add event listener for Escape key to close the popup
-            document.addEventListener('keydown', function(event) {
+            document.addEventListener('keydown', function (event) {
                 if (event.key === 'Escape') {
                     hidePopup();
                 }
@@ -345,7 +372,7 @@
             });
 
             // Remove the Escape key event listener
-            document.removeEventListener('keydown', function(event) {
+            document.removeEventListener('keydown', function (event) {
                 if (event.key === 'Escape') {
                     hidePopup();
                 }
@@ -372,7 +399,7 @@ create a fully implemented html page that renders a DOT graph with sigma.js, gra
                 C -> A [color=cyan];
             }
         `;
-const mb_dot = `strict digraph G {
+    const mb_dot = `strict digraph G {
 AboutDialog -> MiscTools [ label = "10" weight = "10" color = "red" ];
 AboutDialog -> MainPanelView [ label = "1" weight = "1" color = "red" ];
 ChunkDownloader -> SecureSingleThreadNotifiable [ label = "1" weight = "1" ];
