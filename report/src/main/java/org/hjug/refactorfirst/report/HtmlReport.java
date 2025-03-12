@@ -593,6 +593,11 @@ public class HtmlReport extends SimpleHtmlReport {
         stringBuilder.append("</script>\n");
         stringBuilder.append(generateForce3DPopup(cycleName));
 
+        stringBuilder.append("<div align=\"center\">\n");
+        stringBuilder.append("Red lines represent back edges to remove.<br>\n");
+        stringBuilder.append("Zoom in / out with your mouse wheel and click/move to drag the image.\n");
+        stringBuilder.append("</div>\n");
+
         if (cycle.getCycleNodes().size() + cycle.getEdgeSet().size() < d3Threshold) {
             stringBuilder.append(
                     "<div align=\"center\" id=\"" + cycleName + "\" style=\"border: thin solid black\"></div>\n");
@@ -611,11 +616,6 @@ public class HtmlReport extends SimpleHtmlReport {
             stringBuilder.append(generate2DPopup(cycleName));
         }
 
-        stringBuilder.append("<div align=\"center\">\n");
-        stringBuilder.append(
-                "<p>Red lines represent back edges to remove. Remove one to start decomposing the cycle.</p>\n");
-        stringBuilder.append("<p>Zoom in / out with your mouse wheel and click/move to drag the image.</p>\n");
-        stringBuilder.append("</div>\n");
         stringBuilder.append("<br/>\n");
         stringBuilder.append("<br/>\n");
 

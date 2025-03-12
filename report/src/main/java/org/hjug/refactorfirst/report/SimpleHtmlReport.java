@@ -355,7 +355,8 @@ public class SimpleHtmlReport {
         stringBuilder.append("<div style=\"text-align: center;\"><a id=\"CYCLES\"><h1>Class Cycles</h1></a></div>\n");
 
         stringBuilder.append("<h2 align=\"center\">Class Cycles by the numbers:</h2>\n");
-        stringBuilder.append("<p align=\"center\"><strong>Bold edges are backward edges causing cycles</strong></p>");
+        //        stringBuilder.append("<p align=\"center\"><strong>Bold edges are backward edges causing
+        // cycles</strong></p>");
         stringBuilder.append("<table align=\"center\" border=\"5px\">\n");
 
         // Content
