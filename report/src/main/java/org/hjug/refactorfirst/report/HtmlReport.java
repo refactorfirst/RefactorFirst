@@ -514,7 +514,6 @@ public class HtmlReport extends SimpleHtmlReport {
             stringBuilder.append(
                     "<div align=\"center\" id=\"" + classGraphName + "\" style=\"border: thin solid black\"></div>\n");
             stringBuilder.append("<script>\n");
-            //            stringBuilder.append("const " + classGraphName + "_dot = " + dot + "\n");
             stringBuilder.append("d3.select(\"#" + classGraphName + "\")\n");
             stringBuilder.append(".graphviz()\n");
             stringBuilder.append(".width(screen.width - " + pixels + ")\n");
@@ -602,7 +601,6 @@ public class HtmlReport extends SimpleHtmlReport {
             stringBuilder.append(
                     "<div align=\"center\" id=\"" + cycleName + "\" style=\"border: thin solid black\"></div>\n");
             stringBuilder.append("<script>\n");
-            //            stringBuilder.append("const " + cycleName + "_dot = " + dot + "\n");
             stringBuilder.append("d3.select(\"#" + cycleName + "\")\n");
             stringBuilder.append(".graphviz()\n");
             stringBuilder.append(".width(screen.width - " + pixels + ")\n");
