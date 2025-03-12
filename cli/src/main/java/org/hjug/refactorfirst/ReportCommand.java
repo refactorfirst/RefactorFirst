@@ -21,23 +21,27 @@ public class ReportCommand implements Callable<Integer> {
 
     @Option(
             names = {"-d", "--details"},
+            defaultValue = "false",
             description = "Show detailed report")
     private boolean showDetails;
 
     @Option(
             names = {"-eac", "--edge-analysis-count"},
+            defaultValue = "50",
             description = "Back Edge Analysis Count")
-    protected int backEdgeAnalysisCount = 50;
+    protected int backEdgeAnalysisCount;
 
     @Option(
             names = {"-c", "--analyze-cycles"},
+            defaultValue = "true",
             description = "Analyze Cycles")
-    private boolean analyzeCycles = true;
+    private boolean analyzeCycles;
 
     @Option(
             names = {"-m", "--minify-html"},
+            defaultValue = "true",
             description = "Minify HTML output")
-    private boolean minifiyHtml = true;
+    private boolean minifiyHtml;
 
     @Option(
             names = {"-p", "--project"},
