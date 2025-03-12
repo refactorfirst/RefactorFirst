@@ -527,8 +527,7 @@ public class HtmlReport extends SimpleHtmlReport {
             stringBuilder.append(generate2DPopup(classGraphName));
         }
 
-        stringBuilder.append("<br/>\n");
-        stringBuilder.append("<br/>\n");
+        stringBuilder.append("<br/>\n" + "<br/>\n" + "<br/>\n" + "<br/>\n" + "<hr/>\n" + "<br/>\n" + "<br/>\n");
 
         return stringBuilder.toString();
     }
