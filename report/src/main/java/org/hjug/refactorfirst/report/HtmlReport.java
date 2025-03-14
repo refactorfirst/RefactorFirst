@@ -504,9 +504,9 @@ public class HtmlReport extends SimpleHtmlReport {
         stringBuilder.append("<script>\n");
         stringBuilder.append("const " + classGraphName + "_dot = " + dot + "\n");
         stringBuilder.append("</script>\n");
-        stringBuilder.append(generateForce3DPopup(classGraphName));
+        stringBuilder.append(generateForce3DPopup(classGraphName + "3D"));
 
-        stringBuilder.append("Red lines represent back edges to remove.<br>\n");
+        stringBuilder.append("<div align=\"center\">\nRed lines represent back edges to remove.<br>\n");
         stringBuilder.append("Zoom in / out with your mouse wheel and click/move to drag the image.\n");
         stringBuilder.append("</div>\n");
 
@@ -590,7 +590,7 @@ public class HtmlReport extends SimpleHtmlReport {
         stringBuilder.append("<script>\n");
         stringBuilder.append("const " + cycleName + "_dot = " + dot + "\n");
         stringBuilder.append("</script>\n");
-        stringBuilder.append(generateForce3DPopup(cycleName));
+        stringBuilder.append(generateForce3DPopup(cycleName + "3D"));
 
         stringBuilder.append("<div align=\"center\">\n");
         stringBuilder.append("Red lines represent back edges to remove.<br>\n");
