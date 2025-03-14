@@ -46,7 +46,12 @@ public class JavaVisitor<P> extends JavaIsoVisitor<P> implements TypeProcessor {
     public J.CompilationUnit visitCompilationUnit(J.CompilationUnit cu, P p) {
         J.CompilationUnit compilationUnit = super.visitCompilationUnit(cu, p);
 
-        packagesInCodebase.add(compilationUnit.getPackageDeclaration().getPackageName());
+        J.Package packageDeclaration = compilationUnit.getPackageDeclaration();
+        if (null == packageDeclaration) {
+            return compilationUnit;
+        }
+
+        packagesInCodebase.add(packageDeclaration.getPackageName());
 
         for (J.ClassDeclaration aClass : compilationUnit.getClasses()) {
             classToSourceFilePathMapping.put(
