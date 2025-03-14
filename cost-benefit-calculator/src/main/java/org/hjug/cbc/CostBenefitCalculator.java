@@ -53,14 +53,7 @@ public class CostBenefitCalculator implements AutoCloseable {
         PMDConfiguration configuration = new PMDConfiguration();
 
         try (PmdAnalysis pmd = PmdAnalysis.create(configuration)) {
-            RuleSetLoader rulesetLoader = pmd.newRuleSetLoader();
-            pmd.addRuleSets(rulesetLoader.loadRuleSetsWithoutException(List.of("category/java/design.xml")));
-
-            Rule cboClassRule = new CBORule();
-            cboClassRule.setLanguage(LanguageRegistry.PMD.getLanguageByFullName("Java"));
-            pmd.addRuleSet(RuleSet.forSingleRule(cboClassRule));
-
-            log.info("files to be scanned: " + Paths.get(repositoryPath));
+            loadRules(pmd);
 
             try (Stream<Path> files = Files.walk(Paths.get(repositoryPath))) {
                 files.filter(Files::isRegularFile).forEach(file -> pmd.files().addFile(file));
@@ -68,6 +61,39 @@ public class CostBenefitCalculator implements AutoCloseable {
 
             report = pmd.performAnalysisAndCollectReport();
         }
+    }
+
+    public void runPmdAnalysis(boolean excludeTests, String testSourceDirectory) throws IOException {
+        PMDConfiguration configuration = new PMDConfiguration();
+
+        try (PmdAnalysis pmd = PmdAnalysis.create(configuration)) {
+            loadRules(pmd);
+
+            try (Stream<Path> files = Files.walk(Paths.get(repositoryPath))) {
+                Stream<Path> pathStream;
+                if (excludeTests) {
+                    pathStream = files.filter(Files::isRegularFile)
+                            .filter(file -> !file.toString().contains(testSourceDirectory));
+                } else {
+                    pathStream = files.filter(Files::isRegularFile);
+                }
+
+                pathStream.forEach(file -> pmd.files().addFile(file));
+            }
+
+            report = pmd.performAnalysisAndCollectReport();
+        }
+    }
+
+    private void loadRules(PmdAnalysis pmd) {
+        RuleSetLoader rulesetLoader = pmd.newRuleSetLoader();
+        pmd.addRuleSets(rulesetLoader.loadRuleSetsWithoutException(List.of("category/java/design.xml")));
+
+        Rule cboClassRule = new CBORule();
+        cboClassRule.setLanguage(LanguageRegistry.PMD.getLanguageByFullName("Java"));
+        pmd.addRuleSet(RuleSet.forSingleRule(cboClassRule));
+
+        log.info("files to be scanned: " + Paths.get(repositoryPath));
     }
 
     public List<RankedDisharmony> calculateGodClassCostBenefitValues() {

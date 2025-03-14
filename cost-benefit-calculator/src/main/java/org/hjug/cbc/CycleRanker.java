@@ -24,19 +24,20 @@ public class CycleRanker {
     @Getter
     private Graph<String, DefaultWeightedEdge> classReferencesGraph;
 
-    public void generateClassReferencesGraph() {
+    public void generateClassReferencesGraph(boolean excludeTests, String testSourceDirectory) {
         try {
-            classReferencesGraph = javaGraphBuilder.getClassReferences(repositoryPath);
+            classReferencesGraph =
+                    javaGraphBuilder.getClassReferences(repositoryPath, excludeTests, testSourceDirectory);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public List<RankedCycle> performCycleAnalysis() {
+    public List<RankedCycle> performCycleAnalysis(boolean excludeTests, String testSourceDirectory) {
         List<RankedCycle> rankedCycles = new ArrayList<>();
         try {
             boolean calculateCycleChurn = false;
-            generateClassReferencesGraph();
+            generateClassReferencesGraph(excludeTests, testSourceDirectory);
             identifyRankedCycles(rankedCycles);
             sortRankedCycles(rankedCycles, calculateCycleChurn);
             setPriorities(rankedCycles);

@@ -29,18 +29,21 @@ public class JavaGraphBuilder {
      * @return
      * @throws IOException
      */
-    public Graph<String, DefaultWeightedEdge> getClassReferences(String srcDirectory) throws IOException {
+    public Graph<String, DefaultWeightedEdge> getClassReferences(
+            String srcDirectory, boolean excludeTests, String testSourceDirectory) throws IOException {
         Graph<String, DefaultWeightedEdge> classReferencesGraph;
         if (srcDirectory == null || srcDirectory.isEmpty()) {
             throw new IllegalArgumentException();
         } else {
-            classReferencesGraph = processWithOpenRewrite(srcDirectory).getClassReferencesGraph();
+            classReferencesGraph = processWithOpenRewrite(srcDirectory, excludeTests, testSourceDirectory)
+                    .getClassReferencesGraph();
         }
 
         return classReferencesGraph;
     }
 
-    private CodebaseGraphDTO processWithOpenRewrite(String srcDir) throws IOException {
+    private CodebaseGraphDTO processWithOpenRewrite(
+            String srcDir, boolean excludeTests, String testSourceDirectory) throws IOException {
         File srcDirectory = new File(srcDir);
 
         JavaParser javaParser = JavaParser.fromJavaVersion().build();
@@ -59,8 +62,16 @@ public class JavaGraphBuilder {
         final JavaMethodDeclarationVisitor<ExecutionContext> javaMethodDeclarationVisitor =
                 new JavaMethodDeclarationVisitor<>(classReferencesGraph, packageReferencesGraph);
 
-        try (Stream<Path> walk = Files.walk(Paths.get(srcDirectory.getAbsolutePath()))) {
-            List<Path> list = walk.collect(Collectors.toList());
+        try (Stream<Path> pathStream = Files.walk(Paths.get(srcDirectory.getAbsolutePath()))) {
+            List<Path> list;
+            if (excludeTests) {
+                list = pathStream
+                        .filter(file -> !file.toString().contains(testSourceDirectory))
+                        .collect(Collectors.toList());
+            } else {
+                list = pathStream.collect(Collectors.toList());
+            }
+
             javaParser
                     .parse(list, Paths.get(srcDirectory.getAbsolutePath()), ctx)
                     .forEach(cu -> {

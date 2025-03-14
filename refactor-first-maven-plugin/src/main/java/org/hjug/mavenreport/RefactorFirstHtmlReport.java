@@ -32,6 +32,15 @@ public class RefactorFirstHtmlReport extends AbstractMojo {
     @Parameter(property = "minifyHtml")
     private boolean minifyHtml = true;
 
+    @Parameter(property = "excludeTests")
+    private boolean excludeTests = true;
+
+    /**
+     * The test source directory containing test class sources.
+     */
+    @Parameter(property = "testSourceDirectory")
+    private String testSourceDirectory;
+
     @Parameter(defaultValue = "${project.name}")
     private String projectName;
 
@@ -54,6 +63,8 @@ public class RefactorFirstHtmlReport extends AbstractMojo {
                 analyzeCycles,
                 showDetails,
                 minifyHtml,
+                excludeTests,
+                testSourceDirectory,
                 projectName,
                 projectVersion,
                 project.getBasedir(),

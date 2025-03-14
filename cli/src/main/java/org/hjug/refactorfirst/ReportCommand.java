@@ -44,6 +44,20 @@ public class ReportCommand implements Callable<Integer> {
     private boolean minifiyHtml;
 
     @Option(
+            names = {"-xt", "--exclude-tests"},
+            defaultValue = "true",
+            description = "Exclude tests from analysis")
+    private boolean excludeTests;
+
+    /**
+     * The test source directory containing test class sources.
+     */
+    @Option(
+            names = {"-tsd", "--output"},
+            description = "Test source directory.  Defaults to test/src or test\\src based on your OS")
+    private String testSourceDirectory;
+
+    @Option(
             names = {"-p", "--project"},
             description = "Project name")
     private String projectName;
@@ -85,6 +99,8 @@ public class ReportCommand implements Callable<Integer> {
                         analyzeCycles,
                         showDetails,
                         minifiyHtml,
+                        excludeTests,
+                        testSourceDirectory,
                         projectName,
                         projectVersion,
                         baseDir,
@@ -97,6 +113,8 @@ public class ReportCommand implements Callable<Integer> {
                         analyzeCycles,
                         showDetails,
                         minifiyHtml,
+                        excludeTests,
+                        testSourceDirectory,
                         projectName,
                         projectVersion,
                         baseDir,

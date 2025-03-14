@@ -19,8 +19,10 @@ class JavaGraphBuilderTest {
     @DisplayName("When source directory input param is empty or null throw IllegalArgumentException.")
     @Test
     void parseSourceDirectoryEmptyTest() {
-        Assertions.assertThrows(IllegalArgumentException.class, () -> javaGraphBuilder.getClassReferences(""));
-        Assertions.assertThrows(IllegalArgumentException.class, () -> javaGraphBuilder.getClassReferences(null));
+        Assertions.assertThrows(
+                IllegalArgumentException.class, () -> javaGraphBuilder.getClassReferences("", false, ""));
+        Assertions.assertThrows(
+                IllegalArgumentException.class, () -> javaGraphBuilder.getClassReferences(null, false, ""));
     }
 
     @DisplayName("Given a valid source directory input parameter return a valid graph.")
@@ -28,7 +30,7 @@ class JavaGraphBuilderTest {
     void parseSourceDirectoryTest() throws IOException {
         File srcDirectory = new File("src/test/resources/javaSrcDirectory");
         Graph<String, DefaultWeightedEdge> classReferencesGraph =
-                javaGraphBuilder.getClassReferences(srcDirectory.getAbsolutePath());
+                javaGraphBuilder.getClassReferences(srcDirectory.getAbsolutePath(), false, "");
         assertNotNull(classReferencesGraph);
         assertEquals(5, classReferencesGraph.vertexSet().size());
         assertEquals(7, classReferencesGraph.edgeSet().size());
@@ -76,7 +78,7 @@ class JavaGraphBuilderTest {
     void removeClassesNotInCodebase() throws IOException {
         File srcDirectory = new File("src/test/resources/javaSrcDirectory");
         Graph<String, DefaultWeightedEdge> classReferencesGraph =
-                javaGraphBuilder.getClassReferences(srcDirectory.getAbsolutePath());
+                javaGraphBuilder.getClassReferences(srcDirectory.getAbsolutePath(), false, "");
 
         classReferencesGraph.addVertex("org.favioriteoss.FunClass");
         classReferencesGraph.addVertex("org.favioriteoss.AnotherFunClass");

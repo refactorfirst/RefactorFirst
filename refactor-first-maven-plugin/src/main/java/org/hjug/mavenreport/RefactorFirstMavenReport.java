@@ -32,6 +32,15 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
     @Parameter(property = "analyzeCycles")
     private boolean analyzeCycles = true;
 
+    @Parameter(property = "excludeTests")
+    private boolean excludeTests = true;
+
+    /**
+     * The test source directory containing test class sources.
+     */
+    @Parameter(property = "testSourceDirectory")
+    private String testSourceDirectory;
+
     @Parameter(defaultValue = "${project.name}")
     private String projectName;
 
@@ -63,12 +72,14 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
         String report = htmlReport
                 .generateReport(
                         showDetails,
+                        backEdgeAnalysisCount,
+                        analyzeCycles,
+                        excludeTests,
+                        testSourceDirectory,
                         projectName,
                         projectVersion,
                         project.getBasedir(),
-                        300,
-                        backEdgeAnalysisCount,
-                        analyzeCycles)
+                        300)
                 .toString();
 
         mainSink.rawText(report);

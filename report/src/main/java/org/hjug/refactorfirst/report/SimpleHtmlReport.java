@@ -92,6 +92,8 @@ public class SimpleHtmlReport {
             boolean analyzeCycles,
             boolean showDetails,
             boolean minifyHtml,
+            boolean excludeTests,
+            String testSourceDirectory,
             String projectName,
             String projectVersion,
             File baseDir,
@@ -107,8 +109,15 @@ public class SimpleHtmlReport {
         stringBuilder.append(printTitle(projectName, projectVersion));
         stringBuilder.append(printHead());
         stringBuilder.append("</head>");
-        stringBuilder.append(
-                generateReport(showDetails, projectName, projectVersion, baseDir, edgeAnalysisCount, analyzeCycles));
+        stringBuilder.append(generateReport(
+                showDetails,
+                edgeAnalysisCount,
+                analyzeCycles,
+                excludeTests,
+                testSourceDirectory,
+                projectName,
+                projectVersion,
+                baseDir));
 
         stringBuilder.append(printProjectFooter());
         stringBuilder.append(THE_END);
@@ -125,23 +134,41 @@ public class SimpleHtmlReport {
 
     public StringBuilder generateReport(
             boolean showDetails,
+            int edgeAnalysisCount,
+            boolean analyzeCycles,
+            boolean excludeTests,
+            String testSourceDirectory,
             String projectName,
             String projectVersion,
-            File baseDir,
-            int edgeAnalysisCount,
-            boolean analyzeCycles) {
-        return generateReport(showDetails, projectName, projectVersion, baseDir, 200, edgeAnalysisCount, analyzeCycles);
+            File baseDir) {
+        return generateReport(
+                showDetails,
+                edgeAnalysisCount,
+                analyzeCycles,
+                excludeTests,
+                testSourceDirectory,
+                projectName,
+                projectVersion,
+                baseDir,
+                200);
     }
 
     // pixels param is for SVG image pixel padding
     public StringBuilder generateReport(
             boolean showDetails,
+            int edgeAnalysisCount,
+            boolean analyzeCycles,
+            boolean excludeTests,
+            String testSourceDirectory,
             String projectName,
             String projectVersion,
             File baseDir,
-            int pixels,
-            int edgeAnalysisCount,
-            boolean analyzeCycles) {
+            int pixels) {
+
+        if (testSourceDirectory == null || testSourceDirectory.isEmpty()) {
+            testSourceDirectory = "src" + File.separator + "test";
+        }
+
         this.pixels = pixels;
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append(printOpenBodyTag());
@@ -204,9 +231,9 @@ public class SimpleHtmlReport {
         List<RankedCycle> rankedCycles = List.of();
         if (analyzeCycles) {
             log.info("Analyzing Cycles");
-            rankedCycles = cycleRanker.performCycleAnalysis();
+            rankedCycles = cycleRanker.performCycleAnalysis(excludeTests, testSourceDirectory);
         } else {
-            cycleRanker.generateClassReferencesGraph();
+            cycleRanker.generateClassReferencesGraph(excludeTests, testSourceDirectory);
         }
 
         classGraph = cycleRanker.getClassReferencesGraph();
