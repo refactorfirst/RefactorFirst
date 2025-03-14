@@ -39,7 +39,7 @@ public class ReportCommand implements Callable<Integer> {
 
     @Option(
             names = {"-m", "--minify-html"},
-            defaultValue = "true",
+            defaultValue = "false",
             description = "Minify HTML output")
     private boolean minifiyHtml;
 
@@ -54,7 +54,8 @@ public class ReportCommand implements Callable<Integer> {
      */
     @Option(
             names = {"-tsd", "--output"},
-            description = "Test source directory.  Defaults to test/src or test\\src based on your OS")
+            description =
+                    "Test source directory.  Defaults to test/src or test\\src based on your OS.  Default is intentionally generic.")
     private String testSourceDirectory;
 
     @Option(

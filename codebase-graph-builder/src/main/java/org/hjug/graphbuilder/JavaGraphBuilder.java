@@ -42,8 +42,8 @@ public class JavaGraphBuilder {
         return classReferencesGraph;
     }
 
-    private CodebaseGraphDTO processWithOpenRewrite(
-            String srcDir, boolean excludeTests, String testSourceDirectory) throws IOException {
+    private CodebaseGraphDTO processWithOpenRewrite(String srcDir, boolean excludeTests, String testSourceDirectory)
+            throws IOException {
         File srcDirectory = new File(srcDir);
 
         JavaParser javaParser = JavaParser.fromJavaVersion().build();

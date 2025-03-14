@@ -30,7 +30,7 @@ public class RefactorFirstSimpleHtmlReport extends AbstractMojo {
     private boolean analyzeCycles = true;
 
     @Parameter(property = "minifyHtml")
-    private boolean minifyHtml = true;
+    private boolean minifyHtml = false;
 
     @Parameter(property = "excludeTests")
     private boolean excludeTests = true;
