@@ -172,6 +172,7 @@ public class SimpleHtmlReport {
         this.pixels = pixels;
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append(printOpenBodyTag());
+        stringBuilder.append(printScripts());
         stringBuilder.append(printBreadcrumbs());
         stringBuilder.append(printProjectHeader(projectName, projectVersion));
 
@@ -280,6 +281,8 @@ public class SimpleHtmlReport {
         log.info("Generating HTML Report");
 
         stringBuilder.append(renderClassGraphDotImage());
+        stringBuilder.append("<br/>\n");
+        stringBuilder.append(renderGithubButtons());
 
         // Display impact of each edge if removed
         stringBuilder.append("<br/>\n");
@@ -287,6 +290,7 @@ public class SimpleHtmlReport {
 
         if (!edgeToRemoveInfos.isEmpty()) {
             stringBuilder.append(edgeInfos);
+            stringBuilder.append(renderGithubButtons());
             stringBuilder.append("<br/>\n" + "<br/>\n" + "<br/>\n" + "<br/>\n" + "<hr/>\n" + "<br/>\n" + "<br/>\n");
         }
 
@@ -690,6 +694,10 @@ public class SimpleHtmlReport {
     }
 
     public String printHead() {
+        return ""; // empty on purpose
+    }
+
+    String printScripts() {
         return ""; // empty on purpose
     }
 

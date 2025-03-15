@@ -403,11 +403,11 @@ public class HtmlReport extends SimpleHtmlReport {
                 // may only need graphlib-dot
                 + "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/graphlib/2.1.8/graphlib.min.js\"></script>\n"
                 + "<script src=\"https://cdn.jsdelivr.net/npm/graphlib-dot@0.6.4/dist/graphlib-dot.min.js\"></script>\n"
-                + "<script src=\"https://unpkg.com/3d-force-graph\"></script>\n"
-                + SUGIYAMA_SIGMA_GRAPH
-                + FORCE_3D_GRAPH
-                + POPUP_FUNCTIONS
-                + POPUP_STYLE;
+                + "<script src=\"https://unpkg.com/3d-force-graph\"></script>\n";
+    }
+
+    String printScripts() {
+        return SUGIYAMA_SIGMA_GRAPH + FORCE_3D_GRAPH + POPUP_FUNCTIONS + POPUP_STYLE;
     }
 
     @Override
@@ -506,10 +506,13 @@ public class HtmlReport extends SimpleHtmlReport {
         stringBuilder.append("</script>\n");
         stringBuilder.append(generateForce3DPopup(classGraphName + "3D"));
 
+        stringBuilder.append(generate2DPopup(classGraphName));
+
         stringBuilder.append("<div align=\"center\">\nRed lines represent back edges to remove.<br>\n");
         stringBuilder.append("Zoom in / out with your mouse wheel and click/move to drag the image.\n");
         stringBuilder.append("</div>\n");
 
+        // revisit and add D3 popup button as well
         if (classGraph.vertexSet().size() + classGraph.edgeSet().size() < d3Threshold) {
             stringBuilder.append(
                     "<div align=\"center\" id=\"" + classGraphName + "\" style=\"border: thin solid black\"></div>\n");
@@ -521,12 +524,7 @@ public class HtmlReport extends SimpleHtmlReport {
             stringBuilder.append(".fit(true)\n");
             stringBuilder.append(".renderDot(" + classGraphName + "_dot);\n");
             stringBuilder.append("</script>\n");
-        } else {
-            // revisit and add D3 popup button as well
-            stringBuilder.append(generate2DPopup(classGraphName));
         }
-
-        stringBuilder.append("<br/>\n" + "<br/>\n" + "<br/>\n" + "<br/>\n" + "<hr/>\n" + "<br/>\n" + "<br/>\n");
 
         return stringBuilder.toString();
     }
@@ -683,8 +681,9 @@ public class HtmlReport extends SimpleHtmlReport {
 
     String generateForce3DPopup(String cycleName) {
         // Created by generative AI and modified
+        String correctName = cycleName.replace("3D", "");
         return "<button style=\"display: block; margin: 0 auto;\" onclick=\"createForceGraph('popup-" + cycleName
-                + "', 'graph-container-" + cycleName + "'," + cycleName + "_dot )\">Show " + cycleName
+                + "', 'graph-container-" + cycleName + "'," + correctName + "_dot )\">Show " + correctName
                 + " 3D Popup</button>\n" + "\n"
                 + "<div class=\"popup\" id=\"popup-"
                 + cycleName + "\">\n" + "    <span class=\"close-btn\" onclick=\"hidePopup()\">×</span>\n"
