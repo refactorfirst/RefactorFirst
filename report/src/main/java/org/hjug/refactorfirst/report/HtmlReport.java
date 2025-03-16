@@ -500,11 +500,12 @@ public class HtmlReport extends SimpleHtmlReport {
 
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append("<h1 align=\"center\">Class Map</h1>");
-        stringBuilder.append("<div align=\"center\">Excludes classes that have no incoming and outgoing edges<br>");
+        stringBuilder.append(
+                "<div align=\"center\">Excludes classes that have no incoming and outgoing edges<br></div>");
         stringBuilder.append("<script>\n");
         stringBuilder.append("const " + classGraphName + "_dot = " + dot + "\n");
         stringBuilder.append("</script>\n");
-        stringBuilder.append(generateForce3DPopup(classGraphName + "3D"));
+        stringBuilder.append(generateForce3DPopup(classGraphName));
 
         stringBuilder.append(generate2DPopup(classGraphName));
 
@@ -588,7 +589,8 @@ public class HtmlReport extends SimpleHtmlReport {
         stringBuilder.append("<script>\n");
         stringBuilder.append("const " + cycleName + "_dot = " + dot + "\n");
         stringBuilder.append("</script>\n");
-        stringBuilder.append(generateForce3DPopup(cycleName + "3D"));
+        stringBuilder.append(generateForce3DPopup(cycleName));
+        stringBuilder.append(generate2DPopup(cycleName));
 
         stringBuilder.append("<div align=\"center\">\n");
         stringBuilder.append("Red lines represent back edges to remove.<br>\n");
@@ -609,7 +611,6 @@ public class HtmlReport extends SimpleHtmlReport {
         } else {
             // revisit and add D3 popup button as well
 
-            stringBuilder.append(generate2DPopup(cycleName));
         }
 
         stringBuilder.append("<br/>\n");
@@ -681,9 +682,8 @@ public class HtmlReport extends SimpleHtmlReport {
 
     String generateForce3DPopup(String cycleName) {
         // Created by generative AI and modified
-        String correctName = cycleName.replace("3D", "");
         return "<button style=\"display: block; margin: 0 auto;\" onclick=\"createForceGraph('popup-" + cycleName
-                + "', 'graph-container-" + cycleName + "'," + correctName + "_dot )\">Show " + correctName
+                + "', 'graph-container-" + cycleName + "'," + cycleName + "_dot )\">Show " + cycleName
                 + " 3D Popup</button>\n" + "\n"
                 + "<div class=\"popup\" id=\"popup-"
                 + cycleName + "\">\n" + "    <span class=\"close-btn\" onclick=\"hidePopup()\">×</span>\n"
