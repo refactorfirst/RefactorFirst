@@ -152,7 +152,7 @@ public class CostBenefitCalculator implements AutoCloseable {
                     ScmLogInfo scmLogInfo = null;
                     try {
                         scmLogInfo = gitLogReader.fileLog(path);
-                        log.info("Successfully fetched scmLogInfo for {}", scmLogInfo.getPath());
+                        log.debug("Successfully fetched scmLogInfo for {}", scmLogInfo.getPath());
                     } catch (GitAPIException | IOException e) {
                         log.error("Error reading Git repository contents.", e);
                     } catch (NullPointerException e) {
