@@ -506,8 +506,8 @@ public class HtmlReport extends SimpleHtmlReport {
         stringBuilder.append("const " + classGraphName + "_dot = " + dot + "\n");
         stringBuilder.append("</script>\n");
         stringBuilder.append(generateForce3DPopup(classGraphName));
-
         stringBuilder.append(generate2DPopup(classGraphName));
+        stringBuilder.append(generateHidePopup(classGraphName));
 
         stringBuilder.append("<div align=\"center\">\nRed lines represent back edges to remove.<br>\n");
         stringBuilder.append("Zoom in / out with your mouse wheel and click/move to drag the image.\n");
@@ -525,6 +525,9 @@ public class HtmlReport extends SimpleHtmlReport {
             stringBuilder.append(".fit(true)\n");
             stringBuilder.append(".renderDot(" + classGraphName + "_dot);\n");
             stringBuilder.append("</script>\n");
+        } else {
+            // revisit and add D3 SVG popup button
+            stringBuilder.append("<div align=\"center\">\nMap is too big to render SVG quickly</div>\n");
         }
 
         return stringBuilder.toString();
@@ -591,6 +594,7 @@ public class HtmlReport extends SimpleHtmlReport {
         stringBuilder.append("</script>\n");
         stringBuilder.append(generateForce3DPopup(cycleName));
         stringBuilder.append(generate2DPopup(cycleName));
+        stringBuilder.append(generateHidePopup(cycleName));
 
         stringBuilder.append("<div align=\"center\">\n");
         stringBuilder.append("Red lines represent back edges to remove.<br>\n");
@@ -609,8 +613,8 @@ public class HtmlReport extends SimpleHtmlReport {
             stringBuilder.append(".renderDot(" + cycleName + "_dot);\n");
             stringBuilder.append("</script>\n");
         } else {
-            // revisit and add D3 popup button as well
-
+            // revisit and add D3 SVG popup button
+            stringBuilder.append("<div align=\"center\">\nCycle is too big to render SVG quickly</div>\n");
         }
 
         stringBuilder.append("<br/>\n");
@@ -672,22 +676,21 @@ public class HtmlReport extends SimpleHtmlReport {
     String generate2DPopup(String cycleName) {
         // Created by generative AI and modified
         return "<button style=\"display: block; margin: 0 auto;\" onclick=\"showPopup('popup-" + cycleName
-                + "', 'graph-container-" + cycleName + "'," + cycleName + "_dot )\">Show " + cycleName
-                + " 2D Popup</button>\n" + "\n"
-                + "<div class=\"popup\" id=\"popup-"
-                + cycleName + "\">\n" + "    <span class=\"close-btn\" onclick=\"hidePopup()\">×</span>\n"
-                + "    <div id=\"graph-container-"
-                + cycleName + "\" style=\"width: 100%; height: 100%;\"></div>\n" + "</div>";
+                + "', 'graph-container-" + cycleName + "', " + cycleName + "_dot )\">Show " + cycleName
+                + " 2D Popup</button>\n";
     }
 
     String generateForce3DPopup(String cycleName) {
         // Created by generative AI and modified
         return "<button style=\"display: block; margin: 0 auto;\" onclick=\"createForceGraph('popup-" + cycleName
-                + "', 'graph-container-" + cycleName + "'," + cycleName + "_dot )\">Show " + cycleName
-                + " 3D Popup</button>\n" + "\n"
-                + "<div class=\"popup\" id=\"popup-"
-                + cycleName + "\">\n" + "    <span class=\"close-btn\" onclick=\"hidePopup()\">×</span>\n"
-                + "    <div id=\"graph-container-"
-                + cycleName + "\" style=\"width: 100%; height: 100%;\"></div>\n" + "</div>";
+                + "', 'graph-container-" + cycleName + "', " + cycleName + "_dot )\">Show " + cycleName
+                + " 3D Popup</button>\n";
+    }
+
+    String generateHidePopup(String cycleName) {
+        return "<div class=\"popup\" id=\"popup-" + cycleName + "\">\n"
+                + "<span class=\"close-btn\" onclick=\"hidePopup()\">×</span>\n"
+                + "    <div id=\"graph-container-" + cycleName + "\" style=\"width: 100%; height: 100%;\"></div>"
+                + "\n</div>\n";
     }
 }
