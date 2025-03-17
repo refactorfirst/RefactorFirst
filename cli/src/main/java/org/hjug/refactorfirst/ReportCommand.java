@@ -21,8 +21,42 @@ public class ReportCommand implements Callable<Integer> {
 
     @Option(
             names = {"-d", "--details"},
+            defaultValue = "false",
             description = "Show detailed report")
     private boolean showDetails;
+
+    @Option(
+            names = {"-eac", "--edge-analysis-count"},
+            defaultValue = "50",
+            description = "Back Edge Analysis Count")
+    protected int backEdgeAnalysisCount;
+
+    @Option(
+            names = {"-c", "--analyze-cycles"},
+            defaultValue = "true",
+            description = "Analyze Cycles")
+    private boolean analyzeCycles;
+
+    @Option(
+            names = {"-m", "--minify-html"},
+            defaultValue = "false",
+            description = "Minify HTML output")
+    private boolean minifiyHtml;
+
+    @Option(
+            names = {"-xt", "--exclude-tests"},
+            defaultValue = "true",
+            description = "Exclude tests from analysis")
+    private boolean excludeTests;
+
+    /**
+     * The test source directory containing test class sources.
+     */
+    @Option(
+            names = {"-tsd", "--output"},
+            description =
+                    "Test source directory.  Defaults to test/src or test\\src based on your OS.  Default is intentionally generic.")
+    private String testSourceDirectory;
 
     @Option(
             names = {"-p", "--project"},
@@ -61,11 +95,31 @@ public class ReportCommand implements Callable<Integer> {
         switch (reportType) {
             case SIMPLE_HTML:
                 SimpleHtmlReport simpleHtmlReport = new SimpleHtmlReport();
-                simpleHtmlReport.execute(showDetails, projectName, projectVersion, outputDirectory, baseDir);
+                simpleHtmlReport.execute(
+                        backEdgeAnalysisCount,
+                        analyzeCycles,
+                        showDetails,
+                        minifiyHtml,
+                        excludeTests,
+                        testSourceDirectory,
+                        projectName,
+                        projectVersion,
+                        baseDir,
+                        outputDirectory);
                 return 0;
             case HTML:
                 HtmlReport htmlReport = new HtmlReport();
-                htmlReport.execute(showDetails, projectName, projectVersion, outputDirectory, baseDir);
+                htmlReport.execute(
+                        backEdgeAnalysisCount,
+                        analyzeCycles,
+                        showDetails,
+                        minifiyHtml,
+                        excludeTests,
+                        testSourceDirectory,
+                        projectName,
+                        projectVersion,
+                        baseDir,
+                        outputDirectory);
                 return 0;
             case JSON:
                 JsonReportExecutor jsonReportExecutor = new JsonReportExecutor();

@@ -2,6 +2,8 @@ package org.hjug.refactorfirst.report;
 
 import static org.hjug.refactorfirst.report.ReportWriter.writeReportToDisk;
 
+import in.wilsonl.minifyhtml.Configuration;
+import in.wilsonl.minifyhtml.MinifyHtml;
 import java.io.File;
 import java.nio.file.Paths;
 import java.time.Instant;
@@ -13,8 +15,11 @@ import java.util.Locale;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.hjug.cbc.CostBenefitCalculator;
+import org.hjug.cbc.CycleRanker;
 import org.hjug.cbc.RankedCycle;
 import org.hjug.cbc.RankedDisharmony;
+import org.hjug.dsm.DSM;
+import org.hjug.dsm.EdgeToRemoveInfo;
 import org.hjug.git.GitLogReader;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultWeightedEdge;
@@ -27,7 +32,7 @@ import org.jgrapht.graph.DefaultWeightedEdge;
 public class SimpleHtmlReport {
 
     public static final String THE_BEGINNING =
-            "<html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\">\n" + "  <head>\n";
+            "<html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\">\n" + "\n";
 
     public static final String THE_END = "</div>\n" + "    </div>\n" + "  </body>\n" + "</html>\n";
 
@@ -65,34 +70,111 @@ public class SimpleHtmlReport {
 
     public final String[] classCycleTableHeadings = {"Classes", "Relationships"};
 
-    private Graph<String, DefaultWeightedEdge> classGraph;
+    Graph<String, DefaultWeightedEdge> classGraph;
+    DSM dsm;
+    List<DefaultWeightedEdge> edgesAboveDiagonal = List.of(); // initialize for unit tests
 
-    private boolean showDetails = false;
+    int pixels;
+
+    DateTimeFormatter formatter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT)
+            .withLocale(Locale.getDefault())
+            .withZone(ZoneId.systemDefault());
+
+    private final Configuration htmlMinifierConfig = new Configuration.Builder()
+            .setKeepHtmlAndHeadOpeningTags(true)
+            .setKeepComments(false)
+            .setMinifyJs(true)
+            .setMinifyCss(true)
+            .build();
 
     public void execute(
-            boolean showDetails, String projectName, String projectVersion, String outputDirectory, File baseDir) {
-
-        this.showDetails = showDetails;
-
-        final String[] godClassTableHeadings =
-                showDetails ? godClassDetailedTableHeadings : godClassSimpleTableHeadings;
+            int edgeAnalysisCount,
+            boolean analyzeCycles,
+            boolean showDetails,
+            boolean minifyHtml,
+            boolean excludeTests,
+            String testSourceDirectory,
+            String projectName,
+            String projectVersion,
+            File baseDir,
+            String outputDirectory) {
 
         String filename = getOutputName() + ".html";
-
         log.info("Generating {} for {} - {}", filename, projectName, projectVersion);
 
-        DateTimeFormatter formatter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT)
-                .withLocale(Locale.getDefault())
-                .withZone(ZoneId.systemDefault());
-
         StringBuilder stringBuilder = new StringBuilder();
-
         stringBuilder.append(THE_BEGINNING);
 
-        printTitle(projectName, projectVersion, stringBuilder);
-        printHead(stringBuilder);
-        printBreadcrumbs(stringBuilder);
-        printProjectHeader(projectName, projectVersion, stringBuilder);
+        stringBuilder.append("<head>");
+        stringBuilder.append(printTitle(projectName, projectVersion));
+        stringBuilder.append(printHead());
+        stringBuilder.append("</head>");
+        stringBuilder.append(generateReport(
+                showDetails,
+                edgeAnalysisCount,
+                analyzeCycles,
+                excludeTests,
+                testSourceDirectory,
+                projectName,
+                projectVersion,
+                baseDir));
+
+        stringBuilder.append(printProjectFooter());
+        stringBuilder.append(THE_END);
+
+        String reportHtml;
+        if (minifyHtml) {
+            reportHtml = MinifyHtml.minify(stringBuilder.toString(), htmlMinifierConfig);
+        } else {
+            reportHtml = stringBuilder.toString();
+        }
+        writeReportToDisk(outputDirectory, filename, reportHtml);
+        log.info("Done! View the report at target/site/{}", filename);
+    }
+
+    public StringBuilder generateReport(
+            boolean showDetails,
+            int edgeAnalysisCount,
+            boolean analyzeCycles,
+            boolean excludeTests,
+            String testSourceDirectory,
+            String projectName,
+            String projectVersion,
+            File baseDir) {
+        return generateReport(
+                showDetails,
+                edgeAnalysisCount,
+                analyzeCycles,
+                excludeTests,
+                testSourceDirectory,
+                projectName,
+                projectVersion,
+                baseDir,
+                200);
+    }
+
+    // pixels param is for SVG image pixel padding
+    public StringBuilder generateReport(
+            boolean showDetails,
+            int edgeAnalysisCount,
+            boolean analyzeCycles,
+            boolean excludeTests,
+            String testSourceDirectory,
+            String projectName,
+            String projectVersion,
+            File baseDir,
+            int pixels) {
+
+        if (testSourceDirectory == null || testSourceDirectory.isEmpty()) {
+            testSourceDirectory = "src" + File.separator + "test";
+        }
+
+        this.pixels = pixels;
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append(printOpenBodyTag());
+        stringBuilder.append(printScripts());
+        stringBuilder.append(printBreadcrumbs());
+        stringBuilder.append(printProjectHeader(projectName, projectVersion));
 
         GitLogReader gitLogReader = new GitLogReader();
         String projectBaseDir;
@@ -119,9 +201,8 @@ public class SimpleHtmlReport {
                     .append(projectVersion)
                     .append(".  ");
             stringBuilder.append("Please initialize a Git repository and perform an initial commit.");
-            stringBuilder.append(THE_END);
-            writeReportToDisk(outputDirectory, filename, stringBuilder);
-            return;
+
+            return stringBuilder;
         }
 
         String parentOfGitDir = gitDir.getParentFile().getPath();
@@ -132,44 +213,58 @@ public class SimpleHtmlReport {
             log.warn("Project Base Directory does not match Git Parent Directory");
             stringBuilder.append("Project Base Directory does not match Git Parent Directory.  "
                     + "Please refer to the report at the root of the site directory.");
-            stringBuilder.append(THE_END);
-            return;
+            return stringBuilder;
         }
 
-        List<RankedDisharmony> rankedGodClassDisharmonies;
-        List<RankedDisharmony> rankedCBODisharmonies;
-        List<RankedCycle> rankedCycles;
+        List<RankedDisharmony> rankedGodClassDisharmonies = List.of();
+        List<RankedDisharmony> rankedCBODisharmonies = List.of();
+        log.info("Identifying Object Oriented Disharmonies");
         try (CostBenefitCalculator costBenefitCalculator = new CostBenefitCalculator(projectBaseDir)) {
             costBenefitCalculator.runPmdAnalysis();
             rankedGodClassDisharmonies = costBenefitCalculator.calculateGodClassCostBenefitValues();
             rankedCBODisharmonies = costBenefitCalculator.calculateCBOCostBenefitValues();
-            if (showDetails) {
-                rankedCycles = costBenefitCalculator.runCycleAnalysisAndCalculateCycleChurn();
-            } else {
-                rankedCycles = costBenefitCalculator.runCycleAnalysis();
-            }
-
-            classGraph = costBenefitCalculator.getClassReferencesGraph();
         } catch (Exception e) {
             log.error("Error running analysis.");
             throw new RuntimeException(e);
         }
 
-        if (rankedGodClassDisharmonies.isEmpty() && rankedCBODisharmonies.isEmpty() && rankedCycles.isEmpty()) {
+        CycleRanker cycleRanker = new CycleRanker(projectBaseDir);
+        List<RankedCycle> rankedCycles = List.of();
+        if (analyzeCycles) {
+            log.info("Analyzing Cycles");
+            rankedCycles = cycleRanker.performCycleAnalysis(excludeTests, testSourceDirectory);
+        } else {
+            cycleRanker.generateClassReferencesGraph(excludeTests, testSourceDirectory);
+        }
+
+        classGraph = cycleRanker.getClassReferencesGraph();
+        dsm = new DSM(classGraph);
+        edgesAboveDiagonal = dsm.getEdgesAboveDiagonal();
+
+        log.info("Performing edge removal what-if analysis");
+        List<EdgeToRemoveInfo> edgeToRemoveInfos = dsm.getImpactOfEdgesAboveDiagonalIfRemoved(edgeAnalysisCount);
+
+        if (edgeToRemoveInfos.isEmpty()
+                && rankedGodClassDisharmonies.isEmpty()
+                && rankedCBODisharmonies.isEmpty()
+                && rankedCycles.isEmpty()) {
             stringBuilder
                     .append("Congratulations!  ")
                     .append(projectName)
                     .append(" ")
                     .append(projectVersion)
-                    .append(" has no God classes, highly coupled classes, or cycles!");
-            renderGithubButtons(stringBuilder);
+                    .append(" has no Back Edges, God classes, Highly Coupled Classes, or Cycles!");
+            stringBuilder.append(renderGithubButtons());
             log.info("Done! No Disharmonies found!");
-            stringBuilder.append(THE_END);
-            writeReportToDisk(outputDirectory, filename, stringBuilder);
-            return;
+            return stringBuilder;
         }
 
-        if (!rankedGodClassDisharmonies.isEmpty() && !rankedCBODisharmonies.isEmpty()) {
+        if (!edgeToRemoveInfos.isEmpty()) {
+            stringBuilder.append("<a href=\"#EDGES\">Back Edges</a>\n");
+            stringBuilder.append("<br/>\n");
+        }
+
+        if (!rankedGodClassDisharmonies.isEmpty()) {
             stringBuilder.append("<a href=\"#GOD\">God Classes</a>\n");
             stringBuilder.append("<br/>\n");
         }
@@ -183,110 +278,95 @@ public class SimpleHtmlReport {
             stringBuilder.append("<a href=\"#CYCLES\">Class Cycles</a>\n");
         }
 
-        if (!rankedGodClassDisharmonies.isEmpty()) {
-            renderGodClassInfo(
-                    showDetails,
-                    outputDirectory,
-                    rankedGodClassDisharmonies,
-                    stringBuilder,
-                    godClassTableHeadings,
-                    formatter);
+        log.info("Generating HTML Report");
+
+        stringBuilder.append(renderClassGraphDotImage());
+        stringBuilder.append("<br/>\n");
+        stringBuilder.append(renderGithubButtons());
+
+        // Display impact of each edge if removed
+        stringBuilder.append("<br/>\n");
+        String edgeInfos = renderEdgeToRemoveInfos(edgeToRemoveInfos);
+
+        if (!edgeToRemoveInfos.isEmpty()) {
+            stringBuilder.append(edgeInfos);
+            stringBuilder.append(renderGithubButtons());
+            stringBuilder.append("<br/>\n" + "<br/>\n" + "<br/>\n" + "<br/>\n" + "<hr/>\n" + "<br/>\n" + "<br/>\n");
         }
 
-        if (!rankedGodClassDisharmonies.isEmpty() && !rankedCBODisharmonies.isEmpty()) {
+        if (!rankedGodClassDisharmonies.isEmpty()) {
+            final String[] godClassTableHeadings =
+                    showDetails ? godClassDetailedTableHeadings : godClassSimpleTableHeadings;
+            stringBuilder.append(renderGodClassInfo(showDetails, rankedGodClassDisharmonies, godClassTableHeadings));
             stringBuilder.append("<br/>\n" + "<br/>\n" + "<br/>\n" + "<br/>\n" + "<hr/>\n" + "<br/>\n" + "<br/>\n");
         }
 
         if (!rankedCBODisharmonies.isEmpty()) {
-            renderHighlyCoupledClassInfo(outputDirectory, stringBuilder, rankedCBODisharmonies, formatter);
+            stringBuilder.append(renderHighlyCoupledClassInfo(rankedCBODisharmonies));
+            stringBuilder.append("<br/>\n" + "<br/>\n" + "<br/>\n" + "<br/>\n" + "<hr/>\n" + "<br/>\n" + "<br/>\n");
         }
 
         if (!rankedCycles.isEmpty()) {
-            if (!rankedGodClassDisharmonies.isEmpty() || !rankedCBODisharmonies.isEmpty()) {
-                stringBuilder.append("<br/>\n");
-                stringBuilder.append("<br/>\n");
-                stringBuilder.append("<hr/>\n");
-                stringBuilder.append("<br/>\n");
-                stringBuilder.append("<br/>\n");
-            }
-            renderCycles(outputDirectory, stringBuilder, rankedCycles, formatter);
+            stringBuilder.append(renderCycles(rankedCycles));
         }
 
         stringBuilder.append("</section>\n");
-        printProjectFooter(stringBuilder, formatter);
-        stringBuilder.append(THE_END);
 
         log.debug(stringBuilder.toString());
-
-        writeReportToDisk(outputDirectory, filename, stringBuilder);
-        log.info("Done! View the report at target/site/{}", filename);
+        return stringBuilder;
     }
 
-    private void renderCycles(
-            String outputDirectory,
-            StringBuilder stringBuilder,
-            List<RankedCycle> rankedCycles,
-            DateTimeFormatter formatter) {
+    private String renderCycles(List<RankedCycle> rankedCycles) {
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append(renderClassCycleSummary(rankedCycles));
 
-        stringBuilder.append("<div style=\"text-align: center;\"><a id=\"CYCLES\"><h1>Class Cycles</h1></a></div>\n");
+        stringBuilder.append("<br/>\n");
+
+        rankedCycles.stream().limit(10).map(this::renderSingleCycle).forEach(stringBuilder::append);
+
+        return stringBuilder.toString();
+    }
+
+    private String renderEdgeToRemoveInfos(List<EdgeToRemoveInfo> edges) {
+        StringBuilder stringBuilder = new StringBuilder();
 
         stringBuilder.append(
-                "<h2 align=\"center\">Class Cycles by the numbers: (Refactor starting with Priority 1)</h2>\n");
-        stringBuilder.append(
-                "<p align=\"center\">Note: often only one minimum cut relationship needs to be removed</p>");
+                "<div style=\"text-align: center;\"><a id=\"EDGES\"><h1>Backward Edge Removal Impact</h1></a></div>\n");
+        stringBuilder.append("<div style=\"text-align: center;\">\n");
+
+        stringBuilder
+                .append("Current Cycle Count: ")
+                .append(dsm.getCycles().size())
+                .append("<br>\n");
+        stringBuilder
+                .append("Current Average Cycle Node Count: ")
+                .append(dsm.getAverageCycleNodeCount())
+                .append("<br>\n");
+        stringBuilder
+                .append("Current Total Back Edge Count: ")
+                .append(dsm.getEdgesAboveDiagonal().size())
+                .append("<br>\n");
+        stringBuilder
+                .append("Current Total Min Weight Back Edge Count: ")
+                .append(dsm.getMinimumWeightEdgesAboveDiagonal().size())
+                .append("<br>\n");
+        stringBuilder.append("</div>\n");
+
         stringBuilder.append("<table align=\"center\" border=\"5px\">\n");
-
-        String[] cycleTableHeadings;
-        if (showDetails) {
-            cycleTableHeadings = new String[] {
-                "Cycle Name", "Priority", "Change Proneness Rank", "Class Count", "Relationship Count", "Minimum Cuts"
-            };
-        } else {
-            cycleTableHeadings =
-                    new String[] {"Cycle Name", "Priority", "Class Count", "Relationship Count", "Minimum Cuts"};
-        }
 
         // Content
         stringBuilder.append("<thead>\n<tr>\n");
-        for (String heading : cycleTableHeadings) {
+        for (String heading : getEdgesToRemoveInfoTableHeadings()) {
             stringBuilder.append("<th>").append(heading).append("</th>\n");
         }
         stringBuilder.append("</thead>\n");
 
         stringBuilder.append("<tbody>\n");
-        for (RankedCycle rankedCycle : rankedCycles) {
+        for (EdgeToRemoveInfo edge : edges) {
             stringBuilder.append("<tr>\n");
 
-            StringBuilder edgesToCut = new StringBuilder();
-            for (DefaultWeightedEdge minCutEdge : rankedCycle.getMinCutEdges()) {
-                edgesToCut.append(minCutEdge + ":" + (int) classGraph.getEdgeWeight(minCutEdge));
-                edgesToCut.append("</br>\n");
-            }
-
-            String[] rankedCycleData;
-            if (showDetails) {
-                rankedCycleData = new String[] {
-                    // "Cycle Name", "Priority", "Change Proneness Rank", "Class Count", "Relationship Count", "Min
-                    // Cuts"
-                    rankedCycle.getCycleName(),
-                    rankedCycle.getPriority().toString(),
-                    rankedCycle.getChangePronenessRank().toString(),
-                    String.valueOf(rankedCycle.getCycleNodes().size()),
-                    String.valueOf(rankedCycle.getEdgeSet().size()),
-                    edgesToCut.toString()
-                };
-            } else {
-                rankedCycleData = new String[] {
-                    // "Cycle Name", "Priority", "Class Count", "Relationship Count", "Min Cuts"
-                    rankedCycle.getCycleName(),
-                    rankedCycle.getPriority().toString(),
-                    String.valueOf(rankedCycle.getCycleNodes().size()),
-                    String.valueOf(rankedCycle.getEdgeSet().size()),
-                    edgesToCut.toString()
-                };
-            }
-            for (String rowData : rankedCycleData) {
-                drawTableCell(rowData, stringBuilder);
+            for (String rowData : getEdgeToRemoveInfos(edge)) {
+                stringBuilder.append(drawTableCell(rowData));
             }
 
             stringBuilder.append("</tr>\n");
@@ -295,13 +375,113 @@ public class SimpleHtmlReport {
         stringBuilder.append("</tbody>\n");
         stringBuilder.append("</table>\n");
 
-        for (RankedCycle rankedCycle : rankedCycles) {
-            renderSingleCycle(outputDirectory, stringBuilder, rankedCycle, formatter);
-        }
+        return stringBuilder.toString();
     }
 
-    private void renderSingleCycle(
-            String outputDirectory, StringBuilder stringBuilder, RankedCycle cycle, DateTimeFormatter formatter) {
+    private String renderClassCycleSummary(List<RankedCycle> rankedCycles) {
+        StringBuilder stringBuilder = new StringBuilder();
+
+        stringBuilder.append("<div style=\"text-align: center;\"><a id=\"CYCLES\"><h1>Class Cycles</h1></a></div>\n");
+        if (rankedCycles.size() > 10) {
+            stringBuilder.append(
+                    "<div style=\"text-align: center;\">10 largest cycles are shown in the sections below</div>\n");
+        }
+
+        stringBuilder.append("<h2 align=\"center\">Class Cycles by the numbers:</h2>\n");
+        //        stringBuilder.append("<p align=\"center\"><strong>Bold edges are backward edges causing
+        // cycles</strong></p>");
+        stringBuilder.append("<table align=\"center\" border=\"5px\">\n");
+
+        // Content
+        stringBuilder.append("<thead>\n<tr>\n");
+        for (String heading : getCycleSummaryTableHeadings()) {
+            stringBuilder.append("<th>").append(heading).append("</th>\n");
+        }
+        stringBuilder.append("</thead>\n");
+
+        stringBuilder.append("<tbody>\n");
+        for (RankedCycle cycle : rankedCycles) {
+            stringBuilder.append("<tr>\n");
+
+            StringBuilder edges = new StringBuilder();
+            for (DefaultWeightedEdge edge : cycle.getMinCutEdges()) {
+
+                if (edgesAboveDiagonal.contains(edge)) {
+                    stringBuilder.append("<strong>");
+                    edges.append(renderEdge(edge));
+                    stringBuilder.append("</strong>");
+                } else {
+                    edges.append(renderEdge(edge));
+                }
+                edges.append("</br>\n");
+            }
+
+            for (String rowData : getRankedCycleSummaryData(cycle, edges)) {
+                stringBuilder.append(drawTableCell(rowData));
+            }
+
+            stringBuilder.append("</tr>\n");
+        }
+
+        stringBuilder.append("</tbody>\n");
+        stringBuilder.append("</table>\n");
+
+        return stringBuilder.toString();
+    }
+
+    private String renderEdge(DefaultWeightedEdge edge) {
+        StringBuilder edgesToCut = new StringBuilder();
+        String[] vertexes = extractVertexes(edge);
+        String start = getClassName(vertexes[0].trim());
+        String end = getClassName(vertexes[1].trim());
+
+        // &#8594; is HTML "Right Arrow" code
+        return edgesToCut
+                .append(start + " &#8594; " + end + " : " + (int) classGraph.getEdgeWeight(edge))
+                .toString();
+    }
+
+    private String[] getCycleSummaryTableHeadings() {
+        return new String[] {"Cycle Name", "Priority", "Class Count", "Relationship Count" /*, "Minimum Cuts"*/};
+    }
+
+    private String[] getEdgesToRemoveInfoTableHeadings() {
+        return new String[] {
+            "Edge",
+            "Edge Weight",
+            "In # of Cycles",
+            "New Cycle Count",
+            "New Avg Cycle Node Count",
+            "Avg Node &Delta; &divide; Effort"
+        };
+    }
+
+    private String[] getEdgeToRemoveInfos(EdgeToRemoveInfo edgeToRemoveInfo) {
+        return new String[] {
+            // "Edge", "Edge Weight", "In # of Cycles", "New Cycle Count", "New Avg Cycle Node Count", "Avg Node Count /
+            // Effort"
+            renderEdge(edgeToRemoveInfo.getEdge()),
+            String.valueOf((int) edgeToRemoveInfo.getEdgeWeight()),
+            String.valueOf(edgeToRemoveInfo.getEdgeInCycleCount()),
+            String.valueOf(edgeToRemoveInfo.getNewCycleCount()),
+            String.valueOf(edgeToRemoveInfo.getAverageCycleNodeCount()),
+            String.valueOf(edgeToRemoveInfo.getPayoff())
+        };
+    }
+
+    private String[] getRankedCycleSummaryData(RankedCycle rankedCycle, StringBuilder edgesToCut) {
+        return new String[] {
+            // "Cycle Name", "Priority", "Class Count", "Relationship Count", "Min Cuts"
+            getClassName(rankedCycle.getCycleName()),
+            rankedCycle.getPriority().toString(),
+            String.valueOf(rankedCycle.getCycleNodes().size()),
+            String.valueOf(rankedCycle.getEdgeSet().size()) // ,
+            //            edgesToCut.toString()
+        };
+    }
+
+    private String renderSingleCycle(RankedCycle cycle) {
+        StringBuilder stringBuilder = new StringBuilder();
 
         stringBuilder.append("<br/>\n");
         stringBuilder.append("<br/>\n");
@@ -309,13 +489,13 @@ public class SimpleHtmlReport {
         stringBuilder.append("<br/>\n");
         stringBuilder.append("<br/>\n");
 
-        stringBuilder.append("<h2 align=\"center\">Class Cycle : " + cycle.getCycleName() + "</h2>\n");
-        // renderCycleImage(cycle.getCycleName(), stringBuilder, outputDirectory);
-        renderCycleImage(classGraph, cycle, stringBuilder);
+        stringBuilder.append("<h2 align=\"center\">Class Cycle : " + getClassName(cycle.getCycleName()) + "</h2>\n");
+        stringBuilder.append(renderCycleDotImage(cycle));
 
         stringBuilder.append("<div align=\"center\">");
         stringBuilder.append("<strong>");
-        stringBuilder.append("\"*\" indicates relationship(s) to remove to decompose cycle");
+        stringBuilder.append("Bold text indicates back edge to remove to decompose cycle");
+        //        stringBuilder.append("<br>\"*\" indicates that edge is also a minimum cut edge in the cycle");
         stringBuilder.append("</strong>");
         stringBuilder.append("</div>\n");
 
@@ -332,53 +512,54 @@ public class SimpleHtmlReport {
 
         for (String vertex : cycle.getVertexSet()) {
             stringBuilder.append("<tr>");
-            drawTableCell(vertex, stringBuilder);
+            stringBuilder.append(drawTableCell(getClassName(vertex)));
             StringBuilder edges = new StringBuilder();
-            for (org.jgrapht.graph.DefaultWeightedEdge edge : cycle.getEdgeSet()) {
+            for (DefaultWeightedEdge edge : cycle.getEdgeSet()) {
                 if (edge.toString().startsWith("(" + vertex + " :")) {
-                    if (cycle.getMinCutEdges().contains(edge)) {
+
+                    if (edgesAboveDiagonal.contains(edge)) {
                         edges.append("<strong>");
-                        edges.append(edge);
-                        edges.append(":")
-                                .append((int) classGraph.getEdgeWeight(edge))
-                                .append("*");
+                        edges.append(renderEdge(edge));
+                        if (cycle.getMinCutEdges().contains(edge)) {
+                            edges.append("*");
+                        }
                         edges.append("</strong>");
                     } else {
-                        edges.append(edge);
-                        edges.append(":").append((int) classGraph.getEdgeWeight(edge));
+                        edges.append(renderEdge(edge));
                     }
 
                     edges.append("<br/>\n");
                 }
             }
-            drawTableCell(edges.toString(), stringBuilder);
+            stringBuilder.append(drawTableCell(edges.toString()));
             stringBuilder.append("</tr>\n");
         }
 
         stringBuilder.append("</tbody>\n");
 
         stringBuilder.append("</table>\n");
+
+        return stringBuilder.toString();
     }
 
-    public void renderCycleImage(
-            Graph<String, DefaultWeightedEdge> classGraph, RankedCycle cycle, StringBuilder stringBuilder) {
-        // empty on purpose
+    public String renderClassGraphDotImage() {
+        return ""; // empty on purpose
     }
 
-    private void renderGodClassInfo(
-            boolean showDetails,
-            String outputDirectory,
-            List<RankedDisharmony> rankedGodClassDisharmonies,
-            StringBuilder stringBuilder,
-            String[] godClassTableHeadings,
-            DateTimeFormatter formatter) {
+    public String renderCycleDotImage(RankedCycle cycle) {
+        return ""; // empty on purpose
+    }
+
+    private String renderGodClassInfo(
+            boolean showDetails, List<RankedDisharmony> rankedGodClassDisharmonies, String[] godClassTableHeadings) {
         int maxGodClassPriority = rankedGodClassDisharmonies
                 .get(rankedGodClassDisharmonies.size() - 1)
                 .getPriority();
 
+        StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append("<div style=\"text-align: center;\"><a id=\"GOD\"><h1>God Classes</h1></a></div>\n");
 
-        renderGodClassChart(outputDirectory, rankedGodClassDisharmonies, maxGodClassPriority, stringBuilder);
+        stringBuilder.append(renderGodClassChart(rankedGodClassDisharmonies, maxGodClassPriority));
 
         stringBuilder.append(
                 "<h2 align=\"center\">God classes by the numbers: (Refactor Starting with Priority 1)</h2>\n");
@@ -427,7 +608,7 @@ public class SimpleHtmlReport {
                     showDetails ? detailedRankedGodClassDisharmonyData : simpleRankedGodClassDisharmonyData;
 
             for (String rowData : rankedDisharmonyData) {
-                drawTableCell(rowData, stringBuilder);
+                stringBuilder.append(drawTableCell(rowData));
             }
 
             stringBuilder.append("</tr>\n");
@@ -435,20 +616,19 @@ public class SimpleHtmlReport {
 
         stringBuilder.append("</tbody>\n");
         stringBuilder.append("</table>\n");
+
+        return stringBuilder.toString();
     }
 
-    private void renderHighlyCoupledClassInfo(
-            String outputDirectory,
-            StringBuilder stringBuilder,
-            List<RankedDisharmony> rankedCBODisharmonies,
-            DateTimeFormatter formatter) {
+    private String renderHighlyCoupledClassInfo(List<RankedDisharmony> rankedCBODisharmonies) {
+        StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append(
                 "<div style=\"text-align: center;\"><a id=\"CBO\"><h1>Highly Coupled Classes</h1></a></div>");
 
         int maxCboPriority =
                 rankedCBODisharmonies.get(rankedCBODisharmonies.size() - 1).getPriority();
 
-        renderCBOChart(outputDirectory, rankedCBODisharmonies, maxCboPriority, stringBuilder);
+        stringBuilder.append(renderCBOChart(rankedCBODisharmonies, maxCboPriority));
 
         stringBuilder.append(
                 "<h2 align=\"center\">Highly Coupled classes by the numbers: (Refactor starting with Priority 1)</h2>");
@@ -475,7 +655,7 @@ public class SimpleHtmlReport {
             };
 
             for (String rowData : rankedCboClassDisharmonyData) {
-                drawTableCell(rowData, stringBuilder);
+                stringBuilder.append(drawTableCell(rowData));
             }
 
             stringBuilder.append("</tr>");
@@ -483,13 +663,23 @@ public class SimpleHtmlReport {
 
         stringBuilder.append("</tbody>");
         stringBuilder.append("</table>");
+
+        return stringBuilder.toString();
     }
 
-    void drawTableCell(String rowData, StringBuilder stringBuilder) {
+    String drawTableCell(String rowData) {
         if (isNumber(rowData) || isDateTime(rowData)) {
-            stringBuilder.append("<td align=\"right\">").append(rowData).append("</td>\n");
+            return new StringBuilder()
+                    .append("<td align=\"right\">")
+                    .append(rowData)
+                    .append("</td>\n")
+                    .toString();
         } else {
-            stringBuilder.append("<td align=\"left\">").append(rowData).append("</td>\n");
+            return new StringBuilder()
+                    .append("<td align=\"left\">")
+                    .append(rowData)
+                    .append("</td>\n")
+                    .toString();
         }
     }
 
@@ -501,50 +691,52 @@ public class SimpleHtmlReport {
         return rowData.contains(", ");
     }
 
-    public void printTitle(String projectName, String projectVersion, StringBuilder stringBuilder) {
-        // empty on purpose
+    public String printTitle(String projectName, String projectVersion) {
+        return ""; // empty on purpose
     }
 
-    public void printHead(StringBuilder stringBuilder) {
-        // empty on purpose
+    public String printHead() {
+        return ""; // empty on purpose
     }
 
-    public void printBreadcrumbs(StringBuilder stringBuilder) {
-        stringBuilder.append("  <body class=\"composite\">\n"
-                + "    <div id=\"banner\">\n"
+    String printScripts() {
+        return ""; // empty on purpose
+    }
+
+    public String printOpenBodyTag() {
+        return "  <body class=\"composite\">\n";
+    }
+
+    public String printBreadcrumbs() {
+        return "    <div id=\"banner\">\n"
                 + "    </div>\n"
                 + "    <div id=\"breadcrumbs\">\n"
-                + "      <div class=\"xleft\">\n");
+                + "      <div class=\"xleft\">\n";
     }
 
-    public void printProjectHeader(String projectName, String projectVersion, StringBuilder stringBuilder) {
-
-        stringBuilder.append("</div>\n" + "      <div class=\"xright\">      </div>\n"
+    public String printProjectHeader(String projectName, String projectVersion) {
+        return "</div>\n" + "      <div class=\"xright\">      </div>\n"
                 + "    </div>\n"
                 + "    <div id=\"bodyColumn\">\n"
-                + "      <div id=\"contentBox\">\n");
-
-        stringBuilder
-                .append(
-                        "<section>\n"
-                                + "<h2><a href=\"https://github.com/refactorfirst/refactorfirst\" target=\"_blank\" title=\"Learn about RefactorFirst\" aria-label=\"RefactorFirst\">RefactorFirst</a> Report for ")
-                .append(projectName)
-                .append(" ")
-                .append(projectVersion)
-                .append("</h2>\n");
+                + "      <div id=\"contentBox\">\n" + "<section>\n"
+                + "<h2><a href=\"https://github.com/refactorfirst/refactorfirst\" target=\"_blank\" "
+                + "title=\"Learn about RefactorFirst\" aria-label=\"RefactorFirst\">RefactorFirst</a> Report for "
+                + projectName
+                + " "
+                + projectVersion
+                + "</h2>\n";
     }
 
-    public void printProjectFooter(StringBuilder stringBuilder, DateTimeFormatter formatter) {
-        stringBuilder
-                .append("      <div class=\"clear\">\n" + "        <hr/>\n" + "      </div>\n")
-                .append("<span id=\"publishDate\">Last Published: ")
-                .append(formatter.format(Instant.now()))
-                .append("      <div class=\"clear\">\n" + "        <hr/>\n" + "      </div>\n")
-                .append("</span>");
+    public String printProjectFooter() {
+        return "      <div class=\"clear\">\n" + "        <hr/>\n" + "      </div>\n"
+                + "<span id=\"publishDate\">Last Published: "
+                + formatter.format(Instant.now())
+                + "      <div class=\"clear\">\n"
+                + "        <hr/>\n" + "      </div>\n" + "</span>";
     }
 
-    void renderGithubButtons(StringBuilder stringBuilder) {
-        // empty on purpose
+    String renderGithubButtons() {
+        return ""; // empty on purpose
     }
 
     String getOutputName() {
@@ -552,30 +744,35 @@ public class SimpleHtmlReport {
         return "refactor-first-report";
     }
 
-    void renderGodClassChart(
-            String outputDirectory,
-            List<RankedDisharmony> rankedGodClassDisharmonies,
-            int maxGodClassPriority,
-            StringBuilder stringBuilder) {
-        // empty on purpose
+    String renderGodClassChart(List<RankedDisharmony> rankedGodClassDisharmonies, int maxGodClassPriority) {
+        return ""; // empty on purpose
     }
 
-    String writeGodClassGchartJs(
-            List<RankedDisharmony> rankedDisharmonies, int maxPriority, String reportOutputDirectory) {
+    String writeGodClassGchartJs(List<RankedDisharmony> rankedDisharmonies, int maxPriority) {
         // return empty string on purpose
         return "";
     }
 
-    String writeGCBOGchartJs(List<RankedDisharmony> rankedDisharmonies, int maxPriority, String reportOutputDirectory) {
+    String writeGCBOGchartJs(List<RankedDisharmony> rankedDisharmonies, int maxPriority) {
         // return empty string on purpose
         return "";
     }
 
-    void renderCBOChart(
-            String outputDirectory,
-            List<RankedDisharmony> rankedCBODisharmonies,
-            int maxCboPriority,
-            StringBuilder stringBuilder) {
-        // empty on purpose
+    String renderCBOChart(List<RankedDisharmony> rankedCBODisharmonies, int maxCboPriority) {
+        return ""; // empty on purpose
+    }
+
+    String getClassName(String fqn) {
+        // handle no package
+        if (!fqn.contains(".")) {
+            return fqn;
+        }
+
+        int lastIndex = fqn.lastIndexOf(".");
+        return fqn.substring(lastIndex + 1);
+    }
+
+    static String[] extractVertexes(DefaultWeightedEdge edge) {
+        return edge.toString().replace("(", "").replace(")", "").split(":");
     }
 }

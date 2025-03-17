@@ -11,7 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 public class ReportWriter {
 
     public static void writeReportToDisk(
-            final String reportOutputDirectory, final String filename, final StringBuilder stringBuilder) {
+            final String reportOutputDirectory, final String filename, final String string) {
         final File reportOutputDir = new File(reportOutputDirectory);
 
         if (!reportOutputDir.exists()) {
@@ -29,7 +29,7 @@ public class ReportWriter {
         }
 
         try (BufferedWriter writer = Files.newBufferedWriter(reportFile.toPath(), Charset.defaultCharset())) {
-            writer.write(stringBuilder.toString());
+            writer.write(string);
         } catch (IOException e) {
             log.error("Error writing chart script file", e);
         }

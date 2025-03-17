@@ -1,0 +1,714 @@
+<!-- This is a playground for experimentation -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DOT Graph with Sigma.js and Graphology</title>
+    <script async defer src="https://buttons.github.io/buttons.js"></script>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-graphviz/3.0.5/d3-graphviz.min.js"></script>
+    <script src="https://unpkg.com/@hpcc-js/wasm@0.3.11/dist/index.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sigma.js/2.4.0/sigma.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/graphology/0.25.4/graphology.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/graphlib/2.1.8/graphlib.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/graphlib-dot@0.6.4/dist/graphlib-dot.min.js"></script>
+    <script src="https://unpkg.com/3d-force-graph"></script>
+    <style>
+        /* Popup container */
+        .popup {
+            position: fixed;
+            display: none;
+            width: 95%;
+            height: 95%;
+            background-color: white;
+            border: 1px solid #ccc;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        /* Popup overlay */
+        .overlay {
+            position: fixed;
+            display: none;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+
+        /* Close button */
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+        }
+    </style>
+    <script>
+        function sugiyamaLayout(graph) {
+            var layers = [];
+            var nodeLevels = {};
+            var nodes = graph.nodes();
+            //var edges = graph.edges();
+
+            // Step 1: Assign levels to nodes
+            function assignLevels() {
+                var visited = {};
+                var stack = [];
+
+                function visit(node, level) {
+                    if (visited[node]) return;
+                    visited[node] = true;
+                    nodeLevels[node] = level;
+                    if (!layers[level]) layers[level] = [];
+                    layers[level].push(node);
+                    stack.push(node);
+                    graph.forEachNeighbor(node, function (neighbor) {
+                        visit(neighbor, level + 1);
+                    });
+                }
+
+                nodes.forEach(function (node) {
+                    if (!visited[node]) visit(node, 0);
+                });
+            }
+
+            // Step 2: Reduce edge crossings
+            function reduceCrossings() {
+                for (var i = 0; i < layers.length - 1; i++) {
+                    var layer = layers[i];
+                    var nextLayer = layers[i + 1];
+                    var positions = {};
+
+                    nextLayer.forEach(function (node, index) {
+                        positions[node] = index;
+                    });
+
+                    layer.sort(function (a, b) {
+                        var aPos = 0, bPos = 0;
+                        graph.forEachNeighbor(a, function (neighbor) {
+                            aPos += positions[neighbor] || 0;
+                        });
+                        graph.forEachNeighbor(b, function (neighbor) {
+                            bPos += positions[neighbor] || 0;
+                        });
+                        return aPos - bPos;
+                    });
+                }
+            }
+
+            // Step 3: Assign positions to nodes
+            function assignPositions() {
+                var yStep = 100;
+                var xStep = 2000;
+
+                layers.forEach(function (layer, level) {
+                    var layerWidth = layer.length * xStep;
+                    var offsetX = ((screen.width - 200) - layerWidth) / 2; // Centering the nodes
+
+                    layer.forEach(function (node, index) {
+                        graph.setNodeAttribute(node, 'x', offsetX + index * xStep);
+                        graph.setNodeAttribute(node, 'y', -level * yStep);
+                    });
+                });
+            }
+
+            assignLevels();
+            reduceCrossings();
+            assignPositions();
+        }
+
+        function renderGraph(dot) {
+            // Parse the DOT graph using graphlib-dot
+            const graphlibGraph = graphlibDot.read(dot);
+
+            // Convert graphlib graph to graphology graph
+            const graphologyGraph = new graphology.Graph();
+
+            /*
+            Node Attributes
+            id: A unique identifier for the node (usually a string).
+            label: A label or name for the node.
+            color: The color of the node (e.g., "red", "#ff0000").
+            style: The style of the node (e.g., "filled", "dotted").
+            shape: The shape of the node (e.g., "circle", "box").
+            width: The width of the node.
+            height: The height of the node.
+            */
+            graphlibGraph.nodes().forEach(node => {
+                const attrs = graphlibGraph.node(node);
+                graphologyGraph.addNode(node, {
+                    label: node,
+                    color: attrs.color,
+                    // x: Math.random(),
+                    // y: Math.random(),
+                    size: 5,
+                });
+            });
+
+            /*
+            Edge Attributes
+            v: The id of the source node.
+            w: The id of the target node.
+            label: A label or name for the edge.
+            color: The color of the edge (e.g., "blue", "#0000ff").
+            style: The style of the edge (e.g., "solid", "dashed").
+            weight: The weight of the edge.
+            arrowhead: The style of the arrowhead (e.g., "normal", "vee").
+             */
+            graphlibGraph.edges().forEach(edge => {
+                const attrs = graphlibGraph.edge(edge);
+                graphologyGraph.addEdge(edge.v, edge.w, {
+                    color: attrs.color,
+                    size: 1,
+                    type: 'arrow',
+                });
+            });
+
+            sugiyamaLayout(graphologyGraph)
+
+            return graphologyGraph;
+        }
+    </script>
+    <script type="module">
+        // SpriteText will only work as import
+        // this script block requires type=module since we are using an import
+        import SpriteText from "https://esm.sh/three-spritetext";
+
+        function createForceGraph(popupId, containerName, dot) {
+            // Add event listener for Escape key to close the popup
+            document.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape') {
+                    hidePopup();
+                }
+            });
+
+            document.getElementById('overlay').style.display = 'block';
+            document.getElementById(popupId).style.display = 'block';
+            var container = document.getElementById(containerName);
+
+            // Parse the DOT graph using graphlib-dot
+            const graphlibGraph = graphlibDot.read(dot);
+
+            var nodes = [];
+            var links = [];
+
+            graphlibGraph.nodes().forEach(function (node) {
+                var nodeData = graphlibGraph.node(node);
+                nodes.push({
+                    id: node,
+                    color: nodeData.color || 'white',
+                });
+            });
+
+            graphlibGraph.edges().forEach(function (edge) {
+                links.push({
+                    source: edge.v,
+                    target: edge.w,
+                    color: graphlibGraph.edge(edge).color || 'white',
+                    weight: graphlibGraph.edge(edge).weight,
+                });
+            });
+
+            const gData = {
+                nodes: nodes,
+                links: links
+            };
+
+            // cross-link node objects
+            gData.links.forEach(link => {
+                const a = gData.nodes.find(node => node.id === link.source);
+                const b = gData.nodes.find(node => node.id === link.target);
+                !a.neighbors && (a.neighbors = []);
+                !b.neighbors && (b.neighbors = []);
+                a.neighbors.push(b);
+                b.neighbors.push(a);
+
+                !a.links && (a.links = []);
+                !b.links && (b.links = []);
+                a.links.push(link);
+                b.links.push(link);
+            });
+
+            const Graph = new ForceGraph3D(container)
+                .graphData(gData)
+                .nodeLabel('id')
+                .width(container.clientWidth)
+                .height(container.clientHeight);
+
+            if(gData.links.length + gData.nodes.length < 4000) {
+                console.log(gData.links.length + gData.nodes.length);
+
+
+                // use node labels instead of spheres
+                Graph.nodeThreeObject(node => {
+                    const sprite = new SpriteText(node.id);
+                    sprite.material.depthWrite = false; // make sprite background transparent
+                    sprite.color = node.color;
+                    sprite.textHeight = 4;
+                    return sprite;
+                });
+
+                // code to display weight as link text
+                // may be too much for browsers to handle
+                // Graph
+                //     .linkThreeObjectExtend(true)
+                //     .linkThreeObject(link => {
+                //         // extend link with text sprite
+                //         const sprite = new SpriteText(`${link.weight}`);
+                //         sprite.color = 'lightgrey';
+                //         sprite.textHeight = 3;
+                //         return sprite;
+                //     })
+                //     .linkPositionUpdate((sprite, {start, end}) => {
+                //         const middlePos = Object.assign(...['x', 'y', 'z'].map(c => ({
+                //             [c]: start[c] + (end[c] - start[c]) / 2 // calc middle point
+                //         })));
+                //
+                //         // Position sprite
+                //         Object.assign(sprite.position, middlePos);
+                //     });
+
+
+                // code to highlight nodes & links
+                // TODO: enable via control - see Manipulate Link Force Distance for example
+                const highlightNodes = new Set();
+                const highlightLinks = new Set();
+                let hoverNode = null;
+                Graph
+                    .nodeColor(node => highlightNodes.has(node) ? node === hoverNode ? 'rgb(255,0,0,1)' : 'rgba(255,160,0,0.8)' : 'rgba(0,255,255,0.6)')
+                    .linkWidth(link => highlightLinks.has(link) ? 4 : 1)
+                    .linkDirectionalParticles(link => highlightLinks.has(link) ? 4 : 0)
+                    .linkDirectionalParticleWidth(4)
+                    .onNodeHover(node => {
+                        // no state change
+                        if ((!node && !highlightNodes.size) || (node && hoverNode === node)) return;
+
+                        highlightNodes.clear();
+                        highlightLinks.clear();
+                        if (node) {
+                            highlightNodes.add(node);
+                            node.neighbors.forEach(neighbor => highlightNodes.add(neighbor));
+                            node.links.forEach(link => highlightLinks.add(link));
+                        }
+
+                        hoverNode = node || null;
+
+                        updateHighlight(Graph);
+                    })
+                    .onLinkHover(link => {
+                        highlightNodes.clear();
+                        highlightLinks.clear();
+
+                        if (link) {
+                            highlightLinks.add(link);
+                            highlightNodes.add(link.source);
+                            highlightNodes.add(link.target);
+                        }
+
+                        updateHighlight(Graph);
+                    });
+
+            }
+        }
+
+        // used by highlighting functionality
+        function updateHighlight(Graph) {
+            // trigger update of highlighted objects in scene
+            Graph
+                .nodeColor(Graph.nodeColor())
+                .linkWidth(Graph.linkWidth())
+                .linkDirectionalParticles(Graph.linkDirectionalParticles());
+        }
+
+        // needed to allow the button to open the graph
+        window.createForceGraph = createForceGraph;
+    </script>
+
+    <script>
+        function showPopup(popupId, containerName, dot) {
+            // Add event listener for Escape key to close the popup
+            document.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape') {
+                    hidePopup();
+                }
+            });
+
+            document.getElementById('overlay').style.display = 'block';
+            document.getElementById(popupId).style.display = 'block';
+
+            var graph = renderGraph(dot);
+            var container = document.getElementById(containerName);
+
+            // Render with Sigma.js
+            new Sigma(graph, container);
+        }
+
+        function hidePopup() {
+            document.getElementById('overlay').style.display = 'none';
+            var popups = document.getElementsByClassName('popup');
+            for (var i = 0; i < popups.length; i++) {
+                popups[i].style.display = 'none';
+            }
+
+            // Clear the graph containers to remove the previous graphs
+            var containers = document.querySelectorAll('[id^="graph-container"]');
+            containers.forEach(function (container) {
+                while (container.firstChild) {
+                    container.removeChild(container.firstChild);
+                }
+            });
+
+            // Remove the Escape key event listener
+            document.removeEventListener('keydown', function (event) {
+                if (event.key === 'Escape') {
+                    hidePopup();
+                }
+            });
+        }
+    </script>
+</head>
+
+<!--
+create a fully implemented html page that renders a DOT graph with sigma.js, graphlib, graphlib-dot, and graphology, creates the nodes with graphology to capture the node and edge colors specified in the DOT graph, and without using require.js and only using client-side javascript and html
+-->
+<body>
+<div class="overlay" id="overlay" onclick="hidePopup()"></div>
+
+<script>
+    const dot = `
+            digraph {
+                node [style=filled];
+                A [color=red];
+                B [color=green];
+                C [color=blue];
+                A -> B [color=purple];
+                B -> C [color=orange];
+                C -> A [color=cyan];
+            }
+        `;
+    const mb_dot = `strict digraph G {
+AboutDialog -> MiscTools [ label = "10" weight = "10" color = "red" ];
+AboutDialog -> MainPanelView [ label = "1" weight = "1" color = "red" ];
+ChunkDownloader -> SecureSingleThreadNotifiable [ label = "1" weight = "1" ];
+ChunkDownloader -> Download [ label = "4" weight = "4" color = "red" ];
+ChunkDownloader -> ChunkWriterManager [ label = "2" weight = "2" ];
+ChunkDownloader -> SmartMegaProxyManager [ label = "4" weight = "4" color = "red" ];
+ChunkDownloader -> MainPanel [ label = "1" weight = "1" color = "red" ];
+ChunkDownloader -> ThrottledInputStream [ label = "1" weight = "1" ];
+ChunkDownloader -> ChunkInvalidException [ label = "1" weight = "1" ];
+ChunkDownloaderMono -> ChunkDownloader [ label = "2" weight = "2" ];
+ChunkDownloaderMono -> Download [ label = "3" weight = "3" color = "red" ];
+ChunkDownloaderMono -> CryptTools [ label = "2" weight = "2" color = "red" ];
+ChunkDownloaderMono -> ChunkInvalidException [ label = "1" weight = "1" ];
+ChunkUploader -> SecureSingleThreadNotifiable [ label = "1" weight = "1" ];
+ChunkUploader -> Upload [ label = "5" weight = "5" color = "red" ];
+ChunkUploader -> UploadMACGenerator [ label = "1" weight = "1" ];
+ChunkUploader -> ChunkWriterManager [ label = "1" weight = "1" ];
+ChunkUploader -> ThrottledOutputStream [ label = "1" weight = "1" ];
+ChunkUploader -> ChunkInvalidException [ label = "1" weight = "1" ];
+ChunkWriterManager -> SecureSingleThreadNotifiable [ label = "1" weight = "1" ];
+ChunkWriterManager -> Download [ label = "3" weight = "3" color = "red" ];
+ChunkWriterManager -> ChunkInvalidException [ label = "1" weight = "1" ];
+ClipboardChangeObservable -> ClipboardChangeObserver [ label = "2" weight = "2" ];
+ClipboardSpy -> SecureSingleThreadNotifiable [ label = "1" weight = "1" ];
+ClipboardSpy -> ClipboardChangeObservable [ label = "1" weight = "1" ];
+ClipboardSpy -> ClipboardChangeObserver [ label = "3" weight = "3" ];
+ClipboardSpy -> DBTools [ label = "1" weight = "1" ];
+ContextMenuMouseListener -> ContextMenuMouseListener__Actions [ label = "1" weight = "1" ];
+CryptTools -> MiscTools [ label = "14" weight = "14" ];
+CryptTools -> MainPanel [ label = "2" weight = "2" ];
+CryptTools -> GetMasterPasswordDialog [ label = "2" weight = "2" ];
+DBTools -> SqliteSingleton [ label = "36" weight = "36" ];
+Download -> Transference [ label = "1" weight = "1" ];
+Download -> SecureSingleThreadNotifiable [ label = "1" weight = "1" ];
+Download -> TransferenceManager [ label = "8" weight = "8" ];
+Download -> MiscTools [ label = "7" weight = "7" color = "red" ];
+Download -> DownloadView [ label = "6" weight = "6" ];
+Download -> MainPanel [ label = "3" weight = "3" color = "red" ];
+Download -> ProgressMeter [ label = "2" weight = "2" ];
+Download -> ChunkDownloader [ label = "10" weight = "10" ];
+Download -> ChunkWriterManager [ label = "2" weight = "2" ];
+Download -> MegaAPI [ label = "3" weight = "3" ];
+Download -> ChunkDownloaderMono [ label = "2" weight = "2" ];
+Download -> DBTools [ label = "2" weight = "2" ];
+Download -> APIException [ label = "5" weight = "5" ];
+Download -> CryptTools [ label = "2" weight = "2" color = "red" ];
+Download -> ChunkInvalidException [ label = "2" weight = "2" ];
+Download -> MainPanelView [ label = "1" weight = "1" color = "red" ];
+DownloadManager -> TransferenceManager [ label = "4" weight = "4" ];
+DownloadManager -> MiscTools [ label = "2" weight = "2" color = "red" ];
+DownloadManager -> Download [ label = "2" weight = "2" ];
+DownloadManager -> MainPanel [ label = "1" weight = "1" color = "red" ];
+DownloadManager -> Transference [ label = "8" weight = "8" ];
+DownloadManager -> APIException [ label = "3" weight = "3" ];
+DownloadView -> TransferenceView [ label = "1" weight = "1" ];
+DownloadView -> MiscTools [ label = "12" weight = "12" color = "red" ];
+DownloadView -> Download [ label = "6" weight = "6" color = "red" ];
+FileGrabberDialog -> MiscTools [ label = "8" weight = "8" color = "red" ];
+FileGrabberDialog -> MainPanel [ label = "1" weight = "1" color = "red" ];
+FileGrabberDialog -> MainPanelView [ label = "1" weight = "1" color = "red" ];
+FileGrabberDialog -> DBTools [ label = "1" weight = "1" ];
+FileGrabberDialog -> MegaAPI [ label = "2" weight = "2" ];
+FileMergerDialog -> MiscTools [ label = "3" weight = "3" color = "red" ];
+FileMergerDialog -> MainPanel [ label = "1" weight = "1" color = "red" ];
+FileMergerDialog -> MainPanelView [ label = "1" weight = "1" color = "red" ];
+FileSplitterDialog -> MiscTools [ label = "4" weight = "4" color = "red" ];
+FileSplitterDialog -> MainPanel [ label = "1" weight = "1" color = "red" ];
+FileSplitterDialog -> MainPanelView [ label = "1" weight = "1" color = "red" ];
+FolderLinkDialog -> MiscTools [ label = "5" weight = "5" color = "red" ];
+FolderLinkDialog -> MainPanelView [ label = "1" weight = "1" color = "red" ];
+FolderLinkDialog -> MegaAPI [ label = "2" weight = "2" ];
+FolderLinkDialog -> MegaMutableTreeNode [ label = "6" weight = "6" ];
+FolderLinkDialog -> MegaAPIException [ label = "1" weight = "1" ];
+Get2FACode -> MiscTools [ label = "1" weight = "1" color = "red" ];
+Get2FACode -> MainPanel [ label = "1" weight = "1" color = "red" ];
+GetMasterPasswordDialog -> MiscTools [ label = "2" weight = "2" color = "red" ];
+GetMasterPasswordDialog -> MainPanel [ label = "1" weight = "1" color = "red" ];
+GetMasterPasswordDialog -> CryptTools [ label = "1" weight = "1" color = "red" ];
+KissVideoStreamServer -> SecureSingleThreadNotifiable [ label = "1" weight = "1" ];
+KissVideoStreamServer -> MainPanelView [ label = "3" weight = "3" ];
+KissVideoStreamServer -> MainPanel [ label = "3" weight = "3" color = "red" ];
+KissVideoStreamServer -> ContentType [ label = "2" weight = "2" ];
+KissVideoStreamServer -> MegaAPI [ label = "4" weight = "4" ];
+KissVideoStreamServer -> APIException [ label = "2" weight = "2" ];
+KissVideoStreamServer -> StreamChunkManager [ label = "1" weight = "1" ];
+KissVideoStreamServer -> StreamChunkDownloader [ label = "4" weight = "4" ];
+KissVideoStreamServer -> CryptTools [ label = "1" weight = "1" color = "red" ];
+LabelTranslatorSingleton_LazyHolder -> LabelTranslatorSingleton [ label = "2" weight = "2" ];
+LinkGrabberDialog -> ClipboardChangeObserver [ label = "1" weight = "1" ];
+LinkGrabberDialog -> MiscTools [ label = "4" weight = "4" color = "red" ];
+LinkGrabberDialog -> ClipboardSpy [ label = "2" weight = "2" ];
+LinkGrabberDialog -> MainPanel [ label = "3" weight = "3" color = "red" ];
+LinkGrabberDialog -> MainPanelView [ label = "1" weight = "1" color = "red" ];
+LinkGrabberDialog -> CryptTools [ label = "1" weight = "1" color = "red" ];
+MainPanel -> MiscTools [ label = "9" weight = "9" color = "red" ];
+MainPanel -> SmartMegaProxyManager [ label = "3" weight = "3" color = "red" ];
+MainPanel -> MainPanelView [ label = "2" weight = "2" ];
+MainPanel -> SpeedMeter [ label = "3" weight = "3" ];
+MainPanel -> DownloadManager [ label = "2" weight = "2" ];
+MainPanel -> UploadManager [ label = "2" weight = "2" ];
+MainPanel -> StreamThrottlerSupervisor [ label = "2" weight = "2" ];
+MainPanel -> MegaAPI [ label = "8" weight = "8" ];
+MainPanel -> ClipboardSpy [ label = "2" weight = "2" ];
+MainPanel -> KissVideoStreamServer [ label = "2" weight = "2" ];
+MainPanel -> MegaProxyServer [ label = "3" weight = "3" ];
+MainPanel -> DBTools [ label = "25" weight = "25" ];
+MainPanel -> Transference [ label = "6" weight = "6" ];
+MainPanel -> Download [ label = "5" weight = "5" ];
+MainPanel -> Upload [ label = "5" weight = "5" ];
+MainPanel -> WarningExitMessage [ label = "2" weight = "2" ];
+MainPanelView -> MiscTools [ label = "7" weight = "7" color = "red" ];
+MainPanelView -> ClipboardSpy [ label = "4" weight = "4" ];
+MainPanelView -> MainPanel [ label = "4" weight = "4" color = "red" ];
+MainPanelView -> DownloadManager [ label = "2" weight = "2" ];
+MainPanelView -> TransferenceManager [ label = "1" weight = "1" ];
+MainPanelView -> FileGrabberDialog [ label = "6" weight = "6" ];
+MainPanelView -> MegaAPI [ label = "7" weight = "7" ];
+MainPanelView -> MegaDirNode [ label = "4" weight = "4" ];
+MainPanelView -> Upload [ label = "2" weight = "2" ];
+MainPanelView -> DBTools [ label = "3" weight = "3" ];
+MainPanelView -> LinkGrabberDialog [ label = "3" weight = "3" ];
+MainPanelView -> Download [ label = "1" weight = "1" ];
+MainPanelView -> FolderLinkDialog [ label = "3" weight = "3" ];
+MainPanelView -> SettingsDialog [ label = "2" weight = "2" ];
+MainPanelView -> AboutDialog [ label = "2" weight = "2" ];
+MainPanelView -> StreamerDialog [ label = "2" weight = "2" ];
+MainPanelView -> FileSplitterDialog [ label = "2" weight = "2" ];
+MainPanelView -> FileMergerDialog [ label = "2" weight = "2" ];
+MegaAPI -> CryptTools [ label = "4" weight = "4" color = "red" ];
+MegaAPI -> MiscTools [ label = "20" weight = "20" color = "red" ];
+MegaAPI -> SmartMegaProxyManager [ label = "4" weight = "4" color = "red" ];
+MegaAPI -> MainPanel [ label = "1" weight = "1" color = "red" ];
+MegaAPI -> MegaAPIException [ label = "9" weight = "9" ];
+MegaAPI -> Upload [ label = "1" weight = "1" ];
+MegaAPI -> ThrottledOutputStream [ label = "1" weight = "1" ];
+MegaAPIException -> APIException [ label = "2" weight = "2" ];
+MegaCrypterAPI -> CryptTools [ label = "1" weight = "1" ];
+MegaCrypterAPI -> MainPanelView [ label = "1" weight = "1" ];
+MegaCrypterAPI -> MiscTools [ label = "5" weight = "5" ];
+MegaCrypterAPI -> MegaCrypterAPIException [ label = "3" weight = "3" ];
+MegaCrypterAPIException -> APIException [ label = "2" weight = "2" ];
+MegaMutableTreeNode -> MegaMutableTreeNode_1 [ label = "1" weight = "1" ];
+MegaProxyServer -> MainPanelView [ label = "2" weight = "2" ];
+MegaProxyServer -> MainPanel [ label = "2" weight = "2" color = "red" ];
+MegaProxyServer_Handler -> MegaProxyServer_Handler_1 [ label = "1" weight = "1" ];
+MiscTools -> MegaMutableTreeNode [ label = "4" weight = "4" ];
+MiscTools -> SmartMegaProxyManager [ label = "4" weight = "4" ];
+MiscTools -> MainPanel [ label = "2" weight = "2" ];
+MiscTools -> MegaAPI [ label = "4" weight = "4" ];
+MiscTools -> GetMasterPasswordDialog [ label = "2" weight = "2" ];
+MiscTools -> DBTools [ label = "1" weight = "1" ];
+MiscTools -> Get2FACode [ label = "2" weight = "2" ];
+MiscTools -> MegaAPIException [ label = "1" weight = "1" ];
+ProgressMeter -> SecureSingleThreadNotifiable [ label = "1" weight = "1" ];
+ProgressMeter -> Transference [ label = "2" weight = "2" color = "red" ];
+SetMasterPasswordDialog -> MiscTools [ label = "1" weight = "1" color = "red" ];
+SetMasterPasswordDialog -> MainPanel [ label = "1" weight = "1" color = "red" ];
+SettingsDialog -> MiscTools [ label = "8" weight = "8" color = "red" ];
+SettingsDialog -> MainPanel [ label = "2" weight = "2" color = "red" ];
+SettingsDialog -> MainPanelView [ label = "1" weight = "1" color = "red" ];
+SettingsDialog -> DBTools [ label = "36" weight = "36" ];
+SettingsDialog -> MegaAPI [ label = "3" weight = "3" ];
+SettingsDialog -> Get2FACode [ label = "4" weight = "4" ];
+SettingsDialog -> GetMasterPasswordDialog [ label = "2" weight = "2" ];
+SettingsDialog -> SetMasterPasswordDialog [ label = "2" weight = "2" ];
+SmartMegaProxyManager -> MainPanel [ label = "2" weight = "2" ];
+SpeedMeter -> TransferenceManager [ label = "2" weight = "2" ];
+SpeedMeter -> Transference [ label = "5" weight = "5" ];
+SqliteSingleton_LazyHolder -> SqliteSingleton [ label = "2" weight = "2" ];
+StreamChunk -> StreamChunk_ByteArrayOutInputStream [ label = "2" weight = "2" ];
+StreamChunk -> ChunkInvalidException [ label = "1" weight = "1" ];
+StreamChunkDownloader -> StreamChunkManager [ label = "4" weight = "4" ];
+StreamChunkDownloader -> SmartMegaProxyManager [ label = "4" weight = "4" color = "red" ];
+StreamChunkDownloader -> MainPanel [ label = "1" weight = "1" color = "red" ];
+StreamChunkDownloader -> StreamChunk [ label = "2" weight = "2" ];
+StreamChunkManager -> SecureMultiThreadNotifiable [ label = "1" weight = "1" ];
+StreamChunkManager -> StreamChunk [ label = "4" weight = "4" ];
+StreamChunkManager -> KissVideoStreamServer [ label = "3" weight = "3" color = "red" ];
+StreamerDialog -> ClipboardChangeObserver [ label = "1" weight = "1" ];
+StreamerDialog -> MiscTools [ label = "3" weight = "3" color = "red" ];
+StreamerDialog -> ClipboardSpy [ label = "2" weight = "2" ];
+StreamerDialog -> MainPanelView [ label = "2" weight = "2" color = "red" ];
+StreamerDialog -> MainPanel [ label = "3" weight = "3" color = "red" ];
+StreamerDialog -> CryptTools [ label = "1" weight = "1" color = "red" ];
+StreamerDialog -> MegaAPI [ label = "3" weight = "3" ];
+StreamThrottlerSupervisor -> SecureMultiThreadNotifiable [ label = "1" weight = "1" ];
+StreamThrottlerSupervisor -> StreamThrottlerSupervisor_1 [ label = "1" weight = "1" ];
+ThrottledInputStream -> StreamThrottlerSupervisor [ label = "2" weight = "2" ];
+ThrottledOutputStream -> StreamThrottlerSupervisor [ label = "2" weight = "2" ];
+Transference -> ProgressMeter [ label = "1" weight = "1" ];
+Transference -> MainPanel [ label = "1" weight = "1" color = "red" ];
+Transference -> TransferenceView [ label = "1" weight = "1" ];
+TransferenceManager -> SecureSingleThreadNotifiable [ label = "1" weight = "1" ];
+TransferenceManager -> Transference [ label = "39" weight = "39" ];
+TransferenceManager -> MiscTools [ label = "2" weight = "2" color = "red" ];
+TransferenceManager -> MainPanel [ label = "3" weight = "3" color = "red" ];
+TransferenceManager -> BoundedExecutor [ label = "2" weight = "2" ];
+Upload -> Transference [ label = "1" weight = "1" ];
+Upload -> SecureSingleThreadNotifiable [ label = "1" weight = "1" ];
+Upload -> UploadView [ label = "6" weight = "6" ];
+Upload -> MiscTools [ label = "5" weight = "5" color = "red" ];
+Upload -> TransferenceManager [ label = "7" weight = "7" ];
+Upload -> MainPanel [ label = "3" weight = "3" color = "red" ];
+Upload -> ProgressMeter [ label = "2" weight = "2" ];
+Upload -> ChunkUploader [ label = "8" weight = "8" ];
+Upload -> UploadMACGenerator [ label = "2" weight = "2" ];
+Upload -> MegaAPI [ label = "3" weight = "3" color = "red" ];
+Upload -> DBTools [ label = "2" weight = "2" ];
+Upload -> Thumbnailer [ label = "4" weight = "4" ];
+Upload -> MegaAPIException [ label = "3" weight = "3" ];
+Upload -> ChunkInvalidException [ label = "1" weight = "1" ];
+UploadMACGenerator -> SecureSingleThreadNotifiable [ label = "1" weight = "1" ];
+UploadMACGenerator -> Upload [ label = "3" weight = "3" color = "red" ];
+UploadMACGenerator -> DBTools [ label = "1" weight = "1" ];
+UploadMACGenerator -> MiscTools [ label = "1" weight = "1" color = "red" ];
+UploadMACGenerator -> CryptTools [ label = "1" weight = "1" color = "red" ];
+UploadMACGenerator -> ChunkInvalidException [ label = "1" weight = "1" ];
+UploadManager -> TransferenceManager [ label = "4" weight = "4" ];
+UploadManager -> MiscTools [ label = "1" weight = "1" color = "red" ];
+UploadManager -> Upload [ label = "1" weight = "1" ];
+UploadManager -> MainPanel [ label = "1" weight = "1" color = "red" ];
+UploadManager -> Transference [ label = "3" weight = "3" ];
+UploadView -> TransferenceView [ label = "1" weight = "1" ];
+UploadView -> MiscTools [ label = "15" weight = "15" color = "red" ];
+UploadView -> Upload [ label = "6" weight = "6" color = "red" ];
+WarningExitMessage -> MiscTools [ label = "1" weight = "1" color = "red" ];
+WarningExitMessage -> MainPanel [ label = "3" weight = "3" color = "red" ];
+DBTools;
+BoundedExecutor;
+StreamThrottlerSupervisor;
+Get2FACode;
+MegaAPIException;
+SetMasterPasswordDialog;
+UploadMACGenerator;
+ChunkDownloaderMono;
+UploadManager;
+StreamerDialog;
+SecureMultiThreadNotifiable;
+ChunkWriterManager;
+LinkGrabberDialog;
+ClipboardChangeObservable;
+FileGrabberDialog;
+SecureSingleThreadNotifiable;
+MegaCrypterAPI;
+MegaDirNode;
+MegaProxyServer;
+ContextMenuMouseListener__Actions;
+MegaProxyServer_Handler_1;
+SqliteSingleton_LazyHolder;
+SettingsDialog;
+ProgressMeter;
+StreamChunk;
+CryptTools;
+FileMergerDialog;
+ClipboardSpy;
+WarningExitMessage;
+ContextMenuMouseListener;
+UploadView;
+Transference;
+TransferenceView;
+SmartMegaProxyManager;
+ThrottledOutputStream;
+MegaMutableTreeNode_1;
+LabelTranslatorSingleton;
+StreamChunkDownloader;
+ChunkInvalidException;
+ClipboardChangeObserver;
+AboutDialog;
+ContentType;
+SqliteSingleton;
+FileSplitterDialog;
+GetMasterPasswordDialog;
+Thumbnailer;
+DownloadView;
+MegaMutableTreeNode;
+Download;
+DownloadManager;
+MegaCrypterAPIException;
+SpeedMeter;
+MegaProxyServer_Handler;
+ChunkDownloader;
+LabelTranslatorSingleton_LazyHolder;
+StreamChunk_ByteArrayOutInputStream;
+KissVideoStreamServer;
+Upload;
+MegaAPI;
+FolderLinkDialog;
+APIException;
+MiscTools;
+MainPanel;
+MainPanelView;
+TransferenceManager;
+StreamChunkManager;
+ThrottledInputStream;
+ChunkUploader;
+StreamThrottlerSupervisor_1;
+}`;
+</script>
+<button style="display: block; margin: 0 auto;"
+        onclick="showPopup('popup-cycleName', 'graph-container-cycleName', dot)">
+    Show Graph Popup 1
+</button>
+
+<button style="display: block; margin: 0 auto;"
+        onclick="createForceGraph('popup-cycleName', 'graph-container-cycleName', mb_dot)">
+    Show 3D Graph
+</button>
+
+<div class="popup" id="popup-cycleName">
+    <span class="close-btn" onclick="hidePopup()">×</span>
+    <div id="graph-container-cycleName" style="width: 100%; height: 100%;"></div>
+</div>
+
+</body>
+</html>

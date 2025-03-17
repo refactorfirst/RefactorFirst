@@ -12,7 +12,7 @@ import org.jgrapht.graph.DefaultDirectedWeightedGraph;
 import org.jgrapht.graph.DefaultWeightedEdge;
 import org.junit.jupiter.api.Test;
 
-public class HtmlReportTest {
+class HtmlReportTest {
 
     private HtmlReport mavenReport = new HtmlReport();
 
@@ -38,7 +38,7 @@ public class HtmlReportTest {
     }
 
     @Test
-    void buildDot() {
+    void buildCycleDot() {
         Graph<String, DefaultWeightedEdge> classGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
         classGraph.addVertex("A");
         classGraph.addVertex("B");
@@ -59,18 +59,17 @@ public class HtmlReportTest {
                 cycleName, 0, classGraph.vertexSet(), classGraph.edgeSet(), minCutCount, minCutEdges, cycleNodes);
 
         HtmlReport htmlReport = new HtmlReport();
-        String dot = htmlReport.buildDot(classGraph, rankedCycle);
+        String dot = htmlReport.buildCycleDot(classGraph, rankedCycle);
 
         StringBuilder expectedDot = new StringBuilder();
-        expectedDot.append("'strict digraph G {\\n' +\n");
-        expectedDot.append("'A;\\n' +\n");
-        expectedDot.append("'B;\\n' +\n");
-        expectedDot.append("'C;\\n' +\n");
-        // 'DownloadManager -> Download [ label = "1" color = "red" ];'
-        expectedDot.append("'A -> B [ label = \"2\" ];\\n' +\n");
-        expectedDot.append("'B -> C [ label = \"1\" color = \"red\" ];\\n' +\n");
-        expectedDot.append("'C -> A [ label = \"1\" color = \"red\" ];\\n' +\n");
-        expectedDot.append("'}'");
+        expectedDot.append("`strict digraph G {\n"
+                + "A;\n"
+                + "B;\n"
+                + "C;\n"
+                + "A -> B [ label = \"2\" weight = \"2\" ];\n"
+                + "B -> C [ label = \"1\" weight = \"1\" color = \"blue\" ];\n"
+                + "C -> A [ label = \"1\" weight = \"1\" color = \"blue\" ];\n"
+                + "}`;");
 
         assertEquals(expectedDot.toString(), dot);
     }

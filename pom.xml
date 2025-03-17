@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.hjug.refactorfirst</groupId>
     <artifactId>refactor-first</artifactId>
-    <version>0.6.3-SNAPSHOT</version>
+    <version>0.7.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <url>https://github.com/refactorfirst/RefactorFirst</url>
@@ -19,7 +20,7 @@
     <licenses>
         <license>
             <name>Apache License 2.0</name>
-            <url> http://www.apache.org/licenses/</url>
+            <url>http://www.apache.org/licenses/</url>
             <distribution>repo</distribution>
         </license>
     </licenses>
@@ -41,8 +42,8 @@
         <connection>scm:git:https://github.com/refactorfirst/RefactorFirst</connection>
         <developerConnection>scm:git:https://github.com/refactorfirst/RefactorFirst</developerConnection>
         <url>https://github.com/refactorfirst/RefactorFirst</url>
-      <tag>HEAD</tag>
-  </scm>
+        <tag>HEAD</tag>
+    </scm>
 
     <issueManagement>
         <system>GitHub</system>
@@ -56,14 +57,7 @@
 
         <!--Compiler plugins-->
         <!--<errorprone.version>2.22.0</errorprone.version>-->
-        <lombok.version>1.18.30</lombok.version>
-
-        <spotbugs.maven.plugin.version>4.0.0</spotbugs.maven.plugin.version>
-        <spotbugs.version>4.0.3</spotbugs.version>
-        <findsecbugs.plugin.version>1.10.1</findsecbugs.plugin.version>
-
-
-
+        <lombok.version>1.18.36</lombok.version>
         <sonar.projectKey>jimbethancourt_RefactorFirst</sonar.projectKey>
         <sonar.moduleKey>${project.artifactId}</sonar.moduleKey>
         <sonar.organization>jimbethancourt-github</sonar.organization>
@@ -74,7 +68,8 @@
 
     <modules>
         <module>test-resources</module>
-        <module>circular-reference-detector</module>
+        <module>codebase-graph-builder</module>
+        <module>dsm</module>
         <module>change-proneness-ranker</module>
         <module>effort-ranker</module>
         <module>cost-benefit-calculator</module>
@@ -101,8 +96,8 @@
             </dependency>
 
             <dependency>
-                <groupId>org.hjug.refactorfirst.circularreferencedetector</groupId>
-                <artifactId>circular-reference-detector</artifactId>
+                <groupId>org.hjug.refactorfirst.dsm</groupId>
+                <artifactId>dsm</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -138,10 +133,33 @@
             </dependency>
 
             <dependency>
+                <groupId>org.hjug.refactorfirst.codebasegraphbuilder</groupId>
+                <artifactId>codebase-graph-builder</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
                 <groupId>org.eclipse.jgit</groupId>
                 <artifactId>org.eclipse.jgit</artifactId>
                 <version>6.10.0.202406032230-r</version>
                 <scope>compile</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.jgrapht</groupId>
+                <artifactId>jgrapht-core</artifactId>
+                <version>1.5.2</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jgrapht</groupId>
+                <artifactId>jgrapht-opt</artifactId>
+                <version>1.5.2</version>
+            </dependency>
+
+            <dependency>
+                <groupId>in.wilsonl.minifyhtml</groupId>
+                <artifactId>minify-html</artifactId>
+                <version>0.15.0</version>
             </dependency>
 
             <dependency>
@@ -169,7 +187,27 @@
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-databind</artifactId>
-                <version>2.13.4.2</version>
+                <version>2.18.3</version>
+            </dependency>
+
+            <!-- Needed to suppress CVE-2023-2976-->
+            <!-- Guava 33.2.1-jre is used by maven-core -->
+            <dependency>
+                <groupId>com.google.guava</groupId>
+                <artifactId>guava</artifactId>
+                <version>33.4.0-jre</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.maven</groupId>
+                <artifactId>maven-core</artifactId>
+                <version>${maven.core.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>com.google.guava</groupId>
+                        <artifactId>guava</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <!--
             <dependency>
@@ -178,6 +216,17 @@
               <version>0.6.2</version>
             </dependency>
             -->
+
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+                <version>2.0.17</version>
+            </dependency>
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-simple</artifactId>
+                <version>2.0.17</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -210,7 +259,6 @@
             <version>${lombok.version}</version>
             <optional>true</optional>
         </dependency>
-
     </dependencies>
 
     <build>
@@ -219,24 +267,24 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.8.1</version>
-        <configuration>
-          <compilerArgs>
-            <arg>-XDcompilePolicy=simple</arg>
-            <!--<arg>-Xplugin:ErrorProne</arg>-->
-          </compilerArgs>
-          <annotationProcessorPaths>
-            <path>
-              <groupId>org.projectlombok</groupId>
-              <artifactId>lombok</artifactId>
-              <version>${lombok.version}</version>
-            </path>
-            <!--<path>
-                            <groupId>com.google.errorprone</groupId>
-                            <artifactId>error_prone_core</artifactId>
-                            <version>${errorprone.version}</version>
-                        </path>-->
-          </annotationProcessorPaths>
-          <release>11</release>
+                <configuration>
+                    <compilerArgs>
+                        <arg>-XDcompilePolicy=simple</arg>
+                        <!--<arg>-Xplugin:ErrorProne</arg>-->
+                    </compilerArgs>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>${lombok.version}</version>
+                        </path>
+                        <!--<path>
+                                        <groupId>com.google.errorprone</groupId>
+                                        <artifactId>error_prone_core</artifactId>
+                                        <version>${errorprone.version}</version>
+                                    </path>-->
+                    </annotationProcessorPaths>
+                    <release>11</release>
                 </configuration>
             </plugin>
 
@@ -276,13 +324,13 @@
                 <groupId>org.pitest</groupId>
                 <artifactId>pitest-maven</artifactId>
                 <version>1.16.1</version>
-                    <dependencies>
-                        <dependency>
-                            <groupId>org.pitest</groupId>
-                            <artifactId>pitest-junit5-plugin</artifactId>
-                            <version>1.2.1</version>
-                        </dependency>
-                    </dependencies>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.pitest</groupId>
+                        <artifactId>pitest-junit5-plugin</artifactId>
+                        <version>1.2.1</version>
+                    </dependency>
+                </dependencies>
             </plugin>
 
             <!-- From https://mkyong.com/maven/mvn-site-java-lang-classnotfoundexception-org-apache-maven-doxia-siterenderer-documentcontent/-->
@@ -303,12 +351,12 @@
             <plugin>
                 <groupId>com.github.spotbugs</groupId>
                 <artifactId>spotbugs-maven-plugin</artifactId>
-                <version>${spotbugs.maven.plugin.version}</version>
+                <version>4.9.2.0</version>
                 <dependencies>
                     <dependency>
                         <groupId>com.github.spotbugs</groupId>
                         <artifactId>spotbugs</artifactId>
-                        <version>${spotbugs.version}</version>
+                        <version>4.9.3</version>
                     </dependency>
                 </dependencies>
                 <configuration>
@@ -321,7 +369,7 @@
                         <plugin>
                             <groupId>com.h3xstream.findsecbugs</groupId>
                             <artifactId>findsecbugs-plugin</artifactId>
-                            <version>${findsecbugs.plugin.version}</version>
+                            <version>1.13.0</version>
                         </plugin>
                     </plugins>
                 </configuration>
@@ -353,8 +401,8 @@
                                 <include>*.java</include>
                             </includes>
                             <!-- define the steps to apply to those files -->
-                            <trimTrailingWhitespace />
-                            <endWithNewline />
+                            <trimTrailingWhitespace/>
+                            <endWithNewline/>
                             <indent>
                                 <tabs>true</tabs>
                                 <spacesPerTab>4</spacesPerTab>
@@ -362,7 +410,7 @@
                         </format>
                     </formats>
                     <java>
-                        <palantirJavaFormat />
+                        <palantirJavaFormat/>
                     </java>
                 </configuration>
                 <executions>
@@ -386,7 +434,7 @@
                     <plugin>
                         <groupId>org.owasp</groupId>
                         <artifactId>dependency-check-maven</artifactId>
-                        <version>6.1.0</version>
+                        <version>12.1.0</version>
                         <configuration>
                             <failBuildOnCVSS>8.0</failBuildOnCVSS>
                         </configuration>
@@ -410,7 +458,8 @@
                         <artifactId>maven-release-plugin</artifactId>
                         <version>2.5.3</version>
                         <configuration>
-                            <stagingRepository>https://oss.sonatype.org/content/repositories/snapshots/</stagingRepository>
+                            <stagingRepository>https://oss.sonatype.org/content/repositories/snapshots/
+                            </stagingRepository>
                         </configuration>
                     </plugin>
                 </plugins>
@@ -499,8 +548,6 @@
             </distributionManagement>
         </profile>
     </profiles>
-
-
 
 
 </project>

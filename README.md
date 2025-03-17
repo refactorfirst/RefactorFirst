@@ -16,8 +16,11 @@ The graphs generated in the report will look similar to this one:
 ![image info](./RefactorFirst_Sample_Report.png)
 
 ## Please Note: Java 11 (or newer) required to run RefactorFirst
-The change to require Java 11 is needed to address vulnerability CVE-2023-4759 in JGit  
 **Java 21 codebase analysis is supported!**
+The change to require Java 11 is needed to address vulnerability CVE-2023-4759 in JGit 
+Please use a recent JDK release of the Java version you are using.  
+If you use an old JDK release of your chosen Java version, you may encounter issues during analysis.
+
 
 ## There are several ways to run the analysis on your codebase:
 

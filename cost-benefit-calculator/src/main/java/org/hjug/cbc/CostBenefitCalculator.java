@@ -3,8 +3,6 @@ package org.hjug.cbc;
 import static net.sourceforge.pmd.RuleViolation.CLASS_NAME;
 import static net.sourceforge.pmd.RuleViolation.PACKAGE_NAME;
 
-import com.github.javaparser.ParserConfiguration;
-import com.github.javaparser.StaticJavaParser;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -13,38 +11,24 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.sourceforge.pmd.*;
 import net.sourceforge.pmd.lang.LanguageRegistry;
 import org.eclipse.jgit.api.errors.GitAPIException;
-import org.hjug.cycledetector.CircularReferenceChecker;
 import org.hjug.git.ChangePronenessRanker;
 import org.hjug.git.GitLogReader;
 import org.hjug.git.ScmLogInfo;
 import org.hjug.metrics.*;
 import org.hjug.metrics.rules.CBORule;
-import org.hjug.parser.JavaProjectParser;
-import org.jgrapht.Graph;
-import org.jgrapht.alg.flow.GusfieldGomoryHuCutTree;
-import org.jgrapht.graph.AsSubgraph;
-import org.jgrapht.graph.AsUndirectedGraph;
-import org.jgrapht.graph.DefaultWeightedEdge;
 
 @Slf4j
 public class CostBenefitCalculator implements AutoCloseable {
 
-    private final Map<String, AsSubgraph<String, DefaultWeightedEdge>> renderedSubGraphs = new HashMap<>();
-
     private Report report;
-    private String repositoryPath;
+    private final String repositoryPath;
     private GitLogReader gitLogReader;
 
     private final ChangePronenessRanker changePronenessRanker;
-    private final JavaProjectParser javaProjectParser = new JavaProjectParser();
-
-    @Getter
-    private Graph<String, DefaultWeightedEdge> classReferencesGraph;
 
     public CostBenefitCalculator(String repositoryPath) {
         this.repositoryPath = repositoryPath;
@@ -52,11 +36,6 @@ public class CostBenefitCalculator implements AutoCloseable {
         log.info("Initiating Cost Benefit calculation");
         try {
             gitLogReader = new GitLogReader(new File(repositoryPath));
-            //            repository = gitLogReader.gitRepository(new File(repositoryPath));
-            //            for (String file :
-            //                    gitLogReader.listRepositoryContentsAtHEAD(repository).keySet()) {
-            //                log.info("Files at HEAD: {}", file);
-            //            }
         } catch (IOException e) {
             log.error("Failure to access Git repository", e);
         }
@@ -69,159 +48,12 @@ public class CostBenefitCalculator implements AutoCloseable {
         gitLogReader.close();
     }
 
-    public List<RankedCycle> runCycleAnalysis() {
-        StaticJavaParser.getParserConfiguration().setLanguageLevel(ParserConfiguration.LanguageLevel.BLEEDING_EDGE);
-        List<RankedCycle> rankedCycles = new ArrayList<>();
-        try {
-            boolean calculateCycleChurn = false;
-            idenfifyRankedCycles(rankedCycles, calculateCycleChurn);
-            sortRankedCycles(rankedCycles, calculateCycleChurn);
-            setPriorities(rankedCycles);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-        return rankedCycles;
-    }
-
-    public List<RankedCycle> runCycleAnalysisAndCalculateCycleChurn() {
-        StaticJavaParser.getParserConfiguration().setLanguageLevel(ParserConfiguration.LanguageLevel.BLEEDING_EDGE);
-        List<RankedCycle> rankedCycles = new ArrayList<>();
-        try {
-            boolean calculateCycleChurn = true;
-            idenfifyRankedCycles(rankedCycles, calculateCycleChurn);
-            sortRankedCycles(rankedCycles, calculateCycleChurn);
-            setPriorities(rankedCycles);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-        return rankedCycles;
-    }
-
-    private void idenfifyRankedCycles(List<RankedCycle> rankedCycles, boolean calculateChurnForCycles)
-            throws IOException {
-        Map<String, AsSubgraph<String, DefaultWeightedEdge>> cycles = getCycles();
-        Map<String, String> classNamesAndPaths = getClassNamesAndPaths();
-        cycles.forEach((vertex, subGraph) -> {
-            int vertexCount = subGraph.vertexSet().size();
-            int edgeCount = subGraph.edgeSet().size();
-
-            if (vertexCount > 1 && edgeCount > 1 && !isDuplicateSubGraph(subGraph, vertex)) {
-                renderedSubGraphs.put(vertex, subGraph);
-                log.info("Vertex: " + vertex + " vertex count: " + vertexCount + " edge count: " + edgeCount);
-                GusfieldGomoryHuCutTree<String, DefaultWeightedEdge> gusfieldGomoryHuCutTree =
-                        new GusfieldGomoryHuCutTree<>(new AsUndirectedGraph<>(subGraph));
-                double minCut = gusfieldGomoryHuCutTree.calculateMinCut();
-                Set<DefaultWeightedEdge> minCutEdges = gusfieldGomoryHuCutTree.getCutEdges();
-
-                List<CycleNode> cycleNodes = subGraph.vertexSet().stream()
-                        .map(classInCycle -> new CycleNode(classInCycle, classNamesAndPaths.get(classInCycle)))
-                        .collect(Collectors.toList());
-
-                rankedCycles.add(
-                        createRankedCycle(calculateChurnForCycles, vertex, subGraph, cycleNodes, minCut, minCutEdges));
-            }
-        });
-    }
-
-    private static void setPriorities(List<RankedCycle> rankedCycles) {
-        int priority = 1;
-        for (RankedCycle rankedCycle : rankedCycles) {
-            rankedCycle.setPriority(priority++);
-        }
-    }
-
-    private Map<String, AsSubgraph<String, DefaultWeightedEdge>> getCycles() throws IOException {
-        classReferencesGraph = javaProjectParser.getClassReferences(repositoryPath);
-        CircularReferenceChecker circularReferenceChecker = new CircularReferenceChecker();
-        Map<String, AsSubgraph<String, DefaultWeightedEdge>> cycles =
-                circularReferenceChecker.detectCycles(classReferencesGraph);
-        return cycles;
-    }
-
-    private static void sortRankedCycles(List<RankedCycle> rankedCycles, boolean calculateChurnForCycles) {
-        if (calculateChurnForCycles) {
-            rankedCycles.sort(Comparator.comparing(RankedCycle::getAverageChangeProneness));
-
-            int cpr = 1;
-            for (RankedCycle rankedCycle : rankedCycles) {
-                rankedCycle.setChangePronenessRank(cpr++);
-            }
-        } else {
-            rankedCycles.sort(Comparator.comparing(RankedCycle::getRawPriority).reversed());
-        }
-    }
-
-    private RankedCycle createRankedCycle(
-            boolean calculateChurnForCycles,
-            String vertex,
-            AsSubgraph<String, DefaultWeightedEdge> subGraph,
-            List<CycleNode> cycleNodes,
-            double minCut,
-            Set<DefaultWeightedEdge> minCutEdges) {
-        RankedCycle rankedCycle;
-        if (calculateChurnForCycles) {
-            List<ScmLogInfo> changeRanks = getRankedChangeProneness(cycleNodes);
-
-            Map<String, CycleNode> cycleNodeMap = new HashMap<>();
-
-            for (CycleNode cycleNode : cycleNodes) {
-                cycleNodeMap.put(cycleNode.getFileName(), cycleNode);
-            }
-
-            for (ScmLogInfo changeRank : changeRanks) {
-                CycleNode cycleNode = cycleNodeMap.get(changeRank.getPath());
-                cycleNode.setScmLogInfo(changeRank);
-            }
-
-            // sum change proneness ranks
-            int changePronenessRankSum = changeRanks.stream()
-                    .mapToInt(ScmLogInfo::getChangePronenessRank)
-                    .sum();
-            rankedCycle = new RankedCycle(
-                    vertex,
-                    changePronenessRankSum,
-                    subGraph.vertexSet(),
-                    subGraph.edgeSet(),
-                    minCut,
-                    minCutEdges,
-                    cycleNodes);
-        } else {
-            rankedCycle =
-                    new RankedCycle(vertex, subGraph.vertexSet(), subGraph.edgeSet(), minCut, minCutEdges, cycleNodes);
-        }
-        return rankedCycle;
-    }
-
-    private boolean isDuplicateSubGraph(AsSubgraph<String, DefaultWeightedEdge> subGraph, String vertex) {
-        if (!renderedSubGraphs.isEmpty()) {
-            for (AsSubgraph<String, DefaultWeightedEdge> renderedSubGraph : renderedSubGraphs.values()) {
-                if (renderedSubGraph.vertexSet().size() == subGraph.vertexSet().size()
-                        && renderedSubGraph.edgeSet().size()
-                                == subGraph.edgeSet().size()
-                        && renderedSubGraph.vertexSet().contains(vertex)) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
     // copied from PMD's PmdTaskImpl.java and modified
     public void runPmdAnalysis() throws IOException {
         PMDConfiguration configuration = new PMDConfiguration();
 
         try (PmdAnalysis pmd = PmdAnalysis.create(configuration)) {
-            RuleSetLoader rulesetLoader = pmd.newRuleSetLoader();
-            pmd.addRuleSets(rulesetLoader.loadRuleSetsWithoutException(List.of("category/java/design.xml")));
-
-            Rule cboClassRule = new CBORule();
-            cboClassRule.setLanguage(LanguageRegistry.PMD.getLanguageByFullName("Java"));
-            pmd.addRuleSet(RuleSet.forSingleRule(cboClassRule));
-
-            log.info("files to be scanned: " + Paths.get(repositoryPath));
+            loadRules(pmd);
 
             try (Stream<Path> files = Files.walk(Paths.get(repositoryPath))) {
                 files.filter(Files::isRegularFile).forEach(file -> pmd.files().addFile(file));
@@ -229,6 +61,39 @@ public class CostBenefitCalculator implements AutoCloseable {
 
             report = pmd.performAnalysisAndCollectReport();
         }
+    }
+
+    public void runPmdAnalysis(boolean excludeTests, String testSourceDirectory) throws IOException {
+        PMDConfiguration configuration = new PMDConfiguration();
+
+        try (PmdAnalysis pmd = PmdAnalysis.create(configuration)) {
+            loadRules(pmd);
+
+            try (Stream<Path> files = Files.walk(Paths.get(repositoryPath))) {
+                Stream<Path> pathStream;
+                if (excludeTests) {
+                    pathStream = files.filter(Files::isRegularFile)
+                            .filter(file -> !file.toString().contains(testSourceDirectory));
+                } else {
+                    pathStream = files.filter(Files::isRegularFile);
+                }
+
+                pathStream.forEach(file -> pmd.files().addFile(file));
+            }
+
+            report = pmd.performAnalysisAndCollectReport();
+        }
+    }
+
+    private void loadRules(PmdAnalysis pmd) {
+        RuleSetLoader rulesetLoader = pmd.newRuleSetLoader();
+        pmd.addRuleSets(rulesetLoader.loadRuleSetsWithoutException(List.of("category/java/design.xml")));
+
+        Rule cboClassRule = new CBORule();
+        cboClassRule.setLanguage(LanguageRegistry.PMD.getLanguageByFullName("Java"));
+        pmd.addRuleSet(RuleSet.forSingleRule(cboClassRule));
+
+        log.info("files to be scanned: " + Paths.get(repositoryPath));
     }
 
     public List<RankedDisharmony> calculateGodClassCostBenefitValues() {
@@ -287,7 +152,7 @@ public class CostBenefitCalculator implements AutoCloseable {
                     ScmLogInfo scmLogInfo = null;
                     try {
                         scmLogInfo = gitLogReader.fileLog(path);
-                        log.info("Successfully fetched scmLogInfo for {}", scmLogInfo.getPath());
+                        log.debug("Successfully fetched scmLogInfo for {}", scmLogInfo.getPath());
                     } catch (GitAPIException | IOException e) {
                         log.error("Error reading Git repository contents.", e);
                     } catch (NullPointerException e) {
@@ -353,33 +218,5 @@ public class CostBenefitCalculator implements AutoCloseable {
             return uriString.replace("file://" + repositoryPath.replace("\\", "/") + "/", "");
         }
         return uriString.replace("file:///" + repositoryPath.replace("\\", "/") + "/", "");
-    }
-
-    public Map<String, String> getClassNamesAndPaths() throws IOException {
-
-        Map<String, String> fileNamePaths = new HashMap<>();
-
-        try (Stream<Path> walk = Files.walk(Paths.get(repositoryPath))) {
-            walk.forEach(path -> {
-                String filename = path.getFileName().toString();
-                if (filename.endsWith(".java")) {
-                    String uriString = path.toUri().toString();
-                    fileNamePaths.put(getClassName(filename), canonicaliseURIStringForRepoLookup(uriString));
-                }
-            });
-        }
-
-        return fileNamePaths;
-    }
-
-    /**
-     * Extract class name from java file name
-     * Example : MyJavaClass.java becomes MyJavaClass
-     *
-     * @param javaFileName
-     * @return
-     */
-    private String getClassName(String javaFileName) {
-        return javaFileName.substring(0, javaFileName.indexOf('.'));
     }
 }

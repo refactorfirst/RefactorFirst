@@ -23,6 +23,24 @@ public class RefactorFirstSimpleHtmlReport extends AbstractMojo {
     @Parameter(property = "showDetails")
     private boolean showDetails = false;
 
+    @Parameter(property = "backEdgeAnalysisCount")
+    private int backEdgeAnalysisCount = 50;
+
+    @Parameter(property = "analyzeCycles")
+    private boolean analyzeCycles = true;
+
+    @Parameter(property = "minifyHtml")
+    private boolean minifyHtml = false;
+
+    @Parameter(property = "excludeTests")
+    private boolean excludeTests = true;
+
+    /**
+     * The test source directory containing test class sources.
+     */
+    @Parameter(property = "testSourceDirectory")
+    private String testSourceDirectory;
+
     @Parameter(defaultValue = "${project.name}")
     private String projectName;
 
@@ -41,13 +59,18 @@ public class RefactorFirstSimpleHtmlReport extends AbstractMojo {
         log.info(outputDirectory.getPath());
         SimpleHtmlReport htmlReport = new SimpleHtmlReport();
         htmlReport.execute(
+                backEdgeAnalysisCount,
+                analyzeCycles,
                 showDetails,
+                minifyHtml,
+                excludeTests,
+                testSourceDirectory,
                 projectName,
                 projectVersion,
+                project.getBasedir(),
                 project.getModel()
                         .getReporting()
                         .getOutputDirectory()
-                        .replace("${project.basedir}" + File.separator, ""),
-                project.getBasedir());
+                        .replace("${project.basedir}" + File.separator, ""));
     }
 }
