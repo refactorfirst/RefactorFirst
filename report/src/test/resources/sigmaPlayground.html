@@ -215,7 +215,7 @@
                     source: edge.v,
                     target: edge.w,
                     color: graphlibGraph.edge(edge).color || 'white',
-                    weight: graphlibGraph.edge(edge).weight
+                    weight: graphlibGraph.edge(edge).weight,
                 });
             });
 
@@ -239,90 +239,86 @@
                 b.links.push(link);
             });
 
-            const highlightNodes = new Set();
-            const highlightLinks = new Set();
-            let hoverNode = null;
-
-            // ForceGraph3D()(container)
-            //     .graphData({ nodes: nodes, links: links })
-            //     .nodeLabel('id')
-            //     .nodeAutoColorBy('color')
-            //     .linkAutoColorBy('color')
-            //     .linkDirectionalArrowLength(3.5)
-            //     .linkDirectionalArrowRelPos(1)
-            //     .width(container.clientWidth)
-            //     .height(container.clientHeight);
-
             const Graph = new ForceGraph3D(container)
                 .graphData(gData)
                 .nodeLabel('id')
-                // uncomment when adding highlight control GUI
-                // .nodeColor(node => highlightNodes.has(node) ? node === hoverNode ? 'rgb(255,0,0,1)' : 'rgba(255,160,0,0.8)' : 'rgba(0,255,255,0.6)')
-                // .linkWidth(link => highlightLinks.has(link) ? 4 : 1)
-                // .linkDirectionalParticles(link => highlightLinks.has(link) ? 4 : 0)
-                .linkDirectionalParticleWidth(4)
                 .width(container.clientWidth)
-                .height(container.clientHeight)
-                .nodeThreeObject(node => {
-                    // use node labels instead of spheres
+                .height(container.clientHeight);
+
+            if(gData.links.length + gData.nodes.length < 4000) {
+                console.log(gData.links.length + gData.nodes.length);
+
+
+                // use node labels instead of spheres
+                Graph.nodeThreeObject(node => {
                     const sprite = new SpriteText(node.id);
                     sprite.material.depthWrite = false; // make sprite background transparent
                     sprite.color = node.color;
                     sprite.textHeight = 4;
                     return sprite;
-                })
-                // code to display weight as link text - may be too much for browsers to handle
-                .linkThreeObjectExtend(true)
-                .linkThreeObject(link => {
-                    // extend link with text sprite
-                    const sprite = new SpriteText(`${link.weight}`);
-                    sprite.color = 'lightgrey';
-                    sprite.textHeight = 3;
-                    return sprite;
-                })
-                .linkPositionUpdate((sprite, { start, end }) => {
-                    const middlePos = Object.assign(...['x', 'y', 'z'].map(c => ({
-                        [c]: start[c] + (end[c] - start[c]) / 2 // calc middle point
-                    })));
+                });
 
-                    // Position sprite
-                    Object.assign(sprite.position, middlePos);
-                })
+                // code to display weight as link text
+                // may be too much for browsers to handle
+                // Graph
+                //     .linkThreeObjectExtend(true)
+                //     .linkThreeObject(link => {
+                //         // extend link with text sprite
+                //         const sprite = new SpriteText(`${link.weight}`);
+                //         sprite.color = 'lightgrey';
+                //         sprite.textHeight = 3;
+                //         return sprite;
+                //     })
+                //     .linkPositionUpdate((sprite, {start, end}) => {
+                //         const middlePos = Object.assign(...['x', 'y', 'z'].map(c => ({
+                //             [c]: start[c] + (end[c] - start[c]) / 2 // calc middle point
+                //         })));
+                //
+                //         // Position sprite
+                //         Object.assign(sprite.position, middlePos);
+                //     });
+
+
                 // code to highlight nodes & links
                 // TODO: enable via control - see Manipulate Link Force Distance for example
-                // .onNodeHover(node => {
-                //     // no state change
-                //     if ((!node && !highlightNodes.size) || (node && hoverNode === node)) return;
-                //
-                //     highlightNodes.clear();
-                //     highlightLinks.clear();
-                //     if (node) {
-                //         highlightNodes.add(node);
-                //         node.neighbors.forEach(neighbor => highlightNodes.add(neighbor));
-                //         node.links.forEach(link => highlightLinks.add(link));
-                //     }
-                //
-                //     hoverNode = node || null;
-                //
-                //     updateHighlight(Graph);
-                // })
-                // .onLinkHover(link => {
-                //     highlightNodes.clear();
-                //     highlightLinks.clear();
-                //
-                //     if (link) {
-                //         highlightLinks.add(link);
-                //         highlightNodes.add(link.source);
-                //         highlightNodes.add(link.target);
-                //     }
-                //
-                //     updateHighlight(Graph);
-                // })
-            ;
+                const highlightNodes = new Set();
+                const highlightLinks = new Set();
+                let hoverNode = null;
+                Graph
+                    .nodeColor(node => highlightNodes.has(node) ? node === hoverNode ? 'rgb(255,0,0,1)' : 'rgba(255,160,0,0.8)' : 'rgba(0,255,255,0.6)')
+                    .linkWidth(link => highlightLinks.has(link) ? 4 : 1)
+                    .linkDirectionalParticles(link => highlightLinks.has(link) ? 4 : 0)
+                    .linkDirectionalParticleWidth(4)
+                    .onNodeHover(node => {
+                        // no state change
+                        if ((!node && !highlightNodes.size) || (node && hoverNode === node)) return;
 
-            Graph
-                .d3Force('link')
-                .distance(link => (1/link.weight) * 200);
+                        highlightNodes.clear();
+                        highlightLinks.clear();
+                        if (node) {
+                            highlightNodes.add(node);
+                            node.neighbors.forEach(neighbor => highlightNodes.add(neighbor));
+                            node.links.forEach(link => highlightLinks.add(link));
+                        }
+
+                        hoverNode = node || null;
+
+                        updateHighlight(Graph);
+                    })
+                    .onLinkHover(link => {
+                        highlightNodes.clear();
+                        highlightLinks.clear();
+
+                        if (link) {
+                            highlightLinks.add(link);
+                            highlightNodes.add(link.source);
+                            highlightNodes.add(link.target);
+                        }
+
+                        updateHighlight(Graph);
+                    });
+
+            }
         }
 
         // used by highlighting functionality

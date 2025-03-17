@@ -322,9 +322,10 @@ public class SimpleHtmlReport {
 
         stringBuilder.append("<br/>\n");
 
-        for (RankedCycle rankedCycle : rankedCycles) {
-            stringBuilder.append(renderSingleCycle(rankedCycle));
-        }
+        rankedCycles.stream()
+                .limit(10)
+                .map(this::renderSingleCycle)
+                .forEach(stringBuilder::append);
 
         return stringBuilder.toString();
     }
@@ -384,6 +385,10 @@ public class SimpleHtmlReport {
         StringBuilder stringBuilder = new StringBuilder();
 
         stringBuilder.append("<div style=\"text-align: center;\"><a id=\"CYCLES\"><h1>Class Cycles</h1></a></div>\n");
+        if (rankedCycles.size() > 10) {
+            stringBuilder.append(
+                    "<div style=\"text-align: center;\">10 largest cycles are shown in the sections below</div>\n");
+        }
 
         stringBuilder.append("<h2 align=\"center\">Class Cycles by the numbers:</h2>\n");
         //        stringBuilder.append("<p align=\"center\"><strong>Bold edges are backward edges causing
