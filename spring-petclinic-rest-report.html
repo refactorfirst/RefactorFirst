@@ -1,0 +1,983 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<head><title>Refactor First Report for spring-petclinic-rest 3.4.3 </title>
+    <script async defer src="https://buttons.github.io/buttons.js"></script>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-graphviz/3.0.5/d3-graphviz.min.js"></script>
+    <script src="https://unpkg.com/@hpcc-js/wasm@0.3.11/dist/index.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sigma.js/2.4.0/sigma.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/graphology/0.25.4/graphology.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/graphlib/2.1.8/graphlib.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/graphlib-dot@0.6.4/dist/graphlib-dot.min.js"></script>
+    <script src="https://unpkg.com/3d-force-graph"></script>
+</head>  <body class="composite">
+<div class="overlay" id="overlay" onclick="hidePopup()"></div><script>
+    function sugiyamaLayout(graph) {
+        var layers = [];
+        var nodeLevels = {};
+        var nodes = graph.nodes();
+        //var edges = graph.edges();
+
+        // Step 1: Assign levels to nodes
+        function assignLevels() {
+            var visited = {};
+            var stack = [];
+
+            function visit(node, level) {
+                if (visited[node]) return;
+                visited[node] = true;
+                nodeLevels[node] = level;
+                if (!layers[level]) layers[level] = [];
+                layers[level].push(node);
+                stack.push(node);
+                graph.forEachNeighbor(node, function (neighbor) {
+                    visit(neighbor, level + 1);
+                });
+            }
+
+            nodes.forEach(function (node) {
+                if (!visited[node]) visit(node, 0);
+            });
+        }
+
+        // Step 2: Reduce edge crossings
+        function reduceCrossings() {
+            for (var i = 0; i < layers.length - 1; i++) {
+                var layer = layers[i];
+                var nextLayer = layers[i + 1];
+                var positions = {};
+
+                nextLayer.forEach(function (node, index) {
+                    positions[node] = index;
+                });
+
+                layer.sort(function (a, b) {
+                    var aPos = 0, bPos = 0;
+                    graph.forEachNeighbor(a, function (neighbor) {
+                        aPos += positions[neighbor] || 0;
+                    });
+                    graph.forEachNeighbor(b, function (neighbor) {
+                        bPos += positions[neighbor] || 0;
+                    });
+                    return aPos - bPos;
+                });
+            }
+        }
+
+        // Step 3: Assign positions to nodes
+        function assignPositions() {
+            var yStep = 100;
+            var xStep = 2000;
+
+            layers.forEach(function (layer, level) {
+                var layerWidth = layer.length * xStep;
+                var offsetX = ((screen.width - 200) - layerWidth) / 2; // Centering the nodes
+
+                layer.forEach(function (node, index) {
+                    graph.setNodeAttribute(node, 'x', offsetX + index * xStep);
+                    graph.setNodeAttribute(node, 'y', -level * yStep);
+                });
+            });
+        }
+
+        assignLevels();
+        reduceCrossings();
+        assignPositions();
+    }
+
+    function renderGraph(dot) {
+        // Parse the DOT graph using graphlib-dot
+        const graphlibGraph = graphlibDot.read(dot);
+
+        // Convert graphlib graph to graphology graph
+        const graphologyGraph = new graphology.Graph();
+        graphlibGraph.nodes().forEach(node => {
+            const attrs = graphlibGraph.node(node);
+            graphologyGraph.addNode(node, {
+                label: node,
+                color: attrs.color,
+                // x: Math.random(),
+                // y: Math.random(),
+                size: 5,
+            });
+        });
+
+        graphlibGraph.edges().forEach(edge => {
+            const attrs = graphlibGraph.edge(edge);
+            graphologyGraph.addEdge(edge.v, edge.w, {
+                color: attrs.color,
+                size: 1,
+                type: 'arrow',
+            });
+        });
+
+        sugiyamaLayout(graphologyGraph)
+
+        return graphologyGraph;
+    }
+</script><script type="module">
+    // SpriteText will only work as import
+    // this script block requires type=module since we are using an import
+    import SpriteText from "https://esm.sh/three-spritetext";
+
+    function createForceGraph(popupId, containerName, dot) {
+        // Add event listener for Escape key to close the popup
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') {
+                hidePopup();
+            }
+        });
+
+        document.getElementById('overlay').style.display = 'block';
+        document.getElementById(popupId).style.display = 'block';
+        var container = document.getElementById(containerName);
+
+        // Parse the DOT graph using graphlib-dot
+        const graphlibGraph = graphlibDot.read(dot);
+
+        var nodes = [];
+        var links = [];
+
+        graphlibGraph.nodes().forEach(function (node) {
+            var nodeData = graphlibGraph.node(node);
+            nodes.push({
+                id: node,
+                color: nodeData.color || 'white',
+            });
+        });
+
+        graphlibGraph.edges().forEach(function (edge) {
+            links.push({
+                source: edge.v,
+                target: edge.w,
+                color: graphlibGraph.edge(edge).color || 'white',
+                weight: graphlibGraph.edge(edge).weight,
+            });
+        });
+
+        const gData = {
+            nodes: nodes,
+            links: links
+        };
+
+        // cross-link node objects
+        gData.links.forEach(link => {
+            const a = gData.nodes.find(node => node.id === link.source);
+            const b = gData.nodes.find(node => node.id === link.target);
+            !a.neighbors && (a.neighbors = []);
+            !b.neighbors && (b.neighbors = []);
+            a.neighbors.push(b);
+            b.neighbors.push(a);
+
+            !a.links && (a.links = []);
+            !b.links && (b.links = []);
+            a.links.push(link);
+            b.links.push(link);
+        });
+
+        const Graph = new ForceGraph3D(container)
+            .graphData(gData)
+            .nodeLabel('id')
+            .width(container.clientWidth)
+            .height(container.clientHeight);
+
+        if(gData.links.length + gData.nodes.length < 4000) {
+            console.log(gData.links.length + gData.nodes.length);
+
+
+            // use node labels instead of spheres
+            Graph.nodeThreeObject(node => {
+                const sprite = new SpriteText(node.id);
+                sprite.material.depthWrite = false; // make sprite background transparent
+                sprite.color = node.color;
+                sprite.textHeight = 4;
+                return sprite;
+            });
+
+            // code to display weight as link text
+            // may be too much for browsers to handle
+            // Graph
+            //     .linkThreeObjectExtend(true)
+            //     .linkThreeObject(link => {
+            //         // extend link with text sprite
+            //         const sprite = new SpriteText(`${link.weight}`);
+            //         sprite.color = 'lightgrey';
+            //         sprite.textHeight = 3;
+            //         return sprite;
+            //     })
+            //     .linkPositionUpdate((sprite, {start, end}) => {
+            //         const middlePos = Object.assign(...['x', 'y', 'z'].map(c => ({
+            //             [c]: start[c] + (end[c] - start[c]) / 2 // calc middle point
+            //         })));
+            //
+            //         // Position sprite
+            //         Object.assign(sprite.position, middlePos);
+            //     });
+
+
+            // code to highlight nodes & links
+            // TODO: enable via control - see Manipulate Link Force Distance for example
+            const highlightNodes = new Set();
+            const highlightLinks = new Set();
+            let hoverNode = null;
+            Graph
+                .nodeColor(node => highlightNodes.has(node) ? node === hoverNode ? 'rgb(255,0,0,1)' : 'rgba(255,160,0,0.8)' : 'rgba(0,255,255,0.6)')
+                .linkWidth(link => highlightLinks.has(link) ? 4 : 1)
+                .linkDirectionalParticles(link => highlightLinks.has(link) ? 4 : 0)
+                .linkDirectionalParticleWidth(4)
+                .onNodeHover(node => {
+                    // no state change
+                    if ((!node && !highlightNodes.size) || (node && hoverNode === node)) return;
+
+                    highlightNodes.clear();
+                    highlightLinks.clear();
+                    if (node) {
+                        highlightNodes.add(node);
+                        node.neighbors.forEach(neighbor => highlightNodes.add(neighbor));
+                        node.links.forEach(link => highlightLinks.add(link));
+                    }
+
+                    hoverNode = node || null;
+
+                    updateHighlight(Graph);
+                })
+                .onLinkHover(link => {
+                    highlightNodes.clear();
+                    highlightLinks.clear();
+
+                    if (link) {
+                        highlightLinks.add(link);
+                        highlightNodes.add(link.source);
+                        highlightNodes.add(link.target);
+                    }
+
+                    updateHighlight(Graph);
+                });
+
+        }
+    }
+
+    // used by highlighting functionality
+    function updateHighlight(Graph) {
+        // trigger update of highlighted objects in scene
+        Graph
+            .nodeColor(Graph.nodeColor())
+            .linkWidth(Graph.linkWidth())
+            .linkDirectionalParticles(Graph.linkDirectionalParticles());
+    }
+
+    // needed to allow the button to open the graph
+    window.createForceGraph = createForceGraph;    </script><script>
+    function showPopup(popupId, containerName, dot) {
+        // Add event listener for Escape key to close the popup
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') {
+                hidePopup();
+            }
+        });                document.getElementById('overlay').style.display = 'block';
+        document.getElementById(popupId).style.display = 'block';
+
+        var graph = renderGraph(dot);
+        var container = document.getElementById(containerName);
+
+        // Render with Sigma.js
+        new Sigma(graph, container);
+    }
+
+    function hidePopup() {
+        document.getElementById('overlay').style.display = 'none';
+        var popups = document.getElementsByClassName('popup');
+        for (var i = 0; i < popups.length; i++) {
+            popups[i].style.display = 'none';
+        }
+
+        // Clear the graph containers to remove the previous graphs
+        var containers = document.querySelectorAll('[id^="graph-container"]');
+        containers.forEach(function(container) {
+            while (container.firstChild) {
+                container.removeChild(container.firstChild);
+            }
+        });
+// Remove the Escape key event listener
+        document.removeEventListener('keydown', function (event) {
+            if (event.key === 'Escape') {
+                hidePopup();
+            }
+        });    }
+</script><style>
+    /* Popup container */
+    .popup {
+        position: fixed;
+        display: none;
+        width: 95%;
+        height: 95%;
+        background-color: white;
+        border: 1px solid #ccc;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 1000;
+        padding: 20px;
+        box-sizing: border-box;
+    }
+
+    /* Popup overlay */
+    .overlay {
+        position: fixed;
+        display: none;
+        width: 100%;
+        height: 100%;
+        top: 0;
+        left: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 999;
+    }
+
+    /* Close button */
+    .close-btn {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        cursor: pointer;
+    }
+</style>    <div id="banner">
+</div>
+<div id="breadcrumbs">
+    <div class="xleft">
+    </div>
+    <div class="xright">      </div>
+</div>
+<div id="bodyColumn">
+    <div id="contentBox">
+        <section>
+            <h2><a href="https://github.com/refactorfirst/refactorfirst" target="_blank" title="Learn about RefactorFirst" aria-label="RefactorFirst">RefactorFirst</a> Report for spring-petclinic-rest 3.4.3</h2>
+            <a href="#EDGES">Back Edges</a>
+            <br/>
+            <a href="#CBO">Highly Coupled Classes</a>
+            <br/>
+            <a href="#CYCLES">Class Cycles</a>
+            <h1 align="center">Class Map</h1><div align="center">Excludes classes that have no incoming and outgoing edges<br></div><script>
+            const classGraph_dot = `strict digraph G {
+OwnerMapper -> Owner [ label = "5" weight = "5" ];
+PetMapper -> Pet [ label = "5" weight = "5" ];
+PetMapper -> PetType [ label = "3" weight = "3" ];
+PetTypeMapper -> PetType [ label = "5" weight = "5" ];
+SpecialtyMapper -> Specialty [ label = "4" weight = "4" ];
+UserMapper -> Role [ label = "4" weight = "4" ];
+UserMapper -> User [ label = "2" weight = "2" ];
+VetMapper -> Vet [ label = "4" weight = "4" ];
+VisitMapper -> Visit [ label = "4" weight = "4" ];
+NamedEntity -> BaseEntity [ label = "1" weight = "1" ];
+Owner -> Person [ label = "1" weight = "1" ];
+Owner -> Pet [ label = "13" weight = "13" color = "red" ];
+Owner -> NamedEntity [ label = "1" weight = "1" ];
+Person -> BaseEntity [ label = "1" weight = "1" ];
+Pet -> NamedEntity [ label = "1" weight = "1" ];
+Pet -> Visit [ label = "9" weight = "9" ];
+Pet -> PetType [ label = "3" weight = "3" ];
+Pet -> Owner [ label = "3" weight = "3" ];
+PetType -> NamedEntity [ label = "1" weight = "1" ];
+Role -> BaseEntity [ label = "1" weight = "1" ];
+Role -> User [ label = "3" weight = "3" color = "red" ];
+Specialty -> NamedEntity [ label = "1" weight = "1" ];
+User -> Role [ label = "6" weight = "6" ];
+Vet -> Person [ label = "1" weight = "1" ];
+Vet -> Specialty [ label = "8" weight = "8" ];
+Visit -> BaseEntity [ label = "1" weight = "1" ];
+Visit -> Pet [ label = "3" weight = "3" color = "red" ];
+JdbcOwnerRepositoryImpl -> OwnerRepository [ label = "1" weight = "1" ];
+JdbcOwnerRepositoryImpl -> Owner [ label = "13" weight = "13" ];
+JdbcOwnerRepositoryImpl -> JdbcPet [ label = "2" weight = "2" ];
+JdbcOwnerRepositoryImpl -> PetType [ label = "2" weight = "2" ];
+JdbcOwnerRepositoryImpl -> Pet [ label = "3" weight = "3" ];
+JdbcOwnerRepositoryImpl -> Visit [ label = "2" weight = "2" ];
+JdbcPet -> Pet [ label = "1" weight = "1" ];
+JdbcPetRepositoryImpl -> PetRepository [ label = "1" weight = "1" ];
+JdbcPetRepositoryImpl -> EntityUtils [ label = "1" weight = "1" ];
+JdbcPetRepositoryImpl -> OwnerRepository [ label = "3" weight = "3" ];
+JdbcPetRepositoryImpl -> VisitRepository [ label = "2" weight = "2" ];
+JdbcPetRepositoryImpl -> Owner [ label = "2" weight = "2" ];
+JdbcPetRepositoryImpl -> Pet [ label = "8" weight = "8" ];
+JdbcPetRepositoryImpl -> JdbcPet [ label = "3" weight = "3" ];
+JdbcPetRepositoryImpl -> PetType [ label = "2" weight = "2" ];
+JdbcPetRepositoryImpl -> Visit [ label = "2" weight = "2" ];
+JdbcPetRowMapper -> BaseEntity [ label = "1" weight = "1" ];
+JdbcPetRowMapper -> NamedEntity [ label = "1" weight = "1" ];
+JdbcPetRowMapper -> Pet [ label = "1" weight = "1" ];
+JdbcPetRowMapper -> JdbcPet [ label = "5" weight = "5" ];
+JdbcPetTypeRepositoryImpl -> PetTypeRepository [ label = "1" weight = "1" ];
+JdbcPetTypeRepositoryImpl -> PetType [ label = "7" weight = "7" ];
+JdbcPetTypeRepositoryImpl -> Pet [ label = "3" weight = "3" ];
+JdbcPetTypeRepositoryImpl -> Visit [ label = "3" weight = "3" ];
+JdbcPetVisitExtractor -> Pet [ label = "1" weight = "1" ];
+JdbcPetVisitExtractor -> JdbcPet [ label = "1" weight = "1" ];
+JdbcPetVisitExtractor -> Visit [ label = "1" weight = "1" ];
+JdbcSpecialtyRepositoryImpl -> SpecialtyRepository [ label = "1" weight = "1" ];
+JdbcSpecialtyRepositoryImpl -> Specialty [ label = "7" weight = "7" ];
+JdbcUserRepositoryImpl -> UserRepository [ label = "1" weight = "1" ];
+JdbcUserRepositoryImpl -> User [ label = "3" weight = "3" ];
+JdbcUserRepositoryImpl -> Role [ label = "1" weight = "1" ];
+JdbcVetRepositoryImpl -> VetRepository [ label = "1" weight = "1" ];
+JdbcVetRepositoryImpl -> Vet [ label = "9" weight = "9" ];
+JdbcVetRepositoryImpl -> Specialty [ label = "5" weight = "5" ];
+JdbcVetRepositoryImpl -> EntityUtils [ label = "2" weight = "2" ];
+JdbcVisitRepositoryImpl_JdbcVisitRowMapperExt -> BaseEntity [ label = "1" weight = "1" ];
+JdbcVisitRepositoryImpl_JdbcVisitRowMapperExt -> Visit [ label = "6" weight = "6" ];
+JdbcVisitRepositoryImpl_JdbcVisitRowMapperExt -> Pet [ label = "2" weight = "2" ];
+JdbcVisitRepositoryImpl -> VisitRepository [ label = "1" weight = "1" ];
+JdbcVisitRepositoryImpl -> Visit [ label = "9" weight = "9" ];
+JdbcVisitRepositoryImpl -> JdbcPet [ label = "1" weight = "1" ];
+JdbcVisitRepositoryImpl_JdbcVisitRowMapperExt -> JdbcPet [ label = "2" weight = "2" ];
+JdbcVisitRepositoryImpl_JdbcVisitRowMapperExt -> PetType [ label = "2" weight = "2" ];
+JdbcVisitRepositoryImpl_JdbcVisitRowMapperExt -> Owner [ label = "2" weight = "2" ];
+JdbcVisitRowMapper -> BaseEntity [ label = "1" weight = "1" ];
+JdbcVisitRowMapper -> Visit [ label = "5" weight = "5" ];
+JpaOwnerRepositoryImpl -> OwnerRepository [ label = "1" weight = "1" ];
+JpaOwnerRepositoryImpl -> Owner [ label = "5" weight = "5" ];
+JpaPetRepositoryImpl -> PetRepository [ label = "1" weight = "1" ];
+JpaPetRepositoryImpl -> Pet [ label = "4" weight = "4" ];
+JpaPetRepositoryImpl -> PetType [ label = "1" weight = "1" ];
+JpaPetTypeRepositoryImpl -> PetTypeRepository [ label = "1" weight = "1" ];
+JpaPetTypeRepositoryImpl -> PetType [ label = "5" weight = "5" ];
+JpaPetTypeRepositoryImpl -> BaseEntity [ label = "1" weight = "1" ];
+JpaPetTypeRepositoryImpl -> Pet [ label = "3" weight = "3" ];
+JpaPetTypeRepositoryImpl -> Visit [ label = "2" weight = "2" ];
+JpaSpecialtyRepositoryImpl -> SpecialtyRepository [ label = "1" weight = "1" ];
+JpaSpecialtyRepositoryImpl -> Specialty [ label = "5" weight = "5" ];
+JpaSpecialtyRepositoryImpl -> BaseEntity [ label = "1" weight = "1" ];
+JpaUserRepositoryImpl -> UserRepository [ label = "1" weight = "1" ];
+JpaUserRepositoryImpl -> User [ label = "1" weight = "1" ];
+JpaVetRepositoryImpl -> VetRepository [ label = "1" weight = "1" ];
+JpaVetRepositoryImpl -> Vet [ label = "4" weight = "4" ];
+JpaVisitRepositoryImpl -> VisitRepository [ label = "1" weight = "1" ];
+JpaVisitRepositoryImpl -> Visit [ label = "5" weight = "5" ];
+OwnerRepository -> Owner [ label = "5" weight = "5" ];
+PetRepository -> Pet [ label = "4" weight = "4" ];
+PetRepository -> PetType [ label = "1" weight = "1" ];
+PetTypeRepository -> PetType [ label = "5" weight = "5" ];
+SpecialtyRepository -> Specialty [ label = "5" weight = "5" ];
+PetRepositoryOverride -> Pet [ label = "1" weight = "1" ];
+PetTypeRepositoryOverride -> PetType [ label = "1" weight = "1" ];
+SpecialtyRepositoryOverride -> Specialty [ label = "1" weight = "1" ];
+SpringDataOwnerRepository -> OwnerRepository [ label = "1" weight = "1" ];
+SpringDataOwnerRepository -> Owner [ label = "2" weight = "2" ];
+SpringDataPetRepository -> PetRepository [ label = "1" weight = "1" ];
+SpringDataPetRepository -> PetRepositoryOverride [ label = "1" weight = "1" ];
+SpringDataPetRepository -> PetType [ label = "1" weight = "1" ];
+SpringDataPetRepositoryImpl -> PetRepositoryOverride [ label = "1" weight = "1" ];
+SpringDataPetRepositoryImpl -> Pet [ label = "1" weight = "1" ];
+SpringDataPetTypeRepository -> PetTypeRepository [ label = "1" weight = "1" ];
+SpringDataPetTypeRepository -> PetTypeRepositoryOverride [ label = "1" weight = "1" ];
+SpringDataPetTypeRepositoryImpl -> PetTypeRepositoryOverride [ label = "1" weight = "1" ];
+SpringDataPetTypeRepositoryImpl -> PetType [ label = "1" weight = "1" ];
+SpringDataPetTypeRepositoryImpl -> BaseEntity [ label = "1" weight = "1" ];
+SpringDataPetTypeRepositoryImpl -> Pet [ label = "3" weight = "3" ];
+SpringDataPetTypeRepositoryImpl -> Visit [ label = "2" weight = "2" ];
+SpringDataSpecialtyRepository -> SpecialtyRepository [ label = "1" weight = "1" ];
+SpringDataSpecialtyRepository -> SpecialtyRepositoryOverride [ label = "1" weight = "1" ];
+SpringDataSpecialtyRepositoryImpl -> SpecialtyRepositoryOverride [ label = "1" weight = "1" ];
+SpringDataSpecialtyRepositoryImpl -> Specialty [ label = "1" weight = "1" ];
+SpringDataSpecialtyRepositoryImpl -> BaseEntity [ label = "1" weight = "1" ];
+SpringDataUserRepository -> UserRepository [ label = "1" weight = "1" ];
+SpringDataVetRepository -> VetRepository [ label = "1" weight = "1" ];
+SpringDataVisitRepository -> VisitRepository [ label = "1" weight = "1" ];
+SpringDataVisitRepository -> VisitRepositoryOverride [ label = "1" weight = "1" ];
+SpringDataVisitRepositoryImpl -> VisitRepositoryOverride [ label = "1" weight = "1" ];
+SpringDataVisitRepositoryImpl -> Visit [ label = "1" weight = "1" ];
+VisitRepositoryOverride -> Visit [ label = "1" weight = "1" ];
+UserRepository -> User [ label = "1" weight = "1" ];
+VetRepository -> Vet [ label = "4" weight = "4" ];
+VisitRepository -> Visit [ label = "5" weight = "5" ];
+ExceptionControllerAdvice -> BindingErrorsResponse [ label = "2" weight = "2" ];
+BindingErrorsResponse -> BindingErrorsResponse_BindingError [ label = "11" weight = "11" ];
+OwnerRestController -> ClinicService [ label = "11" weight = "11" ];
+OwnerRestController -> Owner [ label = "12" weight = "12" ];
+OwnerRestController -> Person [ label = "2" weight = "2" ];
+OwnerRestController -> BaseEntity [ label = "2" weight = "2" ];
+OwnerRestController -> Pet [ label = "5" weight = "5" ];
+OwnerRestController -> NamedEntity [ label = "1" weight = "1" ];
+OwnerRestController -> Visit [ label = "2" weight = "2" ];
+OwnerRestController -> OwnerMapper [ label = "4" weight = "4" ];
+OwnerRestController -> PetMapper [ label = "4" weight = "4" ];
+OwnerRestController -> VisitMapper [ label = "4" weight = "4" ];
+PetRestController -> Pet [ label = "5" weight = "5" ];
+PetRestController -> NamedEntity [ label = "1" weight = "1" ];
+PetRestController -> ClinicService [ label = "7" weight = "7" ];
+PetRestController -> PetMapper [ label = "4" weight = "4" ];
+PetTypeRestController -> ClinicService [ label = "8" weight = "8" ];
+PetTypeRestController -> NamedEntity [ label = "1" weight = "1" ];
+PetTypeRestController -> PetTypeMapper [ label = "3" weight = "3" ];
+PetTypeRestController -> PetType [ label = "6" weight = "6" ];
+SpecialtyRestController -> ClinicService [ label = "8" weight = "8" ];
+SpecialtyRestController -> NamedEntity [ label = "1" weight = "1" ];
+SpecialtyRestController -> SpecialtyMapper [ label = "3" weight = "3" ];
+SpecialtyRestController -> Specialty [ label = "4" weight = "4" ];
+UserRestController -> UserService [ label = "3" weight = "3" ];
+UserRestController -> UserMapper [ label = "3" weight = "3" ];
+UserRestController -> User [ label = "1" weight = "1" ];
+VetRestController -> ClinicService [ label = "10" weight = "10" ];
+VetRestController -> Person [ label = "2" weight = "2" ];
+VetRestController -> Vet [ label = "5" weight = "5" ];
+VetRestController -> VetMapper [ label = "3" weight = "3" ];
+VetRestController -> SpecialtyMapper [ label = "2" weight = "2" ];
+VetRestController -> Specialty [ label = "3" weight = "3" ];
+VisitRestController -> ClinicService [ label = "8" weight = "8" ];
+VisitRestController -> Visit [ label = "8" weight = "8" ];
+VisitRestController -> VisitMapper [ label = "3" weight = "3" ];
+ClinicService -> Pet [ label = "4" weight = "4" ];
+ClinicService -> Visit [ label = "5" weight = "5" ];
+ClinicService -> Vet [ label = "5" weight = "5" ];
+ClinicService -> Owner [ label = "5" weight = "5" ];
+ClinicService -> PetType [ label = "5" weight = "5" ];
+ClinicService -> Specialty [ label = "5" weight = "5" ];
+ClinicServiceImpl -> ClinicService [ label = "1" weight = "1" ];
+ClinicServiceImpl -> PetRepository [ label = "6" weight = "6" ];
+ClinicServiceImpl -> VisitRepository [ label = "6" weight = "6" ];
+ClinicServiceImpl -> VetRepository [ label = "6" weight = "6" ];
+ClinicServiceImpl -> OwnerRepository [ label = "6" weight = "6" ];
+ClinicServiceImpl -> PetTypeRepository [ label = "5" weight = "5" ];
+ClinicServiceImpl -> SpecialtyRepository [ label = "5" weight = "5" ];
+ClinicServiceImpl -> Pet [ label = "5" weight = "5" ];
+ClinicServiceImpl -> Visit [ label = "5" weight = "5" ];
+ClinicServiceImpl -> Vet [ label = "5" weight = "5" ];
+ClinicServiceImpl -> Owner [ label = "5" weight = "5" ];
+ClinicServiceImpl -> PetType [ label = "5" weight = "5" ];
+ClinicServiceImpl -> Specialty [ label = "5" weight = "5" ];
+UserService -> User [ label = "1" weight = "1" ];
+UserServiceImpl -> UserService [ label = "1" weight = "1" ];
+UserServiceImpl -> UserRepository [ label = "2" weight = "2" ];
+UserServiceImpl -> User [ label = "1" weight = "1" ];
+UserServiceImpl -> Role [ label = "1" weight = "1" ];
+BaseEntity -> EntityUtils [ label = "4" weight = "4" ];
+EntityUtils -> BaseEntity [ label = "1" weight = "1" color = "red" ];
+UserRepository;
+SpecialtyMapper;
+SpringDataPetRepositoryImpl;
+JdbcPetVisitExtractor;
+SpringDataOwnerRepository;
+JdbcPetRowMapper;
+PetTypeRepositoryOverride;
+ExceptionControllerAdvice;
+UserServiceImpl;
+JdbcUserRepositoryImpl;
+VetRestController;
+Vet;
+SpringDataVetRepository;
+JdbcVetRepositoryImpl;
+JpaVetRepositoryImpl;
+NamedEntity;
+JdbcOwnerRepositoryImpl;
+Owner;
+Pet;
+JdbcPetTypeRepositoryImpl;
+PetRestController;
+PetRepository;
+JdbcSpecialtyRepositoryImpl;
+JpaPetRepositoryImpl;
+Specialty;
+VisitRepository;
+JdbcVisitRepositoryImpl;
+SpecialtyRepositoryOverride;
+SpringDataPetTypeRepositoryImpl;
+JdbcPetRepositoryImpl;
+SpringDataSpecialtyRepositoryImpl;
+User;
+ClinicServiceImpl;
+Visit;
+JpaPetTypeRepositoryImpl;
+SpringDataPetRepository;
+JpaUserRepositoryImpl;
+UserRestController;
+SpecialtyRestController;
+SpringDataPetTypeRepository;
+PetTypeMapper;
+PetMapper;
+BindingErrorsResponse;
+EntityUtils;
+PetTypeRepository;
+SpringDataSpecialtyRepository;
+VisitMapper;
+Role;
+JdbcPet;
+VetRepository;
+BindingErrorsResponse_BindingError;
+PetType;
+OwnerRepository;
+JpaSpecialtyRepositoryImpl;
+OwnerRestController;
+VisitRepositoryOverride;
+ClinicService;
+UserService;
+PetTypeRestController;
+SpringDataVisitRepository;
+BaseEntity;
+OwnerMapper;
+VetMapper;
+SpringDataVisitRepositoryImpl;
+JdbcVisitRepositoryImpl_JdbcVisitRowMapperExt;
+JpaVisitRepositoryImpl;
+VisitRestController;
+JdbcVisitRowMapper;
+Person;
+SpecialtyRepository;
+JpaOwnerRepositoryImpl;
+PetRepositoryOverride;
+SpringDataUserRepository;
+UserMapper;
+}`;
+        </script>
+            <button style="display: block; margin: 0 auto;" onclick="createForceGraph('popup-classGraph', 'graph-container-classGraph', classGraph_dot )">Show classGraph 3D Popup</button>
+            <button style="display: block; margin: 0 auto;" onclick="showPopup('popup-classGraph', 'graph-container-classGraph', classGraph_dot )">Show classGraph 2D Popup</button>
+            <div class="popup" id="popup-classGraph">
+                <span class="close-btn" onclick="hidePopup()">×</span>
+                <div id="graph-container-classGraph" style="width: 100%; height: 100%;"></div>
+            </div>
+            <div align="center">
+                Red lines represent back edges to remove.<br>
+                Zoom in / out with your mouse wheel and click/move to drag the image.
+            </div>
+            <div align="center" id="classGraph" style="border: thin solid black"></div>
+            <script>
+                d3.select("#classGraph")
+                    .graphviz()
+                    .width(screen.width - 200)
+                    .height(screen.height)
+                    .fit(true)
+                    .renderDot(classGraph_dot);
+            </script>
+            <br/>
+            <div align="center">
+                Show RefactorFirst some &#10084;&#65039;
+                <br/>
+                <a class="github-button" href="https://github.com/refactorfirst/refactorfirst" data-icon="octicon-star" data-size="large" data-show-count="true" aria-label="Star refactorfirst/refactorfirst on GitHub">Star</a>
+                <a class="github-button" href="https://github.com/refactorfirst/refactorfirst/fork" data-icon="octicon-repo-forked" data-size="large" data-show-count="true" aria-label="Fork refactorfirst/refactorfirst on GitHub">Fork</a>
+                <a class="github-button" href="https://github.com/refactorfirst/refactorfirst/subscription" data-icon="octicon-eye" data-size="large" data-show-count="true" aria-label="Watch refactorfirst/refactorfirst on GitHub">Watch</a>
+                <a class="github-button" href="https://github.com/refactorfirst/refactorfirst/issues" data-icon="octicon-issue-opened" data-size="large" data-show-count="false" aria-label="Issue refactorfirst/refactorfirst on GitHub">Issue</a>
+                <a class="github-button" href="https://github.com/sponsors/jimbethancourt" data-icon="octicon-heart" data-size="large" aria-label="Sponsor @jimbethancourt on GitHub">Sponsor</a>
+            </div><br/>
+            <div style="text-align: center;"><a id="EDGES"><h1>Backward Edge Removal Impact</h1></a></div>
+            <div style="text-align: center;">
+                Current Cycle Count: 3<br>
+                Current Average Cycle Node Count: 2.3333333333333335<br>
+                Current Total Back Edge Count: 4<br>
+                Current Total Min Weight Back Edge Count: 1<br>
+            </div>
+            <table align="center" border="5px">
+                <thead>
+                <tr>
+                    <th>Edge</th>
+                    <th>Edge Weight</th>
+                    <th>In # of Cycles</th>
+                    <th>New Cycle Count</th>
+                    <th>New Avg Cycle Node Count</th>
+                    <th>Avg Node &Delta; &divide; Effort</th>
+                </thead>
+                <tbody>
+                <tr>
+                    <td align="left">Visit &#8594; Pet : 3</td>
+                    <td align="right">3</td>
+                    <td align="right">1</td>
+                    <td align="right">3</td>
+                    <td align="right">2.0</td>
+                    <td align="right">0.11111111111111116</td>
+                </tr>
+                <tr>
+                    <td align="left">Owner &#8594; Pet : 13</td>
+                    <td align="right">13</td>
+                    <td align="right">1</td>
+                    <td align="right">3</td>
+                    <td align="right">2.0</td>
+                    <td align="right">0.025641025641025654</td>
+                </tr>
+                <tr>
+                    <td align="left">Role &#8594; User : 3</td>
+                    <td align="right">3</td>
+                    <td align="right">1</td>
+                    <td align="right">2</td>
+                    <td align="right">2.5</td>
+                    <td align="right">-0.055555555555555504</td>
+                </tr>
+                <tr>
+                    <td align="left">EntityUtils &#8594; BaseEntity : 1</td>
+                    <td align="right">1</td>
+                    <td align="right">1</td>
+                    <td align="right">2</td>
+                    <td align="right">2.5</td>
+                    <td align="right">-0.16666666666666652</td>
+                </tr>
+                </tbody>
+            </table>
+            <div align="center">
+                Show RefactorFirst some &#10084;&#65039;
+                <br/>
+                <a class="github-button" href="https://github.com/refactorfirst/refactorfirst" data-icon="octicon-star" data-size="large" data-show-count="true" aria-label="Star refactorfirst/refactorfirst on GitHub">Star</a>
+                <a class="github-button" href="https://github.com/refactorfirst/refactorfirst/fork" data-icon="octicon-repo-forked" data-size="large" data-show-count="true" aria-label="Fork refactorfirst/refactorfirst on GitHub">Fork</a>
+                <a class="github-button" href="https://github.com/refactorfirst/refactorfirst/subscription" data-icon="octicon-eye" data-size="large" data-show-count="true" aria-label="Watch refactorfirst/refactorfirst on GitHub">Watch</a>
+                <a class="github-button" href="https://github.com/refactorfirst/refactorfirst/issues" data-icon="octicon-issue-opened" data-size="large" data-show-count="false" aria-label="Issue refactorfirst/refactorfirst on GitHub">Issue</a>
+                <a class="github-button" href="https://github.com/sponsors/jimbethancourt" data-icon="octicon-heart" data-size="large" aria-label="Sponsor @jimbethancourt on GitHub">Sponsor</a>
+            </div><br/>
+            <br/>
+            <br/>
+            <br/>
+            <hr/>
+            <br/>
+            <br/>
+            <div style="text-align: center;"><a id="CBO"><h1>Highly Coupled Classes</h1></a></div><div id="series_chart_div_2" align="center"><script>      google.charts.load('current', {'packages':['corechart']});
+        google.charts.setOnLoadCallback(drawSeriesChart);
+
+        function drawSeriesChart() {
+
+            var data2 = google.visualization.arrayToDataTable([[ 'ID', 'Coupling Count', 'Change Proneness', 'Priority', 'Priority (Visual)'], ['ClinicServiceImpl.java',22,1,1,-1]]);
+
+            var options = {
+                title: 'Priority Ranking for Refactoring Highly Coupled Classes - ' +
+                    'Start with Priority 1',
+                height: 900,         width: 1200,         explorer: {},         hAxis: {title: 'Coupling Count'},
+                vAxis: {title: 'Change Proneness'},
+                colorAxis: {colors: ['green', 'red']},
+                bubble: {textStyle: {fontSize: 11}}      };
+
+            var chart2 = new google.visualization.BubbleChart(document.getElementById('series_chart_div_2'));
+            chart2.draw(data2, options);
+        }
+        </script></div>
+            <div align="center">
+                Show RefactorFirst some &#10084;&#65039;
+                <br/>
+                <a class="github-button" href="https://github.com/refactorfirst/refactorfirst" data-icon="octicon-star" data-size="large" data-show-count="true" aria-label="Star refactorfirst/refactorfirst on GitHub">Star</a>
+                <a class="github-button" href="https://github.com/refactorfirst/refactorfirst/fork" data-icon="octicon-repo-forked" data-size="large" data-show-count="true" aria-label="Fork refactorfirst/refactorfirst on GitHub">Fork</a>
+                <a class="github-button" href="https://github.com/refactorfirst/refactorfirst/subscription" data-icon="octicon-eye" data-size="large" data-show-count="true" aria-label="Watch refactorfirst/refactorfirst on GitHub">Watch</a>
+                <a class="github-button" href="https://github.com/refactorfirst/refactorfirst/issues" data-icon="octicon-issue-opened" data-size="large" data-show-count="false" aria-label="Issue refactorfirst/refactorfirst on GitHub">Issue</a>
+                <a class="github-button" href="https://github.com/sponsors/jimbethancourt" data-icon="octicon-heart" data-size="large" aria-label="Sponsor @jimbethancourt on GitHub">Sponsor</a>
+            </div>       <h2>Coupling Between Objects Chart Legend:</h2>       <table border="5px">
+            <tbody>
+            <tr><td><strong>X-Axis:</strong> Number of objects the class is coupled to</td></tr>
+            <tr><td><strong>Y-Axis:</strong> Relative churn</td></tr>
+            <tr><td><strong>Color:</strong> Priority of what to fix first</td></tr>
+            <tr><td><strong>Circle size:</strong> Priority (Visual) of what to fix first</td></tr>
+            </tbody>
+        </table>        <br/><h2 align="center">Highly Coupled classes by the numbers: (Refactor starting with Priority 1)</h2><table align="center" border="5px"><thead><tr><th>Class</th><th>Priority</th><th>Change Proneness Rank</th><th>Coupling Count</th><th>Most Recent Commit Date</th><th>Commit Count</th></tr></thead><tbody><tr><td align="left">ClinicServiceImpl.java</td>
+            <td align="right">1</td>
+            <td align="right">1</td>
+            <td align="right">22</td>
+            <td align="right">12/28/24, 11:16 AM</td>
+            <td align="right">23</td>
+        </tr></tbody></table><br/>
+            <br/>
+            <br/>
+            <br/>
+            <hr/>
+            <br/>
+            <br/>
+            <div style="text-align: center;"><a id="CYCLES"><h1>Class Cycles</h1></a></div>
+            <h2 align="center">Class Cycles by the numbers:</h2>
+            <table align="center" border="5px">
+                <thead>
+                <tr>
+                    <th>Cycle Name</th>
+                    <th>Priority</th>
+                    <th>Class Count</th>
+                    <th>Relationship Count</th>
+                </thead>
+                <tbody>
+                <tr>
+                    <td align="left">Pet</td>
+                    <td align="right">1</td>
+                    <td align="right">3</td>
+                    <td align="right">4</td>
+                </tr>
+                <tr>
+                    <td align="left">Role</td>
+                    <td align="right">2</td>
+                    <td align="right">2</td>
+                    <td align="right">2</td>
+                </tr>
+                <tr>
+                    <td align="left">BaseEntity</td>
+                    <td align="right">3</td>
+                    <td align="right">2</td>
+                    <td align="right">2</td>
+                </tr>
+                </tbody>
+            </table>
+            <br/>
+            <br/>
+            <br/>
+            <hr/>
+            <br/>
+            <br/>
+            <h2 align="center">Class Cycle : Pet</h2>
+            <script>
+                const Pet_dot = `strict digraph G {
+Pet;
+Owner;
+Visit;
+Owner -> Pet [ label = "13" weight = "13" color = "red" ];
+Pet -> Visit [ label = "9" weight = "9" ];
+Pet -> Owner [ label = "3" weight = "3" ];
+Visit -> Pet [ label = "3" weight = "3" color = "red" ];
+}`;
+            </script>
+            <button style="display: block; margin: 0 auto;" onclick="createForceGraph('popup-Pet', 'graph-container-Pet', Pet_dot )">Show Pet 3D Popup</button>
+            <button style="display: block; margin: 0 auto;" onclick="showPopup('popup-Pet', 'graph-container-Pet', Pet_dot )">Show Pet 2D Popup</button>
+            <div class="popup" id="popup-Pet">
+                <span class="close-btn" onclick="hidePopup()">×</span>
+                <div id="graph-container-Pet" style="width: 100%; height: 100%;"></div>
+            </div>
+            <div align="center">
+                Red lines represent back edges to remove.<br>
+                Zoom in / out with your mouse wheel and click/move to drag the image.
+            </div>
+            <div align="center" id="Pet" style="border: thin solid black"></div>
+            <script>
+                d3.select("#Pet")
+                    .graphviz()
+                    .width(screen.width - 200)
+                    .height(screen.height)
+                    .fit(true)
+                    .renderDot(Pet_dot);
+            </script>
+            <br/>
+            <br/>
+            <div align="center"><strong>Bold text indicates back edge to remove to decompose cycle</strong></div>
+            <table align="center" border="5px">
+                <thead>
+                <tr>
+                    <th>Classes</th>
+                    <th>Relationships</th>
+                </thead>
+                <tbody>
+                <tr><td align="left">Pet</td>
+                    <td align="left">Pet &#8594; Visit : 9<br/>
+                        Pet &#8594; Owner : 3<br/>
+                    </td>
+                </tr>
+                <tr><td align="left">Owner</td>
+                    <td align="left"><strong>Owner &#8594; Pet : 13</strong><br/>
+                    </td>
+                </tr>
+                <tr><td align="left">Visit</td>
+                    <td align="left"><strong>Visit &#8594; Pet : 3</strong><br/>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+            <br/>
+            <br/>
+            <hr/>
+            <br/>
+            <br/>
+            <h2 align="center">Class Cycle : Role</h2>
+            <script>
+                const Role_dot = `strict digraph G {
+Role;
+User;
+Role -> User [ label = "3" weight = "3" color = "red" ];
+User -> Role [ label = "6" weight = "6" ];
+}`;
+            </script>
+            <button style="display: block; margin: 0 auto;" onclick="createForceGraph('popup-Role', 'graph-container-Role', Role_dot )">Show Role 3D Popup</button>
+            <button style="display: block; margin: 0 auto;" onclick="showPopup('popup-Role', 'graph-container-Role', Role_dot )">Show Role 2D Popup</button>
+            <div class="popup" id="popup-Role">
+                <span class="close-btn" onclick="hidePopup()">×</span>
+                <div id="graph-container-Role" style="width: 100%; height: 100%;"></div>
+            </div>
+            <div align="center">
+                Red lines represent back edges to remove.<br>
+                Zoom in / out with your mouse wheel and click/move to drag the image.
+            </div>
+            <div align="center" id="Role" style="border: thin solid black"></div>
+            <script>
+                d3.select("#Role")
+                    .graphviz()
+                    .width(screen.width - 200)
+                    .height(screen.height)
+                    .fit(true)
+                    .renderDot(Role_dot);
+            </script>
+            <br/>
+            <br/>
+            <div align="center"><strong>Bold text indicates back edge to remove to decompose cycle</strong></div>
+            <table align="center" border="5px">
+                <thead>
+                <tr>
+                    <th>Classes</th>
+                    <th>Relationships</th>
+                </thead>
+                <tbody>
+                <tr><td align="left">Role</td>
+                    <td align="left"><strong>Role &#8594; User : 3</strong><br/>
+                    </td>
+                </tr>
+                <tr><td align="left">User</td>
+                    <td align="left">User &#8594; Role : 6<br/>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+            <br/>
+            <br/>
+            <hr/>
+            <br/>
+            <br/>
+            <h2 align="center">Class Cycle : BaseEntity</h2>
+            <script>
+                const BaseEntity_dot = `strict digraph G {
+BaseEntity;
+EntityUtils;
+BaseEntity -> EntityUtils [ label = "4" weight = "4" ];
+EntityUtils -> BaseEntity [ label = "1" weight = "1" color = "red" ];
+}`;
+            </script>
+            <button style="display: block; margin: 0 auto;" onclick="createForceGraph('popup-BaseEntity', 'graph-container-BaseEntity', BaseEntity_dot )">Show BaseEntity 3D Popup</button>
+            <button style="display: block; margin: 0 auto;" onclick="showPopup('popup-BaseEntity', 'graph-container-BaseEntity', BaseEntity_dot )">Show BaseEntity 2D Popup</button>
+            <div class="popup" id="popup-BaseEntity">
+                <span class="close-btn" onclick="hidePopup()">×</span>
+                <div id="graph-container-BaseEntity" style="width: 100%; height: 100%;"></div>
+            </div>
+            <div align="center">
+                Red lines represent back edges to remove.<br>
+                Zoom in / out with your mouse wheel and click/move to drag the image.
+            </div>
+            <div align="center" id="BaseEntity" style="border: thin solid black"></div>
+            <script>
+                d3.select("#BaseEntity")
+                    .graphviz()
+                    .width(screen.width - 200)
+                    .height(screen.height)
+                    .fit(true)
+                    .renderDot(BaseEntity_dot);
+            </script>
+            <br/>
+            <br/>
+            <div align="center"><strong>Bold text indicates back edge to remove to decompose cycle</strong></div>
+            <table align="center" border="5px">
+                <thead>
+                <tr>
+                    <th>Classes</th>
+                    <th>Relationships</th>
+                </thead>
+                <tbody>
+                <tr><td align="left">BaseEntity</td>
+                    <td align="left">BaseEntity &#8594; EntityUtils : 4<br/>
+                    </td>
+                </tr>
+                <tr><td align="left">EntityUtils</td>
+                    <td align="left"><strong>EntityUtils &#8594; BaseEntity : 1</strong><br/>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </section>
+        <div class="clear">
+            <hr/>
+        </div>
+        <span id="publishDate">Last Published: 3/16/25, 8:52 PM      <div class="clear">
+        <hr/>
+      </div>
+</span></div>
+</div>
+</body>
+</html>
