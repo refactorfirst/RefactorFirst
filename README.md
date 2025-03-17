@@ -5,12 +5,16 @@ This tool for Java codebases will help you identify what you should refactor fir
 - Highly Coupled classes
 - Class Cycles (with cycle images!)
 
-It scans your Git repository and runs:
+It scans your Git repository generates a single page application by runing:
+- Cycle analysis on your source code using the [OpenRewrite](https://github.com/openrewrite/rewrite) Java parser and [JGraphT](https://jgrapht.org/)
+- What-if analysis to identify the most optimal relationships in a class cycle to remove
 - PMD's God Class Rule
 - PMD's Coupling Between Objects
-- Cycle analysis on your source code using [JavaParser](https://javaparser.org/) and [JGraphT](https://jgrapht.org/)
 
-Cycle analysis is performed based on class field types and method signature types at this time (more to come!).  
+Code map viewers are powered by [3D Force Graph](https://vasturiano.github.io/3d-force-graph), [sigma.js](https://www.sigmajs.org/), and [GraphViz DOT](https://graphviz.org/docs/layouts/dot/)
+<br>If there are more than 4000 classes + relationships, a simplified 3D viewer will be used to avoid slowdowns.  Features will be toggleable in the 3D UI in a future release.
+
+Take a look at the [Spring Petclinic REST project sample report](https://rawcdn.githack.com/refactorfirst/RefactorFirst/035e141f7a42920a32d96f74e819ad370fece5e7/spring-petclinic-rest-report.html)!
 
 The graphs generated in the report will look similar to this one:
 ![image info](./RefactorFirst_Sample_Report.png)
@@ -28,7 +32,7 @@ If you use an old JDK release of your chosen Java version, you may encounter iss
 Run the following command from the root of your project (the source code does not need to be built):
 
 ```bash
-mvn org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.6.1:htmlReport
+mvn org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.7.0:htmlReport
 ```
 View the report at ```target/site/refactor-first-report.html```
 
@@ -36,7 +40,7 @@ View the report at ```target/site/refactor-first-report.html```
 This will generate a simplified HTML report (no graphs or images) as the output of a GitHub Action step
 ```bash
 mvn -B clean test \
-org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.6.1:simpleHtmlReport \
+org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.7.0:simpleHtmlReport \
 && echo "$(cat target/site/refactor-first-report.html)" >> $GITHUB_STEP_SUMMARY
 ```
 
@@ -49,7 +53,7 @@ Add the following to your project in the build section.  **showDetails** will sh
         <plugin>
             <groupId>org.hjug.refactorfirst.plugin</groupId>
             <artifactId>refactor-first-maven-plugin</artifactId>
-            <version>0.6.1</version>       
+            <version>0.7.0</version>       
             <!-- optional -->
             <configuration>
                 <showDetails>false</showDetails>
@@ -70,12 +74,31 @@ A RefactorFirst report will show up in the site report when you run ```mvn site`
         <plugin>
             <groupId>org.hjug.refactorfirst.plugin</groupId>
             <artifactId>refactor-first-maven-plugin</artifactId>
-            <version>0.6.1</version>       
+            <version>0.7.0</version>       
         </plugin>
         ...
     </plugins>
 </reporting>
 ```
+
+## Configuraiton Options
+Care has been taken to use sensible defaults, though if you wish to override these defaults you can specify the following parameters.
+Specify with -D if running on the command line.  e.g. ```-DbackEdgeAnalysisCount=0 `DanalyzeCycles=false``` or in the configuration section (as in the above examples) if including in a Maven build.
+
+|Option|Action|Default|
+|------|------|-------|
+|showDetails|Shows God Class metrics|false|
+|backEdgeAnalysisCount|Number of back edges in a cycle to analyze.  <br>If total number of back edges is greater than the value specified, it analyzes the number of minimum weight edges specified.<br>**If 0 is specified, all back edges will be analyzed**|50|
+|analyzeCycles|Analyzes the 10 largest cycles (will be configurable in the future)|true|
+|minifyHtml|Minifies the generated HTML report.  Only available on ```htmlReport``` and ```simpleHtmlReport``` goals.  May cause issues with large reports.|false|
+|excludeTests|Exclude test classes from analysis|true|
+|testSrcDirectory|Excludes classes containing this pattern from analysis|```src/test``` and ```src/test```|
+|projectName|The name of your project to be displayed on the report|Your Maven project name|
+|projectVersion|The version of your project to be displayed on the report|Your Maven project version|
+|outputDirectory|The location the project report will be written|```${projectDir}/target/site/refactor-first-report.html```
+
+
+### Seeing Errors?
 
 If you see an error similar to
 ```
@@ -116,7 +139,7 @@ I would like to create a Gradle plugin and (possibly) support non-conventional p
 and then (assuming Maven is installed) run
 
 ```bash
-mvn org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.6.1:htmlReport
+mvn org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.7.0:htmlReport
 ```
 
 ## Viewing the Report
