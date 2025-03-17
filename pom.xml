@@ -57,7 +57,7 @@
 
         <!--Compiler plugins-->
         <!--<errorprone.version>2.22.0</errorprone.version>-->
-        <lombok.version>1.18.30</lombok.version>
+        <lombok.version>1.18.36</lombok.version>
         <sonar.projectKey>jimbethancourt_RefactorFirst</sonar.projectKey>
         <sonar.moduleKey>${project.artifactId}</sonar.moduleKey>
         <sonar.organization>jimbethancourt-github</sonar.organization>

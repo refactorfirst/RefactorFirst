@@ -322,10 +322,7 @@ public class SimpleHtmlReport {
 
         stringBuilder.append("<br/>\n");
 
-        rankedCycles.stream()
-                .limit(10)
-                .map(this::renderSingleCycle)
-                .forEach(stringBuilder::append);
+        rankedCycles.stream().limit(10).map(this::renderSingleCycle).forEach(stringBuilder::append);
 
         return stringBuilder.toString();
     }
