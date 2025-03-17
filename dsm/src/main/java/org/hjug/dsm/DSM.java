@@ -245,9 +245,6 @@ public class DSM {
 
     /**
      * Captures the impact of the removal of each edge above the diagonal.
-     *
-     * @param limit the number of back edges to analyze
-     * @return List<EdgeToRemoveInfo> Impact of each edge if removed.
      */
     public List<EdgeToRemoveInfo> getImpactOfEdgesAboveDiagonalIfRemoved(int limit) {
         // get edges above diagonal for DSM graph
