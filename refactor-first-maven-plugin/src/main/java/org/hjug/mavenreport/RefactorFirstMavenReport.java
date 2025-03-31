@@ -78,8 +78,8 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
                         testSourceDirectory,
                         projectName,
                         projectVersion,
-                        project.getBasedir(),
-                        300)
+                        project.getBasedir()
+                )
                 .toString();
 
         mainSink.rawText(report);
@@ -95,24 +95,17 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
         renderJsDeclaration(mainSink, "https://buttons.github.io/buttons.js");
         // google chart import
         renderJsDeclaration(mainSink, "https://www.gstatic.com/charts/loader.js");
-        // d3 dot graph imports
-        renderJsDeclaration(mainSink, "https://d3js.org/d3.v5.min.js");
-        renderJsDeclaration(mainSink, "https://cdnjs.cloudflare.com/ajax/libs/d3-graphviz/3.0.5/d3-graphviz.min.js");
-        renderJsDeclaration(mainSink, "https://unpkg.com/@hpcc-js/wasm@0.3.11/dist/index.min.js");
+        // for DOT graph zooming
+        renderJsDeclaration(mainSink, "https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js");
 
         // sigma graph imports - sigma, graphology, graphlib, and graphlib-dot
         renderJsDeclaration(mainSink, "https://cdnjs.cloudflare.com/ajax/libs/sigma.js/2.4.0/sigma.min.js");
         renderJsDeclaration(mainSink, "https://cdnjs.cloudflare.com/ajax/libs/graphology/0.25.4/graphology.umd.min.js");
+
         // may only need graphlib-dot
         renderJsDeclaration(mainSink, "https://cdnjs.cloudflare.com/ajax/libs/graphlib/2.1.8/graphlib.min.js");
         renderJsDeclaration(mainSink, "https://cdn.jsdelivr.net/npm/graphlib-dot@0.6.4/dist/graphlib-dot.min.js");
-        renderJsDeclaration(mainSink, "https://unpkg.com/3d-force-graph");
-
-        //        renderJsDeclaration(mainSink, HtmlReport.SUGIYAMA_SIGMA_GRAPH);
-        //        renderJsDeclaration(mainSink, HtmlReport.FORCE_3D_GRAPH);
-        //        renderJsDeclaration(mainSink, HtmlReport.POPUP_FUNCTIONS);
-
-        //        renderStyle(mainSink);
+        renderJsDeclaration(mainSink, "https://cdn.jsdelivr.net/npm/3d-force-graph");
 
         mainSink.head_();
     }

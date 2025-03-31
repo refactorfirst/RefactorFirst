@@ -390,16 +390,23 @@ public class HtmlReport extends SimpleHtmlReport {
                 // google chart import
                 + "<script type=\"text/javascript\" src=\"https://www.gstatic.com/charts/loader.js\"></script>\n"
                 // d3 dot graph imports
-                + "<script src=\"https://d3js.org/d3.v5.min.js\"></script>\n"
-                + "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/d3-graphviz/3.0.5/d3-graphviz.min.js\"></script>\n"
-                + "<script src=\"https://unpkg.com/@hpcc-js/wasm@0.3.11/dist/index.min.js\"></script>\n"
+                //                + "<script src=\"https://d3js.org/d3.v5.min.js\"></script>\n"
+                //                + "<script
+                // src=\"https://cdnjs.cloudflare.com/ajax/libs/d3-graphviz/3.0.5/d3-graphviz.min.js\"></script>\n"
+                //                + "<script
+                // src=\"https://unpkg.com/@hpcc-js/wasm@0.3.11/dist/index.min.js\"></script>\n"
+
+                //                + "<script
+                // src=\"https://cdn.jsdelivr.net/npm/@hpcc-js/wasm-graphviz@1.7.0/dist/index.min.js\"></script>\n"
+                + "<script src=\"https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js\"></script>"
+
                 // sigma graph imports - sigma, graphology, graphlib, and graphlib-dot
                 + "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/sigma.js/2.4.0/sigma.min.js\"></script>\n"
                 + "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/graphology/0.25.4/graphology.umd.min.js\"></script>\n"
                 // may only need graphlib-dot
                 + "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/graphlib/2.1.8/graphlib.min.js\"></script>\n"
                 + "<script src=\"https://cdn.jsdelivr.net/npm/graphlib-dot@0.6.4/dist/graphlib-dot.min.js\"></script>\n"
-                + "<script src=\"https://unpkg.com/3d-force-graph\"></script>\n";
+                + "<script src=\"https://cdn.jsdelivr.net/npm/3d-force-graph\"></script>\n";
     }
 
     String printScripts() {
@@ -489,86 +496,88 @@ public class HtmlReport extends SimpleHtmlReport {
     }
 
     @Override
-    public String renderClassGraphDotImage() {
+    public String renderClassGraphVisuals() {
         String dot = buildClassGraphDot(classGraph);
-
         String classGraphName = "classGraph";
 
         StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append("<h1 align=\"center\">Class Map</h1>");
+        stringBuilder.append(generateGraphButtons(classGraphName, dot));
+
         stringBuilder.append(
                 "<div align=\"center\">Excludes classes that have no incoming and outgoing edges<br></div>");
+
+        int classCount = classGraph.vertexSet().size();
+        int relationshipCount = classGraph.edgeSet().size();
+        stringBuilder.append("<div align=\"center\">Number of classes: " + classCount + "  Number of relationships: "
+                + relationshipCount + "<br></div>");
+        if (classCount + relationshipCount < d3Threshold) {
+            stringBuilder.append(generateDotImage(classGraphName));
+        } else {
+            // revisit and add DOT SVG popup button
+            stringBuilder.append("<div align=\"center\">\nSVG is too big to render quickly</div>\n");
+        }
+
+        return stringBuilder.toString();
+    }
+
+    private StringBuilder generateGraphButtons(String graphName, String dot) {
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append("<h1 align=\"center\">Class Map</h1>");
         stringBuilder.append("<script>\n");
-        stringBuilder.append("const " + classGraphName + "_dot = " + dot + "\n");
+        stringBuilder.append("const " + graphName + "_dot = " + dot + "\n");
         stringBuilder.append("</script>\n");
-        stringBuilder.append(generateForce3DPopup(classGraphName));
-        stringBuilder.append(generate2DPopup(classGraphName));
-        stringBuilder.append(generateHidePopup(classGraphName));
+        stringBuilder.append(generateForce3DPopup(graphName));
+        stringBuilder.append(generate2DPopup(graphName));
+        stringBuilder.append(generateHidePopup(graphName));
 
         stringBuilder.append("<div align=\"center\">\nRed lines represent back edges to remove.<br>\n");
         stringBuilder.append("Zoom in / out with your mouse wheel and click/move to drag the image.\n");
         stringBuilder.append("</div>\n");
+        return stringBuilder;
+    }
 
+    private static String generateDotImage(String graphName) {
         // revisit and add D3 popup button as well
-        if (classGraph.vertexSet().size() + classGraph.edgeSet().size() < d3Threshold) {
-            stringBuilder.append(
-                    "<div align=\"center\" id=\"" + classGraphName + "\" style=\"border: thin solid black\"></div>\n");
-            stringBuilder.append("<script>\n");
-            stringBuilder.append("d3.select(\"#" + classGraphName + "\")\n");
-            stringBuilder.append(".graphviz()\n");
-            stringBuilder.append(".width(screen.width - " + pixels + ")\n");
-            stringBuilder.append(".height(screen.height)\n");
-            stringBuilder.append(".fit(true)\n");
-            stringBuilder.append(".renderDot(" + classGraphName + "_dot);\n");
-            stringBuilder.append("</script>\n");
-        } else {
-            // revisit and add D3 SVG popup button
-            stringBuilder.append("<div align=\"center\">\nClass Map SVG is too big to render SVG quickly</div>\n");
-        }
-
-        return stringBuilder.toString();
+        return "<div id=\"" + graphName
+                + "\" style=\"width: 95%; margin: auto; border: thin solid black\"></div>\n"
+                + "<script type=\"module\">\n"
+                + "import { Graphviz } from \"https://cdn.jsdelivr.net/npm/@hpcc-js/wasm/dist/index.js\";\n"
+                + "    if (Graphviz) {\n"
+                + "        const graphviz = await Graphviz.load();\n"
+                + "        let svg = graphviz.layout("
+                + graphName + "_dot, \"svg\", \"dot\");\n"
+                + "        // Set desired width and height\n"
+                + "\n"
+                + "        // Modify the SVG string to include width and height attributes\n"
+                + "        svg = svg.replace('<svg ', `<svg width=\"screen.width\" height=\"screen.height\"`);\n"
+                + "\n"
+                + "        document.getElementById(\""
+                + graphName + "\").innerHTML = svg;\n" + "\n"
+                + "        // Make the SVG zoomable\n"
+                + "        svgPanZoom('#"
+                + graphName + " svg', {\n" + "            zoomEnabled: true,\n"
+                + "            controlIconsEnabled: true\n"
+                + "        });\n"
+                + "    }\n" + "</script>\n";
     }
 
     String buildClassGraphDot(Graph<String, DefaultWeightedEdge> classGraph) {
         StringBuilder dot = new StringBuilder();
         dot.append("`strict digraph G {\n");
 
+        for (DefaultWeightedEdge edge : classGraph.edgeSet()) {
+            renderEdge(classGraph, edge, dot);
+        }
+
+        // capture only classes that have a relationship with one or more other classes
         Set<String> vertexesToRender = new HashSet<>();
         for (DefaultWeightedEdge edge : classGraph.edgeSet()) {
-            // DownloadManager -> Download [ label="1" color="red" ];
-
-            // render edge
             String[] vertexes = extractVertexes(edge);
-            String start = getClassName(vertexes[0].trim()).replace("$", "_");
-            String end = getClassName(vertexes[1].trim()).replace("$", "_");
-
             vertexesToRender.add(vertexes[0].trim());
             vertexesToRender.add(vertexes[1].trim());
-
-            dot.append(start);
-            dot.append(" -> ");
-            dot.append(end);
-
-            // render edge attributes
-            int edgeWeight = (int) classGraph.getEdgeWeight(edge);
-            dot.append(" [ ");
-            dot.append("label = \"");
-            dot.append(edgeWeight);
-            dot.append("\" ");
-            dot.append("weight = \"");
-            dot.append(edgeWeight);
-            dot.append("\"");
-
-            if (edgesAboveDiagonal.contains(edge)) {
-                dot.append(" color = \"red\"");
-            }
-
-            dot.append(" ];\n");
         }
 
         // render vertices
-        // e.g DownloadManager;
-        //        for (String vertex : classGraph.vertexSet()) {
         for (String vertex : vertexesToRender) {
             dot.append(getClassName(vertex).replace("$", "_"));
             dot.append(";\n");
@@ -578,40 +587,49 @@ public class HtmlReport extends SimpleHtmlReport {
         return dot.toString();
     }
 
+    private void renderEdge(
+            Graph<String, DefaultWeightedEdge> classGraph, DefaultWeightedEdge edge, StringBuilder dot) {
+        // render edge
+        String[] vertexes = extractVertexes(edge);
+
+        String start = getClassName(vertexes[0].trim()).replace("$", "_");
+        String end = getClassName(vertexes[1].trim()).replace("$", "_");
+
+        dot.append(start);
+        dot.append(" -> ");
+        dot.append(end);
+
+        // render edge attributes
+        int edgeWeight = (int) classGraph.getEdgeWeight(edge);
+        dot.append(" [ ");
+        dot.append("label = \"");
+        dot.append(edgeWeight);
+        dot.append("\" ");
+        dot.append("weight = \"");
+        dot.append(edgeWeight);
+        dot.append("\"");
+
+        if (edgesAboveDiagonal.contains(edge)) {
+            dot.append(" color = \"red\"");
+        }
+
+        dot.append(" ];\n");
+    }
+
     @Override
-    public String renderCycleDotImage(RankedCycle cycle) {
+    public String renderCycleVisuals(RankedCycle cycle) {
         String dot = buildCycleDot(classGraph, cycle);
 
         String cycleName = getClassName(cycle.getCycleName()).replace("$", "_");
 
         StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append("<script>\n");
-        stringBuilder.append("const " + cycleName + "_dot = " + dot + "\n");
-        stringBuilder.append("</script>\n");
-        stringBuilder.append(generateForce3DPopup(cycleName));
-        stringBuilder.append(generate2DPopup(cycleName));
-        stringBuilder.append(generateHidePopup(cycleName));
-
-        stringBuilder.append("<div align=\"center\">\n");
-        stringBuilder.append("Red lines represent back edges to remove.<br>\n");
-        stringBuilder.append("Zoom in / out with your mouse wheel and click/move to drag the image.\n");
-        stringBuilder.append("</div>\n");
+        stringBuilder.append(generateGraphButtons(cycleName, dot));
 
         if (cycle.getCycleNodes().size() + cycle.getEdgeSet().size() < d3Threshold) {
-            stringBuilder.append(
-                    "<div align=\"center\" id=\"" + cycleName + "\" style=\"border: thin solid black\"></div>\n");
-            stringBuilder.append("<script>\n");
-            stringBuilder.append("d3.select(\"#" + cycleName + "\")\n");
-            stringBuilder.append(".graphviz()\n");
-            stringBuilder.append(".width(screen.width - " + pixels + ")\n");
-            stringBuilder.append(".height(screen.height)\n");
-            stringBuilder.append(".fit(true)\n");
-            stringBuilder.append(".renderDot(" + cycleName + "_dot);\n");
-            stringBuilder.append("</script>\n");
+            stringBuilder.append(generateDotImage(cycleName));
         } else {
-            // revisit and add D3 SVG popup button
-            stringBuilder.append(
-                    "<div align=\"center\">\nCycle " + cycleName + " SVG is too big to render SVG quickly</div>\n");
+            // revisit and add DOT SVG popup button
+            stringBuilder.append("<div align=\"center\">\nSVG is too big to render quickly</div>\n");
         }
 
         stringBuilder.append("<br/>\n");
@@ -622,47 +640,16 @@ public class HtmlReport extends SimpleHtmlReport {
 
     String buildCycleDot(Graph<String, DefaultWeightedEdge> classGraph, RankedCycle cycle) {
         StringBuilder dot = new StringBuilder();
-
         dot.append("`strict digraph G {\n");
 
+        for (DefaultWeightedEdge edge : cycle.getEdgeSet()) {
+            renderEdge(classGraph, edge, dot);
+        }
+
         // render vertices
-        // e.g DownloadManager;
         for (String vertex : cycle.getVertexSet()) {
             dot.append(getClassName(vertex).replace("$", "_"));
             dot.append(";\n");
-        }
-
-        for (DefaultWeightedEdge edge : cycle.getEdgeSet()) {
-            // DownloadManager -> Download [ label="1" color="red" ];
-
-            // render edge
-            String[] vertexes = extractVertexes(edge);
-            String start = getClassName(vertexes[0].trim()).replace("$", "_");
-            String end = getClassName(vertexes[1].trim()).replace("$", "_");
-
-            dot.append(start);
-            dot.append(" -> ");
-            dot.append(end);
-
-            // render edge attributes
-            int edgeWeight = (int) classGraph.getEdgeWeight(edge);
-            dot.append(" [ ");
-            dot.append("label = \"");
-            dot.append(edgeWeight);
-            dot.append("\" ");
-            dot.append("weight = \"");
-            dot.append(edgeWeight);
-            dot.append("\"");
-
-            if (edgesAboveDiagonal.contains(edge)) {
-                dot.append(" color = \"red\"");
-            }
-
-            if (cycle.getMinCutEdges().contains(edge) && !edgesAboveDiagonal.contains(edge)) {
-                dot.append(" color = \"blue\"");
-            }
-
-            dot.append(" ];\n");
         }
 
         dot.append("}`;");
