@@ -16,7 +16,7 @@ import org.openrewrite.ExecutionContext;
 import org.openrewrite.InMemoryExecutionContext;
 import org.openrewrite.java.JavaParser;
 
-public class JavaNewClassVisitorTest {
+public class JavaNewClassVisitorFullTest {
 
     @Test
     void visitNewClass() throws IOException {
@@ -32,25 +32,30 @@ public class JavaNewClassVisitorTest {
         Graph<String, DefaultWeightedEdge> packageReferencesGraph =
                 new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
 
-        JavaClassDeclarationVisitor<ExecutionContext> classDeclarationVisitor =
-                new JavaClassDeclarationVisitor<>(classReferencesGraph);
-        JavaVariableTypeVisitor<ExecutionContext> variableTypeVisitor =
+        final JavaVisitor<ExecutionContext> javaVisitor =
+                new JavaVisitor<>(classReferencesGraph, packageReferencesGraph);
+        final JavaVariableTypeVisitor<ExecutionContext> javaVariableTypeVisitor =
                 new JavaVariableTypeVisitor<>(classReferencesGraph, packageReferencesGraph);
+        final JavaMethodDeclarationVisitor<ExecutionContext> javaMethodDeclarationVisitor =
+                new JavaMethodDeclarationVisitor<>(classReferencesGraph, packageReferencesGraph);
 
         List<Path> list = Files.walk(Paths.get(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
+
+        // Parse sources with all visitors, not only
         javaParser.parse(list, Paths.get(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> {
-            classDeclarationVisitor.visit(cu, ctx);
-            variableTypeVisitor.visit(cu, ctx);
+            javaVisitor.visit(cu, ctx);
+            javaVariableTypeVisitor.visit(cu, ctx);
+            javaMethodDeclarationVisitor.visit(cu, ctx);
         });
 
-        Graph<String, DefaultWeightedEdge> graph = variableTypeVisitor.getClassReferencesGraph();
+        Graph<String, DefaultWeightedEdge> graph = javaVisitor.getClassReferencesGraph();
         Assertions.assertTrue(graph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.newClass.A"));
         Assertions.assertTrue(graph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.newClass.B"));
         Assertions.assertTrue(graph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.newClass.C"));
 
-        // only looking for what was visited by classDeclarationVisitor and variableTypeVisitor
+        // capturing counts of all types
         Assertions.assertEquals(
-                5,
+                6,
                 graph.getEdgeWeight(graph.getEdge(
                         "org.hjug.graphbuilder.visitor.testclasses.newClass.A",
                         "org.hjug.graphbuilder.visitor.testclasses.newClass.B")));
