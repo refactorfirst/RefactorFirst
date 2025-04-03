@@ -74,8 +74,6 @@ public class SimpleHtmlReport {
     DSM dsm;
     List<DefaultWeightedEdge> edgesAboveDiagonal = List.of(); // initialize for unit tests
 
-    int pixels;
-
     DateTimeFormatter formatter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT)
             .withLocale(Locale.getDefault())
             .withZone(ZoneId.systemDefault());
@@ -141,35 +139,11 @@ public class SimpleHtmlReport {
             String projectName,
             String projectVersion,
             File baseDir) {
-        return generateReport(
-                showDetails,
-                edgeAnalysisCount,
-                analyzeCycles,
-                excludeTests,
-                testSourceDirectory,
-                projectName,
-                projectVersion,
-                baseDir,
-                200);
-    }
-
-    // pixels param is for SVG image pixel padding
-    public StringBuilder generateReport(
-            boolean showDetails,
-            int edgeAnalysisCount,
-            boolean analyzeCycles,
-            boolean excludeTests,
-            String testSourceDirectory,
-            String projectName,
-            String projectVersion,
-            File baseDir,
-            int pixels) {
 
         if (testSourceDirectory == null || testSourceDirectory.isEmpty()) {
             testSourceDirectory = "src" + File.separator + "test";
         }
 
-        this.pixels = pixels;
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append(printOpenBodyTag());
         stringBuilder.append(printScripts());
@@ -280,7 +254,7 @@ public class SimpleHtmlReport {
 
         log.info("Generating HTML Report");
 
-        stringBuilder.append(renderClassGraphDotImage());
+        stringBuilder.append(renderClassGraphVisuals());
         stringBuilder.append("<br/>\n");
         stringBuilder.append(renderGithubButtons());
 
@@ -322,7 +296,8 @@ public class SimpleHtmlReport {
 
         stringBuilder.append("<br/>\n");
 
-        rankedCycles.stream().limit(10).map(this::renderSingleCycle).forEach(stringBuilder::append);
+        //        rankedCycles.stream().limit(10).map(this::renderSingleCycle).forEach(stringBuilder::append);
+        rankedCycles.stream().map(this::renderSingleCycle).forEach(stringBuilder::append);
 
         return stringBuilder.toString();
     }
@@ -490,13 +465,16 @@ public class SimpleHtmlReport {
         stringBuilder.append("<br/>\n");
 
         stringBuilder.append("<h2 align=\"center\">Class Cycle : " + getClassName(cycle.getCycleName()) + "</h2>\n");
-        stringBuilder.append(renderCycleDotImage(cycle));
+        stringBuilder.append(renderCycleVisuals(cycle));
 
         stringBuilder.append("<div align=\"center\">");
         stringBuilder.append("<strong>");
         stringBuilder.append("Bold text indicates back edge to remove to decompose cycle");
-        //        stringBuilder.append("<br>\"*\" indicates that edge is also a minimum cut edge in the cycle");
         stringBuilder.append("</strong>");
+        int classCount = cycle.getCycleNodes().size();
+        int relationshipCount = cycle.getEdgeSet().size();
+        stringBuilder.append("<div align=\"center\">Number of classes: " + classCount + "  Number of relationships: "
+                + relationshipCount + "<br></div>");
         stringBuilder.append("</div>\n");
 
         stringBuilder.append("<table align=\"center\" border=\"5px\">\n");
@@ -542,11 +520,11 @@ public class SimpleHtmlReport {
         return stringBuilder.toString();
     }
 
-    public String renderClassGraphDotImage() {
+    public String renderClassGraphVisuals() {
         return ""; // empty on purpose
     }
 
-    public String renderCycleDotImage(RankedCycle cycle) {
+    public String renderCycleVisuals(RankedCycle cycle) {
         return ""; // empty on purpose
     }
 

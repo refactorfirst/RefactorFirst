@@ -6,8 +6,6 @@ import java.util.*;
 import org.hjug.cbc.CycleNode;
 import org.hjug.cbc.RankedCycle;
 import org.jgrapht.Graph;
-import org.jgrapht.alg.flow.GusfieldGomoryHuCutTree;
-import org.jgrapht.graph.AsUndirectedGraph;
 import org.jgrapht.graph.DefaultDirectedWeightedGraph;
 import org.jgrapht.graph.DefaultWeightedEdge;
 import org.junit.jupiter.api.Test;
@@ -48,29 +46,23 @@ class HtmlReportTest {
         classGraph.addEdge("C", "A");
         classGraph.setEdgeWeight("A", "B", 2);
 
-        GusfieldGomoryHuCutTree<String, DefaultWeightedEdge> gusfieldGomoryHuCutTree =
-                new GusfieldGomoryHuCutTree<>(new AsUndirectedGraph<>(classGraph));
-        int minCutCount = (int) gusfieldGomoryHuCutTree.calculateMinCut();
-        Set<DefaultWeightedEdge> minCutEdges = gusfieldGomoryHuCutTree.getCutEdges();
-
         String cycleName = "Test";
         List<CycleNode> cycleNodes = new ArrayList<>();
-        RankedCycle rankedCycle = new RankedCycle(
-                cycleName, 0, classGraph.vertexSet(), classGraph.edgeSet(), minCutCount, minCutEdges, cycleNodes);
+        RankedCycle rankedCycle =
+                new RankedCycle(cycleName, 0, classGraph.vertexSet(), classGraph.edgeSet(), 0, null, cycleNodes);
 
         HtmlReport htmlReport = new HtmlReport();
         String dot = htmlReport.buildCycleDot(classGraph, rankedCycle);
 
-        StringBuilder expectedDot = new StringBuilder();
-        expectedDot.append("`strict digraph G {\n"
+        String expectedDot = "`strict digraph G {\n"
+                + "A -> B [ label = \"2\" weight = \"2\" ];\n"
+                + "B -> C [ label = \"1\" weight = \"1\" ];\n"
+                + "C -> A [ label = \"1\" weight = \"1\" ];\n"
                 + "A;\n"
                 + "B;\n"
                 + "C;\n"
-                + "A -> B [ label = \"2\" weight = \"2\" ];\n"
-                + "B -> C [ label = \"1\" weight = \"1\" color = \"blue\" ];\n"
-                + "C -> A [ label = \"1\" weight = \"1\" color = \"blue\" ];\n"
-                + "}`;");
+                + "}`;";
 
-        assertEquals(expectedDot.toString(), dot);
+        assertEquals(expectedDot, dot);
     }
 }
