@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
+import org.hjug.cbc.CostBenefitCalculator;
 import org.hjug.cbc.CycleRanker;
 import org.hjug.cbc.RankedCycle;
 import org.hjug.cbc.RankedDisharmony;
@@ -128,8 +129,6 @@ public class SimpleHtmlReport {
         writeReportToDisk(outputDirectory, filename, reportHtml);
         log.info("Done! View the report at target/site/{}", filename);
     }
-
-
 
     public StringBuilder generateReport(
             boolean showDetails,
