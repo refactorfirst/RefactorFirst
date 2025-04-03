@@ -32,7 +32,7 @@ If you use an old JDK release of your chosen Java version, you may encounter iss
 Run the following command from the root of your project (the source code does not need to be built):
 
 ```bash
-mvn org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.7.0:htmlReport
+mvn org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.7.1:htmlReport
 ```
 View the report at ```target/site/refactor-first-report.html```
 
@@ -40,7 +40,7 @@ View the report at ```target/site/refactor-first-report.html```
 This will generate a simplified HTML report (no graphs or images) as the output of a GitHub Action step
 ```bash
 mvn -B clean test \
-org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.7.0:simpleHtmlReport \
+org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.7.1:simpleHtmlReport \
 && echo "$(cat target/site/refactor-first-report.html)" >> $GITHUB_STEP_SUMMARY
 ```
 
@@ -53,7 +53,7 @@ Add the following to your project in the build section.  **showDetails** will sh
         <plugin>
             <groupId>org.hjug.refactorfirst.plugin</groupId>
             <artifactId>refactor-first-maven-plugin</artifactId>
-            <version>0.7.0</version>       
+            <version>0.7.1</version>       
             <!-- optional -->
             <configuration>
                 <showDetails>false</showDetails>
@@ -74,7 +74,7 @@ A RefactorFirst report will show up in the site report when you run ```mvn site`
         <plugin>
             <groupId>org.hjug.refactorfirst.plugin</groupId>
             <artifactId>refactor-first-maven-plugin</artifactId>
-            <version>0.7.0</version>       
+            <version>0.7.1</version>       
         </plugin>
         ...
     </plugins>
@@ -139,7 +139,7 @@ I would like to create a Gradle plugin and (possibly) support non-conventional p
 and then (assuming Maven is installed) run
 
 ```bash
-mvn org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.7.0:htmlReport
+mvn org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.7.1:htmlReport
 ```
 
 ## Viewing the Report
@@ -165,7 +165,7 @@ There is still much to be done.  Your feedback and collaboration would be greatl
 If you find this plugin useful, please star this repository and share with your friends & colleagues and on social media.
 
 ## Future Plans
-* Improve class cycle analysis (only field member types and method signature types are currently supported).
+* Improve class cycle analysis
 * Add a Gradle plugin.
 * Incorporate Unit Test coverage metrics to quickly identify the safety of refactoring classes.
 * Incorporate bug counts per class to the Impact (Y-Axis) calculation.
