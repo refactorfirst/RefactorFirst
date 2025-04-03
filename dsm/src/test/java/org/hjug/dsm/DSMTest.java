@@ -124,11 +124,9 @@ class DSMTest {
         dsm.addDependency("A", "E", 9);
         dsm.addDependency("E", "A", 3); // create cycle between cycles
 
-        List<EdgeToRemoveInfo> infos = dsm.getImpactOfEdgesAboveDiagonalIfRemoved(50);
+        List<EdgeToRemoveInfo> infos = dsm.getImpactOfSparseEdgesAboveDiagonalIfRemoved();
         assertEquals(5, infos.size());
 
-        assertEquals("(H : E)", infos.get(0).getEdge().toString());
-        assertEquals(2, infos.get(0).getNewCycleCount());
-        assertEquals(4.5, infos.get(0).getAverageCycleNodeCount());
+        assertEquals("(E : A)", infos.get(0).getEdge().toString());
     }
 }

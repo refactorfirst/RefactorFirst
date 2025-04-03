@@ -129,8 +129,6 @@ public class SimpleHtmlReport {
         log.info("Done! View the report at target/site/{}", filename);
     }
 
-
-
     public StringBuilder generateReport(
             boolean showDetails,
             int edgeAnalysisCount,
@@ -194,14 +192,14 @@ public class SimpleHtmlReport {
         List<RankedDisharmony> rankedGodClassDisharmonies = List.of();
         List<RankedDisharmony> rankedCBODisharmonies = List.of();
         log.info("Identifying Object Oriented Disharmonies");
-        try (CostBenefitCalculator costBenefitCalculator = new CostBenefitCalculator(projectBaseDir)) {
-            costBenefitCalculator.runPmdAnalysis();
-            rankedGodClassDisharmonies = costBenefitCalculator.calculateGodClassCostBenefitValues();
-            rankedCBODisharmonies = costBenefitCalculator.calculateCBOCostBenefitValues();
-        } catch (Exception e) {
-            log.error("Error running analysis.");
-            throw new RuntimeException(e);
-        }
+        //        try (CostBenefitCalculator costBenefitCalculator = new CostBenefitCalculator(projectBaseDir)) {
+        //            costBenefitCalculator.runPmdAnalysis();
+        //            rankedGodClassDisharmonies = costBenefitCalculator.calculateGodClassCostBenefitValues();
+        //            rankedCBODisharmonies = costBenefitCalculator.calculateCBOCostBenefitValues();
+        //        } catch (Exception e) {
+        //            log.error("Error running analysis.");
+        //            throw new RuntimeException(e);
+        //        }
 
         CycleRanker cycleRanker = new CycleRanker(projectBaseDir);
         List<RankedCycle> rankedCycles = List.of();
@@ -217,7 +215,7 @@ public class SimpleHtmlReport {
         edgesAboveDiagonal = dsm.getEdgesAboveDiagonal();
 
         log.info("Performing edge removal what-if analysis");
-        List<EdgeToRemoveInfo> edgeToRemoveInfos = dsm.getImpactOfEdgesAboveDiagonalIfRemoved(edgeAnalysisCount);
+        List<EdgeToRemoveInfo> edgeToRemoveInfos = dsm.getImpactOfSparseEdgesAboveDiagonalIfRemoved();
 
         if (edgeToRemoveInfos.isEmpty()
                 && rankedGodClassDisharmonies.isEmpty()
@@ -315,16 +313,12 @@ public class SimpleHtmlReport {
                 .append(dsm.getCycles().size())
                 .append("<br>\n");
         stringBuilder
-                .append("Current Average Cycle Node Count: ")
-                .append(dsm.getAverageCycleNodeCount())
-                .append("<br>\n");
-        stringBuilder
                 .append("Current Total Back Edge Count: ")
                 .append(dsm.getEdgesAboveDiagonal().size())
                 .append("<br>\n");
         stringBuilder
-                .append("Current Total Min Weight Back Edge Count: ")
-                .append(dsm.getMinimumWeightEdgesAboveDiagonal().size())
+                .append("Current Total Back Edge Weight : ")
+                .append(dsm.getSumOfEdgeWeightsAboveDiagonal())
                 .append("<br>\n");
         stringBuilder.append("</div>\n");
 
@@ -423,24 +417,17 @@ public class SimpleHtmlReport {
 
     private String[] getEdgesToRemoveInfoTableHeadings() {
         return new String[] {
-            "Edge",
-            "Edge Weight",
-            "In # of Cycles",
-            "New Cycle Count",
-            "New Avg Cycle Node Count",
-            "Avg Node &Delta; &divide; Effort"
+            "Edge", "Edge Weight", "New Back Edge Count", "New Back Edge Weight Sum", "Weight&Delta; &divide; Effort"
         };
     }
 
     private String[] getEdgeToRemoveInfos(EdgeToRemoveInfo edgeToRemoveInfo) {
         return new String[] {
-            // "Edge", "Edge Weight", "In # of Cycles", "New Cycle Count", "New Avg Cycle Node Count", "Avg Node Count /
-            // Effort"
+            // "Edge", "Edge Weight", "In # of Cycles", "New Back Edge Count", "New Back Edge Weight Sum", "Payoff"
             renderEdge(edgeToRemoveInfo.getEdge()),
-            String.valueOf((int) edgeToRemoveInfo.getEdgeWeight()),
-            String.valueOf(edgeToRemoveInfo.getEdgeInCycleCount()),
-            String.valueOf(edgeToRemoveInfo.getNewCycleCount()),
-            String.valueOf(edgeToRemoveInfo.getAverageCycleNodeCount()),
+            String.valueOf(edgeToRemoveInfo.getEdgeWeight()),
+            String.valueOf(edgeToRemoveInfo.getNewEdgeCount()),
+            String.valueOf(edgeToRemoveInfo.getNewEdgeWeightSum()),
             String.valueOf(edgeToRemoveInfo.getPayoff())
         };
     }
@@ -451,8 +438,7 @@ public class SimpleHtmlReport {
             getClassName(rankedCycle.getCycleName()),
             rankedCycle.getPriority().toString(),
             String.valueOf(rankedCycle.getCycleNodes().size()),
-            String.valueOf(rankedCycle.getEdgeSet().size()) // ,
-            //            edgesToCut.toString()
+            String.valueOf(rankedCycle.getEdgeSet().size())
         };
     }
 

@@ -78,8 +78,7 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
                         testSourceDirectory,
                         projectName,
                         projectVersion,
-                        project.getBasedir()
-                )
+                        project.getBasedir())
                 .toString();
 
         mainSink.rawText(report);
