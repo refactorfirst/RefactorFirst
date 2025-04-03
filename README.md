@@ -14,7 +14,7 @@ It scans your Git repository generates a single page application by runing:
 Code map viewers are powered by [3D Force Graph](https://vasturiano.github.io/3d-force-graph), [sigma.js](https://www.sigmajs.org/), and [GraphViz DOT](https://graphviz.org/docs/layouts/dot/)
 <br>If there are more than 4000 classes + relationships, a simplified 3D viewer will be used to avoid slowdowns.  Features will be toggleable in the 3D UI in a future release.
 
-Take a look at the [Spring Petclinic REST project sample report](https://rawcdn.githack.com/refactorfirst/RefactorFirst/035e141f7a42920a32d96f74e819ad370fece5e7/spring-petclinic-rest-report.html)!
+Take a look at the [Spring Petclinic REST project sample report](https://rawcdn.githack.com/refactorfirst/RefactorFirst/c46d26211a91ffbe08d4089e04a85ff31eb093c0/spring-petclinic-rest-report.html)!
 
 The graphs generated in the report will look similar to this one:
 ![image info](./RefactorFirst_Sample_Report.png)
