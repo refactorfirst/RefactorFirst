@@ -48,59 +48,9 @@ public class GitLogReader implements AutoCloseable {
         git.close();
     }
 
-    // Based on
-    // https://github.com/Cosium/git-code-format-maven-plugin/blob/master/src/main/java/com/cosium/code/format/AbstractMavenGitCodeFormatMojo.java
-    // MIT License
-    // Move to a provider?
-    public Repository gitRepository(File basedir) throws IOException {
-        Repository gitRepository;
-        FileRepositoryBuilder repositoryBuilder = new FileRepositoryBuilder().findGitDir(basedir);
-        String gitIndexFileEnvVariable = System.getenv("GIT_INDEX_FILE");
-        if (Objects.nonNull(gitIndexFileEnvVariable)
-                && !gitIndexFileEnvVariable.trim().isEmpty()) {
-            log.debug("Setting Index File based on Env Variable GIT_INDEX_FILE {}", gitIndexFileEnvVariable);
-            repositoryBuilder = repositoryBuilder.setIndexFile(new File(gitIndexFileEnvVariable));
-        }
-        gitRepository = repositoryBuilder.build();
-
-        return gitRepository;
-    }
-
     public File getGitDir(File basedir) {
         FileRepositoryBuilder repositoryBuilder = new FileRepositoryBuilder().findGitDir(basedir);
         return repositoryBuilder.getGitDir();
-    }
-
-    // https://stackoverflow.com/a/19950970/346247
-    // and
-    // https://github.com/centic9/jgit-cookbook/blob/master/src/main/java/org/dstadler/jgit/api/ReadFileFromCommit.java
-    public Map<String, ByteArrayOutputStream> listRepositoryContentsAtHEAD(Repository repository) throws IOException {
-        Ref head = repository.exactRef("HEAD");
-        // a RevWalk allows us to walk over commits based on some filtering that is defined
-        RevWalk walk = new RevWalk(repository);
-        RevCommit commit = walk.parseCommit(head.getObjectId());
-        RevTree tree = commit.getTree();
-
-        TreeWalk treeWalk = new TreeWalk(repository);
-        treeWalk.addTree(tree);
-        treeWalk.setRecursive(false);
-
-        // TODO: extract rest of this method to test it
-        Map<String, ByteArrayOutputStream> fileContentsCollection = new HashMap<>();
-        while (treeWalk.next()) {
-            if (treeWalk.isSubtree()) {
-                treeWalk.enterSubtree();
-            } else {
-                if (treeWalk.getPathString().endsWith(JAVA_FILE_TYPE)) {
-                    ObjectId objectId = treeWalk.getObjectId(0);
-                    ObjectLoader loader = repository.open(objectId);
-                    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-                    loader.copyTo(outputStream);
-                    fileContentsCollection.put(treeWalk.getPathString(), outputStream);
-                }
-            }
-        }
-        return fileContentsCollection;
     }
 
     // log --follow implementation may be worth adopting in the future
