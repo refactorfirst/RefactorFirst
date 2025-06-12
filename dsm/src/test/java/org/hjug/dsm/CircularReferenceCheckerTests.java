@@ -23,9 +23,16 @@ class CircularReferenceCheckerTests {
         classReferencesGraph.addVertex("C");
         classReferencesGraph.addEdge("A", "B");
         classReferencesGraph.addEdge("B", "C");
-        classReferencesGraph.addEdge("C", "A");
+
         Map<String, AsSubgraph<String, DefaultWeightedEdge>> cyclesForEveryVertexMap =
                 sutCircularReferenceChecker.getCycles(classReferencesGraph);
-        assertEquals(1, cyclesForEveryVertexMap.size());
+        assertEquals(0, cyclesForEveryVertexMap.size(), "Not expecting any circular references at this point");
+
+        classReferencesGraph.addEdge("C", "A");
+
+        cyclesForEveryVertexMap = sutCircularReferenceChecker.getCycles(classReferencesGraph);
+        assertEquals(1, cyclesForEveryVertexMap.size(), "Now we expect one circular reference");
+        assertEquals("([A, B, C], [(A,B), (B,C), (C,A)])", cyclesForEveryVertexMap.get("A").toString(),
+                "Expected a different circular reference");
     }
 }
