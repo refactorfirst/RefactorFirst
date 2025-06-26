@@ -129,6 +129,5 @@ class DSMTest {
 
         assertEquals("(H : E)", infos.get(0).getEdge().toString());
         assertEquals(2, infos.get(0).getNewCycleCount());
-        assertEquals(4.5, infos.get(0).getAverageCycleNodeCount());
     }
 }
