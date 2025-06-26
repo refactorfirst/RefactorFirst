@@ -15,6 +15,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+// TODO: Delete
 class SparseIntDWGEdgeRemovalCalculator {
     private final Graph<String, DefaultWeightedEdge> graph;
     SparseIntDirectedWeightedGraph sparseGraph;
@@ -35,7 +36,6 @@ class SparseIntDWGEdgeRemovalCalculator {
             int vertexCount,
             Map<String, Integer> vertexToInt,
             Map<Integer, String> intToVertex) {
-        //TODO: Use concurrent types where possible
         this.graph = graph;
         this.sparseGraph = sparseGraph;
         this.sparseEdges = new CopyOnWriteArrayList<>(sparseEdges);
@@ -83,7 +83,8 @@ class SparseIntDWGEdgeRemovalCalculator {
 
     private List<Integer> orderVertices(SparseIntDirectedWeightedGraph sparseGraph) {
         List<Set<Integer>> sccs = new CopyOnWriteArrayList<>(findStronglyConnectedSparseGraphComponents(sparseGraph));
-        List<Integer> sparseIntSortedActivities = topologicalSortSparseGraph(sccs, sparseGraph);
+//        List<Integer> sparseIntSortedActivities = topologicalSortSparseGraph(sccs, sparseGraph);
+        List<Integer> sparseIntSortedActivities = topologicalParallelSortSparseGraph(sccs, sparseGraph);
         // reversing corrects rendering of the DSM
         // with sources as rows and targets as columns
         // was needed after AI solution was generated and iterated
@@ -155,7 +156,7 @@ class SparseIntDWGEdgeRemovalCalculator {
         ConcurrentLinkedQueue<Integer> sortedActivities = new ConcurrentLinkedQueue<>();
         Set<Integer> visited = new ConcurrentSkipListSet<>();
 
-        sccs.stream()
+        sccs.parallelStream()
                 .flatMap(Set::parallelStream)
                 .filter(activity -> !visited.contains(activity))
                 .forEach(activity -> topologicalSortUtilSparseGraph(activity, visited, sortedActivities, graph));
@@ -169,11 +170,9 @@ class SparseIntDWGEdgeRemovalCalculator {
             Integer activity, Set<Integer> visited, ConcurrentLinkedQueue<Integer> sortedActivities, Graph<Integer, Integer> graph) {
         visited.add(activity);
 
-        for (Integer neighbor : Graphs.successorListOf(graph, activity)) {
-            if (!visited.contains(neighbor)) {
-                topologicalSortUtilSparseGraph(neighbor, visited, sortedActivities, graph);
-            }
-        }
+        Graphs.successorListOf(graph, activity).parallelStream()
+                .filter(neighbor -> !visited.contains(neighbor))
+                .forEach(neighbor -> topologicalSortUtilSparseGraph(neighbor, visited, sortedActivities, graph));
 
         sortedActivities.add(activity);
     }

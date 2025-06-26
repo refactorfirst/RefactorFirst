@@ -215,10 +215,10 @@ public class SimpleHtmlReport {
         edgesAboveDiagonal = dsm.getEdgesAboveDiagonal();
 
         log.info("Performing edge removal what-if analysis");
-        List<EdgeToRemoveInfo> edgeToRemoveInfos = dsm.getImpactOfSparseEdgesAboveDiagonalIfRemoved();
+//        List<EdgeToRemoveInfo> edgeToRemoveInfos = dsm.getImpactOfSparseEdgesAboveDiagonalIfRemoved();
 
-        if (edgeToRemoveInfos.isEmpty()
-                && rankedGodClassDisharmonies.isEmpty()
+        if (/*edgeToRemoveInfos.isEmpty()
+                &&*/ rankedGodClassDisharmonies.isEmpty()
                 && rankedCBODisharmonies.isEmpty()
                 && rankedCycles.isEmpty()) {
             stringBuilder
@@ -232,10 +232,10 @@ public class SimpleHtmlReport {
             return stringBuilder;
         }
 
-        if (!edgeToRemoveInfos.isEmpty()) {
-            stringBuilder.append("<a href=\"#EDGES\">Back Edges</a>\n");
-            stringBuilder.append("<br/>\n");
-        }
+//        if (!edgeToRemoveInfos.isEmpty()) {
+//            stringBuilder.append("<a href=\"#EDGES\">Back Edges</a>\n");
+//            stringBuilder.append("<br/>\n");
+//        }
 
         if (!rankedGodClassDisharmonies.isEmpty()) {
             stringBuilder.append("<a href=\"#GOD\">God Classes</a>\n");
@@ -259,13 +259,13 @@ public class SimpleHtmlReport {
 
         // Display impact of each edge if removed
         stringBuilder.append("<br/>\n");
-        String edgeInfos = renderEdgeToRemoveInfos(edgeToRemoveInfos);
-
-        if (!edgeToRemoveInfos.isEmpty()) {
-            stringBuilder.append(edgeInfos);
-            stringBuilder.append(renderGithubButtons());
-            stringBuilder.append("<br/>\n" + "<br/>\n" + "<br/>\n" + "<br/>\n" + "<hr/>\n" + "<br/>\n" + "<br/>\n");
-        }
+//        String edgeInfos = renderEdgeToRemoveInfos(edgeToRemoveInfos);
+//
+//        if (!edgeToRemoveInfos.isEmpty()) {
+//            stringBuilder.append(edgeInfos);
+//            stringBuilder.append(renderGithubButtons());
+//            stringBuilder.append("<br/>\n" + "<br/>\n" + "<br/>\n" + "<br/>\n" + "<hr/>\n" + "<br/>\n" + "<br/>\n");
+//        }
 
         if (!rankedGodClassDisharmonies.isEmpty()) {
             final String[] godClassTableHeadings =
