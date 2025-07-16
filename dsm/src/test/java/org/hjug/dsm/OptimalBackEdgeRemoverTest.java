@@ -1,20 +1,20 @@
 package org.hjug.dsm;
 
+import static org.junit.jupiter.api.Assertions.*;
+
+import java.util.ArrayList;
+import java.util.Set;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultWeightedEdge;
 import org.jgrapht.graph.SimpleDirectedWeightedGraph;
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
-import java.util.Set;
-
-import static org.junit.jupiter.api.Assertions.*;
-
 class OptimalBackEdgeRemoverTest {
 
     @Test
     void noOptimalEdge() {
-        Graph<String, DefaultWeightedEdge> classReferencesGraph = new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        Graph<String, DefaultWeightedEdge> classReferencesGraph =
+                new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
         classReferencesGraph.addVertex("A");
         classReferencesGraph.addVertex("B");
         classReferencesGraph.addVertex("C");
@@ -27,10 +27,10 @@ class OptimalBackEdgeRemoverTest {
         assertTrue(optimalEdges.isEmpty());
     }
 
-
     @Test
     void oneBackEdge() {
-        Graph<String, DefaultWeightedEdge> classReferencesGraph = new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        Graph<String, DefaultWeightedEdge> classReferencesGraph =
+                new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
         classReferencesGraph.addVertex("A");
         classReferencesGraph.addVertex("B");
         classReferencesGraph.addVertex("C");
@@ -47,7 +47,8 @@ class OptimalBackEdgeRemoverTest {
 
     @Test
     void twoBackEdges() {
-        Graph<String, DefaultWeightedEdge> classReferencesGraph = new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        Graph<String, DefaultWeightedEdge> classReferencesGraph =
+                new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
         classReferencesGraph.addVertex("A");
         classReferencesGraph.addVertex("B");
         classReferencesGraph.addVertex("C");
@@ -62,11 +63,12 @@ class OptimalBackEdgeRemoverTest {
         Set<DefaultWeightedEdge> optimalEdges = remover.findOptimalBackEdgesToRemove();
 
         assertEquals(2, optimalEdges.size());
-    }    
-    
+    }
+
     @Test
     void multi() {
-        Graph<String, DefaultWeightedEdge> classReferencesGraph = new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        Graph<String, DefaultWeightedEdge> classReferencesGraph =
+                new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
         classReferencesGraph.addVertex("A");
         classReferencesGraph.addVertex("B");
         classReferencesGraph.addVertex("C");
@@ -97,6 +99,6 @@ class OptimalBackEdgeRemoverTest {
         Set<DefaultWeightedEdge> optimalEdges = remover.findOptimalBackEdgesToRemove();
 
         assertEquals(1, optimalEdges.size());
-        assertEquals("E:A", new ArrayList<>(optimalEdges).get(0).toString());
+        assertEquals("(A : B)", new ArrayList<>(optimalEdges).get(0).toString());
     }
 }

@@ -1,12 +1,11 @@
 package org.hjug.dsm;
 
+import java.util.HashMap;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.jgrapht.alg.cycle.CycleDetector;
 import org.jgrapht.graph.AsSubgraph;
 import org.jgrapht.opt.graph.sparse.SparseIntDirectedWeightedGraph;
-
-import java.util.HashMap;
-import java.util.Map;
 
 @Slf4j
 public class SparseGraphCircularReferenceChecker {
@@ -57,8 +56,7 @@ public class SparseGraphCircularReferenceChecker {
         return false;
     }
 
-    private Map<Integer, AsSubgraph<Integer, Integer>> detectCycles(
-            SparseIntDirectedWeightedGraph graph) {
+    private Map<Integer, AsSubgraph<Integer, Integer>> detectCycles(SparseIntDirectedWeightedGraph graph) {
         Map<Integer, AsSubgraph<Integer, Integer>> cyclesForEveryVertexMap = new HashMap<>();
         CycleDetector<Integer, Integer> cycleDetector = new CycleDetector<>(graph);
         cycleDetector.findCycles().forEach(v -> {

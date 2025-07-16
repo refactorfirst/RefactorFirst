@@ -2,7 +2,6 @@ package org.hjug.dsm;
 
 import java.util.*;
 import java.util.stream.Collectors;
-
 import lombok.Getter;
 import org.jgrapht.Graph;
 import org.jgrapht.Graphs;
@@ -34,11 +33,11 @@ Used https://sookocheff.com/post/dsm/improving-software-architecture-using-desig
 as a starting point.
  */
 
-public class DSM {
-    private final Graph<String, DefaultWeightedEdge> graph;
-    private List<String> sortedActivities;
+public class DSM<V, E> {
+    private final Graph<V, E> graph;
+    private List<V> sortedActivities;
     boolean activitiesSorted = false;
-    private final List<DefaultWeightedEdge> edgesAboveDiagonal = new ArrayList<>();
+    private final List<E> edgesAboveDiagonal = new ArrayList<>();
 
     List<Integer> sparseIntSortedActivities;
     SparseIntDirectedWeightedGraph sparseGraph;
@@ -46,30 +45,23 @@ public class DSM {
     @Getter
     double sumOfEdgeWeightsAboveDiagonal;
 
-    Map<String, Integer> vertexToInt = new HashMap<>();
-    Map<Integer, String> intToVertex = new HashMap<>();
+    Map<V, Integer> vertexToInt = new HashMap<>();
+    Map<Integer, V> intToVertex = new HashMap<>();
     List<Triple<Integer, Integer, Double>> sparseEdges = new ArrayList<>();
     int vertexCount = 0;
 
-    @Getter
-    Map<String, AsSubgraph<String, DefaultWeightedEdge>> cycles;
-
-    public DSM() {
-        this(new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class));
-    }
-
-    public DSM(Graph<String, DefaultWeightedEdge> graph) {
+    public DSM(Graph<V, E> graph) {
         this.graph = graph;
         sortedActivities = new ArrayList<>();
-        cycles = new CircularReferenceChecker().getCycles(graph);
+
     }
 
-    public void addActivity(String activity) {
+    public void addActivity(V activity) {
         graph.addVertex(activity);
     }
 
-    public void addDependency(String from, String to, int weight) {
-        DefaultWeightedEdge edge = graph.addEdge(from, to);
+    public void addDependency(V from, V to, int weight) {
+        E edge = graph.addEdge(from, to);
         if (edge != null) {
             graph.setEdgeWeight(edge, weight);
         }
@@ -88,14 +80,14 @@ public class DSM {
     }
 
     private SparseIntDirectedWeightedGraph getSparseIntDirectedWeightedGraph() {
-        for (String vertex : graph.vertexSet()) {
+        for (V vertex : graph.vertexSet()) {
             vertexToInt.put(vertex, vertexCount);
             intToVertex.put(vertexCount, vertex);
             vertexCount++;
         }
 
         // Create the list of sparseEdges for the SparseIntDirectedWeightedGraph
-        for (DefaultWeightedEdge edge : graph.edgeSet()) {
+        for (E edge : graph.edgeSet()) {
             int source = vertexToInt.get(graph.getEdgeSource(edge));
             int target = vertexToInt.get(graph.getEdgeTarget(edge));
             double weight = graph.getEdgeWeight(edge);
@@ -106,7 +98,7 @@ public class DSM {
         return new SparseIntDirectedWeightedGraph(vertexCount, sparseEdges);
     }
 
-    List<String> convertIntToStringVertices(List<Integer> intVertices) {
+    List<V> convertIntToStringVertices(List<Integer> intVertices) {
         return intVertices.stream().map(intToVertex::get).collect(Collectors.toList());
     }
 
@@ -152,7 +144,7 @@ public class DSM {
         sortedActivities.add(activity);
     }
 
-    public List<DefaultWeightedEdge> getEdgesAboveDiagonal() {
+    public List<E> getEdgesAboveDiagonal() {
         if (!activitiesSorted) {
             orderVertices();
         }
@@ -162,7 +154,7 @@ public class DSM {
                 for (int j = i + 1; j < sortedActivities.size(); j++) {
                     // source / destination vertex was flipped after solution generation
                     // to correctly identify the vertex above the diagonal to remove
-                    DefaultWeightedEdge edge = graph.getEdge(sortedActivities.get(i), sortedActivities.get(j));
+                    E edge = graph.getEdge(sortedActivities.get(i), sortedActivities.get(j));
                     if (edge != null) {
                         edgesAboveDiagonal.add(edge);
                     }
@@ -170,7 +162,8 @@ public class DSM {
             }
 
             sumOfEdgeWeightsAboveDiagonal = edgesAboveDiagonal.stream()
-                    .mapToInt(edge -> (int) graph.getEdgeWeight(edge)).sum();
+                    .mapToInt(edge -> (int) graph.getEdgeWeight(edge))
+                    .sum();
         }
 
         return edgesAboveDiagonal;
@@ -198,16 +191,16 @@ public class DSM {
         return sparseEdgesAboveDiagonal;
     }
 
-    public DefaultWeightedEdge getFirstLowestWeightEdgeAboveDiagonalToRemove() {
+    public E getFirstLowestWeightEdgeAboveDiagonalToRemove() {
         if (!activitiesSorted) {
             orderVertices();
         }
 
-        List<DefaultWeightedEdge> edgesAboveDiagonal = getEdgesAboveDiagonal();
-        DefaultWeightedEdge optimalEdge = null;
+        List<E> edgesAboveDiagonal = getEdgesAboveDiagonal();
+        E optimalEdge = null;
         int minWeight = Integer.MAX_VALUE;
 
-        for (DefaultWeightedEdge edge : edgesAboveDiagonal) {
+        for (E edge : edgesAboveDiagonal) {
             int weight = (int) graph.getEdgeWeight(edge);
             if (weight < minWeight) {
                 minWeight = weight;
@@ -221,16 +214,16 @@ public class DSM {
         return optimalEdge;
     }
 
-    public List<DefaultWeightedEdge> getMinimumWeightEdgesAboveDiagonal() {
+    public List<E> getMinimumWeightEdgesAboveDiagonal() {
         if (!activitiesSorted) {
             orderVertices();
         }
 
-        List<DefaultWeightedEdge> edgesAboveDiagonal = getEdgesAboveDiagonal();
-        List<DefaultWeightedEdge> minWeightEdges = new ArrayList<>();
+        List<E> edgesAboveDiagonal = getEdgesAboveDiagonal();
+        List<E> minWeightEdges = new ArrayList<>();
         double minWeight = Double.MAX_VALUE;
 
-        for (DefaultWeightedEdge edge : edgesAboveDiagonal) {
+        for (E edge : edgesAboveDiagonal) {
             double weight = graph.getEdgeWeight(edge);
             if (weight < minWeight) {
                 minWeight = weight;
@@ -252,21 +245,21 @@ public class DSM {
         printDSM(graph, sortedActivities);
     }
 
-    void printDSM(Graph<String, DefaultWeightedEdge> graph, List<String> sortedActivities) {
+    void printDSM(Graph<V, E> graph, List<V> sortedActivities) {
 
         System.out.println("Design Structure Matrix:");
         System.out.print("  ");
-        for (String col : sortedActivities) {
+        for (V col : sortedActivities) {
             System.out.print(col + " ");
         }
         System.out.println();
-        for (String row : sortedActivities) {
+        for (V row : sortedActivities) {
             System.out.print(row + " ");
-            for (String col : sortedActivities) {
+            for (V col : sortedActivities) {
                 if (col.equals(row)) {
                     System.out.print("- ");
                 } else {
-                    DefaultWeightedEdge edge = graph.getEdge(row, col);
+                    E edge = graph.getEdge(row, col);
                     if (edge != null) {
                         System.out.print((int) graph.getEdgeWeight(edge) + " ");
                     } else {
@@ -276,215 +269,5 @@ public class DSM {
             }
             System.out.println();
         }
-    }
-
-    // TODO: Delete all code below this line
-    // Will be superseded by Minimum Feedback Arc + Vertex calculations
-    /////////////////////////////////////////////////////////
-    // "Standard" Graph implementation to find edge to remove
-    /////////////////////////////////////////////////////////
-
-    /**
-     * Captures the impact of the removal of each edge above the diagonal.
-     */
-    public List<EdgeToRemoveInfo> getImpactOfEdgesAboveDiagonalIfRemoved() {
-
-//        // get edges above diagonal for DSM graph
-//        List<DefaultWeightedEdge> edgesAboveDiagonal;
-//        List<DefaultWeightedEdge> allEdgesAboveDiagonal = getEdgesAboveDiagonal();
-//
-//        if (limit == 0 || allEdgesAboveDiagonal.size() <= limit) {
-//            edgesAboveDiagonal = allEdgesAboveDiagonal;
-//        } else {
-//            // get first 50 values of min weight
-//            List<DefaultWeightedEdge> minimumWeightEdgesAboveDiagonal = getMinimumWeightEdgesAboveDiagonal();
-//            int max = Math.min(minimumWeightEdgesAboveDiagonal.size(), limit);
-//            edgesAboveDiagonal = minimumWeightEdgesAboveDiagonal.subList(0, max);
-//        }
-
-        int currentCycleCount = new CircularReferenceChecker().getCycles(graph).size();
-
-        return getEdgesAboveDiagonal().stream()
-                .map(this::calculateEdgeToRemoveInfo)
-                .sorted(Comparator
-                        .comparing((EdgeToRemoveInfo edgeToRemoveInfo) -> currentCycleCount - edgeToRemoveInfo.getNewCycleCount())
-                        /*.thenComparing(EdgeToRemoveInfo::getEdgeWeight)*/)
-                .collect(Collectors.toList());
-    }
-
-    private EdgeToRemoveInfo calculateEdgeToRemoveInfo(DefaultWeightedEdge edgeToRemove) {
-        //clone graph and remove edge
-        Graph<String, DefaultWeightedEdge> improvedGraph = new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-        graph.vertexSet().forEach(improvedGraph::addVertex);
-        for (DefaultWeightedEdge weightedEdge : graph.edgeSet()) {
-            improvedGraph.addEdge(graph.getEdgeSource(weightedEdge), graph.getEdgeTarget(weightedEdge), weightedEdge);
-        }
-
-        improvedGraph.removeEdge(edgeToRemove);
-
-        // Calculate new cycle count
-        int newCycleCount = new CircularReferenceChecker().getCycles(improvedGraph).size();
-
-        //calculate new graph statistics
-        double removedEdgeWeight = graph.getEdgeWeight(edgeToRemove);
-        double payoff = newCycleCount / removedEdgeWeight;
-        return new EdgeToRemoveInfo(edgeToRemove, (int) removedEdgeWeight, newCycleCount, payoff);
-    }
-
-    /*public List<EdgeToRemoveInfo> getImpactOfEdgesAboveDiagonalIfRemoved(int limit) {
-        List<EdgeToRemoveInfo> edgesToRemove = new ArrayList<>();
-        // capture impact of each edge on graph when removed
-        for (DefaultWeightedEdge edge : edgesAboveDiagonal) {
-            int edgeInCyclesCount = 0;
-            for (AsSubgraph<String, DefaultWeightedEdge> cycle : cycles.values()) {
-                if (cycle.containsEdge(edge)) {
-                    edgeInCyclesCount++;
-                }
-            }
-
-            // remove the edge
-            clonedGraph.removeEdge(edge);
-
-            // identify updated cycles and calculate updated graph information
-            edgesToRemove.add(getEdgeToRemoveInfo(
-                    edge, edgeInCyclesCount, new CircularReferenceChecker().getCycles(clonedGraph)));
-
-            // add the edge back for next iteration
-            clonedGraph.addEdge(graph.getEdgeSource(edge), graph.getEdgeTarget(edge), edge);
-            clonedGraph.setEdgeWeight(edge, graph.getEdgeWeight(edge));
-        }
-
-        edgesToRemove.sort(Comparator.comparing(EdgeToRemoveInfo::getPayoff));
-        Collections.reverse(edgesToRemove);
-        return edgesToRemove;
-    }*/
-
-    public List<DefaultWeightedEdge> getEdgesAboveDiagonal(Graph<String, DefaultWeightedEdge> graph, List<String> sortedActivities) {
-        List<DefaultWeightedEdge> edgesAboveDiagonal = new ArrayList<>();
-        for (int i = 0; i < sortedActivities.size(); i++) {
-            for (int j = i + 1; j < sortedActivities.size(); j++) {
-                // source / destination vertex was flipped after solution generation
-                // to correctly identify the vertex above the diagonal to remove
-                DefaultWeightedEdge edge = graph.getEdge(sortedActivities.get(i), sortedActivities.get(j));
-                if (edge != null) {
-                    edgesAboveDiagonal.add(edge);
-                }
-            }
-        }
-
-        return edgesAboveDiagonal;
-    }
-
-    private List<String> orderVertices(Graph<String, DefaultWeightedEdge> graph) {
-        List<Set<String>> sccs = findStronglyConnectedComponents(graph);
-        List<String> sparseIntSortedActivities = topologicalSort(sccs, graph);
-        // reversing corrects rendering of the DSM
-        // with sources as rows and targets as columns
-        // was needed after AI solution was generated and iterated
-        Collections.reverse(sparseIntSortedActivities);
-
-        return sparseIntSortedActivities;
-    }
-
-    private List<String> topologicalSort(List<Set<String>> sccs, Graph<String, DefaultWeightedEdge> graph) {
-        List<String> sortedActivities = new ArrayList<>();
-        Set<String> visited = new HashSet<>();
-
-        for (Set<String> scc : sccs) {
-            for (String activity : scc) {
-                if (!visited.contains(activity)) {
-                    topologicalSortUtil(activity, visited, sortedActivities, graph);
-                }
-            }
-        }
-
-        Collections.reverse(sortedActivities);
-        return sortedActivities;
-    }
-
-    private void topologicalSortUtil(
-            String activity, Set<String> visited, List<String> sortedActivities, Graph<String, DefaultWeightedEdge> graph) {
-        visited.add(activity);
-
-        for (String neighbor : Graphs.successorListOf(graph, activity)) {
-            if (!visited.contains(neighbor)) {
-                topologicalSortUtil(neighbor, visited, sortedActivities, graph);
-            }
-        }
-
-        sortedActivities.add(activity);
-    }
-
-    private List<Set<String>> findStronglyConnectedComponents(Graph<String, DefaultWeightedEdge> graph) {
-        KosarajuStrongConnectivityInspector<String, DefaultWeightedEdge> kosaraju =
-                new KosarajuStrongConnectivityInspector<>(graph);
-        return kosaraju.stronglyConnectedSets();
-    }
-
-    /////////////////////////////////////////////////////////
-    // Sparse Int Graph implementation to find edge to remove
-    /////////////////////////////////////////////////////////
-
-    public List<EdgeToRemoveInfo> getImpactOfSparseEdgesAboveDiagonalIfRemoved() {
-        List<Integer> sparseEdgesAboveDiagonal = getSparseEdgesAboveDiagonal();
-        return sparseEdgesAboveDiagonal.stream()
-                .map(this::calculateSparseEdgeToRemoveInfo)
-                .sorted(Comparator.comparing(EdgeToRemoveInfo::getPayoff).thenComparing(EdgeToRemoveInfo::getRemovedEdgeWeight))
-                .collect(Collectors.toList());
-    }
-
-    private EdgeToRemoveInfo calculateSparseEdgeToRemoveInfo(Integer edgeToRemove) {
-        //clone graph and remove edge
-        int source = sparseGraph.getEdgeSource(edgeToRemove);
-        int target = sparseGraph.getEdgeTarget(edgeToRemove);
-        double weight = sparseGraph.getEdgeWeight(edgeToRemove);
-        Triple<Integer, Integer, Double> removedEdge = Triple.of(source, target, weight);
-
-        List<Triple<Integer, Integer, Double>> updatedEdgeList = new ArrayList<>(sparseEdges);
-        updatedEdgeList.remove(removedEdge);
-
-        SparseIntDirectedWeightedGraph improvedGraph = new SparseIntDirectedWeightedGraph(vertexCount, updatedEdgeList);
-
-        // find edges above diagonal
-        List<Integer> sortedSparseActivities = orderVertices(improvedGraph);
-        List<Integer> updatedEdges = getSparseEdgesAboveDiagonal(improvedGraph, sortedSparseActivities);
-
-        // calculate new graph statistics
-        int newEdgeCount = updatedEdges.size();
-        double newEdgeWeightSum = updatedEdges.stream()
-                .mapToDouble(improvedGraph::getEdgeWeight).sum();
-        DefaultWeightedEdge defaultWeightedEdge =
-                graph.getEdge(intToVertex.get(source), intToVertex.get(target));
-        double payoff = (sumOfEdgeWeightsAboveDiagonal - newEdgeWeightSum) / weight;
-        return new EdgeToRemoveInfo(defaultWeightedEdge, (int) weight, newEdgeCount, payoff);
-    }
-
-    private List<Integer> orderVertices(SparseIntDirectedWeightedGraph sparseGraph) {
-        List<Set<Integer>> sccs = this.findStronglyConnectedSparseGraphComponents(sparseGraph);
-        List<Integer> sparseIntSortedActivities = topologicalSortSparseGraph(sccs, sparseGraph);
-        // reversing corrects rendering of the DSM
-        // with sources as rows and targets as columns
-        // was needed after AI solution was generated and iterated
-        Collections.reverse(sparseIntSortedActivities);
-
-        return sparseIntSortedActivities;
-    }
-
-    private List<Integer> getSparseEdgesAboveDiagonal(SparseIntDirectedWeightedGraph sparseGraph, List<Integer> sparseIntSortedActivities) {
-        List<Integer> sparseEdgesAboveDiagonal = new ArrayList<>();
-
-        for (int i = 0; i < sparseIntSortedActivities.size(); i++) {
-            for (int j = i + 1; j < sparseIntSortedActivities.size(); j++) {
-                // source / destination vertex was flipped after solution generation
-                // to correctly identify the vertex above the diagonal to remove
-                Integer edge = sparseGraph.getEdge(sparseIntSortedActivities.get(i), sparseIntSortedActivities.get(j));
-
-                if (edge != null) {
-                    sparseEdgesAboveDiagonal.add(edge);
-                }
-            }
-        }
-
-        return sparseEdgesAboveDiagonal;
     }
 }

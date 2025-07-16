@@ -10,11 +10,11 @@ import org.junit.jupiter.api.Test;
 
 class DSMTest {
 
-    DSM dsm;
+    DSM<String, DefaultWeightedEdge> dsm =
+            new DSM(new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class));
 
     @BeforeEach
     void setUp() {
-        dsm = new DSM();
         dsm.addActivity("A");
         dsm.addActivity("B");
         dsm.addActivity("C");
@@ -59,7 +59,7 @@ class DSMTest {
 
     @Test
     void optimalBackwardEdgeToRemoveWithWeightOfOne() {
-        DSM dsm2 = new DSM();
+        DSM<String, DefaultWeightedEdge> dsm2 = new DSM<>(new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class));
         dsm2.addActivity("A");
         dsm2.addActivity("B");
         dsm2.addActivity("C");
@@ -93,41 +93,5 @@ class DSMTest {
         assertEquals("(C : A)", edges.get(2).toString());
         assertEquals("(B : A)", edges.get(3).toString());
         assertEquals("(E : H)", edges.get(4).toString());
-    }
-
-    @Test
-    void getImpactOfEdgesAboveDiagonalIfRemoved() {
-        dsm = new DSM(new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class));
-        dsm.addActivity("A");
-        dsm.addActivity("B");
-        dsm.addActivity("C");
-        dsm.addActivity("D");
-
-        // Cycle 1
-        dsm.addDependency("A", "B", 1);
-        dsm.addDependency("B", "C", 2);
-        dsm.addDependency("C", "D", 3);
-        dsm.addDependency("B", "A", 6); // Adding a cycle
-        dsm.addDependency("C", "A", 5); // Adding a cycle
-        dsm.addDependency("D", "A", 4); // Adding a cycle
-
-        // Cycle 2
-        dsm.addActivity("E");
-        dsm.addActivity("F");
-        dsm.addActivity("G");
-        dsm.addActivity("H");
-        dsm.addDependency("E", "F", 2);
-        dsm.addDependency("F", "G", 7);
-        dsm.addDependency("G", "H", 9);
-        dsm.addDependency("H", "E", 9); // create cycle
-
-        dsm.addDependency("A", "E", 9);
-        dsm.addDependency("E", "A", 3); // create cycle between cycles
-
-        List<EdgeToRemoveInfo> infos = dsm.getImpactOfEdgesAboveDiagonalIfRemoved(50);
-        assertEquals(5, infos.size());
-
-        assertEquals("(H : E)", infos.get(0).getEdge().toString());
-        assertEquals(2, infos.get(0).getNewCycleCount());
     }
 }

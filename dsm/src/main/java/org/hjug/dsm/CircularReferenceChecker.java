@@ -6,12 +6,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.jgrapht.Graph;
 import org.jgrapht.alg.cycle.CycleDetector;
 import org.jgrapht.graph.AsSubgraph;
-import org.jgrapht.graph.DefaultWeightedEdge;
 
 @Slf4j
-public class CircularReferenceChecker {
+public class CircularReferenceChecker<V, E> {
 
-    private final Map<String, AsSubgraph<String, DefaultWeightedEdge>> uniqueSubGraphs = new HashMap<>();
+    private final Map<V, AsSubgraph<V, E>> uniqueSubGraphs = new HashMap<>();
 
     /**
      * Detects cycles in the graph that is passed in
@@ -20,14 +19,14 @@ public class CircularReferenceChecker {
      * @param graph
      * @return a Map of unique cycles in the graph
      */
-    public Map<String, AsSubgraph<String, DefaultWeightedEdge>> getCycles(Graph<String, DefaultWeightedEdge> graph) {
+    public Map<V, AsSubgraph<V, E>> getCycles(Graph<V, E> graph) {
 
         if (!uniqueSubGraphs.isEmpty()) {
             return uniqueSubGraphs;
         }
 
         // use CycleDetector.findCycles()?
-        Map<String, AsSubgraph<String, DefaultWeightedEdge>> cycles = detectCycles(graph);
+        Map<V, AsSubgraph<V, E>> cycles = detectCycles(graph);
 
         cycles.forEach((vertex, subGraph) -> {
             int vertexCount = subGraph.vertexSet().size();
@@ -42,9 +41,9 @@ public class CircularReferenceChecker {
         return uniqueSubGraphs;
     }
 
-    private boolean isDuplicateSubGraph(AsSubgraph<String, DefaultWeightedEdge> subGraph, String vertex) {
+    private boolean isDuplicateSubGraph(AsSubgraph<V, E> subGraph, V vertex) {
         if (!uniqueSubGraphs.isEmpty()) {
-            for (AsSubgraph<String, DefaultWeightedEdge> renderedSubGraph : uniqueSubGraphs.values()) {
+            for (AsSubgraph<V, E> renderedSubGraph : uniqueSubGraphs.values()) {
                 if (renderedSubGraph.vertexSet().size() == subGraph.vertexSet().size()
                         && renderedSubGraph.edgeSet().size()
                                 == subGraph.edgeSet().size()
@@ -57,13 +56,11 @@ public class CircularReferenceChecker {
         return false;
     }
 
-    private Map<String, AsSubgraph<String, DefaultWeightedEdge>> detectCycles(
-            Graph<String, DefaultWeightedEdge> graph) {
-        Map<String, AsSubgraph<String, DefaultWeightedEdge>> cyclesForEveryVertexMap = new HashMap<>();
-        CycleDetector<String, DefaultWeightedEdge> cycleDetector = new CycleDetector<>(graph);
+    private Map<V, AsSubgraph<V, E>> detectCycles(Graph<V, E> graph) {
+        Map<V, AsSubgraph<V, E>> cyclesForEveryVertexMap = new HashMap<>();
+        CycleDetector<V, E> cycleDetector = new CycleDetector<>(graph);
         cycleDetector.findCycles().forEach(v -> {
-            AsSubgraph<String, DefaultWeightedEdge> subGraph =
-                    new AsSubgraph<>(graph, cycleDetector.findCyclesContainingVertex(v));
+            AsSubgraph<V, E> subGraph = new AsSubgraph<>(graph, cycleDetector.findCyclesContainingVertex(v));
             cyclesForEveryVertexMap.put(v, subGraph);
         });
         return cyclesForEveryVertexMap;

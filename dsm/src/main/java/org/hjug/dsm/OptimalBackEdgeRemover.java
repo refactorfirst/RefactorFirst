@@ -1,11 +1,10 @@
 package org.hjug.dsm;
 
+import java.util.*;
 import org.jgrapht.Graph;
 import org.jgrapht.alg.cycle.CycleDetector;
 import org.jgrapht.alg.cycle.JohnsonSimpleCycles;
 import org.jgrapht.graph.AsSubgraph;
-
-import java.util.*;
 
 public class OptimalBackEdgeRemover<V, E> {
     private Graph<V, E> graph;

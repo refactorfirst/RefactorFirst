@@ -32,7 +32,9 @@ class CircularReferenceCheckerTests {
 
         cyclesForEveryVertexMap = sutCircularReferenceChecker.getCycles(classReferencesGraph);
         assertEquals(1, cyclesForEveryVertexMap.size(), "Now we expect one circular reference");
-        assertEquals("([A, B, C], [(A,B), (B,C), (C,A)])", cyclesForEveryVertexMap.get("A").toString(),
+        assertEquals(
+                "([A, B, C], [(A,B), (B,C), (C,A)])",
+                cyclesForEveryVertexMap.get("A").toString(),
                 "Expected a different circular reference");
     }
 }

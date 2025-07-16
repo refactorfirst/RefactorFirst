@@ -1,12 +1,5 @@
 package org.hjug.dsm;
 
-import org.jgrapht.Graph;
-import org.jgrapht.Graphs;
-import org.jgrapht.alg.connectivity.KosarajuStrongConnectivityInspector;
-import org.jgrapht.alg.util.Triple;
-import org.jgrapht.graph.DefaultWeightedEdge;
-import org.jgrapht.opt.graph.sparse.SparseIntDirectedWeightedGraph;
-
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -14,8 +7,13 @@ import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.jgrapht.Graph;
+import org.jgrapht.Graphs;
+import org.jgrapht.alg.connectivity.KosarajuStrongConnectivityInspector;
+import org.jgrapht.alg.util.Triple;
+import org.jgrapht.graph.DefaultWeightedEdge;
+import org.jgrapht.opt.graph.sparse.SparseIntDirectedWeightedGraph;
 
-// TODO: Delete
 class SparseIntDWGEdgeRemovalCalculator {
     private final Graph<String, DefaultWeightedEdge> graph;
     SparseIntDirectedWeightedGraph sparseGraph;
@@ -25,7 +23,6 @@ class SparseIntDWGEdgeRemovalCalculator {
     int vertexCount;
     Map<String, Integer> vertexToInt;
     Map<Integer, String> intToVertex;
-
 
     SparseIntDWGEdgeRemovalCalculator(
             Graph<String, DefaultWeightedEdge> graph,
@@ -44,18 +41,18 @@ class SparseIntDWGEdgeRemovalCalculator {
         this.vertexCount = vertexCount;
         this.vertexToInt = new ConcurrentHashMap<>(vertexToInt);
         this.intToVertex = new ConcurrentHashMap<>(intToVertex);
-
     }
 
     public List<EdgeToRemoveInfo> getImpactOfSparseEdgesAboveDiagonalIfRemoved() {
         return sparseEdgesAboveDiagonal.parallelStream()
                 .map(this::calculateSparseEdgeToRemoveInfo)
-                .sorted(Comparator.comparing(EdgeToRemoveInfo::getPayoff).thenComparing(EdgeToRemoveInfo::getRemovedEdgeWeight))
+                .sorted(Comparator.comparing(EdgeToRemoveInfo::getPayoff)
+                        .thenComparing(EdgeToRemoveInfo::getRemovedEdgeWeight))
                 .collect(Collectors.toList());
     }
 
     private EdgeToRemoveInfo calculateSparseEdgeToRemoveInfo(Integer edgeToRemove) {
-        //clone graph and remove edge
+        // clone graph and remove edge
         int source = sparseGraph.getEdgeSource(edgeToRemove);
         int target = sparseGraph.getEdgeTarget(edgeToRemove);
         double weight = sparseGraph.getEdgeWeight(edgeToRemove);
@@ -73,17 +70,16 @@ class SparseIntDWGEdgeRemovalCalculator {
 
         // calculate new graph statistics
         int newEdgeCount = updatedEdges.size();
-        double newEdgeWeightSum = updatedEdges.stream()
-                .mapToDouble(improvedGraph::getEdgeWeight).sum();
-        DefaultWeightedEdge defaultWeightedEdge =
-                graph.getEdge(intToVertex.get(source), intToVertex.get(target));
+        double newEdgeWeightSum =
+                updatedEdges.stream().mapToDouble(improvedGraph::getEdgeWeight).sum();
+        DefaultWeightedEdge defaultWeightedEdge = graph.getEdge(intToVertex.get(source), intToVertex.get(target));
         double payoff = (sumOfEdgeWeightsAboveDiagonal - newEdgeWeightSum) / weight;
         return new EdgeToRemoveInfo(defaultWeightedEdge, (int) weight, newEdgeCount, payoff);
     }
 
     private List<Integer> orderVertices(SparseIntDirectedWeightedGraph sparseGraph) {
         List<Set<Integer>> sccs = new CopyOnWriteArrayList<>(findStronglyConnectedSparseGraphComponents(sparseGraph));
-//        List<Integer> sparseIntSortedActivities = topologicalSortSparseGraph(sccs, sparseGraph);
+        //        List<Integer> sparseIntSortedActivities = topologicalSortSparseGraph(sccs, sparseGraph);
         List<Integer> sparseIntSortedActivities = topologicalParallelSortSparseGraph(sccs, sparseGraph);
         // reversing corrects rendering of the DSM
         // with sources as rows and targets as columns
@@ -115,7 +111,6 @@ class SparseIntDWGEdgeRemovalCalculator {
                 .filter(activity -> !visited.contains(activity))
                 .forEach(activity -> topologicalSortUtilSparseGraph(activity, visited, sortedActivities, graph));
 
-
         Collections.reverse(sortedActivities);
         return sortedActivities;
     }
@@ -133,16 +128,14 @@ class SparseIntDWGEdgeRemovalCalculator {
         sortedActivities.add(activity);
     }
 
-    private List<Integer> getSparseEdgesAboveDiagonal(SparseIntDirectedWeightedGraph sparseGraph, List<Integer> sortedActivities) {
+    private List<Integer> getSparseEdgesAboveDiagonal(
+            SparseIntDirectedWeightedGraph sparseGraph, List<Integer> sortedActivities) {
         ConcurrentLinkedQueue<Integer> sparseEdgesAboveDiagonal = new ConcurrentLinkedQueue<>();
 
         int size = sortedActivities.size();
         IntStream.range(0, size).parallel().forEach(i -> {
             for (int j = i + 1; j < size; j++) {
-                Integer edge = sparseGraph.getEdge(
-                        sortedActivities.get(i),
-                        sortedActivities.get(j)
-                );
+                Integer edge = sparseGraph.getEdge(sortedActivities.get(i), sortedActivities.get(j));
                 if (edge != null) {
                     sparseEdgesAboveDiagonal.add(edge);
                 }
@@ -167,7 +160,10 @@ class SparseIntDWGEdgeRemovalCalculator {
     }
 
     private void topologicalSortUtilSparseGraph(
-            Integer activity, Set<Integer> visited, ConcurrentLinkedQueue<Integer> sortedActivities, Graph<Integer, Integer> graph) {
+            Integer activity,
+            Set<Integer> visited,
+            ConcurrentLinkedQueue<Integer> sortedActivities,
+            Graph<Integer, Integer> graph) {
         visited.add(activity);
 
         Graphs.successorListOf(graph, activity).parallelStream()
@@ -176,5 +172,4 @@ class SparseIntDWGEdgeRemovalCalculator {
 
         sortedActivities.add(activity);
     }
-
 }
