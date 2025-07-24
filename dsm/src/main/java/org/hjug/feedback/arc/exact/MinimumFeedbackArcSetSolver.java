@@ -101,16 +101,14 @@ public class MinimumFeedbackArcSetSolver<V, E> {
         // Use parallel processing to identify cycles [18]
         while (hasCycles(tempGraph)) {
             // Find strongly connected components [17][21]
-            KosarajuStrongConnectivityInspector<V, E> inspector =
-                    new KosarajuStrongConnectivityInspector<>(tempGraph);
+            KosarajuStrongConnectivityInspector<V, E> inspector = new KosarajuStrongConnectivityInspector<>(tempGraph);
             List<Set<V>> sccs = inspector.stronglyConnectedSets();
 
             // Process non-trivial SCCs in parallel [18]
             Optional<E> edgeToRemove = sccs.parallelStream()
                     .filter(scc -> scc.size() > 1)
                     .flatMap(scc -> getEdgesInSCC(tempGraph, scc).stream())
-                    .min(Comparator.comparingDouble(edge ->
-                            edgeWeights.getOrDefault(edge, 1.0)));
+                    .min(Comparator.comparingDouble(edge -> edgeWeights.getOrDefault(edge, 1.0)));
 
             if (edgeToRemove.isPresent()) {
                 E edge = edgeToRemove.get();
@@ -136,10 +134,7 @@ public class MinimumFeedbackArcSetSolver<V, E> {
         Map<E, Long> edgeCycleCounts = new ConcurrentHashMap<>();
 
         // Count how many cycles each edge participates in [18]
-        cycleMatrix.keySet().parallelStream().forEach(cycle -> {
-            cycle.forEach(edge ->
-                    edgeCycleCounts.merge(edge, 1L, Long::sum));
-        });
+        cycleMatrix.keySet().parallelStream().forEach(cycle -> cycle.forEach(edge -> edgeCycleCounts.merge(edge, 1L, Long::sum)));
 
         // Select edges with highest cycle participation [2]
         while (!cycleMatrix.isEmpty() && !isAllCyclesCovered(solution)) {
@@ -219,8 +214,7 @@ public class MinimumFeedbackArcSetSolver<V, E> {
                     .filter(neighbor -> !visited.contains(neighbor))
                     .forEach(neighbor -> {
                         if (visited.add(neighbor)) {
-                            predecessorEdge.put(neighbor,
-                                    graph.getEdge(current, neighbor));
+                            predecessorEdge.put(neighbor, graph.getEdge(current, neighbor));
                             queue.offer(neighbor);
                         }
                     });

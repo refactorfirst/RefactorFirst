@@ -1,17 +1,13 @@
 package org.hjug.dsm;
 
+import java.util.*;
+import java.util.stream.Collectors;
 import org.jgrapht.Graph;
-import org.jgrapht.Graphs;
-import org.jgrapht.alg.connectivity.KosarajuStrongConnectivityInspector;
 import org.jgrapht.graph.AsSubgraph;
 import org.jgrapht.graph.DefaultWeightedEdge;
 import org.jgrapht.graph.SimpleDirectedWeightedGraph;
 
-import java.util.*;
-import java.util.stream.Collectors;
-
 public class EdgeRemovalCalculator {
-
 
     private final Graph<String, DefaultWeightedEdge> graph;
     private final DSM<String, DefaultWeightedEdge> dsm;
@@ -44,14 +40,15 @@ public class EdgeRemovalCalculator {
 
         return edgesAboveDiagonal.stream()
                 .map(this::calculateEdgeToRemoveInfo)
-                .sorted(Comparator
-                                .comparing((EdgeToRemoveInfo edgeToRemoveInfo) -> currentCycleCount - edgeToRemoveInfo.getNewCycleCount())
-                        /*.thenComparing(EdgeToRemoveInfo::getEdgeWeight)*/)
+                .sorted(
+                        Comparator.comparing((EdgeToRemoveInfo edgeToRemoveInfo) ->
+                                currentCycleCount - edgeToRemoveInfo.getNewCycleCount())
+                        /*.thenComparing(EdgeToRemoveInfo::getEdgeWeight)*/ )
                 .collect(Collectors.toList());
     }
 
     public EdgeToRemoveInfo calculateEdgeToRemoveInfo(DefaultWeightedEdge edgeToRemove) {
-        //clone graph and remove edge
+        // clone graph and remove edge
         Graph<String, DefaultWeightedEdge> improvedGraph = new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
         graph.vertexSet().forEach(improvedGraph::addVertex);
         for (DefaultWeightedEdge weightedEdge : graph.edgeSet()) {
@@ -61,9 +58,11 @@ public class EdgeRemovalCalculator {
         improvedGraph.removeEdge(edgeToRemove);
 
         // Calculate new cycle count
-        int newCycleCount = new CircularReferenceChecker<String, DefaultWeightedEdge>().getCycles(improvedGraph).size();
+        int newCycleCount = new CircularReferenceChecker<String, DefaultWeightedEdge>()
+                .getCycles(improvedGraph)
+                .size();
 
-        //calculate new graph statistics
+        // calculate new graph statistics
         double removedEdgeWeight = graph.getEdgeWeight(edgeToRemove);
         double payoff = newCycleCount / removedEdgeWeight;
         return new EdgeToRemoveInfo(edgeToRemove, (int) removedEdgeWeight, newCycleCount, payoff);

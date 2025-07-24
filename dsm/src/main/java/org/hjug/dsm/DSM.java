@@ -7,9 +7,6 @@ import org.jgrapht.Graph;
 import org.jgrapht.Graphs;
 import org.jgrapht.alg.connectivity.KosarajuStrongConnectivityInspector;
 import org.jgrapht.alg.util.Triple;
-import org.jgrapht.graph.AsSubgraph;
-import org.jgrapht.graph.DefaultWeightedEdge;
-import org.jgrapht.graph.SimpleDirectedWeightedGraph;
 import org.jgrapht.opt.graph.sparse.SparseIntDirectedWeightedGraph;
 
 /*
@@ -53,7 +50,6 @@ public class DSM<V, E> {
     public DSM(Graph<V, E> graph) {
         this.graph = graph;
         sortedActivities = new ArrayList<>();
-
     }
 
     public void addActivity(V activity) {

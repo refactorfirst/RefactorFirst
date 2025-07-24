@@ -10,8 +10,7 @@ import org.junit.jupiter.api.Test;
 
 class DSMTest {
 
-    DSM<String, DefaultWeightedEdge> dsm =
-            new DSM(new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class));
+    DSM<String, DefaultWeightedEdge> dsm = new DSM(new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class));
 
     @BeforeEach
     void setUp() {

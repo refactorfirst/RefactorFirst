@@ -30,11 +30,7 @@ public class FeedbackVertexSetSolver<V, E> {
     private final ForkJoinPool forkJoinPool;
 
     public FeedbackVertexSetSolver(
-            Graph<V, E> graph,
-            Set<V> specialVertices,
-            Map<V, Double> vertexWeights,
-            double epsilon
-    ) {
+            Graph<V, E> graph, Set<V> specialVertices, Map<V, Double> vertexWeights, double epsilon) {
         this.graph = graph;
         this.specialVertices = specialVertices != null ? specialVertices : new HashSet<>(graph.vertexSet());
         this.vertexWeights = vertexWeights != null ? vertexWeights : createUniformWeights();
@@ -68,8 +64,7 @@ public class FeedbackVertexSetSolver<V, E> {
             // Find vertex minimizing w(v)/f(v) using parallel streams[10]
             Optional<V> minVertex = graph.vertexSet().parallelStream()
                     .filter(v -> cycleCounts.getOrDefault(v, 0L) > 0)
-                    .min(Comparator.comparingDouble(v ->
-                            vertexWeights.get(v) / cycleCounts.get(v)));
+                    .min(Comparator.comparingDouble(v -> vertexWeights.get(v) / cycleCounts.get(v)));
 
             if (!minVertex.isPresent()) break;
 
@@ -77,8 +72,7 @@ public class FeedbackVertexSetSolver<V, E> {
             double increment = vertexWeights.get(vertex) / cycleCounts.get(vertex);
 
             // Update fractional solution atomically
-            y.compute(vertex, (k, val) ->
-                    Math.min(1.0, val + increment * (1 + epsilon)));
+            y.compute(vertex, (k, val) -> Math.min(1.0, val + increment * (1 + epsilon)));
 
             iteration.incrementAndGet();
             if (iteration.get() > graph.vertexSet().size() * 10) break; // Safety check
@@ -93,14 +87,12 @@ public class FeedbackVertexSetSolver<V, E> {
     private Map<V, Long> computeCycleCounts() {
         Map<V, Long> counts = new ConcurrentHashMap<>();
 
-        StrongConnectivityAlgorithm<V, E> scAlg =
-                new KosarajuStrongConnectivityInspector<>(graph);
+        StrongConnectivityAlgorithm<V, E> scAlg = new KosarajuStrongConnectivityInspector<>(graph);
 
         scAlg.stronglyConnectedSets().parallelStream()
                 .filter(this::isInterestingComponent)
                 .forEach(scc -> {
-                    scc.parallelStream().forEach(v ->
-                            counts.merge(v, 1L, Long::sum));
+                    scc.parallelStream().forEach(v -> counts.merge(v, 1L, Long::sum));
                 });
 
         return counts;
@@ -111,8 +103,10 @@ public class FeedbackVertexSetSolver<V, E> {
      */
     private boolean isInterestingComponent(Set<V> scc) {
         boolean containsSpecial = scc.stream().anyMatch(specialVertices::contains);
-        boolean hasCycle = scc.size() > 1 ||
-                (scc.size() == 1 && graph.containsEdge(scc.iterator().next(), scc.iterator().next()));
+        boolean hasCycle = scc.size() > 1
+                || (scc.size() == 1
+                        && graph.containsEdge(
+                                scc.iterator().next(), scc.iterator().next()));
         return containsSpecial && hasCycle;
     }
 
@@ -120,11 +114,9 @@ public class FeedbackVertexSetSolver<V, E> {
      * Checks if the graph contains interesting cycles[1]
      */
     private boolean hasInterestingCycle() {
-        StrongConnectivityAlgorithm<V, E> scAlg =
-                new KosarajuStrongConnectivityInspector<>(graph);
+        StrongConnectivityAlgorithm<V, E> scAlg = new KosarajuStrongConnectivityInspector<>(graph);
 
-        return scAlg.stronglyConnectedSets().parallelStream()
-                .anyMatch(this::isInterestingComponent);
+        return scAlg.stronglyConnectedSets().parallelStream().anyMatch(this::isInterestingComponent);
     }
 
     /**
@@ -149,10 +141,8 @@ public class FeedbackVertexSetSolver<V, E> {
         Map<V, Double> distances = computeDistances(currentGraph, source);
 
         // Find all distinct distance values
-        List<Double> distValues = distances.values().parallelStream()
-                .distinct()
-                .sorted()
-                .collect(Collectors.toList());
+        List<Double> distValues =
+                distances.values().parallelStream().distinct().sorted().collect(Collectors.toList());
 
         // Evaluate cut candidates in parallel[10]
         List<CutCandidate<V>> candidates = distValues.parallelStream()
@@ -163,8 +153,7 @@ public class FeedbackVertexSetSolver<V, E> {
         if (candidates.isEmpty()) {
             // Fallback: select vertex with maximum degree
             Optional<V> maxDegreeVertex = currentGraph.vertexSet().parallelStream()
-                    .max(Comparator.comparingInt(v ->
-                            currentGraph.inDegreeOf(v) + currentGraph.outDegreeOf(v)));
+                    .max(Comparator.comparingInt(v -> currentGraph.inDegreeOf(v) + currentGraph.outDegreeOf(v)));
 
             if (maxDegreeVertex.isPresent()) {
                 Set<V> solution = new HashSet<>();
@@ -184,23 +173,27 @@ public class FeedbackVertexSetSolver<V, E> {
         Set<V> rightVertices = createRightPartition(currentGraph, distances, bestCandidate.distance);
 
         // Recursive solve using ForkJoinPool[25]
-        CompletableFuture<FeedbackVertexSetResult<V>> leftFuture = CompletableFuture.supplyAsync(() -> {
-            if (!leftVertices.isEmpty()) {
-                Graph<V, E> leftGraph = new AsSubgraph<>(currentGraph, leftVertices);
-                Set<V> leftSpecial = intersection(currentSpecial, leftVertices);
-                return solveRecursive(leftGraph, leftSpecial);
-            }
-            return new FeedbackVertexSetResult<>(new HashSet<>());
-        }, forkJoinPool);
+        CompletableFuture<FeedbackVertexSetResult<V>> leftFuture = CompletableFuture.supplyAsync(
+                () -> {
+                    if (!leftVertices.isEmpty()) {
+                        Graph<V, E> leftGraph = new AsSubgraph<>(currentGraph, leftVertices);
+                        Set<V> leftSpecial = intersection(currentSpecial, leftVertices);
+                        return solveRecursive(leftGraph, leftSpecial);
+                    }
+                    return new FeedbackVertexSetResult<>(new HashSet<>());
+                },
+                forkJoinPool);
 
-        CompletableFuture<FeedbackVertexSetResult<V>> rightFuture = CompletableFuture.supplyAsync(() -> {
-            if (!rightVertices.isEmpty()) {
-                Graph<V, E> rightGraph = new AsSubgraph<>(currentGraph, rightVertices);
-                Set<V> rightSpecial = intersection(currentSpecial, rightVertices);
-                return solveRecursive(rightGraph, rightSpecial);
-            }
-            return new FeedbackVertexSetResult<>(new HashSet<>());
-        }, forkJoinPool);
+        CompletableFuture<FeedbackVertexSetResult<V>> rightFuture = CompletableFuture.supplyAsync(
+                () -> {
+                    if (!rightVertices.isEmpty()) {
+                        Graph<V, E> rightGraph = new AsSubgraph<>(currentGraph, rightVertices);
+                        Set<V> rightSpecial = intersection(currentSpecial, rightVertices);
+                        return solveRecursive(rightGraph, rightSpecial);
+                    }
+                    return new FeedbackVertexSetResult<>(new HashSet<>());
+                },
+                forkJoinPool);
 
         // Combine results
         try {
@@ -293,25 +286,23 @@ public class FeedbackVertexSetSolver<V, E> {
     private boolean hasInterestingCycleInSubgraph(Graph<V, E> subgraph, Set<V> special) {
         if (subgraph.vertexSet().isEmpty()) return false;
 
-        StrongConnectivityAlgorithm<V, E> scAlg =
-                new KosarajuStrongConnectivityInspector<>(subgraph);
+        StrongConnectivityAlgorithm<V, E> scAlg = new KosarajuStrongConnectivityInspector<>(subgraph);
 
-        return scAlg.stronglyConnectedSets().parallelStream()
-                .anyMatch(scc -> {
-                    boolean containsSpecial = scc.stream().anyMatch(special::contains);
-                    boolean hasCycle = scc.size() > 1 ||
-                            (scc.size() == 1 && subgraph.containsEdge(scc.iterator().next(), scc.iterator().next()));
-                    return containsSpecial && hasCycle;
-                });
+        return scAlg.stronglyConnectedSets().parallelStream().anyMatch(scc -> {
+            boolean containsSpecial = scc.stream().anyMatch(special::contains);
+            boolean hasCycle = scc.size() > 1
+                    || (scc.size() == 1
+                            && subgraph.containsEdge(
+                                    scc.iterator().next(), scc.iterator().next()));
+            return containsSpecial && hasCycle;
+        });
     }
 
     /**
      * Computes intersection of two sets using parallel streams[10]
      */
     private Set<V> intersection(Set<V> set1, Set<V> set2) {
-        return set1.parallelStream()
-                .filter(set2::contains)
-                .collect(Collectors.toSet());
+        return set1.parallelStream().filter(set2::contains).collect(Collectors.toSet());
     }
 
     /**

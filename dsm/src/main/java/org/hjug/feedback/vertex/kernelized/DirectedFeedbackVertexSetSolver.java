@@ -33,8 +33,7 @@ public class DirectedFeedbackVertexSetSolver<V, E> {
     private Map<Integer, Set<V>> zones;
     private Map<Set<V>, Set<V>> kDfvsRepresentatives;
 
-    public DirectedFeedbackVertexSetSolver(Graph<V, E> graph, Set<V> modulator,
-                                           Map<V, Double> vertexWeights, int eta) {
+    public DirectedFeedbackVertexSetSolver(Graph<V, E> graph, Set<V> modulator, Map<V, Double> vertexWeights, int eta) {
         this.graph = graph;
         this.modulator = modulator != null ? modulator : new HashSet<>();
         this.vertexWeights = vertexWeights != null ? vertexWeights : createUniformWeights();
@@ -72,9 +71,8 @@ public class DirectedFeedbackVertexSetSolver<V, E> {
      */
     private void computeZoneDecomposition(int k) {
         // Compute solution S in graph without modulator
-        Set<V> graphWithoutModulator = graph.vertexSet().stream()
-                .filter(v -> !modulator.contains(v))
-                .collect(Collectors.toSet());
+        Set<V> graphWithoutModulator =
+                graph.vertexSet().stream().filter(v -> !modulator.contains(v)).collect(Collectors.toSet());
 
         Graph<V, E> subgraph = new AsSubgraph<>(graph, graphWithoutModulator);
         Set<V> solutionS = computeMinimalFeedbackVertexSet(subgraph, k);
@@ -258,21 +256,16 @@ public class DirectedFeedbackVertexSetSolver<V, E> {
                 .filter(scc -> scc.size() > 1 || hasSelfLoop(scc.iterator().next()))
                 .forEach(scc -> {
                     // Add vertices with highest degree from each SCC
-                    V representative_vertex = scc.stream()
-                            .max(Comparator.comparingInt(v ->
-                                    graph.inDegreeOf(v) + graph.outDegreeOf(v)))
-                            .orElse(null);
-
-                    if (representative_vertex != null) {
-                        representative.add(representative_vertex);
-                    }
+                    scc.stream()
+                            .max(Comparator.comparingInt(v -> graph.inDegreeOf(v) + graph.outDegreeOf(v)))
+                            .ifPresent(representative::add);
                 });
 
         // Bound size according to Lemma 4.2[1]
         int maxRepresentativeSize = (int) Math.pow(k * modulator.size(), eta * eta);
 
         if (representative.size() > maxRepresentativeSize) {
-            representative = representative.stream()
+            return representative.stream()
                     .sorted(Comparator.comparingDouble(v -> -vertexWeights.getOrDefault(v, 1.0)))
                     .limit(maxRepresentativeSize)
                     .collect(Collectors.toSet());
@@ -312,9 +305,8 @@ public class DirectedFeedbackVertexSetSolver<V, E> {
         kDfvsRepresentatives.entrySet().parallelStream().forEach(entry -> {
             Set<V> zone = entry.getKey();
             Set<V> representative = entry.getValue();
-            Set<V> nonRepresentative = zone.stream()
-                    .filter(v -> !representative.contains(v))
-                    .collect(Collectors.toSet());
+            Set<V> nonRepresentative =
+                    zone.stream().filter(v -> !representative.contains(v)).collect(Collectors.toSet());
 
             // Remove edges between modulator and non-representative vertices
             applyReductionRulesForZone(nonRepresentative, representative);
@@ -393,8 +385,7 @@ public class DirectedFeedbackVertexSetSolver<V, E> {
         Set<V> solution = ConcurrentHashMap.newKeySet();
 
         // Add all representatives to solution (simplified approach)
-        kDfvsRepresentatives.values().parallelStream()
-                .forEach(solution::addAll);
+        kDfvsRepresentatives.values().parallelStream().forEach(solution::addAll);
 
         // Add high-degree vertices from remainder if needed
         if (solution.size() < k) {
@@ -426,8 +417,7 @@ public class DirectedFeedbackVertexSetSolver<V, E> {
         while (cycleDetector.detectCycles() && feedbackSet.size() < k) {
             // Find vertex with highest degree in remaining graph
             V maxDegreeVertex = workingGraph.vertexSet().stream()
-                    .max(Comparator.comparingInt(v ->
-                            workingGraph.inDegreeOf(v) + workingGraph.outDegreeOf(v)))
+                    .max(Comparator.comparingInt(v -> workingGraph.inDegreeOf(v) + workingGraph.outDegreeOf(v)))
                     .orElse(null);
 
             if (maxDegreeVertex != null) {

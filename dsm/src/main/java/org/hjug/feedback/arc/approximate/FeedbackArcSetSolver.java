@@ -51,8 +51,8 @@ public class FeedbackArcSetSolver<V, E> {
      * @return FeedbackArcSetResult containing the vertex sequence and feedback arcs
      */
     public FeedbackArcSetResult<V, E> solve() {
-        List<V> s1 = new CopyOnWriteArrayList<>();  // Left sequence
-        List<V> s2 = new CopyOnWriteArrayList<>();  // Right sequence
+        List<V> s1 = new CopyOnWriteArrayList<>(); // Left sequence
+        List<V> s2 = new CopyOnWriteArrayList<>(); // Right sequence
         Set<V> remainingVertices = ConcurrentHashMap.newKeySet();
         remainingVertices.addAll(graph.vertexSet());
 
@@ -119,8 +119,8 @@ public class FeedbackArcSetSolver<V, E> {
      */
     private Optional<V> findMaxDeltaVertex(Set<V> vertices) {
         return vertices.parallelStream()
-                .max(Comparator.comparingInt(v ->
-                        outDegreeMap.get(v).get() - inDegreeMap.get(v).get()));
+                .max(Comparator.comparingInt(
+                        v -> outDegreeMap.get(v).get() - inDegreeMap.get(v).get()));
     }
 
     /**
