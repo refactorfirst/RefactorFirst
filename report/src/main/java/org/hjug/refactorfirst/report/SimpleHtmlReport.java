@@ -4,7 +4,6 @@ import static org.hjug.refactorfirst.report.ReportWriter.writeReportToDisk;
 
 import in.wilsonl.minifyhtml.Configuration;
 import in.wilsonl.minifyhtml.MinifyHtml;
-
 import java.io.File;
 import java.nio.file.Paths;
 import java.time.Instant;
@@ -15,7 +14,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
-
 import lombok.extern.slf4j.Slf4j;
 import org.hjug.cbc.CostBenefitCalculator;
 import org.hjug.cbc.CycleRanker;
@@ -43,35 +41,35 @@ public class SimpleHtmlReport {
     public static final String THE_END = "</div>\n" + "    </div>\n" + "  </body>\n" + "</html>\n";
 
     public final String[] godClassSimpleTableHeadings = {
-            "Class",
-            "Priority",
-            "Change Proneness Rank",
-            "Effort Rank",
-            "Method Count",
-            "Most Recent Commit Date",
-            "Commit Count"
+        "Class",
+        "Priority",
+        "Change Proneness Rank",
+        "Effort Rank",
+        "Method Count",
+        "Most Recent Commit Date",
+        "Commit Count"
     };
 
     public final String[] godClassDetailedTableHeadings = {
-            "Class",
-            "Priority",
-            "Raw Priority",
-            "Change Proneness Rank",
-            "Effort Rank",
-            "WMC",
-            "WMC Rank",
-            "ATFD",
-            "ATFD Rank",
-            "TCC",
-            "TCC Rank",
-            "Date of First Commit",
-            "Most Recent Commit Date",
-            "Commit Count",
-            "Full Path"
+        "Class",
+        "Priority",
+        "Raw Priority",
+        "Change Proneness Rank",
+        "Effort Rank",
+        "WMC",
+        "WMC Rank",
+        "ATFD",
+        "ATFD Rank",
+        "TCC",
+        "TCC Rank",
+        "Date of First Commit",
+        "Most Recent Commit Date",
+        "Commit Count",
+        "Full Path"
     };
 
     public final String[] cboTableHeadings = {
-            "Class", "Priority", "Change Proneness Rank", "Coupling Count", "Most Recent Commit Date", "Commit Count"
+        "Class", "Priority", "Change Proneness Rank", "Coupling Count", "Most Recent Commit Date", "Commit Count"
     };
 
     public final String[] classCycleTableHeadings = {"Classes", "Relationships"};
@@ -274,8 +272,7 @@ public class SimpleHtmlReport {
         if (!edgeToRemoveInfos.isEmpty()) {
             stringBuilder.append(edgeInfos);
             stringBuilder.append(renderGithubButtons());
-            stringBuilder.append("<br/>\n" + "<br/>\n" + "<br/>\n" + "<br/>\n" + "<hr/>\n" + "<br/>\n" +
-                    "<br/>\n");
+            stringBuilder.append("<br/>\n" + "<br/>\n" + "<br/>\n" + "<br/>\n" + "<hr/>\n" + "<br/>\n" + "<br/>\n");
         }
 
         if (!rankedGodClassDisharmonies.isEmpty()) {
@@ -319,10 +316,7 @@ public class SimpleHtmlReport {
                 "<div style=\"text-align: center;\"><a id=\"EDGES\"><h1>Backward Edge Removal Impact</h1></a></div>\n");
         stringBuilder.append("<div style=\"text-align: center;\">\n");
 
-        stringBuilder
-                .append("Current Cycle Count: ")
-                .append(cycles.size())
-                .append("<br>\n");
+        stringBuilder.append("Current Cycle Count: ").append(cycles.size()).append("<br>\n");
         stringBuilder
                 .append("Current Total Back Edge Count: ")
                 .append(dsm.getEdgesAboveDiagonal().size())
@@ -423,30 +417,30 @@ public class SimpleHtmlReport {
     }
 
     private String[] getCycleSummaryTableHeadings() {
-        return new String[]{"Cycle Name", "Priority", "Class Count", "Relationship Count" /*, "Minimum Cuts"*/};
+        return new String[] {"Cycle Name", "Priority", "Class Count", "Relationship Count" /*, "Minimum Cuts"*/};
     }
 
     private String[] getEdgesToRemoveInfoTableHeadings() {
-        return new String[]{"Edge", "Edge Weight", "New Cycle Count", "Avg Node &Delta; &divide; Effort"};
+        return new String[] {"Edge", "Edge Weight", "New Cycle Count", "Avg Node &Delta; &divide; Effort"};
     }
 
     private String[] getEdgeToRemoveInfos(EdgeToRemoveInfo edgeToRemoveInfo) {
-        return new String[]{
-                // "Edge", "Edge Weight", "In # of Cycles", "New Back Edge Count", "New Back Edge Weight Sum", "Payoff"
-                renderEdge(edgeToRemoveInfo.getEdge()),
-                String.valueOf(edgeToRemoveInfo.getRemovedEdgeWeight()),
-                String.valueOf(edgeToRemoveInfo.getNewCycleCount()),
-                String.valueOf(edgeToRemoveInfo.getPayoff())
+        return new String[] {
+            // "Edge", "Edge Weight", "In # of Cycles", "New Back Edge Count", "New Back Edge Weight Sum", "Payoff"
+            renderEdge(edgeToRemoveInfo.getEdge()),
+            String.valueOf(edgeToRemoveInfo.getRemovedEdgeWeight()),
+            String.valueOf(edgeToRemoveInfo.getNewCycleCount()),
+            String.valueOf(edgeToRemoveInfo.getPayoff())
         };
     }
 
     private String[] getRankedCycleSummaryData(RankedCycle rankedCycle, StringBuilder edgesToCut) {
-        return new String[]{
-                // "Cycle Name", "Priority", "Class Count", "Relationship Count", "Min Cuts"
-                getClassName(rankedCycle.getCycleName()),
-                rankedCycle.getPriority().toString(),
-                String.valueOf(rankedCycle.getCycleNodes().size()),
-                String.valueOf(rankedCycle.getEdgeSet().size())
+        return new String[] {
+            // "Cycle Name", "Priority", "Class Count", "Relationship Count", "Min Cuts"
+            getClassName(rankedCycle.getCycleName()),
+            rankedCycle.getPriority().toString(),
+            String.valueOf(rankedCycle.getCycleNodes().size()),
+            String.valueOf(rankedCycle.getEdgeSet().size())
         };
     }
 
@@ -550,31 +544,31 @@ public class SimpleHtmlReport {
             stringBuilder.append("<tr>\n");
 
             String[] simpleRankedGodClassDisharmonyData = {
-                    rankedGodClassDisharmony.getFileName(),
-                    rankedGodClassDisharmony.getPriority().toString(),
-                    rankedGodClassDisharmony.getChangePronenessRank().toString(),
-                    rankedGodClassDisharmony.getEffortRank().toString(),
-                    rankedGodClassDisharmony.getWmc().toString(),
-                    formatter.format(rankedGodClassDisharmony.getMostRecentCommitTime()),
-                    rankedGodClassDisharmony.getCommitCount().toString()
+                rankedGodClassDisharmony.getFileName(),
+                rankedGodClassDisharmony.getPriority().toString(),
+                rankedGodClassDisharmony.getChangePronenessRank().toString(),
+                rankedGodClassDisharmony.getEffortRank().toString(),
+                rankedGodClassDisharmony.getWmc().toString(),
+                formatter.format(rankedGodClassDisharmony.getMostRecentCommitTime()),
+                rankedGodClassDisharmony.getCommitCount().toString()
             };
 
             String[] detailedRankedGodClassDisharmonyData = {
-                    rankedGodClassDisharmony.getFileName(),
-                    rankedGodClassDisharmony.getPriority().toString(),
-                    rankedGodClassDisharmony.getRawPriority().toString(),
-                    rankedGodClassDisharmony.getChangePronenessRank().toString(),
-                    rankedGodClassDisharmony.getEffortRank().toString(),
-                    rankedGodClassDisharmony.getWmc().toString(),
-                    rankedGodClassDisharmony.getWmcRank().toString(),
-                    rankedGodClassDisharmony.getAtfd().toString(),
-                    rankedGodClassDisharmony.getAtfdRank().toString(),
-                    rankedGodClassDisharmony.getTcc().toString(),
-                    rankedGodClassDisharmony.getTccRank().toString(),
-                    formatter.format(rankedGodClassDisharmony.getFirstCommitTime()),
-                    formatter.format(rankedGodClassDisharmony.getMostRecentCommitTime()),
-                    rankedGodClassDisharmony.getCommitCount().toString(),
-                    rankedGodClassDisharmony.getPath()
+                rankedGodClassDisharmony.getFileName(),
+                rankedGodClassDisharmony.getPriority().toString(),
+                rankedGodClassDisharmony.getRawPriority().toString(),
+                rankedGodClassDisharmony.getChangePronenessRank().toString(),
+                rankedGodClassDisharmony.getEffortRank().toString(),
+                rankedGodClassDisharmony.getWmc().toString(),
+                rankedGodClassDisharmony.getWmcRank().toString(),
+                rankedGodClassDisharmony.getAtfd().toString(),
+                rankedGodClassDisharmony.getAtfdRank().toString(),
+                rankedGodClassDisharmony.getTcc().toString(),
+                rankedGodClassDisharmony.getTccRank().toString(),
+                formatter.format(rankedGodClassDisharmony.getFirstCommitTime()),
+                formatter.format(rankedGodClassDisharmony.getMostRecentCommitTime()),
+                rankedGodClassDisharmony.getCommitCount().toString(),
+                rankedGodClassDisharmony.getPath()
             };
 
             final String[] rankedDisharmonyData =
@@ -619,12 +613,12 @@ public class SimpleHtmlReport {
             stringBuilder.append("<tr>");
 
             String[] rankedCboClassDisharmonyData = {
-                    rankedCboClassDisharmony.getFileName(),
-                    rankedCboClassDisharmony.getPriority().toString(),
-                    rankedCboClassDisharmony.getChangePronenessRank().toString(),
-                    rankedCboClassDisharmony.getEffortRank().toString(),
-                    formatter.format(rankedCboClassDisharmony.getMostRecentCommitTime()),
-                    rankedCboClassDisharmony.getCommitCount().toString()
+                rankedCboClassDisharmony.getFileName(),
+                rankedCboClassDisharmony.getPriority().toString(),
+                rankedCboClassDisharmony.getChangePronenessRank().toString(),
+                rankedCboClassDisharmony.getEffortRank().toString(),
+                formatter.format(rankedCboClassDisharmony.getMostRecentCommitTime()),
+                rankedCboClassDisharmony.getCommitCount().toString()
             };
 
             for (String rowData : rankedCboClassDisharmonyData) {
