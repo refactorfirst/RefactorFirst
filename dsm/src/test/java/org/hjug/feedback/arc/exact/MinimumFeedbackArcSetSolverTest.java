@@ -287,12 +287,15 @@ class MinimumFeedbackArcSetSolverTest {
         // Create a copy of the graph without feedback arcs [12]
         Graph<String, DefaultEdge> testGraph = new DefaultDirectedGraph<>(DefaultEdge.class);
 
+        Set<String> resultEdgesAsStrings = new HashSet<>();
+        result.getFeedbackArcSet().forEach(edge -> resultEdgesAsStrings.add(edge.toString()));
+
         // Add all vertices
         graph.vertexSet().forEach(testGraph::addVertex);
 
         // Add edges not in feedback arc set
         graph.edgeSet().stream()
-                .filter(edge -> !result.getFeedbackArcSet().contains(edge))
+                .filter(edge -> !resultEdgesAsStrings.contains(edge.toString()))
                 .forEach(edge -> {
                     String source = graph.getEdgeSource(edge);
                     String target = graph.getEdgeTarget(edge);
