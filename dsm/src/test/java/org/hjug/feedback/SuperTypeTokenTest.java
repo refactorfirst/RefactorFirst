@@ -24,14 +24,14 @@ class SuperTypeTokenTest {
 
     @Test
     void getGenericType() {
-        SuperTypeToken<List<String>> token = new SuperTypeToken<List<String>>() {};
-        assertEquals("java.util.List<java.lang.String>", token.getType().toString());
-        assertEquals(List.class, token.getClassFromType());
+        SuperTypeToken<List<String>> genericToken = new SuperTypeToken<>() {};
+        assertEquals("java.util.List<java.lang.String>", genericToken.getType().toString());
+        assertEquals(List.class, genericToken.getClassFromTypeToken());
     }
 
     @Test
     void getClassFromType() {
-        assertEquals(DefaultWeightedEdge.class, token.getClassFromType());
+        assertEquals(DefaultWeightedEdge.class, token.getClassFromTypeToken());
     }
 
     @Test
@@ -47,7 +47,7 @@ class GenericTestClass<T> {
         this.typeToken = token;
     }
 
-    public Class<?> getTypeTokenClass() {
-        return typeToken.getClassFromType();
+    public Class<T> getTypeTokenClass() {
+        return typeToken.getClassFromTypeToken();
     }
 }

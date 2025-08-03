@@ -18,26 +18,26 @@ public abstract class SuperTypeToken<T> {
         return type;
     }
 
-    public Class<?> getClassFromType() {
-        return getClassFromType(type);
+    public Class<T> getClassFromTypeToken() {
+        return (Class<T>) getClassFromTypeToken(type);
     }
 
     // ((ParameterizedType) type).getActualTypeArguments()[0] - returns String in List<String>
-    static Class<?> getClassFromType(Type type) {
+    static Class<?> getClassFromTypeToken(Type type) {
         if (type instanceof Class<?>) {
             return (Class<?>) type;
         } else if (type instanceof ParameterizedType) {
             return (Class<?>) ((ParameterizedType) type).getRawType();
         } else if (type instanceof GenericArrayType) {
             Type componentType = ((GenericArrayType) type).getGenericComponentType();
-            return java.lang.reflect.Array.newInstance(getClassFromType(componentType), 0)
+            return java.lang.reflect.Array.newInstance(getClassFromTypeToken(componentType), 0)
                     .getClass();
         } else if (type instanceof TypeVariable<?>) {
             // Type variables don't have a direct class representation
             return Object.class; // Fallback
         } else if (type instanceof WildcardType) {
             Type[] upperBounds = ((WildcardType) type).getUpperBounds();
-            return getClassFromType(upperBounds[0]); // Use the first upper bound
+            return getClassFromTypeToken(upperBounds[0]); // Use the first upper bound
         }
         throw new IllegalArgumentException("Unsupported Type: " + type);
     }
