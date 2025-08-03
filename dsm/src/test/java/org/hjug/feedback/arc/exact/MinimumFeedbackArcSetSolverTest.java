@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.IntStream;
+import org.hjug.feedback.SuperTypeToken;
 import org.jgrapht.Graph;
 import org.jgrapht.alg.cycle.CycleDetector;
 import org.jgrapht.graph.DefaultDirectedGraph;
@@ -36,7 +37,7 @@ class MinimumFeedbackArcSetSolverTest {
         @Test
         @DisplayName("Should handle empty graph")
         void testEmptyGraph() {
-            solver = new MinimumFeedbackArcSetSolver<>(graph, null);
+            solver = new MinimumFeedbackArcSetSolver<>(graph, null, new SuperTypeToken<>() {});
             FeedbackArcSetResult<String, DefaultEdge> result = solver.solve();
 
             assertTrue(result.getFeedbackArcSet().isEmpty());
@@ -47,7 +48,7 @@ class MinimumFeedbackArcSetSolverTest {
         @DisplayName("Should handle single vertex")
         void testSingleVertex() {
             graph.addVertex("A");
-            solver = new MinimumFeedbackArcSetSolver<>(graph, null);
+            solver = new MinimumFeedbackArcSetSolver<>(graph, null, new SuperTypeToken<>() {});
             FeedbackArcSetResult<String, DefaultEdge> result = solver.solve();
 
             assertEquals(0, result.size());
@@ -63,7 +64,7 @@ class MinimumFeedbackArcSetSolverTest {
             graph.addEdge("A", "B");
             graph.addEdge("B", "C");
 
-            solver = new MinimumFeedbackArcSetSolver<>(graph, null);
+            solver = new MinimumFeedbackArcSetSolver<>(graph, null, new SuperTypeToken<>() {});
             FeedbackArcSetResult<String, DefaultEdge> result = solver.solve();
 
             assertEquals(0, result.size());
@@ -80,7 +81,7 @@ class MinimumFeedbackArcSetSolverTest {
             graph.addEdge("B", "C");
             graph.addEdge("C", "A");
 
-            solver = new MinimumFeedbackArcSetSolver<>(graph, null);
+            solver = new MinimumFeedbackArcSetSolver<>(graph, null, new SuperTypeToken<>() {});
             FeedbackArcSetResult<String, DefaultEdge> result = solver.solve();
 
             // Should break the cycle with exactly one arc
@@ -94,7 +95,7 @@ class MinimumFeedbackArcSetSolverTest {
             graph.addVertex("A");
             DefaultEdge selfLoop = graph.addEdge("A", "A");
 
-            solver = new MinimumFeedbackArcSetSolver<>(graph, null);
+            solver = new MinimumFeedbackArcSetSolver<>(graph, null, new SuperTypeToken<>() {});
             FeedbackArcSetResult<String, DefaultEdge> result = solver.solve();
 
             assertEquals(1, result.size());
@@ -123,7 +124,7 @@ class MinimumFeedbackArcSetSolverTest {
             graph.addEdge("D", "E");
             graph.addEdge("E", "C");
 
-            solver = new MinimumFeedbackArcSetSolver<>(graph, null);
+            solver = new MinimumFeedbackArcSetSolver<>(graph, null, new SuperTypeToken<>() {});
             FeedbackArcSetResult<String, DefaultEdge> result = solver.solve();
 
             assertTrue(result.size() >= 2);
@@ -147,7 +148,7 @@ class MinimumFeedbackArcSetSolverTest {
             // Component 3: E (isolated)
             graph.addVertex("E");
 
-            solver = new MinimumFeedbackArcSetSolver<>(graph, null);
+            solver = new MinimumFeedbackArcSetSolver<>(graph, null, new SuperTypeToken<>() {});
             FeedbackArcSetResult<String, DefaultEdge> result = solver.solve();
 
             assertEquals(1, result.size());
@@ -167,7 +168,7 @@ class MinimumFeedbackArcSetSolverTest {
 
             Map<DefaultEdge, Double> weights = Map.of(e1, 1.0, e2, 10.0, e3, 1.0);
 
-            solver = new MinimumFeedbackArcSetSolver<>(graph, weights);
+            solver = new MinimumFeedbackArcSetSolver<>(graph, weights, new SuperTypeToken<>() {});
             FeedbackArcSetResult<String, DefaultEdge> result = solver.solve();
 
             assertEquals(1, result.size());
@@ -187,7 +188,7 @@ class MinimumFeedbackArcSetSolverTest {
             createRandomGraph(size, size * 2);
 
             long startTime = System.currentTimeMillis();
-            solver = new MinimumFeedbackArcSetSolver<>(graph, null);
+            solver = new MinimumFeedbackArcSetSolver<>(graph, null, new SuperTypeToken<>() {});
             FeedbackArcSetResult<String, DefaultEdge> result = solver.solve();
             long endTime = System.currentTimeMillis();
 
@@ -205,7 +206,7 @@ class MinimumFeedbackArcSetSolverTest {
             createRandomGraph(30, 60);
 
             long startTime = System.currentTimeMillis();
-            solver = new MinimumFeedbackArcSetSolver<>(graph, null);
+            solver = new MinimumFeedbackArcSetSolver<>(graph, null, new SuperTypeToken<>() {});
             FeedbackArcSetResult<String, DefaultEdge> result = solver.solve();
             long endTime = System.currentTimeMillis();
 
@@ -225,7 +226,7 @@ class MinimumFeedbackArcSetSolverTest {
         void testOptimalityProperties() {
             createRandomGraph(15, 30);
 
-            solver = new MinimumFeedbackArcSetSolver<>(graph, null);
+            solver = new MinimumFeedbackArcSetSolver<>(graph, null, new SuperTypeToken<>() {});
             FeedbackArcSetResult<String, DefaultEdge> result = solver.solve();
 
             // Solution should be minimal and make graph acyclic [2]
@@ -246,7 +247,7 @@ class MinimumFeedbackArcSetSolverTest {
             graph.addEdge("B", "C");
             graph.addEdge("C", "A");
 
-            solver = new MinimumFeedbackArcSetSolver<>(graph, null);
+            solver = new MinimumFeedbackArcSetSolver<>(graph, null, new SuperTypeToken<>() {});
             FeedbackArcSetResult<String, DefaultEdge> result = solver.solve();
 
             assertEquals(1, result.size());

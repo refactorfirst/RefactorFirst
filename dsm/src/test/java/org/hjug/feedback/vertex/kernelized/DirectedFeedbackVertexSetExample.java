@@ -2,6 +2,7 @@ package org.hjug.feedback.vertex.kernelized;
 
 import java.util.Map;
 import java.util.Set;
+import org.hjug.feedback.SuperTypeToken;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
@@ -32,7 +33,7 @@ public class DirectedFeedbackVertexSetExample {
 
         // Solve the DFVS problem with treewidth parameter η=2
         DirectedFeedbackVertexSetSolver<String, DefaultEdge> solver =
-                new DirectedFeedbackVertexSetSolver<>(graph, modulator, weights, 2);
+                new DirectedFeedbackVertexSetSolver<>(graph, modulator, weights, 2, new SuperTypeToken<>() {});
         DirectedFeedbackVertexSetResult<String> result = solver.solve(3);
 
         System.out.println("Feedback vertex set: " + result.getFeedbackVertices());

@@ -3,6 +3,7 @@ package org.hjug.feedback.vertex.kernelized;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.IntStream;
+import org.hjug.feedback.SuperTypeToken;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
@@ -32,7 +33,7 @@ class DirectedFeedbackVertexSetBenchmarkTest {
 
                     long startTime = System.currentTimeMillis();
                     DirectedFeedbackVertexSetSolver<String, DefaultEdge> solver =
-                            new DirectedFeedbackVertexSetSolver<>(graph, null, null, eta);
+                            new DirectedFeedbackVertexSetSolver<>(graph, null, null, eta, new SuperTypeToken<>() {});
                     DirectedFeedbackVertexSetResult<String> result = solver.solve(size / 4);
                     long endTime = System.currentTimeMillis();
 

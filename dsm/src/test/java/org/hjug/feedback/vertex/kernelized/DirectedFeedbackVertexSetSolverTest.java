@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.IntStream;
+import org.hjug.feedback.SuperTypeToken;
 import org.jgrapht.Graph;
 import org.jgrapht.alg.cycle.CycleDetector;
 import org.jgrapht.graph.DefaultDirectedGraph;
@@ -36,7 +37,7 @@ class DirectedFeedbackVertexSetSolverTest {
         @Test
         @DisplayName("Should handle empty graph")
         void testEmptyGraph() {
-            solver = new DirectedFeedbackVertexSetSolver<>(graph, null, null, 2);
+            solver = new DirectedFeedbackVertexSetSolver<>(graph, null, null, 2, new SuperTypeToken<>() {});
             DirectedFeedbackVertexSetResult<String> result = solver.solve(1);
 
             assertTrue(result.getFeedbackVertices().isEmpty());
@@ -47,7 +48,7 @@ class DirectedFeedbackVertexSetSolverTest {
         @DisplayName("Should handle single vertex")
         void testSingleVertex() {
             graph.addVertex("A");
-            solver = new DirectedFeedbackVertexSetSolver<>(graph, null, null, 2);
+            solver = new DirectedFeedbackVertexSetSolver<>(graph, null, null, 2, new SuperTypeToken<>() {});
             DirectedFeedbackVertexSetResult<String> result = solver.solve(1);
 
             assertEquals(0, result.size());
@@ -63,7 +64,7 @@ class DirectedFeedbackVertexSetSolverTest {
             graph.addEdge("A", "B");
             graph.addEdge("B", "C");
 
-            solver = new DirectedFeedbackVertexSetSolver<>(graph, null, null, 2);
+            solver = new DirectedFeedbackVertexSetSolver<>(graph, null, null, 2, new SuperTypeToken<>() {});
             DirectedFeedbackVertexSetResult<String> result = solver.solve(2);
 
             assertEquals(0, result.size());
@@ -80,7 +81,7 @@ class DirectedFeedbackVertexSetSolverTest {
             graph.addEdge("B", "C");
             graph.addEdge("C", "A");
 
-            solver = new DirectedFeedbackVertexSetSolver<>(graph, null, null, 2);
+            solver = new DirectedFeedbackVertexSetSolver<>(graph, null, null, 2, new SuperTypeToken<>() {});
             DirectedFeedbackVertexSetResult<String> result = solver.solve(2);
 
             // Should break the cycle with at least one vertex
@@ -94,7 +95,7 @@ class DirectedFeedbackVertexSetSolverTest {
             graph.addVertex("A");
             graph.addEdge("A", "A");
 
-            solver = new DirectedFeedbackVertexSetSolver<>(graph, null, null, 2);
+            solver = new DirectedFeedbackVertexSetSolver<>(graph, null, null, 2, new SuperTypeToken<>() {});
             DirectedFeedbackVertexSetResult<String> result = solver.solve(1);
 
             assertEquals(1, result.size());
@@ -123,7 +124,7 @@ class DirectedFeedbackVertexSetSolverTest {
             graph.addEdge("D", "E");
             graph.addEdge("E", "C");
 
-            solver = new DirectedFeedbackVertexSetSolver<>(graph, null, null, 2);
+            solver = new DirectedFeedbackVertexSetSolver<>(graph, null, null, 2, new SuperTypeToken<>() {});
             DirectedFeedbackVertexSetResult<String> result = solver.solve(3);
 
             assertTrue(result.size() >= 1);
@@ -144,7 +145,7 @@ class DirectedFeedbackVertexSetSolverTest {
             graph.addEdge("A", "D");
 
             Set<String> modulator = Set.of("A"); // A is the modulator
-            solver = new DirectedFeedbackVertexSetSolver<>(graph, modulator, null, 1);
+            solver = new DirectedFeedbackVertexSetSolver<>(graph, modulator, null, 1, new SuperTypeToken<>() {});
             DirectedFeedbackVertexSetResult<String> result = solver.solve(2);
 
             assertTrue(result.size() >= 1);
@@ -164,7 +165,7 @@ class DirectedFeedbackVertexSetSolverTest {
 
             Map<String, Double> weights = Map.of("A", 1.0, "B", 10.0, "C", 1.0);
 
-            solver = new DirectedFeedbackVertexSetSolver<>(graph, null, weights, 2);
+            solver = new DirectedFeedbackVertexSetSolver<>(graph, null, weights, 2, new SuperTypeToken<>() {});
             DirectedFeedbackVertexSetResult<String> result = solver.solve(2);
 
             assertTrue(result.size() >= 1);
@@ -186,7 +187,7 @@ class DirectedFeedbackVertexSetSolverTest {
             createRandomGraph(size, size * 2);
 
             long startTime = System.currentTimeMillis();
-            solver = new DirectedFeedbackVertexSetSolver<>(graph, null, null, 2);
+            solver = new DirectedFeedbackVertexSetSolver<>(graph, null, null, 2, new SuperTypeToken<>() {});
             DirectedFeedbackVertexSetResult<String> result = solver.solve(size / 3);
             long endTime = System.currentTimeMillis();
 
@@ -204,7 +205,7 @@ class DirectedFeedbackVertexSetSolverTest {
             createRandomGraph(30, 60);
 
             long startTime = System.currentTimeMillis();
-            solver = new DirectedFeedbackVertexSetSolver<>(graph, null, null, 2);
+            solver = new DirectedFeedbackVertexSetSolver<>(graph, null, null, 2, new SuperTypeToken<>() {});
             DirectedFeedbackVertexSetResult<String> result = solver.solve(10);
             long endTime = System.currentTimeMillis();
 
@@ -224,7 +225,7 @@ class DirectedFeedbackVertexSetSolverTest {
         void testKernelizationProperties() {
             createRandomGraph(20, 40);
 
-            solver = new DirectedFeedbackVertexSetSolver<>(graph, null, null, 2);
+            solver = new DirectedFeedbackVertexSetSolver<>(graph, null, null, 2, new SuperTypeToken<>() {});
             DirectedFeedbackVertexSetResult<String> result = solver.solve(5);
 
             // Solution should be bounded by the kernelization guarantees[1]
@@ -251,7 +252,7 @@ class DirectedFeedbackVertexSetSolverTest {
             graph.addEdge("Z3", "Z1"); // Creates cycle in zone
 
             Set<String> modulator = Set.of("M1");
-            solver = new DirectedFeedbackVertexSetSolver<>(graph, modulator, null, 1);
+            solver = new DirectedFeedbackVertexSetSolver<>(graph, modulator, null, 1, new SuperTypeToken<>() {});
             DirectedFeedbackVertexSetResult<String> result = solver.solve(2);
 
             assertTrue(result.size() >= 1);

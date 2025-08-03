@@ -5,6 +5,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import org.hjug.feedback.SuperTypeToken;
 import org.jgrapht.Graph;
 import org.jgrapht.alg.connectivity.KosarajuStrongConnectivityInspector;
 import org.jgrapht.alg.cycle.CycleDetector;
@@ -20,16 +21,18 @@ import org.jgrapht.graph.DefaultDirectedGraph;
 public class MinimumFeedbackArcSetSolver<V, E> {
     private final Graph<V, E> graph;
     private final Map<E, Double> edgeWeights;
+    private final Class<E> edgeClass;
     private final ConcurrentHashMap<Set<E>, Boolean> cycleMatrix;
     private final ExecutorService executorService;
     private final int maxIterations;
 
-    public MinimumFeedbackArcSetSolver(Graph<V, E> graph, Map<E, Double> edgeWeights) {
+    public MinimumFeedbackArcSetSolver(Graph<V, E> graph, Map<E, Double> edgeWeights, SuperTypeToken<E> edgeTypeToken) {
         this.graph = graph;
         this.edgeWeights = edgeWeights != null ? edgeWeights : createUniformWeights();
         this.cycleMatrix = new ConcurrentHashMap<>();
         this.executorService = ForkJoinPool.commonPool();
         this.maxIterations = 1000;
+        this.edgeClass = edgeTypeToken.getClassFromTypeToken();
     }
 
     /**
@@ -134,7 +137,8 @@ public class MinimumFeedbackArcSetSolver<V, E> {
         Map<E, Long> edgeCycleCounts = new ConcurrentHashMap<>();
 
         // Count how many cycles each edge participates in [18]
-        cycleMatrix.keySet().parallelStream().forEach(cycle -> cycle.forEach(edge -> edgeCycleCounts.merge(edge, 1L, Long::sum)));
+        cycleMatrix.keySet().parallelStream()
+                .forEach(cycle -> cycle.forEach(edge -> edgeCycleCounts.merge(edge, 1L, Long::sum)));
 
         // Select edges with highest cycle participation [2]
         while (!cycleMatrix.isEmpty() && !isAllCyclesCovered(solution)) {
@@ -243,7 +247,7 @@ public class MinimumFeedbackArcSetSolver<V, E> {
      * Creates a copy of the graph without specified edges [11]
      */
     private Graph<V, E> createGraphWithoutEdges(Set<E> excludedEdges) {
-        Graph<V, E> newGraph = new DefaultDirectedGraph<>(graph.getEdgeSupplier());
+        Graph<V, E> newGraph = new DefaultDirectedGraph<>(edgeClass);
 
         // Add all vertices [11]
         graph.vertexSet().forEach(newGraph::addVertex);
@@ -264,7 +268,7 @@ public class MinimumFeedbackArcSetSolver<V, E> {
      * Creates a complete copy of the graph [11]
      */
     private Graph<V, E> createGraphCopy() {
-        Graph<V, E> copy = new DefaultDirectedGraph<>(graph.getEdgeSupplier());
+        Graph<V, E> copy = new DefaultDirectedGraph<>(edgeClass);
 
         // Copy vertices and edges [11]
         graph.vertexSet().forEach(copy::addVertex);

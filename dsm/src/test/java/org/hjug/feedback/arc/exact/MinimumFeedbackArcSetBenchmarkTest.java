@@ -3,6 +3,7 @@ package org.hjug.feedback.arc.exact;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.IntStream;
+import org.hjug.feedback.SuperTypeToken;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
@@ -31,7 +32,7 @@ class MinimumFeedbackArcSetBenchmarkTest {
 
                 long startTime = System.currentTimeMillis();
                 MinimumFeedbackArcSetSolver<String, DefaultEdge> solver =
-                        new MinimumFeedbackArcSetSolver<>(graph, null);
+                        new MinimumFeedbackArcSetSolver<>(graph, null, new SuperTypeToken<>() {});
                 FeedbackArcSetResult<String, DefaultEdge> result = solver.solve();
                 long endTime = System.currentTimeMillis();
 

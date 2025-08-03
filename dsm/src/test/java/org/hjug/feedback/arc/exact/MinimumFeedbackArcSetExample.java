@@ -1,6 +1,7 @@
 package org.hjug.feedback.arc.exact;
 
 import java.util.Map;
+import org.hjug.feedback.SuperTypeToken;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
@@ -27,7 +28,8 @@ public class MinimumFeedbackArcSetExample {
         Map<DefaultEdge, Double> weights = Map.of(e1, 1.0, e2, 2.0, e3, 1.5, e4, 1.0, e5, 1.0);
 
         // Solve the minimum feedback arc set problem
-        MinimumFeedbackArcSetSolver<String, DefaultEdge> solver = new MinimumFeedbackArcSetSolver<>(graph, weights);
+        MinimumFeedbackArcSetSolver<String, DefaultEdge> solver =
+                new MinimumFeedbackArcSetSolver<>(graph, weights, new SuperTypeToken<>() {});
         FeedbackArcSetResult<String, DefaultEdge> result = solver.solve();
 
         System.out.println("Minimum feedback arc set: " + result.getFeedbackArcSet());

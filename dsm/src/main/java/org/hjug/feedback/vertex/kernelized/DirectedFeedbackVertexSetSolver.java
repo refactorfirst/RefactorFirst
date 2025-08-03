@@ -5,6 +5,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.hjug.feedback.SuperTypeToken;
 import org.jgrapht.Graph;
 import org.jgrapht.alg.connectivity.KosarajuStrongConnectivityInspector;
 import org.jgrapht.alg.cycle.CycleDetector;
@@ -23,6 +24,7 @@ import org.jgrapht.graph.DefaultDirectedGraph;
 public class DirectedFeedbackVertexSetSolver<V, E> {
 
     private final Graph<V, E> graph;
+    private final Class<E> edgeClass;
     private final Set<V> modulator;
     private final Map<V, Double> vertexWeights;
     private final int eta; // Treewidth parameter
@@ -33,7 +35,12 @@ public class DirectedFeedbackVertexSetSolver<V, E> {
     private Map<Integer, Set<V>> zones;
     private Map<Set<V>, Set<V>> kDfvsRepresentatives;
 
-    public DirectedFeedbackVertexSetSolver(Graph<V, E> graph, Set<V> modulator, Map<V, Double> vertexWeights, int eta) {
+    public DirectedFeedbackVertexSetSolver(
+            Graph<V, E> graph,
+            Set<V> modulator,
+            Map<V, Double> vertexWeights,
+            int eta,
+            SuperTypeToken<E> edgeTypeToken) {
         this.graph = graph;
         this.modulator = modulator != null ? modulator : new HashSet<>();
         this.vertexWeights = vertexWeights != null ? vertexWeights : createUniformWeights();
@@ -41,6 +48,7 @@ public class DirectedFeedbackVertexSetSolver<V, E> {
         this.forkJoinPool = ForkJoinPool.commonPool();
         this.zones = new ConcurrentHashMap<>();
         this.kDfvsRepresentatives = new ConcurrentHashMap<>();
+        this.edgeClass = edgeTypeToken.getClassFromTypeToken();
     }
 
     /**
@@ -406,7 +414,7 @@ public class DirectedFeedbackVertexSetSolver<V, E> {
         CycleDetector<V, E> cycleDetector = new CycleDetector<>(subgraph);
 
         // Greedy approach: remove vertices with highest degree until acyclic
-        Graph<V, E> workingGraph = new DefaultDirectedGraph<>(subgraph.getEdgeSupplier());
+        Graph<V, E> workingGraph = new DefaultDirectedGraph<>(edgeClass);
         subgraph.vertexSet().forEach(workingGraph::addVertex);
         subgraph.edgeSet().forEach(edge -> {
             V source = subgraph.getEdgeSource(edge);
