@@ -23,14 +23,12 @@ public class MinimumFeedbackArcSetSolver<V, E> {
     private final Map<E, Double> edgeWeights;
     private final Class<E> edgeClass;
     private final ConcurrentHashMap<Set<E>, Boolean> cycleMatrix;
-    private final ExecutorService executorService;
     private final int maxIterations;
 
     public MinimumFeedbackArcSetSolver(Graph<V, E> graph, Map<E, Double> edgeWeights, SuperTypeToken<E> edgeTypeToken) {
         this.graph = graph;
         this.edgeWeights = edgeWeights != null ? edgeWeights : createUniformWeights();
         this.cycleMatrix = new ConcurrentHashMap<>();
-        this.executorService = ForkJoinPool.commonPool();
         this.maxIterations = 1000;
         this.edgeClass = edgeTypeToken.getClassFromTypeToken();
     }
@@ -49,7 +47,7 @@ public class MinimumFeedbackArcSetSolver<V, E> {
      */
     public FeedbackArcSetResult<V, E> solve() {
         Set<E> bestFeedbackArcSet = ConcurrentHashMap.newKeySet();
-        double bestObjectiveValue = Double.MAX_VALUE;
+        double bestObjectiveValue;
 
         // Initialize with a heuristic solution [2]
         Set<E> initialSolution = computeInitialHeuristicSolution();
@@ -172,7 +170,7 @@ public class MinimumFeedbackArcSetSolver<V, E> {
 
             // Find path from target back to source in remaining graph [27]
             List<E> pathBackToSource = findShortestPath(remainingGraph, target, source);
-            if (pathBackToSource != null) {
+            if (!pathBackToSource.isEmpty()) {
                 List<E> cycle = new ArrayList<>(pathBackToSource);
                 cycle.add(edge);
                 cycles.add(cycle);
@@ -187,7 +185,7 @@ public class MinimumFeedbackArcSetSolver<V, E> {
      */
     private List<E> findShortestPath(Graph<V, E> graph, V start, V target) {
         if (!graph.containsVertex(start) || !graph.containsVertex(target)) {
-            return null;
+            return List.of();
         }
 
         Queue<V> queue = new ConcurrentLinkedQueue<>();
@@ -224,7 +222,7 @@ public class MinimumFeedbackArcSetSolver<V, E> {
                     });
         }
 
-        return null;
+        return List.of();
     }
 
     /**
@@ -252,8 +250,8 @@ public class MinimumFeedbackArcSetSolver<V, E> {
         // Add all vertices [11]
         graph.vertexSet().forEach(newGraph::addVertex);
 
-        // Add edges not in excluded set using parallel processing [18]
-        graph.edgeSet().parallelStream()
+        // Add edges not in excluded set [18]
+        graph.edgeSet().stream()
                 .filter(edge -> !excludedEdges.contains(edge))
                 .forEach(edge -> {
                     V source = graph.getEdgeSource(edge);
