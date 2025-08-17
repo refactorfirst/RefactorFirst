@@ -53,8 +53,8 @@ class DirectedFeedbackVertexSetBenchmarkTest {
     private Graph<String, DefaultEdge> createRandomGraph(int size, double density) {
         Graph<String, DefaultEdge> graph = new DefaultDirectedGraph<>(DefaultEdge.class);
 
-        // Add vertices using parallel streams[18]
-        IntStream.range(0, size).parallel().forEach(i -> graph.addVertex("V" + i));
+        // Add vertices
+        IntStream.range(0, size).forEach(i -> graph.addVertex("V" + i));
 
         List<String> vertices = new ArrayList<>(graph.vertexSet());
         ThreadLocalRandom random = ThreadLocalRandom.current();
