@@ -265,7 +265,7 @@ class DirectedFeedbackVertexSetSolverTest {
     private void createRandomGraph(int vertexCount, int edgeCount) {
         ThreadLocalRandom random = ThreadLocalRandom.current();
 
-        // Add vertices using parallel streams[18]
+        // Add vertices [18]
         IntStream.range(0, vertexCount).forEach(i -> graph.addVertex("V" + i));
 
         List<String> vertices = new ArrayList<>(graph.vertexSet());

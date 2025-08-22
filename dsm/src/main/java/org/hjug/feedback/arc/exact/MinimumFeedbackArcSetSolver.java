@@ -1,3 +1,4 @@
+
 package org.hjug.feedback.arc.exact;
 
 import java.util.*;
@@ -251,13 +252,11 @@ public class MinimumFeedbackArcSetSolver<V, E> {
         graph.vertexSet().forEach(newGraph::addVertex);
 
         // Add edges not in excluded set [18]
-        graph.edgeSet().stream()
-                .filter(edge -> !excludedEdges.contains(edge))
-                .forEach(edge -> {
-                    V source = graph.getEdgeSource(edge);
-                    V target = graph.getEdgeTarget(edge);
-                    newGraph.addEdge(source, target);
-                });
+        graph.edgeSet().stream().filter(edge -> !excludedEdges.contains(edge)).forEach(edge -> {
+            V source = graph.getEdgeSource(edge);
+            V target = graph.getEdgeTarget(edge);
+            newGraph.addEdge(source, target);
+        });
 
         return newGraph;
     }
