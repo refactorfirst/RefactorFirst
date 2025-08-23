@@ -161,7 +161,6 @@ class ModulatorComputerTest {
 
             assertTrue(parameterComputer.validateModulator(graph, emptyModulator, 1));
             assertTrue(parameterComputer.validateModulator(graph, singleVertexModulator, 1));
-//            assertTrue(parameterComputer.validateModulator(graph, singleVertexModulator, 0));
         }
 
         @Test

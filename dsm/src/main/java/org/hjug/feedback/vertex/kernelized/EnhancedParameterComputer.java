@@ -116,7 +116,6 @@ public class EnhancedParameterComputer<V, E> {
      */
     public boolean validateModulator(Graph<V, E> graph, Set<V> modulator, int targetTreewidth) {
         int actualTreewidth = treewidthComputer.computeEta(graph, modulator);
-        System.out.println("Actual treewidth: " + actualTreewidth + " (should be " + targetTreewidth + ") for modulator " + modulator + " ... ");
         return actualTreewidth <= targetTreewidth;
     }
 

@@ -69,7 +69,7 @@ public class TreewidthComputer<V, E> {
         Graph<V, DefaultEdge> undirected = new DefaultUndirectedGraph<>(DefaultEdge.class);
 
         // Add vertices (except modulator)
-        original.vertexSet().parallelStream()
+        original.vertexSet().stream()
                 .filter(v -> !modulator.contains(v))
                 .forEach(undirected::addVertex);
 
