@@ -141,7 +141,7 @@ class ParameterComputerTest {
         void testMultipleCycles() {
             Graph<String, DefaultEdge> graph = createMultipleCyclesGraph();
             int k = fvsComputer.computeK(graph);
-            assertTrue(k >= 2); // Should need at least 2 vertices to break all cycles
+            assertEquals(1, k); // Removing node C breaks both cycles
         }
 
         @Test
