@@ -1,4 +1,3 @@
-
 package org.hjug.feedback.arc.exact;
 
 import java.util.*;

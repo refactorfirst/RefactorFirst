@@ -1,12 +1,11 @@
 package org.hjug.feedback.vertex.kernelized;
 
-import org.hjug.feedback.SuperTypeToken;
-import org.jgrapht.Graph;
-
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import org.hjug.feedback.SuperTypeToken;
+import org.jgrapht.Graph;
 
 /**
  * Enhanced parameter computer with integrated modulator calculation
@@ -42,16 +41,15 @@ public class EnhancedParameterComputer<V, E> {
     /**
      * Computes parameters with specific target treewidth
      */
-    public EnhancedParameters<V> computeOptimalParameters(Graph<V, E> graph, int maxModulatorSize, int targetTreewidth) {
+    public EnhancedParameters<V> computeOptimalParameters(
+            Graph<V, E> graph, int maxModulatorSize, int targetTreewidth) {
         // Compute k (feedback vertex set size) - this doesn't depend on modulator
-        CompletableFuture<Integer> kFuture = CompletableFuture.supplyAsync(() ->
-                fvsComputer.computeK(graph), executorService);
+        CompletableFuture<Integer> kFuture =
+                CompletableFuture.supplyAsync(() -> fvsComputer.computeK(graph), executorService);
 
         // Compute optimal modulator
-        CompletableFuture<ModulatorComputer.ModulatorResult<V>> modulatorFuture =
-                CompletableFuture.supplyAsync(() ->
-                                modulatorComputer.computeModulator(graph, targetTreewidth, maxModulatorSize),
-                        executorService);
+        CompletableFuture<ModulatorComputer.ModulatorResult<V>> modulatorFuture = CompletableFuture.supplyAsync(
+                () -> modulatorComputer.computeModulator(graph, targetTreewidth, maxModulatorSize), executorService);
 
         // Wait for both computations
         try {
@@ -62,8 +60,7 @@ public class EnhancedParameterComputer<V, E> {
                     k,
                     modulatorResult.getModulator(),
                     modulatorResult.getResultingTreewidth(),
-                    modulatorResult.getQualityScore()
-            );
+                    modulatorResult.getQualityScore());
 
         } catch (Exception e) {
             throw new RuntimeException("Parameter computation failed", e);
@@ -84,23 +81,23 @@ public class EnhancedParameterComputer<V, E> {
     /**
      * Finds multiple good modulators and returns the best parameters
      */
-    public List<EnhancedParameters<V>> computeMultipleParameterOptions(Graph<V, E> graph,
-                                                                       int maxModulatorSize,
-                                                                       int numOptions) {
+    public List<EnhancedParameters<V>> computeMultipleParameterOptions(
+            Graph<V, E> graph, int maxModulatorSize, int numOptions) {
         List<CompletableFuture<EnhancedParameters<V>>> futures = new ArrayList<>();
 
         // Try different target treewidths
         for (int targetTreewidth = 1; targetTreewidth <= Math.min(5, maxModulatorSize); targetTreewidth++) {
             final int tw = targetTreewidth;
-            futures.add(CompletableFuture.supplyAsync(() ->
-                    computeOptimalParameters(graph, maxModulatorSize, tw), executorService));
+            futures.add(CompletableFuture.supplyAsync(
+                    () -> computeOptimalParameters(graph, maxModulatorSize, tw), executorService));
         }
 
         // Try different modulator size limits
-        for (int maxSize = Math.min(3, maxModulatorSize); maxSize <= maxModulatorSize; maxSize += Math.max(1, maxModulatorSize / 4)) {
+        for (int maxSize = Math.min(3, maxModulatorSize);
+                maxSize <= maxModulatorSize;
+                maxSize += Math.max(1, maxModulatorSize / 4)) {
             final int size = maxSize;
-            futures.add(CompletableFuture.supplyAsync(() ->
-                    computeOptimalParameters(graph, size, 3), executorService));
+            futures.add(CompletableFuture.supplyAsync(() -> computeOptimalParameters(graph, size, 3), executorService));
         }
 
         return futures.stream()
@@ -140,9 +137,9 @@ public class EnhancedParameterComputer<V, E> {
      * Enhanced parameters container with modulator information
      */
     public static class EnhancedParameters<V> {
-        private final int k;              // feedback vertex set size
-        private final Set<V> modulator;   // treewidth modulator
-        private final int eta;            // treewidth after modulator removal
+        private final int k; // feedback vertex set size
+        private final Set<V> modulator; // treewidth modulator
+        private final int eta; // treewidth after modulator removal
         private final double qualityScore; // overall quality score
 
         public EnhancedParameters(int k, Set<V> modulator, int eta, double qualityScore) {
@@ -152,16 +149,32 @@ public class EnhancedParameterComputer<V, E> {
             this.qualityScore = qualityScore;
         }
 
-        public int getK() { return k; }
-        public Set<V> getModulator() { return new HashSet<>(modulator); }
-        public int getModulatorSize() { return modulator.size(); }
-        public int getEta() { return eta; }
-        public double getQualityScore() { return qualityScore; }
+        public int getK() {
+            return k;
+        }
+
+        public Set<V> getModulator() {
+            return new HashSet<>(modulator);
+        }
+
+        public int getModulatorSize() {
+            return modulator.size();
+        }
+
+        public int getEta() {
+            return eta;
+        }
+
+        public double getQualityScore() {
+            return qualityScore;
+        }
 
         /**
          * Total parameter for the DFVS kernelization: k + ℓ
          */
-        public int getTotalParameter() { return k + modulator.size(); }
+        public int getTotalParameter() {
+            return k + modulator.size();
+        }
 
         /**
          * Kernel size bound: (k·ℓ)^O(η²)
@@ -186,7 +199,8 @@ public class EnhancedParameterComputer<V, E> {
 
         @Override
         public String toString() {
-            return String.format("EnhancedParameters{k=%d, |M|=%d, η=%d, quality=%.2f, kernelBound=%.0f}",
+            return String.format(
+                    "EnhancedParameters{k=%d, |M|=%d, η=%d, quality=%.2f, kernelBound=%.0f}",
                     k, modulator.size(), eta, qualityScore, getKernelSizeBound());
         }
     }

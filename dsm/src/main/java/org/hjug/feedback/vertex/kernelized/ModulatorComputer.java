@@ -1,15 +1,14 @@
 package org.hjug.feedback.vertex.kernelized;
 
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.stream.Collectors;
 import org.hjug.feedback.SuperTypeToken;
 import org.jgrapht.Graph;
 import org.jgrapht.Graphs;
 import org.jgrapht.alg.connectivity.ConnectivityInspector;
-import org.jgrapht.graph.DefaultUndirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
-
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.stream.Collectors;
+import org.jgrapht.graph.DefaultUndirectedGraph;
 
 /**
  * Multithreaded modulator computer that finds treewidth-η modulators
@@ -38,8 +37,7 @@ public class ModulatorComputer<V, E> {
      */
     public ModulatorResult<V> computeModulator(Graph<V, E> graph, int targetTreewidth, int maxModulatorSize) {
         if (maxModulatorSize <= 0) {
-            return new ModulatorResult<>(new HashSet<>(),
-                    treewidthComputer.computeEta(graph, new HashSet<>()), 0);
+            return new ModulatorResult<>(new HashSet<>(), treewidthComputer.computeEta(graph, new HashSet<>()), 0);
         }
 
         // Run multiple modulator finding strategies in parallel
@@ -48,8 +46,7 @@ public class ModulatorComputer<V, E> {
                 () -> computeFeedbackVertexSetModulator(graph, targetTreewidth, maxModulatorSize),
                 () -> computeTreewidthDecompositionModulator(graph, targetTreewidth, maxModulatorSize),
                 () -> computeHighDegreeVertexModulator(graph, targetTreewidth, maxModulatorSize),
-                () -> computeBottleneckVertexModulator(graph, targetTreewidth, maxModulatorSize)
-        );
+                () -> computeBottleneckVertexModulator(graph, targetTreewidth, maxModulatorSize));
 
         try {
             List<Future<Set<V>>> results = executorService.invokeAll(strategies, 60, TimeUnit.SECONDS);
@@ -88,8 +85,7 @@ public class ModulatorComputer<V, E> {
             // Find vertex with highest degree * betweenness centrality score
             V bestVertex = workingGraph.vertexSet().parallelStream()
                     .filter(v -> !modulator.contains(v))
-                    .max(Comparator.comparingDouble(v ->
-                            computeVertexRemovalScore(workingGraph, v, targetTreewidth)))
+                    .max(Comparator.comparingDouble(v -> computeVertexRemovalScore(workingGraph, v, targetTreewidth)))
                     .orElse(null);
 
             if (bestVertex == null) break;
@@ -127,8 +123,7 @@ public class ModulatorComputer<V, E> {
             List<V> remainingVertices = graph.vertexSet().stream()
                     .filter(v -> !modulator.contains(v))
                     .sorted((v1, v2) -> Integer.compare(
-                            graph.inDegreeOf(v2) + graph.outDegreeOf(v2),
-                            graph.inDegreeOf(v1) + graph.outDegreeOf(v1)))
+                            graph.inDegreeOf(v2) + graph.outDegreeOf(v2), graph.inDegreeOf(v1) + graph.outDegreeOf(v1)))
                     .collect(Collectors.toList());
 
             for (V vertex : remainingVertices) {
@@ -160,8 +155,7 @@ public class ModulatorComputer<V, E> {
         Map<V, Double> vertexImportance = undirected.vertexSet().parallelStream()
                 .collect(Collectors.toConcurrentMap(
                         v -> v,
-                        v -> computeStructuralImportance(undirected, v, centralityScores.getOrDefault(v, 0.0))
-                ));
+                        v -> computeStructuralImportance(undirected, v, centralityScores.getOrDefault(v, 0.0))));
 
         // Greedily select vertices with highest importance
         List<V> sortedVertices = vertexImportance.entrySet().stream()
@@ -190,8 +184,7 @@ public class ModulatorComputer<V, E> {
 
         List<V> verticesByDegree = graph.vertexSet().stream()
                 .sorted((v1, v2) -> Integer.compare(
-                        graph.inDegreeOf(v2) + graph.outDegreeOf(v2),
-                        graph.inDegreeOf(v1) + graph.outDegreeOf(v1)))
+                        graph.inDegreeOf(v2) + graph.outDegreeOf(v2), graph.inDegreeOf(v1) + graph.outDegreeOf(v1)))
                 .collect(Collectors.toList());
 
         for (V vertex : verticesByDegree) {
@@ -255,8 +248,8 @@ public class ModulatorComputer<V, E> {
                         .sum())
                 .sum();
 
-        double clusteringCoefficient = neighbors.size() > 1 ?
-                (double) neighborConnections / (neighbors.size() * (neighbors.size() - 1)) : 0.0;
+        double clusteringCoefficient =
+                neighbors.size() > 1 ? (double) neighborConnections / (neighbors.size() * (neighbors.size() - 1)) : 0.0;
 
         // Higher score = better candidate for removal
         return degree * (1.0 + clusteringCoefficient);
@@ -271,10 +264,11 @@ public class ModulatorComputer<V, E> {
 
         // Count triangles involving this vertex
         long triangles = neighbors.parallelStream()
-                .mapToLong(n1 -> neighbors.stream()
-                        .filter(n2 -> !n1.equals(n2) && graph.containsEdge(n1, n2))
-                        .count())
-                .sum() / 2;
+                        .mapToLong(n1 -> neighbors.stream()
+                                .filter(n2 -> !n1.equals(n2) && graph.containsEdge(n1, n2))
+                                .count())
+                        .sum()
+                / 2;
 
         return degree + centrality * 10 + triangles * 0.5;
     }
@@ -318,7 +312,9 @@ public class ModulatorComputer<V, E> {
 
                     if (distances.get(neighbor) == distances.get(current) + 1) {
                         pathCounts.put(neighbor, pathCounts.get(neighbor) + pathCounts.get(current));
-                        predecessors.computeIfAbsent(neighbor, k -> new ArrayList<>()).add(current);
+                        predecessors
+                                .computeIfAbsent(neighbor, k -> new ArrayList<>())
+                                .add(current);
                     }
                 }
             }
@@ -359,9 +355,7 @@ public class ModulatorComputer<V, E> {
             Graph<V, DefaultEdge> testGraph = new DefaultUndirectedGraph<>(DefaultEdge.class);
 
             // Copy graph without the test vertex
-            graph.vertexSet().stream()
-                    .filter(v -> !v.equals(vertex))
-                    .forEach(testGraph::addVertex);
+            graph.vertexSet().stream().filter(v -> !v.equals(vertex)).forEach(testGraph::addVertex);
 
             graph.edgeSet().forEach(edge -> {
                 V source = graph.getEdgeSource(edge);
@@ -372,12 +366,11 @@ public class ModulatorComputer<V, E> {
             });
 
             // Count connected components
-            ConnectivityInspector<V, DefaultEdge> originalInspector =
-                    new ConnectivityInspector<>(graph);
-            ConnectivityInspector<V, DefaultEdge> testInspector =
-                    new ConnectivityInspector<>(testGraph);
+            ConnectivityInspector<V, DefaultEdge> originalInspector = new ConnectivityInspector<>(graph);
+            ConnectivityInspector<V, DefaultEdge> testInspector = new ConnectivityInspector<>(testGraph);
 
-            if (testInspector.connectedSets().size() > originalInspector.connectedSets().size()) {
+            if (testInspector.connectedSets().size()
+                    > originalInspector.connectedSets().size()) {
                 articulationPoints.add(vertex);
             }
         }
@@ -424,12 +417,12 @@ public class ModulatorComputer<V, E> {
     private ModulatorResult<V> computeFallbackModulator(Graph<V, E> graph, int targetTreewidth, int maxSize) {
         Set<V> modulator = graph.vertexSet().stream()
                 .sorted((v1, v2) -> Integer.compare(
-                        graph.inDegreeOf(v2) + graph.outDegreeOf(v2),
-                        graph.inDegreeOf(v1) + graph.outDegreeOf(v1)))
+                        graph.inDegreeOf(v2) + graph.outDegreeOf(v2), graph.inDegreeOf(v1) + graph.outDegreeOf(v1)))
                 .limit(maxSize)
                 .collect(Collectors.toSet());
 
-        return new ModulatorResult<>(modulator,
+        return new ModulatorResult<>(
+                modulator,
                 treewidthComputer.computeEta(graph, modulator),
                 computeModulatorQuality(graph, modulator, targetTreewidth));
     }
@@ -464,14 +457,26 @@ public class ModulatorComputer<V, E> {
             this.qualityScore = qualityScore;
         }
 
-        public Set<V> getModulator() { return new HashSet<>(modulator); }
-        public int getResultingTreewidth() { return resultingTreewidth; }
-        public double getQualityScore() { return qualityScore; }
-        public int getSize() { return modulator.size(); }
+        public Set<V> getModulator() {
+            return new HashSet<>(modulator);
+        }
+
+        public int getResultingTreewidth() {
+            return resultingTreewidth;
+        }
+
+        public double getQualityScore() {
+            return qualityScore;
+        }
+
+        public int getSize() {
+            return modulator.size();
+        }
 
         @Override
         public String toString() {
-            return String.format("ModulatorResult{size=%d, treewidth=%d, quality=%.2f}",
+            return String.format(
+                    "ModulatorResult{size=%d, treewidth=%d, quality=%.2f}",
                     modulator.size(), resultingTreewidth, qualityScore);
         }
     }

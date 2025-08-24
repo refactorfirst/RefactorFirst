@@ -1,5 +1,11 @@
 package org.hjug.feedback.vertex.kernelized;
 
+import static org.junit.jupiter.api.Assertions.*;
+
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.IntStream;
 import org.hjug.feedback.SuperTypeToken;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultDirectedGraph;
@@ -10,13 +16,6 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.stream.IntStream;
-
-import static org.junit.jupiter.api.Assertions.*;
-
 @Execution(ExecutionMode.CONCURRENT)
 class ParameterComputerTest {
 
@@ -24,7 +23,6 @@ class ParameterComputerTest {
     private TreewidthComputer<String, DefaultEdge> treewidthComputer;
     private FeedbackVertexSetComputer<String, DefaultEdge> fvsComputer;
     private SuperTypeToken<DefaultEdge> token;
-
 
     @BeforeEach
     void setUp() {
@@ -189,8 +187,7 @@ class ParameterComputerTest {
             Graph<String, DefaultEdge> graph = createCompleteGraph(6);
             Set<String> modulator = Set.of("V0", "V1");
 
-            ParameterComputer.Parameters params =
-                    parameterComputer.computeParameters(graph, modulator);
+            ParameterComputer.Parameters params = parameterComputer.computeParameters(graph, modulator);
 
             assertEquals(2, params.getModulatorSize());
             assertTrue(params.getK() >= 0);
@@ -202,8 +199,7 @@ class ParameterComputerTest {
         void testOptimalModulatorFinding() {
             Graph<String, DefaultEdge> graph = createStarGraph(8);
 
-            ParameterComputer.Parameters params =
-                    parameterComputer.computeParametersWithOptimalModulator(graph, 2);
+            ParameterComputer.Parameters params = parameterComputer.computeParametersWithOptimalModulator(graph, 2);
 
             assertTrue(params.getModulatorSize() <= 2);
             assertTrue(params.getEta() >= 0);
@@ -234,15 +230,12 @@ class ParameterComputerTest {
                     .mapToObj(i -> createRandomGraph(20, 0.25))
                     .collect(java.util.stream.Collectors.toList());
 
-            List<CompletableFuture<ParameterComputer.Parameters>> futures =
-                    graphs.stream()
-                            .map(graph -> CompletableFuture.supplyAsync(() ->
-                                    parameterComputer.computeParameters(graph)))
-                            .collect(java.util.stream.Collectors.toList());
-
-            List<ParameterComputer.Parameters> results = futures.stream()
-                    .map(CompletableFuture::join)
+            List<CompletableFuture<ParameterComputer.Parameters>> futures = graphs.stream()
+                    .map(graph -> CompletableFuture.supplyAsync(() -> parameterComputer.computeParameters(graph)))
                     .collect(java.util.stream.Collectors.toList());
+
+            List<ParameterComputer.Parameters> results =
+                    futures.stream().map(CompletableFuture::join).collect(java.util.stream.Collectors.toList());
 
             assertEquals(10, results.size());
             results.forEach(params -> {
@@ -258,8 +251,7 @@ class ParameterComputerTest {
 
             // Test with different parallelism levels
             for (int parallelism : Arrays.asList(1, 2, 4)) {
-                ParameterComputer<String, DefaultEdge> computer =
-                        new ParameterComputer<>(token, parallelism);
+                ParameterComputer<String, DefaultEdge> computer = new ParameterComputer<>(token, parallelism);
 
                 long startTime = System.currentTimeMillis();
                 ParameterComputer.Parameters params = computer.computeParameters(graph);

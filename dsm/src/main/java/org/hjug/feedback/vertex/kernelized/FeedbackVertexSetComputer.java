@@ -1,14 +1,13 @@
 package org.hjug.feedback.vertex.kernelized;
 
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.stream.Collectors;
 import org.hjug.feedback.SuperTypeToken;
 import org.jgrapht.Graph;
 import org.jgrapht.alg.connectivity.KosarajuStrongConnectivityInspector;
 import org.jgrapht.alg.cycle.CycleDetector;
 import org.jgrapht.graph.DefaultDirectedGraph;
-
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.stream.Collectors;
 
 /**
  * Multithreaded feedback vertex set computer implementing multiple algorithms
@@ -19,7 +18,6 @@ public class FeedbackVertexSetComputer<V, E> {
 
     private final Class<E> edgeClass;
     private final ExecutorService executorService;
-
 
     public FeedbackVertexSetComputer(SuperTypeToken<E> edgeTypeToken) {
         this.edgeClass = edgeTypeToken.getClassFromTypeToken();
@@ -44,8 +42,7 @@ public class FeedbackVertexSetComputer<V, E> {
                 () -> greedyFeedbackVertexSet(graph),
                 () -> stronglyConnectedComponentsBasedFVS(graph),
                 () -> degreeBasedFeedbackVertexSet(graph),
-                () -> localSearchFeedbackVertexSet(graph)
-        );
+                () -> localSearchFeedbackVertexSet(graph));
 
         try {
             List<Future<Set<V>>> results = executorService.invokeAll(algorithms, 60, TimeUnit.SECONDS);
@@ -101,8 +98,7 @@ public class FeedbackVertexSetComputer<V, E> {
             Optional<V> vertexToRemove = sccs.parallelStream()
                     .filter(scc -> scc.size() > 1)
                     .flatMap(Collection::stream)
-                    .max(Comparator.comparingInt(v ->
-                            workingGraph.inDegreeOf(v) + workingGraph.outDegreeOf(v)));
+                    .max(Comparator.comparingInt(v -> workingGraph.inDegreeOf(v) + workingGraph.outDegreeOf(v)));
 
             if (vertexToRemove.isPresent()) {
                 V vertex = vertexToRemove.get();
@@ -126,10 +122,7 @@ public class FeedbackVertexSetComputer<V, E> {
         while (hasCycles(workingGraph)) {
             // Calculate degree scores in parallel
             Map<V, Double> degreeScores = workingGraph.vertexSet().parallelStream()
-                    .collect(Collectors.toConcurrentMap(
-                            v -> v,
-                            v -> calculateDegreeScore(workingGraph, v)
-                    ));
+                    .collect(Collectors.toConcurrentMap(v -> v, v -> calculateDegreeScore(workingGraph, v)));
 
             Optional<V> bestVertex = degreeScores.entrySet().parallelStream()
                     .filter(entry -> entry.getValue() > 0)
@@ -179,8 +172,8 @@ public class FeedbackVertexSetComputer<V, E> {
                         swapSolution.remove(vertex);
                         swapSolution.add(replacement);
 
-                        if (isValidFeedbackVertexSet(graph, swapSolution) &&
-                                swapSolution.size() < currentSolution.size()) {
+                        if (isValidFeedbackVertexSet(graph, swapSolution)
+                                && swapSolution.size() < currentSolution.size()) {
                             currentSolution = swapSolution;
                             improved = true;
                             break;
@@ -199,14 +192,13 @@ public class FeedbackVertexSetComputer<V, E> {
      * Finds vertex in cycles with maximum degree
      */
     private V findVertexInCyclesWithMaxDegree(Graph<V, E> graph) {
-        KosarajuStrongConnectivityInspector<V, E> inspector =
-                new KosarajuStrongConnectivityInspector<>(graph);
+        KosarajuStrongConnectivityInspector<V, E> inspector = new KosarajuStrongConnectivityInspector<>(graph);
 
         return inspector.stronglyConnectedSets().parallelStream()
-                .filter(scc -> scc.size() > 1 || hasSelfLoop(graph, scc.iterator().next()))
+                .filter(scc ->
+                        scc.size() > 1 || hasSelfLoop(graph, scc.iterator().next()))
                 .flatMap(Collection::stream)
-                .max(Comparator.comparingInt(v ->
-                        graph.inDegreeOf(v) + graph.outDegreeOf(v)))
+                .max(Comparator.comparingInt(v -> graph.inDegreeOf(v) + graph.outDegreeOf(v)))
                 .orElse(null);
     }
 
@@ -218,19 +210,16 @@ public class FeedbackVertexSetComputer<V, E> {
         int outDegree = graph.outDegreeOf(vertex);
 
         // Check if vertex is in any SCC with size > 1
-        KosarajuStrongConnectivityInspector<V, E> inspector =
-                new KosarajuStrongConnectivityInspector<>(graph);
+        KosarajuStrongConnectivityInspector<V, E> inspector = new KosarajuStrongConnectivityInspector<>(graph);
 
-        boolean inNonTrivialSCC = inspector.stronglyConnectedSets().stream()
-                .anyMatch(scc -> scc.size() > 1 && scc.contains(vertex));
+        boolean inNonTrivialSCC =
+                inspector.stronglyConnectedSets().stream().anyMatch(scc -> scc.size() > 1 && scc.contains(vertex));
 
         if (!inNonTrivialSCC && !hasSelfLoop(graph, vertex)) {
             return 0.0; // Not in any cycle
         }
 
-        return (inDegree + outDegree) +
-                (inDegree * outDegree * 0.5) +
-                (hasSelfLoop(graph, vertex) ? 1.0 : 0.0);
+        return (inDegree + outDegree) + (inDegree * outDegree * 0.5) + (hasSelfLoop(graph, vertex) ? 1.0 : 0.0);
     }
 
     /**
@@ -288,8 +277,7 @@ public class FeedbackVertexSetComputer<V, E> {
                 .filter(v -> graph.containsEdge(v, v))
                 .count();
 
-        KosarajuStrongConnectivityInspector<V, E> inspector =
-                new KosarajuStrongConnectivityInspector<>(graph);
+        KosarajuStrongConnectivityInspector<V, E> inspector = new KosarajuStrongConnectivityInspector<>(graph);
 
         long nonTrivialSCCs = inspector.stronglyConnectedSets().parallelStream()
                 .filter(scc -> scc.size() > 1)

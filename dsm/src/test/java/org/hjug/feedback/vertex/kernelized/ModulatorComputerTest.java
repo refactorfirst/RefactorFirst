@@ -1,5 +1,10 @@
 package org.hjug.feedback.vertex.kernelized;
 
+import static org.junit.jupiter.api.Assertions.*;
+
+import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.IntStream;
 import org.hjug.feedback.SuperTypeToken;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultDirectedGraph;
@@ -9,12 +14,6 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-
-import java.util.*;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.stream.IntStream;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 @Execution(ExecutionMode.CONCURRENT)
 class ModulatorComputerTest {
@@ -44,8 +43,7 @@ class ModulatorComputerTest {
         @DisplayName("Should compute empty modulator for tree graph")
         void testTreeGraphModulator() {
             Graph<String, DefaultEdge> tree = createTreeGraph(10);
-            ModulatorComputer.ModulatorResult<String> result =
-                    modulatorComputer.computeModulator(tree, 1, 5);
+            ModulatorComputer.ModulatorResult<String> result = modulatorComputer.computeModulator(tree, 1, 5);
 
             assertTrue(result.getResultingTreewidth() <= 1);
             assertTrue(result.getSize() <= 2); // Trees have treewidth 1
@@ -55,8 +53,7 @@ class ModulatorComputerTest {
         @DisplayName("Should compute valid modulator for cycle graph")
         void testCycleGraphModulator() {
             Graph<String, DefaultEdge> cycle = createCycleGraph(6);
-            ModulatorComputer.ModulatorResult<String> result =
-                    modulatorComputer.computeModulator(cycle, 1, 3);
+            ModulatorComputer.ModulatorResult<String> result = modulatorComputer.computeModulator(cycle, 1, 3);
 
             assertTrue(result.getResultingTreewidth() <= 1);
             assertTrue(result.getSize() >= 1); // Need to break cycle
@@ -67,8 +64,7 @@ class ModulatorComputerTest {
         @DisplayName("Should compute modulator for complete graph")
         void testCompleteGraphModulator() {
             Graph<String, DefaultEdge> complete = createCompleteGraph(5);
-            ModulatorComputer.ModulatorResult<String> result =
-                    modulatorComputer.computeModulator(complete, 2, 4);
+            ModulatorComputer.ModulatorResult<String> result = modulatorComputer.computeModulator(complete, 2, 4);
 
             assertTrue(result.getResultingTreewidth() <= 2);
             assertTrue(result.getSize() >= 2); // Complete graphs have high treewidth
@@ -80,8 +76,7 @@ class ModulatorComputerTest {
             Graph<String, DefaultEdge> complete = createCompleteGraph(8);
             int maxSize = 3;
 
-            ModulatorComputer.ModulatorResult<String> result =
-                    modulatorComputer.computeModulator(complete, 1, maxSize);
+            ModulatorComputer.ModulatorResult<String> result = modulatorComputer.computeModulator(complete, 1, maxSize);
 
             assertTrue(result.getSize() <= maxSize);
         }
@@ -93,8 +88,7 @@ class ModulatorComputerTest {
             Graph<String, DefaultEdge> graph = createRandomGraph(size, 0.2);
 
             long startTime = System.currentTimeMillis();
-            ModulatorComputer.ModulatorResult<String> result =
-                    modulatorComputer.computeModulator(graph, 3, size / 4);
+            ModulatorComputer.ModulatorResult<String> result = modulatorComputer.computeModulator(graph, 3, size / 4);
             long duration = System.currentTimeMillis() - startTime;
 
             assertTrue(result.getResultingTreewidth() >= 0);
@@ -107,10 +101,8 @@ class ModulatorComputerTest {
         void testModulatorQualityImprovement() {
             Graph<String, DefaultEdge> graph = createGridGraph(4, 4);
 
-            ModulatorComputer.ModulatorResult<String> smallResult =
-                    modulatorComputer.computeModulator(graph, 2, 2);
-            ModulatorComputer.ModulatorResult<String> largeResult =
-                    modulatorComputer.computeModulator(graph, 2, 6);
+            ModulatorComputer.ModulatorResult<String> smallResult = modulatorComputer.computeModulator(graph, 2, 2);
+            ModulatorComputer.ModulatorResult<String> largeResult = modulatorComputer.computeModulator(graph, 2, 6);
 
             // Larger budget should achieve better or equal treewidth
             assertTrue(largeResult.getResultingTreewidth() <= smallResult.getResultingTreewidth());
@@ -148,7 +140,8 @@ class ModulatorComputerTest {
 
             // Options should be sorted by quality
             for (int i = 1; i < options.size(); i++) {
-                assertTrue(options.get(i-1).getQualityScore() <= options.get(i).getQualityScore());
+                assertTrue(
+                        options.get(i - 1).getQualityScore() <= options.get(i).getQualityScore());
             }
         }
 
@@ -229,14 +222,13 @@ class ModulatorComputerTest {
 
             List<java.util.concurrent.CompletableFuture<EnhancedParameterComputer.EnhancedParameters<String>>> futures =
                     graphs.stream()
-                            .map(graph -> java.util.concurrent.CompletableFuture.supplyAsync(() ->
-                                    parameterComputer.computeOptimalParameters(graph, 4)))
+                            .map(graph -> java.util.concurrent.CompletableFuture.supplyAsync(
+                                    () -> parameterComputer.computeOptimalParameters(graph, 4)))
                             .collect(java.util.stream.Collectors.toList());
 
-            List<EnhancedParameterComputer.EnhancedParameters<String>> results =
-                    futures.stream()
-                            .map(java.util.concurrent.CompletableFuture::join)
-                            .collect(java.util.stream.Collectors.toList());
+            List<EnhancedParameterComputer.EnhancedParameters<String>> results = futures.stream()
+                    .map(java.util.concurrent.CompletableFuture::join)
+                    .collect(java.util.stream.Collectors.toList());
 
             assertEquals(5, results.size());
             results.forEach(params -> {

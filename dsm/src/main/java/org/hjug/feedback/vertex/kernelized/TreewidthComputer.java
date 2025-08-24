@@ -1,14 +1,13 @@
 package org.hjug.feedback.vertex.kernelized;
 
-import org.jgrapht.Graph;
-import org.jgrapht.Graphs;
-import org.jgrapht.graph.DefaultUndirectedGraph;
-import org.jgrapht.graph.DefaultEdge;
-
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import org.jgrapht.Graph;
+import org.jgrapht.Graphs;
+import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.DefaultUndirectedGraph;
 
 /**
  * Multithreaded treewidth computer that implements multiple heuristic algorithms
@@ -44,8 +43,7 @@ public class TreewidthComputer<V, E> {
                 () -> minDegreeEliminationTreewidth(undirectedGraph),
                 () -> fillInHeuristicTreewidth(undirectedGraph),
                 () -> maxCliqueTreewidth(undirectedGraph),
-                () -> greedyTriangulationTreewidth(undirectedGraph)
-        );
+                () -> greedyTriangulationTreewidth(undirectedGraph));
 
         try {
             List<Future<Integer>> results = executorService.invokeAll(algorithms, 30, TimeUnit.SECONDS);
@@ -69,28 +67,25 @@ public class TreewidthComputer<V, E> {
         Graph<V, DefaultEdge> undirected = new DefaultUndirectedGraph<>(DefaultEdge.class);
 
         // Add vertices (except modulator)
-        original.vertexSet().stream()
-                .filter(v -> !modulator.contains(v))
-                .forEach(undirected::addVertex);
+        original.vertexSet().stream().filter(v -> !modulator.contains(v)).forEach(undirected::addVertex);
 
         // Add edges
-        original.edgeSet().parallelStream()
-                .forEach(edge -> {
-                    V source = original.getEdgeSource(edge);
-                    V target = original.getEdgeTarget(edge);
+        original.edgeSet().parallelStream().forEach(edge -> {
+            V source = original.getEdgeSource(edge);
+            V target = original.getEdgeTarget(edge);
 
-                    if (undirected.containsVertex(source) &&
-                            undirected.containsVertex(target) &&
-                            !source.equals(target) &&
-                            !undirected.containsEdge(source, target)) {
+            if (undirected.containsVertex(source)
+                    && undirected.containsVertex(target)
+                    && !source.equals(target)
+                    && !undirected.containsEdge(source, target)) {
 
-                        synchronized (undirected) {
-                            if (!undirected.containsEdge(source, target)) {
-                                undirected.addEdge(source, target);
-                            }
-                        }
+                synchronized (undirected) {
+                    if (!undirected.containsEdge(source, target)) {
+                        undirected.addEdge(source, target);
                     }
-                });
+                }
+            }
+        });
 
         return undirected;
     }
@@ -99,9 +94,8 @@ public class TreewidthComputer<V, E> {
      * Minimum degree elimination ordering heuristic
      */
     private int minDegreeEliminationTreewidth(Graph<V, DefaultEdge> graph) {
-        Set<V> remainingVertices = new ConcurrentHashMap<>(
-                graph.vertexSet().stream().collect(Collectors.toMap(v -> v, v -> v))
-        ).keySet();
+        Set<V> remainingVertices =
+                new ConcurrentHashMap<>(graph.vertexSet().stream().collect(Collectors.toMap(v -> v, v -> v))).keySet();
 
         Map<V, Set<V>> adjacencyMap = new ConcurrentHashMap<>();
 
@@ -116,10 +110,9 @@ public class TreewidthComputer<V, E> {
         while (!remainingVertices.isEmpty()) {
             // Find vertex with minimum degree
             V minDegreeVertex = remainingVertices.parallelStream()
-                    .min(Comparator.comparingInt(v ->
-                            (int) adjacencyMap.get(v).stream()
-                                    .filter(remainingVertices::contains)
-                                    .count()))
+                    .min(Comparator.comparingInt(v -> (int) adjacencyMap.get(v).stream()
+                            .filter(remainingVertices::contains)
+                            .count()))
                     .orElse(null);
 
             if (minDegreeVertex == null) break;
@@ -132,12 +125,10 @@ public class TreewidthComputer<V, E> {
 
             // Make neighbors a clique
             neighbors.parallelStream().forEach(u -> {
-                neighbors.parallelStream()
-                        .filter(v -> !v.equals(u))
-                        .forEach(v -> {
-                            adjacencyMap.get(u).add(v);
-                            adjacencyMap.get(v).add(u);
-                        });
+                neighbors.parallelStream().filter(v -> !v.equals(u)).forEach(v -> {
+                    adjacencyMap.get(u).add(v);
+                    adjacencyMap.get(v).add(u);
+                });
             });
 
             remainingVertices.remove(minDegreeVertex);
@@ -176,12 +167,10 @@ public class TreewidthComputer<V, E> {
 
             // Make neighbors a clique (simulate elimination)
             neighbors.parallelStream().forEach(u -> {
-                neighbors.parallelStream()
-                        .filter(v -> !v.equals(u))
-                        .forEach(v -> {
-                            adjacencyMap.get(u).add(v);
-                            adjacencyMap.get(v).add(u);
-                        });
+                neighbors.parallelStream().filter(v -> !v.equals(u)).forEach(v -> {
+                    adjacencyMap.get(u).add(v);
+                    adjacencyMap.get(v).add(u);
+                });
             });
 
             processed.add(vertex);

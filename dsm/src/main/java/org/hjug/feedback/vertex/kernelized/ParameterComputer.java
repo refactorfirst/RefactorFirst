@@ -1,9 +1,9 @@
 package org.hjug.feedback.vertex.kernelized;
 
+import java.util.HashSet;
+import java.util.Set;
 import org.hjug.feedback.SuperTypeToken;
 import org.jgrapht.Graph;
-import java.util.Set;
-import java.util.HashSet;
 
 /**
  * Main facade for computing eta and k parameters needed for DirectedFeedbackVertexSetSolver
@@ -69,8 +69,7 @@ public class ParameterComputer<V, E> {
     private Set<V> findDegreeBasedModulator(Graph<V, E> graph, int maxSize) {
         return graph.vertexSet().parallelStream()
                 .sorted((v1, v2) -> Integer.compare(
-                        graph.inDegreeOf(v2) + graph.outDegreeOf(v2),
-                        graph.inDegreeOf(v1) + graph.outDegreeOf(v1)))
+                        graph.inDegreeOf(v2) + graph.outDegreeOf(v2), graph.inDegreeOf(v1) + graph.outDegreeOf(v1)))
                 .limit(maxSize)
                 .collect(java.util.stream.Collectors.toSet());
     }
@@ -93,9 +92,9 @@ public class ParameterComputer<V, E> {
      * Result container for computed parameters
      */
     public static class Parameters {
-        private final int k;           // feedback vertex set size
+        private final int k; // feedback vertex set size
         private final int modulatorSize; // modulator size (ℓ)
-        private final int eta;         // treewidth after modulator removal
+        private final int eta; // treewidth after modulator removal
 
         public Parameters(int k, int modulatorSize, int eta) {
             this.k = k;
@@ -103,9 +102,17 @@ public class ParameterComputer<V, E> {
             this.eta = eta;
         }
 
-        public int getK() { return k; }
-        public int getModulatorSize() { return modulatorSize; }
-        public int getEta() { return eta; }
+        public int getK() {
+            return k;
+        }
+
+        public int getModulatorSize() {
+            return modulatorSize;
+        }
+
+        public int getEta() {
+            return eta;
+        }
 
         @Override
         public String toString() {
