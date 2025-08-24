@@ -6,6 +6,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.jgrapht.Graph;
 import org.jgrapht.Graphs;
+import org.jgrapht.alg.cycle.CycleDetector;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DefaultUndirectedGraph;
 
@@ -34,8 +35,13 @@ public class TreewidthComputer<V, E> {
         // Convert to undirected graph and remove modulator
         Graph<V, DefaultEdge> undirectedGraph = convertToUndirectedWithoutModulator(graph, modulator);
 
-        if (undirectedGraph.vertexSet().isEmpty()) {
+        // shortcuts
+        if (undirectedGraph.vertexSet().isEmpty() || undirectedGraph.vertexSet().size() == 1) {
             return 0;
+        } else if (!hasCycles(graph)) {
+            // A graph without cycles will have an eta of 1 for our purposes
+            // since a graph that does not have cycles is not of interest
+            return 1;
         }
 
         // Run multiple treewidth approximation algorithms in parallel
@@ -51,6 +57,7 @@ public class TreewidthComputer<V, E> {
             return results.parallelStream()
                     .map(this::getFutureValue)
                     .filter(Objects::nonNull)
+                    .filter(eta -> eta > 1) // if a graph has a cycle, eta will be more than 1
                     .min(Integer::compareTo)
                     .orElse(undirectedGraph.vertexSet().size() - 1); // Worst case bound
 
@@ -58,6 +65,14 @@ public class TreewidthComputer<V, E> {
             Thread.currentThread().interrupt();
             return computeFallbackTreewidth(undirectedGraph);
         }
+    }
+
+    /**
+     * Checks if the graph has cycles
+     */
+    private boolean hasCycles(Graph<V, E> graph) {
+        CycleDetector<V, E> detector = new CycleDetector<>(graph);
+        return detector.detectCycles();
     }
 
     /**
