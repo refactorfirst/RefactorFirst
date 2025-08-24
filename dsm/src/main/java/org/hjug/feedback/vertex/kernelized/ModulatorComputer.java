@@ -57,7 +57,7 @@ public class ModulatorComputer<V, E> {
             return results.parallelStream()
                     .map(this::getFutureValue)
                     .filter(Objects::nonNull)
-                    .filter(modulator -> modulator.size() <= maxModulatorSize)
+                    .filter(modulator -> modulator.size() <= maxModulatorSize && !modulator.isEmpty())
                     .map(modulator -> new ModulatorResult<>(
                             modulator,
                             treewidthComputer.computeEta(graph, modulator),
