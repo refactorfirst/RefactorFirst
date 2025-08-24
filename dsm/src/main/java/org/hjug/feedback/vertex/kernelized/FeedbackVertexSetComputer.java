@@ -253,6 +253,7 @@ public class FeedbackVertexSetComputer<V, E> {
      */
     @SuppressWarnings("unchecked")
     private Graph<V, E> copyGraph(Graph<V, E> original) {
+        // TODO: consider using SparseIntUndirectedGraph to improve speed
         Graph<V, E> copy = new DefaultDirectedGraph<>(edgeClass);
 
         // Add vertices
@@ -262,6 +263,7 @@ public class FeedbackVertexSetComputer<V, E> {
         original.edgeSet().forEach(edge -> {
             V source = original.getEdgeSource(edge);
             V target = original.getEdgeTarget(edge);
+            //adding a large number of edges takes time
             copy.addEdge(source, target);
         });
 
