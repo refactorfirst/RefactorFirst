@@ -263,7 +263,7 @@ public class FeedbackVertexSetComputer<V, E> {
         original.edgeSet().forEach(edge -> {
             V source = original.getEdgeSource(edge);
             V target = original.getEdgeTarget(edge);
-            //adding a large number of edges takes time
+            // adding a large number of edges takes time
             copy.addEdge(source, target);
         });
 
