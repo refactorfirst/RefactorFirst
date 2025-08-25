@@ -61,6 +61,16 @@ public class DirectedFeedbackVertexSetSolver<V, E> {
     }
 
     /**
+     * Use # of Strongly Connected components as a default k value
+     * SCC size is a lower bound of k (the lower the better)
+     */
+    public DirectedFeedbackVertexSetResult<V> solve() {
+        KosarajuStrongConnectivityInspector<V, E> kosaraju =
+                new KosarajuStrongConnectivityInspector<>(graph);
+        return solve(kosaraju.stronglyConnectedSets().size());
+    }
+
+    /**
      * Main solving method implementing the three-phase kernelization algorithm[1]
      */
     public DirectedFeedbackVertexSetResult<V> solve(int k) {

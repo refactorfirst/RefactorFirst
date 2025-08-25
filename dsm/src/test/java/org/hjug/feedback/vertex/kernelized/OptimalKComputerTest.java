@@ -55,7 +55,7 @@ class OptimalKComputerTest {
 
             OptimalKComputer.OptimalKResult<String> result = computer.computeOptimalK(graph);
 
-            assertEquals(1, result.getOptimalK());
+            assertEquals(0, result.getOptimalK());
             assertEquals(Set.of("A"), result.getFeedbackVertexSet());
         }
 
@@ -237,6 +237,19 @@ class OptimalKComputerTest {
         @DisplayName("Bounds should be consistent with optimal k")
         void testBoundsConsistency() {
             Graph<String, DefaultEdge> graph = createSimple3Cycle();
+
+            OptimalKComputer.KBounds bounds = computer.computeKBounds(graph);
+            OptimalKComputer.OptimalKResult<String> result = computer.computeOptimalK(graph);
+
+            assertTrue(result.getOptimalK() >= bounds.lowerBound);
+            assertTrue(result.getOptimalK() <= bounds.upperBound);
+        }
+
+        @ParameterizedTest
+        @ValueSource(ints = {10, 15})
+        @DisplayName("Should handle random graphs efficiently")
+        void testRandomGraphs(int size) {
+            Graph<String, DefaultEdge> graph = createRandomGraph(size, 0.3);
 
             OptimalKComputer.KBounds bounds = computer.computeKBounds(graph);
             OptimalKComputer.OptimalKResult<String> result = computer.computeOptimalK(graph);

@@ -1,5 +1,6 @@
 package org.hjug.feedback.vertex.kernelized;
 
+import org.hjug.feedback.SuperTypeToken;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
@@ -34,20 +35,21 @@ public class OptimalKUsageExample {
 
             // Integrate with DFVS solver
             System.out.println("\n3. Using optimal k with DFVS solver...");
-            DirectedFeedbackVertexSetSolver<String, DefaultEdge> solver = new DirectedFeedbackVertexSetSolver<>(graph);
+            DirectedFeedbackVertexSetSolver<String, DefaultEdge> solver = new DirectedFeedbackVertexSetSolver<>(graph, null, null, 2, new SuperTypeToken<>() {});
 
             // Try with computed optimal k
-            boolean hasSolution = solver.solve(result.getOptimalK());
+            DirectedFeedbackVertexSetResult<String> solution = solver.solve(result.getOptimalK());
+            boolean hasSolution = !solution.getFeedbackVertices().isEmpty();
             System.out.println("DFVS solver with k=" + result.getOptimalK() + ": "
                     + (hasSolution ? "Solution found" : "No solution"));
 
             if (hasSolution) {
-                System.out.println("DFVS solution: " + solver.getSolution());
+                System.out.println("DFVS solution: " + solution);
             }
 
             // Try with k-1 to verify optimality
             if (result.getOptimalK() > 0) {
-                boolean hasSuboptimal = solver.solve(result.getOptimalK() - 1);
+                boolean hasSuboptimal = !solver.solve(result.getOptimalK() - 1).getFeedbackVertices().isEmpty();
                 System.out.println("DFVS solver with k=" + (result.getOptimalK() - 1) + ": "
                         + (hasSuboptimal ? "Solution found" : "No solution"));
 
@@ -101,9 +103,9 @@ public class OptimalKUsageExample {
         System.out.println("  Time: " + result.getComputationTimeMs() + "ms");
 
         // Validate with DFVS solver
-        DirectedFeedbackVertexSetSolver<String, DefaultEdge> solver = new DirectedFeedbackVertexSetSolver<>(graph);
+        DirectedFeedbackVertexSetSolver<String, DefaultEdge> solver = new DirectedFeedbackVertexSetSolver<>(graph, null, null, 2, new SuperTypeToken<>() {});
 
-        boolean hasOptimalSolution = solver.solve(result.getOptimalK());
+        boolean hasOptimalSolution = !solver.solve(result.getOptimalK()).getFeedbackVertices().isEmpty();
         System.out.println("  DFVS validation: " + (hasOptimalSolution ? "✓" : "✗"));
     }
 
