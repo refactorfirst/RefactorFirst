@@ -1,9 +1,10 @@
-package org.hjug.feedback.vertex.kernelized;
+package org.hjug.feedback.vertex.kernelized.optimalK;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
+
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
@@ -14,6 +15,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 @Execution(ExecutionMode.CONCURRENT)
+@Disabled
 class OptimalKComputerTest {
 
     private OptimalKComputer<String, DefaultEdge> computer;

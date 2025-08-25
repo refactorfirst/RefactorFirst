@@ -1,6 +1,8 @@
-package org.hjug.feedback.vertex.kernelized;
+package org.hjug.feedback.vertex.kernelized.optimalK;
 
 import org.hjug.feedback.SuperTypeToken;
+import org.hjug.feedback.vertex.kernelized.DirectedFeedbackVertexSetResult;
+import org.hjug.feedback.vertex.kernelized.DirectedFeedbackVertexSetSolver;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
@@ -10,7 +12,8 @@ import org.jgrapht.graph.DefaultEdge;
  */
 public class OptimalKUsageExample {
 
-    public static void main(String[] args) {
+    private static void main(String[] args) {
+//    public static void main(String[] args) {
         // Create a sample directed graph with cycles
         Graph<String, DefaultEdge> graph = createSampleGraph();
 
