@@ -253,7 +253,7 @@ public class FeedbackVertexSetComputer<V, E> {
      */
     @SuppressWarnings("unchecked")
     private Graph<V, E> copyGraph(Graph<V, E> original) {
-        // TODO: consider using SparseIntUndirectedGraph to improve speed
+        // TODO: consider using SparseIntDirectedGraph to improve copy performance
         Graph<V, E> copy = new DefaultDirectedGraph<>(edgeClass);
 
         // Add vertices
