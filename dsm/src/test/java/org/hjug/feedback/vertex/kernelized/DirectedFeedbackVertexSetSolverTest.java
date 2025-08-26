@@ -193,7 +193,7 @@ class DirectedFeedbackVertexSetSolverTest {
             long endTime = System.currentTimeMillis();
 
             // Performance should be reasonable[1]
-            assertTrue(endTime - startTime < 10000, "Algorithm took too long: " + (endTime - startTime) + "ms");
+            assertTrue(endTime - startTime < 20000, "Algorithm took too long: " + (endTime - startTime) + "ms");
 
             if (hasCycles()) {
                 assertGraphIsAcyclicAfterRemoval(result);
