@@ -43,7 +43,7 @@ class FeedbackArcSetBenchmarkTest {
     @Test
     @DisplayName("Benchmark: Sparse graphs with varying sizes")
     void benchmarkSparseGraphs() {
-        int[] sizes = {50, 100, 200, 500};
+        int[] sizes = {50, 100, 200, 500, 1000, 1500};
 
         System.out.println("=== Sparse Graph Benchmark ===");
         System.out.printf("%-10s %-15s %-15s %-15s %-15s%n", "Size", "Vertices", "Edges", "FAS Size", "Time (ms)");
