@@ -778,8 +778,8 @@ public class DirectedFeedbackVertexSetSolver<V, E> {
 
     /*
      * Code to CALCULATE MAX_PATH_LENGTH is below
-     * May not be necessary
-     * Currently causes NPEs
+     * May not be necessary.
+     * Not currently used - causes NPEs
      */
 
     /**
