@@ -10,10 +10,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import lombok.extern.slf4j.Slf4j;
 import org.hjug.cbc.CostBenefitCalculator;
 import org.hjug.cbc.CycleRanker;
@@ -23,6 +20,12 @@ import org.hjug.dsm.CircularReferenceChecker;
 import org.hjug.dsm.DSM;
 import org.hjug.dsm.EdgeRemovalCalculator;
 import org.hjug.dsm.EdgeToRemoveInfo;
+import org.hjug.feedback.SuperTypeToken;
+import org.hjug.feedback.arc.approximate.FeedbackArcSetResult;
+import org.hjug.feedback.arc.approximate.FeedbackArcSetSolver;
+import org.hjug.feedback.vertex.kernelized.DirectedFeedbackVertexSetResult;
+import org.hjug.feedback.vertex.kernelized.DirectedFeedbackVertexSetSolver;
+import org.hjug.feedback.vertex.kernelized.EnhancedParameterComputer;
 import org.hjug.git.GitLogReader;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.AsSubgraph;
@@ -221,6 +224,33 @@ public class SimpleHtmlReport {
         dsm = new DSM<>(classGraph);
         edgesAboveDiagonal = dsm.getEdgesAboveDiagonal();
         EdgeRemovalCalculator edgeRemovalCalculator = new EdgeRemovalCalculator(classGraph, dsm);
+
+        // Identify vertexes to remove
+        log.info("Identifying vertexes to remove");
+        EnhancedParameterComputer<String, DefaultWeightedEdge> enhancedParameterComputer =
+                new EnhancedParameterComputer<>(new SuperTypeToken<>() {});
+        EnhancedParameterComputer.EnhancedParameters<String> parameters =
+                enhancedParameterComputer.computeOptimalParameters(classGraph, 4);
+        DirectedFeedbackVertexSetSolver<String, DefaultWeightedEdge> vertexSolver =
+                new DirectedFeedbackVertexSetSolver<>(
+                        classGraph, parameters.getModulator(), null, parameters.getEta(), new SuperTypeToken<>() {});
+        DirectedFeedbackVertexSetResult<String> vertexSetResult = vertexSolver.solve(parameters.getK());
+        Set<String> vertexesToRemove = vertexSetResult.getFeedbackVertices();
+
+        // Identify edges to remove
+        log.info("Identifying edges to remove");
+        FeedbackArcSetSolver<String, DefaultWeightedEdge> edgeSolver = new FeedbackArcSetSolver<>(classGraph);
+        FeedbackArcSetResult<String, DefaultWeightedEdge> edgeSolverResult = edgeSolver.solve();
+        Set<DefaultWeightedEdge> edgesToRemove = edgeSolverResult.getFeedbackArcs();
+
+        /*
+         *  TODO: List vertexes & edges suggested for removal
+         *  If edge marked for removal has source vertex marked for removal,
+         *  suggest that the method move to the target vertex
+         *  If edge marked for removal has target vertex marked for removal,
+         *  suggest that the method move to the source vertex
+         *
+         */
 
         log.info("Performing edge removal what-if analysis");
         List<EdgeToRemoveInfo> edgeToRemoveInfos = edgeRemovalCalculator.getImpactOfEdgesAboveDiagonalIfRemoved(50);
