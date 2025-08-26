@@ -66,8 +66,7 @@ public class DirectedFeedbackVertexSetSolver<V, E> {
      * SCC size is a lower bound of k (the lower the better)
      */
     public DirectedFeedbackVertexSetResult<V> solve() {
-        KosarajuStrongConnectivityInspector<V, E> kosaraju =
-                new KosarajuStrongConnectivityInspector<>(graph);
+        KosarajuStrongConnectivityInspector<V, E> kosaraju = new KosarajuStrongConnectivityInspector<>(graph);
         return solve(kosaraju.stronglyConnectedSets().size());
     }
 
@@ -490,8 +489,10 @@ public class DirectedFeedbackVertexSetSolver<V, E> {
 
             // Explore adjacent representatives
             for (V nextRep : representatives) {
-                if (!visited.contains(nextRep) && !nextRep.equals(current) &&
-                        !nextRep.equals(source) && !nextRep.equals(target)) {
+                if (!visited.contains(nextRep)
+                        && !nextRep.equals(current)
+                        && !nextRep.equals(source)
+                        && !nextRep.equals(target)) {
 
                     if (hasPath(current, nextRep)) {
                         queue.offer(nextRep);
@@ -691,7 +692,6 @@ public class DirectedFeedbackVertexSetSolver<V, E> {
         return hasPath(source, target);
     }
 
-
     /**
      * Checks if there's a path between two vertices
      * original implementation
@@ -826,12 +826,12 @@ public class DirectedFeedbackVertexSetSolver<V, E> {
         int treewidthBasedLimit = computeTreewidthBasedLimit(n, k);
 
         // Take the minimum of all approaches to ensure efficiency
-        int computedLimit = Math.min(Math.min(densityBasedLimit, parameterBasedLimit),
-                Math.min(sccBasedLimit, treewidthBasedLimit));
+        int computedLimit = Math.min(
+                Math.min(densityBasedLimit, parameterBasedLimit), Math.min(sccBasedLimit, treewidthBasedLimit));
 
         // Apply safety bounds
-        int minLimit = Math.max(k + 1, 5);  // At least k+1 for meaningful cycle detection
-        int maxLimit = Math.min(n, 1000);   // Never exceed graph size or reasonable upper bound
+        int minLimit = Math.max(k + 1, 5); // At least k+1 for meaningful cycle detection
+        int maxLimit = Math.min(n, 1000); // Never exceed graph size or reasonable upper bound
 
         return Math.max(minLimit, Math.min(computedLimit, maxLimit));
     }
@@ -893,10 +893,7 @@ public class DirectedFeedbackVertexSetSolver<V, E> {
                 return Math.min(n, 10); // Likely acyclic
             }
 
-            int maxSCCSize = sccs.stream()
-                    .mapToInt(Set::size)
-                    .max()
-                    .orElse(1);
+            int maxSCCSize = sccs.stream().mapToInt(Set::size).max().orElse(1);
 
             // Path length should be at most twice the largest SCC size
             return Math.min(2 * maxSCCSize, n);
@@ -943,7 +940,12 @@ public class DirectedFeedbackVertexSetSolver<V, E> {
                 Set<V> component = new HashSet<>();
 
                 // Simple reachability check within reasonable bounds
-                exploreComponent(vertex, component, visited, 0, Math.min(20, graph.vertexSet().size()));
+                exploreComponent(
+                        vertex,
+                        component,
+                        visited,
+                        0,
+                        Math.min(20, graph.vertexSet().size()));
 
                 if (component.size() > 1) {
                     sccs.add(component);
@@ -957,8 +959,7 @@ public class DirectedFeedbackVertexSetSolver<V, E> {
     /**
      * Helper method for component exploration with depth limit
      */
-    private void exploreComponent(V vertex, Set<V> component, Set<V> visited,
-                                  int depth, int maxDepth) {
+    private void exploreComponent(V vertex, Set<V> component, Set<V> visited, int depth, int maxDepth) {
         if (depth >= maxDepth || visited.contains(vertex)) {
             return;
         }
@@ -1074,7 +1075,7 @@ public class DirectedFeedbackVertexSetSolver<V, E> {
     }
 
     // Constant declaration that uses the computed value
-//    private final int MAX_PATH_LENGTH = computeMaxPathLength();
-    //set to constant for now - computeMaxPathLength() causes NPEs
+    //    private final int MAX_PATH_LENGTH = computeMaxPathLength();
+    // set to constant for now - computeMaxPathLength() causes NPEs
     private final int MAX_PATH_LENGTH = 10;
 }
