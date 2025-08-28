@@ -81,6 +81,8 @@ public class SimpleHtmlReport {
     Map<String, AsSubgraph<String, DefaultWeightedEdge>> cycles;
     DSM<String, DefaultWeightedEdge> dsm;
     List<DefaultWeightedEdge> edgesAboveDiagonal = List.of(); // initialize for unit tests
+    Set<String> vertexesToRemove = Set.of(); // initialize for unit tests
+    Set<DefaultWeightedEdge> edgesToRemove = Set.of();
 
     DateTimeFormatter formatter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT)
             .withLocale(Locale.getDefault())
@@ -235,22 +237,16 @@ public class SimpleHtmlReport {
                 new DirectedFeedbackVertexSetSolver<>(
                         classGraph, parameters.getModulator(), null, parameters.getEta(), new SuperTypeToken<>() {});
         DirectedFeedbackVertexSetResult<String> vertexSetResult = vertexSolver.solve(parameters.getK());
-        Set<String> vertexesToRemove = vertexSetResult.getFeedbackVertices();
+        vertexesToRemove = vertexSetResult.getFeedbackVertices();
 
         // Identify edges to remove
         log.info("Identifying edges to remove");
         FeedbackArcSetSolver<String, DefaultWeightedEdge> edgeSolver = new FeedbackArcSetSolver<>(classGraph);
         FeedbackArcSetResult<String, DefaultWeightedEdge> edgeSolverResult = edgeSolver.solve();
-        Set<DefaultWeightedEdge> edgesToRemove = edgeSolverResult.getFeedbackArcs();
+        edgesToRemove = edgeSolverResult.getFeedbackArcs();
 
-        /*
-         *  TODO: List vertexes & edges suggested for removal
-         *  If edge marked for removal has source vertex marked for removal,
-         *  suggest that the method move to the target vertex
-         *  If edge marked for removal has target vertex marked for removal,
-         *  suggest that the method move to the source vertex
-         *
-         */
+        // TODO: Fix rendering of table
+//        stringBuilder.append(renderEdgesAndClassesToRemove(vertexesToRemove, edgesToRemove));
 
         log.info("Performing edge removal what-if analysis");
         List<EdgeToRemoveInfo> edgeToRemoveInfos = edgeRemovalCalculator.getImpactOfEdgesAboveDiagonalIfRemoved(50);
@@ -373,6 +369,50 @@ public class SimpleHtmlReport {
             for (String rowData : getEdgeToRemoveInfos(edge)) {
                 stringBuilder.append(drawTableCell(rowData));
             }
+
+            stringBuilder.append("</tr>\n");
+        }
+
+        stringBuilder.append("</tbody>\n");
+        stringBuilder.append("</table>\n");
+
+        return stringBuilder.toString();
+    }
+
+    private String renderEdgesAndClassesToRemove(Set<String> vertexesToRemove, Set<DefaultWeightedEdge> edgesToRemove) {
+        StringBuilder stringBuilder = new StringBuilder();
+
+        stringBuilder.append(
+                "<div style=\"text-align: center;\"><a id=\"CYCLES\"><h1>Edges and Classes to remove</h1></a></div>\n");
+
+        stringBuilder.append("<h2 align=\"center\">Relationships and classes suggested for removal:</h2>\n");
+        stringBuilder.append("<table align=\"center\" border=\"5px\">\n");
+
+        // Content
+        stringBuilder.append("<thead>\n<tr>\n");
+        for (String heading : new String[] {"Relationship", "Remove src class?", "Remove target class?"}) {
+            stringBuilder.append("<th>").append(heading).append("</th>\n");
+        }
+        stringBuilder.append("</thead>\n");
+
+        stringBuilder.append("<tbody>\n");
+        for (DefaultWeightedEdge edge : edgesToRemove) {
+            stringBuilder.append("<tr>\n");
+
+            if (edgesAboveDiagonal.contains(edge)) {
+                stringBuilder.append("<strong>");
+                stringBuilder.append(renderEdge(edge));
+                stringBuilder.append("</strong>");
+            } else {
+                stringBuilder.append(renderEdge(edge));
+            }
+
+            String[] vertexes = extractVertexes(edge);
+            String start = getClassName(vertexes[0].trim());
+            String end = getClassName(vertexes[1].trim());
+
+            drawTableCell(String.valueOf(vertexesToRemove.contains(start)));
+            drawTableCell(String.valueOf(vertexesToRemove.contains(end)));
 
             stringBuilder.append("</tr>\n");
         }
