@@ -226,7 +226,6 @@ public class SimpleHtmlReport {
         dsm = new DSM<>(classGraph);
         edgesAboveDiagonal = dsm.getEdgesAboveDiagonal();
 
-
         // Identify vertexes to remove
         log.info("Identifying vertexes to remove");
         EnhancedParameterComputer<String, DefaultWeightedEdge> enhancedParameterComputer =

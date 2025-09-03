@@ -285,7 +285,7 @@ public class ModulatorComputer<V, E> {
         vertices.parallelStream().forEach(v -> centrality.put(v, 0.0));
 
         // For efficiency, sample pairs of vertices for large graphs
-        //TODO: sampleSize and random are not used...
+        // TODO: sampleSize and random are not used...
         int sampleSize = Math.min(vertices.size() * (vertices.size() - 1) / 2, 1000);
         Random random = new Random(42); // Fixed seed for reproducibility
 

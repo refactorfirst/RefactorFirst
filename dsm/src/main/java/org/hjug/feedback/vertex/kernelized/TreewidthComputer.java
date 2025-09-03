@@ -192,8 +192,7 @@ public class TreewidthComputer<V, E> {
         ConcurrentHashMap<V, Boolean> remainingVertices = new ConcurrentHashMap<>();
 
         // Initialize remaining vertices
-        graph.vertexSet().parallelStream().forEach(vertex ->
-                remainingVertices.put(vertex, true));
+        graph.vertexSet().parallelStream().forEach(vertex -> remainingVertices.put(vertex, true));
 
         // Custom ForkJoinPool for better control over parallelization
         ForkJoinPool customThreadPool = new ForkJoinPool(Runtime.getRuntime().availableProcessors());
@@ -203,15 +202,15 @@ public class TreewidthComputer<V, E> {
             while (!remainingVertices.isEmpty()) {
 
                 // Find vertex with minimum fill-in in parallel
-                Optional<Map.Entry<V, Integer>> bestVertexEntry = customThreadPool.submit(() ->
-                        remainingVertices.keySet().parallelStream()
+                Optional<Map.Entry<V, Integer>> bestVertexEntry = customThreadPool
+                        .submit(() -> remainingVertices.keySet().parallelStream()
                                 .collect(Collectors.toConcurrentMap(
                                         vertex -> vertex,
-                                        vertex -> calculateFillInParallel(vertex, adjacencyMap, remainingVertices)
-                                ))
-                                .entrySet().parallelStream()
-                                .min(Map.Entry.comparingByValue())
-                ).get();
+                                        vertex -> calculateFillInParallel(vertex, adjacencyMap, remainingVertices)))
+                                .entrySet()
+                                .parallelStream()
+                                .min(Map.Entry.comparingByValue()))
+                        .get();
 
                 if (!bestVertexEntry.isPresent()) {
                     // Fallback: choose any remaining vertex
@@ -268,16 +267,16 @@ public class TreewidthComputer<V, E> {
                     .collect(Collectors.toList());
 
             // Wait for initialization to complete
-            CompletableFuture.allOf(initFutures.toArray(new CompletableFuture[0])).join();
+            CompletableFuture.allOf(initFutures.toArray(new CompletableFuture[0]))
+                    .join();
 
             // Main elimination loop
             while (!remainingVertices.isEmpty()) {
-                CompletableFuture<V> bestVertexFuture = CompletableFuture.supplyAsync(() ->
-                        remainingVertices.keySet().parallelStream()
-                                .min(Comparator.comparingInt(vertex ->
-                                        calculateFillInParallel(vertex, adjacencyMap, remainingVertices)))
-                                .orElse(remainingVertices.keys().nextElement())
-                );
+                CompletableFuture<V> bestVertexFuture =
+                        CompletableFuture.supplyAsync(() -> remainingVertices.keySet().parallelStream()
+                                .min(Comparator.comparingInt(
+                                        vertex -> calculateFillInParallel(vertex, adjacencyMap, remainingVertices)))
+                                .orElse(remainingVertices.keys().nextElement()));
 
                 V bestVertex = bestVertexFuture.join();
                 eliminateVertexParallel(bestVertex, adjacencyMap, remainingVertices, maxCliqueSize);
@@ -295,9 +294,11 @@ public class TreewidthComputer<V, E> {
      * @param remainingVertices vertices that haven't been eliminated yet
      * @param maxCliqueSize atomic reference to track maximum clique size
      */
-    private void eliminateVertexParallel(V vertex, ConcurrentHashMap<V, Set<V>> adjacencyMap,
-                                         ConcurrentHashMap<V, Boolean> remainingVertices,
-                                         AtomicInteger maxCliqueSize) {
+    private void eliminateVertexParallel(
+            V vertex,
+            ConcurrentHashMap<V, Set<V>> adjacencyMap,
+            ConcurrentHashMap<V, Boolean> remainingVertices,
+            AtomicInteger maxCliqueSize) {
         Set<V> neighborhood = getNeighborhoodParallel(vertex, adjacencyMap, remainingVertices);
 
         // Update maximum clique size atomically
@@ -311,8 +312,7 @@ public class TreewidthComputer<V, E> {
         adjacencyMap.remove(vertex);
 
         // Remove vertex from all neighbor sets in parallel
-        adjacencyMap.values().parallelStream()
-                .forEach(neighbors -> neighbors.remove(vertex));
+        adjacencyMap.values().parallelStream().forEach(neighbors -> neighbors.remove(vertex));
     }
 
     /**
@@ -323,8 +323,8 @@ public class TreewidthComputer<V, E> {
      * @param remainingVertices vertices that haven't been eliminated yet
      * @return the set of neighboring vertices that are still remaining
      */
-    private Set<V> getNeighborhoodParallel(V vertex, ConcurrentHashMap<V, Set<V>> adjacencyMap,
-                                           ConcurrentHashMap<V, Boolean> remainingVertices) {
+    private Set<V> getNeighborhoodParallel(
+            V vertex, ConcurrentHashMap<V, Set<V>> adjacencyMap, ConcurrentHashMap<V, Boolean> remainingVertices) {
         Set<V> allNeighbors = adjacencyMap.getOrDefault(vertex, ConcurrentHashMap.newKeySet());
 
         // Filter to only remaining vertices in parallel
@@ -334,8 +334,8 @@ public class TreewidthComputer<V, E> {
                         neighbor -> neighbor,
                         neighbor -> true,
                         (existing, replacement) -> true,
-                        ConcurrentHashMap::new
-                )).keySet();
+                        ConcurrentHashMap::new))
+                .keySet();
     }
 
     /**
@@ -350,14 +350,15 @@ public class TreewidthComputer<V, E> {
         // Add all missing edges to make it a clique in parallel
         vertexList.parallelStream().forEach(v1 -> {
             int index1 = vertexList.indexOf(v1);
-            vertexList.stream()
-                    .skip(index1 + 1)
-                    .parallel()
-                    .forEach(v2 -> {
-                        // Add edges in both directions atomically
-                        adjacencyMap.computeIfAbsent(v1, k -> ConcurrentHashMap.newKeySet()).add(v2);
-                        adjacencyMap.computeIfAbsent(v2, k -> ConcurrentHashMap.newKeySet()).add(v1);
-                    });
+            vertexList.stream().skip(index1 + 1).parallel().forEach(v2 -> {
+                // Add edges in both directions atomically
+                adjacencyMap
+                        .computeIfAbsent(v1, k -> ConcurrentHashMap.newKeySet())
+                        .add(v2);
+                adjacencyMap
+                        .computeIfAbsent(v2, k -> ConcurrentHashMap.newKeySet())
+                        .add(v1);
+            });
         });
     }
 
@@ -369,8 +370,8 @@ public class TreewidthComputer<V, E> {
      * @param remainingVertices vertices that haven't been eliminated yet
      * @return the number of edges needed to make the neighborhood a clique
      */
-    private int calculateFillInParallel(V vertex, ConcurrentHashMap<V, Set<V>> adjacencyMap,
-                                        ConcurrentHashMap<V, Boolean> remainingVertices) {
+    private int calculateFillInParallel(
+            V vertex, ConcurrentHashMap<V, Set<V>> adjacencyMap, ConcurrentHashMap<V, Boolean> remainingVertices) {
         Set<V> neighborhood = getNeighborhoodParallel(vertex, adjacencyMap, remainingVertices);
 
         if (neighborhood.size() <= 1) {
@@ -404,8 +405,7 @@ public class TreewidthComputer<V, E> {
         Set<V> neighborsV1 = adjacencyMap.get(v1);
         Set<V> neighborsV2 = adjacencyMap.get(v2);
 
-        return (neighborsV1 != null && neighborsV1.contains(v2)) ||
-                (neighborsV2 != null && neighborsV2.contains(v1));
+        return (neighborsV1 != null && neighborsV1.contains(v2)) || (neighborsV2 != null && neighborsV2.contains(v1));
     }
 
     /**

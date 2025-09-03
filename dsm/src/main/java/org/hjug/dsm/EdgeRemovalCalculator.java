@@ -14,7 +14,6 @@ public class EdgeRemovalCalculator {
     private final Map<String, AsSubgraph<String, DefaultWeightedEdge>> cycles;
     private Set<DefaultWeightedEdge> edgesToRemove;
 
-
     public EdgeRemovalCalculator(Graph<String, DefaultWeightedEdge> graph, DSM<String, DefaultWeightedEdge> dsm) {
         this.graph = graph;
         this.dsm = dsm;
@@ -26,7 +25,6 @@ public class EdgeRemovalCalculator {
         this.edgesToRemove = edgesToRemove;
         this.cycles = new CircularReferenceChecker<String, DefaultWeightedEdge>().getCycles(graph);
     }
-
 
     /**
      * Captures the impact of the removal of each edge above the diagonal.
