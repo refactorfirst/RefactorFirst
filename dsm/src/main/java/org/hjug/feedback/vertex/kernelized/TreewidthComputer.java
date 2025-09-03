@@ -153,45 +153,259 @@ public class TreewidthComputer<V, E> {
     }
 
     /**
-     * Fill-in heuristic for treewidth approximation
+     * Computes an upper bound on treewidth using the minimum fill-in heuristic with parallelization.
+     *
+     * The minimum fill-in heuristic repeatedly eliminates the vertex that requires
+     * the minimum number of edges to be added to make its neighborhood a clique.
+     * This implementation uses parallel streams and concurrent data structures for better performance.
+     *
+     * @return an upper bound on the treewidth of the graph
      */
-    private int fillInHeuristicTreewidth(Graph<V, DefaultEdge> graph) {
-        List<V> vertices = new ArrayList<>(graph.vertexSet());
-        Map<V, Set<V>> adjacencyMap = new ConcurrentHashMap<>();
-
-        // Initialize adjacency map
-        vertices.parallelStream().forEach(v -> {
-            adjacencyMap.put(v, ConcurrentHashMap.newKeySet());
-            adjacencyMap.get(v).addAll(Graphs.neighborSetOf(graph, v));
-        });
-
-        int maxBagSize = 0;
-        Set<V> processed = ConcurrentHashMap.newKeySet();
-
-        for (V vertex : vertices) {
-            if (processed.contains(vertex)) continue;
-
-            Set<V> neighbors = adjacencyMap.get(vertex).stream()
-                    .filter(v -> !processed.contains(v))
-                    .collect(Collectors.toSet());
-
-            maxBagSize = Math.max(maxBagSize, neighbors.size());
-
-            // Calculate fill-in for this vertex
-            int fillIn = calculateFillIn(neighbors, adjacencyMap);
-
-            // Make neighbors a clique (simulate elimination)
-            neighbors.parallelStream().forEach(u -> {
-                neighbors.parallelStream().filter(v -> !v.equals(u)).forEach(v -> {
-                    adjacencyMap.get(u).add(v);
-                    adjacencyMap.get(v).add(u);
-                });
-            });
-
-            processed.add(vertex);
+    public int fillInHeuristicTreewidth(Graph<V, DefaultEdge> graph) {
+        if (graph.vertexSet().isEmpty()) {
+            return 0;
         }
 
-        return maxBagSize;
+        // Create a working copy of the graph using concurrent data structures
+        ConcurrentHashMap<V, Set<V>> adjacencyMap = new ConcurrentHashMap<>();
+
+        // Initialize adjacency map in parallel
+        graph.vertexSet().parallelStream().forEach(vertex -> {
+            Set<V> neighbors = ConcurrentHashMap.newKeySet();
+
+            // Add in-neighbors
+            graph.incomingEdgesOf(vertex).parallelStream()
+                    .map(graph::getEdgeSource)
+                    .filter(neighbor -> !neighbor.equals(vertex))
+                    .forEach(neighbors::add);
+
+            // Add out-neighbors
+            graph.outgoingEdgesOf(vertex).parallelStream()
+                    .map(graph::getEdgeTarget)
+                    .filter(neighbor -> !neighbor.equals(vertex))
+                    .forEach(neighbors::add);
+
+            adjacencyMap.put(vertex, neighbors);
+        });
+
+        AtomicInteger maxCliqueSize = new AtomicInteger(0);
+        ConcurrentHashMap<V, Boolean> remainingVertices = new ConcurrentHashMap<>();
+
+        // Initialize remaining vertices
+        graph.vertexSet().parallelStream().forEach(vertex ->
+                remainingVertices.put(vertex, true));
+
+        // Custom ForkJoinPool for better control over parallelization
+        ForkJoinPool customThreadPool = new ForkJoinPool(Runtime.getRuntime().availableProcessors());
+
+        try {
+            // Main elimination loop
+            while (!remainingVertices.isEmpty()) {
+
+                // Find vertex with minimum fill-in in parallel
+                Optional<Map.Entry<V, Integer>> bestVertexEntry = customThreadPool.submit(() ->
+                        remainingVertices.keySet().parallelStream()
+                                .collect(Collectors.toConcurrentMap(
+                                        vertex -> vertex,
+                                        vertex -> calculateFillInParallel(vertex, adjacencyMap, remainingVertices)
+                                ))
+                                .entrySet().parallelStream()
+                                .min(Map.Entry.comparingByValue())
+                ).get();
+
+                if (!bestVertexEntry.isPresent()) {
+                    // Fallback: choose any remaining vertex
+                    V fallbackVertex = remainingVertices.keys().nextElement();
+                    eliminateVertexParallel(fallbackVertex, adjacencyMap, remainingVertices, maxCliqueSize);
+                } else {
+                    V bestVertex = bestVertexEntry.get().getKey();
+                    eliminateVertexParallel(bestVertex, adjacencyMap, remainingVertices, maxCliqueSize);
+                }
+            }
+        } catch (InterruptedException | ExecutionException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Parallel computation interrupted", e);
+        } finally {
+            customThreadPool.shutdown();
+        }
+
+        return maxCliqueSize.get();
+    }
+
+    /**
+     * Alternative implementation using CompletableFuture for more complex parallel operations.
+     * TODO: Explore later
+     */
+    public CompletableFuture<Integer> fillInHeuristicTreewidthAsync(Graph<V, DefaultEdge> graph) {
+        return CompletableFuture.supplyAsync(() -> {
+            if (graph.vertexSet().isEmpty()) {
+                return 0;
+            }
+
+            // Initialize concurrent data structures
+            ConcurrentHashMap<V, Set<V>> adjacencyMap = new ConcurrentHashMap<>();
+            ConcurrentHashMap<V, Boolean> remainingVertices = new ConcurrentHashMap<>();
+            AtomicInteger maxCliqueSize = new AtomicInteger(0);
+
+            // Parallel initialization
+            List<CompletableFuture<Void>> initFutures = graph.vertexSet().stream()
+                    .map(vertex -> CompletableFuture.runAsync(() -> {
+                        Set<V> neighbors = ConcurrentHashMap.newKeySet();
+
+                        graph.incomingEdgesOf(vertex).parallelStream()
+                                .map(graph::getEdgeSource)
+                                .filter(neighbor -> !neighbor.equals(vertex))
+                                .forEach(neighbors::add);
+
+                        graph.outgoingEdgesOf(vertex).parallelStream()
+                                .map(graph::getEdgeTarget)
+                                .filter(neighbor -> !neighbor.equals(vertex))
+                                .forEach(neighbors::add);
+
+                        adjacencyMap.put(vertex, neighbors);
+                        remainingVertices.put(vertex, true);
+                    }))
+                    .collect(Collectors.toList());
+
+            // Wait for initialization to complete
+            CompletableFuture.allOf(initFutures.toArray(new CompletableFuture[0])).join();
+
+            // Main elimination loop
+            while (!remainingVertices.isEmpty()) {
+                CompletableFuture<V> bestVertexFuture = CompletableFuture.supplyAsync(() ->
+                        remainingVertices.keySet().parallelStream()
+                                .min(Comparator.comparingInt(vertex ->
+                                        calculateFillInParallel(vertex, adjacencyMap, remainingVertices)))
+                                .orElse(remainingVertices.keys().nextElement())
+                );
+
+                V bestVertex = bestVertexFuture.join();
+                eliminateVertexParallel(bestVertex, adjacencyMap, remainingVertices, maxCliqueSize);
+            }
+
+            return maxCliqueSize.get();
+        });
+    }
+
+    /**
+     * Eliminates a vertex and updates the graph structure in parallel.
+     *
+     * @param vertex the vertex to eliminate
+     * @param adjacencyMap the current adjacency representation
+     * @param remainingVertices vertices that haven't been eliminated yet
+     * @param maxCliqueSize atomic reference to track maximum clique size
+     */
+    private void eliminateVertexParallel(V vertex, ConcurrentHashMap<V, Set<V>> adjacencyMap,
+                                         ConcurrentHashMap<V, Boolean> remainingVertices,
+                                         AtomicInteger maxCliqueSize) {
+        Set<V> neighborhood = getNeighborhoodParallel(vertex, adjacencyMap, remainingVertices);
+
+        // Update maximum clique size atomically
+        maxCliqueSize.updateAndGet(current -> Math.max(current, neighborhood.size()));
+
+        // Make the neighborhood a clique in parallel
+        fillInNeighborhoodParallel(neighborhood, adjacencyMap);
+
+        // Remove the eliminated vertex
+        remainingVertices.remove(vertex);
+        adjacencyMap.remove(vertex);
+
+        // Remove vertex from all neighbor sets in parallel
+        adjacencyMap.values().parallelStream()
+                .forEach(neighbors -> neighbors.remove(vertex));
+    }
+
+    /**
+     * Gets the neighborhood of a vertex using parallel processing.
+     *
+     * @param vertex the vertex whose neighborhood to find
+     * @param adjacencyMap the current adjacency representation
+     * @param remainingVertices vertices that haven't been eliminated yet
+     * @return the set of neighboring vertices that are still remaining
+     */
+    private Set<V> getNeighborhoodParallel(V vertex, ConcurrentHashMap<V, Set<V>> adjacencyMap,
+                                           ConcurrentHashMap<V, Boolean> remainingVertices) {
+        Set<V> allNeighbors = adjacencyMap.getOrDefault(vertex, ConcurrentHashMap.newKeySet());
+
+        // Filter to only remaining vertices in parallel
+        return allNeighbors.parallelStream()
+                .filter(remainingVertices::containsKey)
+                .collect(Collectors.toConcurrentMap(
+                        neighbor -> neighbor,
+                        neighbor -> true,
+                        (existing, replacement) -> true,
+                        ConcurrentHashMap::new
+                )).keySet();
+    }
+
+    /**
+     * Adds edges to make the given set of vertices form a clique using parallel processing.
+     *
+     * @param vertices the vertices that should form a clique
+     * @param adjacencyMap the adjacency map to modify
+     */
+    private void fillInNeighborhoodParallel(Set<V> vertices, ConcurrentHashMap<V, Set<V>> adjacencyMap) {
+        List<V> vertexList = new ArrayList<>(vertices);
+
+        // Add all missing edges to make it a clique in parallel
+        vertexList.parallelStream().forEach(v1 -> {
+            int index1 = vertexList.indexOf(v1);
+            vertexList.stream()
+                    .skip(index1 + 1)
+                    .parallel()
+                    .forEach(v2 -> {
+                        // Add edges in both directions atomically
+                        adjacencyMap.computeIfAbsent(v1, k -> ConcurrentHashMap.newKeySet()).add(v2);
+                        adjacencyMap.computeIfAbsent(v2, k -> ConcurrentHashMap.newKeySet()).add(v1);
+                    });
+        });
+    }
+
+    /**
+     * Calculates the fill-in value for a vertex using parallel processing.
+     *
+     * @param vertex the vertex to calculate fill-in for
+     * @param adjacencyMap the current adjacency representation
+     * @param remainingVertices vertices that haven't been eliminated yet
+     * @return the number of edges needed to make the neighborhood a clique
+     */
+    private int calculateFillInParallel(V vertex, ConcurrentHashMap<V, Set<V>> adjacencyMap,
+                                        ConcurrentHashMap<V, Boolean> remainingVertices) {
+        Set<V> neighborhood = getNeighborhoodParallel(vertex, adjacencyMap, remainingVertices);
+
+        if (neighborhood.size() <= 1) {
+            return 0; // Already a clique (or empty)
+        }
+
+        List<V> neighborList = new ArrayList<>(neighborhood);
+
+        // Count missing edges in parallel
+        return neighborList.parallelStream()
+                .mapToInt(v1 -> {
+                    int index1 = neighborList.indexOf(v1);
+                    return (int) neighborList.stream()
+                            .skip(index1 + 1)
+                            .parallel()
+                            .filter(v2 -> !hasEdgeParallel(v1, v2, adjacencyMap))
+                            .count();
+                })
+                .sum();
+    }
+
+    /**
+     * Checks if an edge exists between two vertices.
+     *
+     * @param v1 first vertex
+     * @param v2 second vertex
+     * @param adjacencyMap the current adjacency representation
+     * @return true if an edge exists in either direction
+     */
+    private boolean hasEdgeParallel(V v1, V v2, ConcurrentHashMap<V, Set<V>> adjacencyMap) {
+        Set<V> neighborsV1 = adjacencyMap.get(v1);
+        Set<V> neighborsV2 = adjacencyMap.get(v2);
+
+        return (neighborsV1 != null && neighborsV1.contains(v2)) ||
+                (neighborsV2 != null && neighborsV2.contains(v1));
     }
 
     /**
@@ -246,6 +460,7 @@ public class TreewidthComputer<V, E> {
         });
     }
 
+    // original implementation
     private int calculateFillIn(Set<V> neighbors, Map<V, Set<V>> adjacencyMap) {
         AtomicInteger fillIn = new AtomicInteger(0);
 

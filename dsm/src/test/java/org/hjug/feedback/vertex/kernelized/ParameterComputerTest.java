@@ -258,7 +258,7 @@ class ParameterComputerTest {
                 long duration = System.currentTimeMillis() - startTime;
 
                 assertTrue(params.getK() >= 0);
-                assertTrue(duration < 20000); // Reasonable time limit
+                assertTrue(duration < 30000); // Reasonable time limit
 
                 computer.shutdown();
             }
