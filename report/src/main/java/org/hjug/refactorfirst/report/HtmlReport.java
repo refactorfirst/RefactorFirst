@@ -616,8 +616,6 @@ public class HtmlReport extends SimpleHtmlReport {
 
         if (edgesToRemove.contains(edge)) {
             dot.append(" color = \"red\"");
-        } else if (edgesAboveDiagonal.contains(edge)) {
-            dot.append(" color = \"orange\"");
         }
 
         dot.append(" ];\n");
@@ -656,6 +654,11 @@ public class HtmlReport extends SimpleHtmlReport {
         // render vertices
         for (String vertex : cycle.getVertexSet()) {
             dot.append(getClassName(vertex).replace("$", "_"));
+
+            if (vertexesToRemove.contains(vertex)) {
+                dot.append(" [color=red style=filled]\n");
+            }
+
             dot.append(";\n");
         }
 

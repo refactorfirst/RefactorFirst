@@ -10,14 +10,23 @@ import org.jgrapht.graph.SimpleDirectedWeightedGraph;
 public class EdgeRemovalCalculator {
 
     private final Graph<String, DefaultWeightedEdge> graph;
-    private final DSM<String, DefaultWeightedEdge> dsm;
+    private DSM<String, DefaultWeightedEdge> dsm;
     private final Map<String, AsSubgraph<String, DefaultWeightedEdge>> cycles;
+    private Set<DefaultWeightedEdge> edgesToRemove;
+
 
     public EdgeRemovalCalculator(Graph<String, DefaultWeightedEdge> graph, DSM<String, DefaultWeightedEdge> dsm) {
         this.graph = graph;
         this.dsm = dsm;
         this.cycles = new CircularReferenceChecker<String, DefaultWeightedEdge>().getCycles(graph);
     }
+
+    public EdgeRemovalCalculator(Graph<String, DefaultWeightedEdge> graph, Set<DefaultWeightedEdge> edgesToRemove) {
+        this.graph = graph;
+        this.edgesToRemove = edgesToRemove;
+        this.cycles = new CircularReferenceChecker<String, DefaultWeightedEdge>().getCycles(graph);
+    }
+
 
     /**
      * Captures the impact of the removal of each edge above the diagonal.
@@ -39,6 +48,18 @@ public class EdgeRemovalCalculator {
         int currentCycleCount = cycles.size();
 
         return edgesAboveDiagonal.stream()
+                .map(this::calculateEdgeToRemoveInfo)
+                .sorted(
+                        Comparator.comparing((EdgeToRemoveInfo edgeToRemoveInfo) ->
+                                currentCycleCount - edgeToRemoveInfo.getNewCycleCount())
+                        /*.thenComparing(EdgeToRemoveInfo::getEdgeWeight)*/ )
+                .collect(Collectors.toList());
+    }
+
+    public List<EdgeToRemoveInfo> getImpactOfEdges() {
+        int currentCycleCount = cycles.size();
+
+        return edgesToRemove.stream()
                 .map(this::calculateEdgeToRemoveInfo)
                 .sorted(
                         Comparator.comparing((EdgeToRemoveInfo edgeToRemoveInfo) ->

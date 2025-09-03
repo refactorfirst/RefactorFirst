@@ -225,7 +225,7 @@ public class SimpleHtmlReport {
         cycles = new CircularReferenceChecker<String, DefaultWeightedEdge>().getCycles(classGraph);
         dsm = new DSM<>(classGraph);
         edgesAboveDiagonal = dsm.getEdgesAboveDiagonal();
-        EdgeRemovalCalculator edgeRemovalCalculator = new EdgeRemovalCalculator(classGraph, dsm);
+
 
         // Identify vertexes to remove
         log.info("Identifying vertexes to remove");
@@ -245,11 +245,14 @@ public class SimpleHtmlReport {
         FeedbackArcSetResult<String, DefaultWeightedEdge> edgeSolverResult = edgeSolver.solve();
         edgesToRemove = edgeSolverResult.getFeedbackArcs();
 
-        // TODO: Fix rendering of table
-//        stringBuilder.append(renderEdgesAndClassesToRemove(vertexesToRemove, edgesToRemove));
+        // TODO: Incorporate node information and guidance into Edge Infos
+        // - Source / target vertex in list of vertexes to remove
+        // - Provide guidance on where to move the method if one is in the list to remove
+        // - How many cycles is the edge present in
 
         log.info("Performing edge removal what-if analysis");
-        List<EdgeToRemoveInfo> edgeToRemoveInfos = edgeRemovalCalculator.getImpactOfEdgesAboveDiagonalIfRemoved(50);
+        EdgeRemovalCalculator edgeRemovalCalculator = new EdgeRemovalCalculator(classGraph, edgesToRemove);
+        List<EdgeToRemoveInfo> edgeToRemoveInfos = edgeRemovalCalculator.getImpactOfEdges();
 
         if (edgeToRemoveInfos.isEmpty()
                 && rankedGodClassDisharmonies.isEmpty()
