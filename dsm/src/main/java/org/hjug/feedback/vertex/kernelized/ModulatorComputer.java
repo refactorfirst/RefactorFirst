@@ -275,75 +275,334 @@ public class ModulatorComputer<V, E> {
     }
 
     /**
-     * Computes betweenness centrality for all vertices
+     * Computes approximated betweenness centrality using random sampling.
+     *
+     * This implementation is based on Brandes' approximation algorithm that uses
+     * random sampling of source vertices to approximate betweenness centrality values.
+     * Instead of computing shortest paths from all vertices, we sample only a subset
+     * to achieve significant speedup while maintaining reasonable accuracy.
+     *
+     * @return a map containing approximate betweenness centrality values for each vertex
      */
-    private Map<V, Double> computeBetweennessCentrality(Graph<V, DefaultEdge> graph) {
-        Map<V, Double> centrality = new ConcurrentHashMap<>();
-        List<V> vertices = new ArrayList<>(graph.vertexSet());
+    public Map<V, Double> computeBetweennessCentrality(Graph<V, DefaultEdge> graph) {
+        Set<V> vertices = graph.vertexSet();
+        int n = vertices.size();
 
-        // Initialize all centralities to 0
-        vertices.parallelStream().forEach(v -> centrality.put(v, 0.0));
+        if (n <= 2) {
+            // For very small graphs, return exact computation
+            return computeExactBetweennessCentrality(graph);
+        }
 
-        // For efficiency, sample pairs of vertices for large graphs
-        // TODO: sampleSize and random are not used...
-        int sampleSize = Math.min(vertices.size() * (vertices.size() - 1) / 2, 1000);
-        Random random = new Random(42); // Fixed seed for reproducibility
+        // Calculate sample size based on graph characteristics and desired accuracy
+        // Using the formula from Riondato & Kornaropoulos and Brandes & Pich research
+        double epsilon = 0.1; // Desired approximation error (can be made configurable)
+        double delta = 0.1; // Probability of exceeding error bound (can be made configurable)
 
-        vertices.parallelStream().limit(Math.min(50, vertices.size())).forEach(source -> {
-            Map<V, List<V>> predecessors = new HashMap<>();
-            Map<V, Integer> distances = new HashMap<>();
-            Map<V, Integer> pathCounts = new HashMap<>();
-            Stack<V> stack = new Stack<>();
+        // Compute sample size - various strategies exist in literature:
+        // 1. Fixed percentage of nodes (simple but effective)
+        // 2. Based on graph diameter and error bounds (more theoretical)
+        // 3. Adaptive sampling based on convergence
 
-            // BFS from source
-            Queue<V> queue = new ArrayDeque<>();
-            queue.offer(source);
-            distances.put(source, 0);
-            pathCounts.put(source, 1);
+        int sampleSize = Math.min(n, Math.max(10, (int) Math.ceil(
+                Math.log(2.0 / delta) / (2 * epsilon * epsilon) * Math.log(n) // Additional factor based on network size
+                )));
 
-            while (!queue.isEmpty()) {
-                V current = queue.poll();
-                stack.push(current);
+        // For very large graphs, cap the sample size to ensure efficiency
+        if (n > 10000) {
+            sampleSize = Math.min(sampleSize, n / 10); // At most 10% of vertices
+        }
 
-                for (V neighbor : Graphs.neighborListOf(graph, current)) {
-                    if (!distances.containsKey(neighbor)) {
-                        distances.put(neighbor, distances.get(current) + 1);
-                        pathCounts.put(neighbor, 0);
-                        queue.offer(neighbor);
-                    }
+        System.out.println("Computing approximated betweenness centrality with " + sampleSize + " samples out of " + n
+                + " vertices");
 
-                    if (distances.get(neighbor) == distances.get(current) + 1) {
-                        pathCounts.put(neighbor, pathCounts.get(neighbor) + pathCounts.get(current));
-                        predecessors
-                                .computeIfAbsent(neighbor, k -> new ArrayList<>())
-                                .add(current);
-                    }
+        // Initialize betweenness centrality scores
+        Map<V, Double> betweenness = new HashMap<>();
+        vertices.forEach(v -> betweenness.put(v, 0.0));
+
+        // Random number generator for sampling
+        Random random = ThreadLocalRandom.current();
+
+        // Convert vertices to list for random sampling
+        List<V> vertexList = new ArrayList<>(vertices);
+
+        // Sample source vertices and compute contributions
+        Set<V> sampledSources = sampleSourceVertices(graph, vertexList, sampleSize, random);
+
+        // Compute betweenness contributions from sampled sources
+        for (V source : sampledSources) {
+            Map<V, Double> contributions = computeSingleSourceBetweennessContributions(graph, source);
+
+            // Add contributions to total betweenness (scaled by sampling factor)
+            double scalingFactor = (double) n / sampleSize;
+            for (Map.Entry<V, Double> entry : contributions.entrySet()) {
+                V vertex = entry.getKey();
+                double contribution = entry.getValue() * scalingFactor;
+                betweenness.merge(vertex, contribution, Double::sum);
+            }
+        }
+
+        return betweenness;
+    }
+
+    /**
+     * Samples source vertices using different strategies based on graph characteristics.
+     *
+     * @param vertexList list of all vertices
+     * @param sampleSize number of vertices to sample
+     * @param random random number generator
+     * @return set of sampled source vertices
+     */
+    private Set<V> sampleSourceVertices(
+            Graph<V, DefaultEdge> graph, List<V> vertexList, int sampleSize, Random random) {
+        Set<V> sampledSources = new HashSet<>();
+
+        // Strategy 1: Degree-weighted sampling (Brandes & Pich approach)
+        // Higher degree vertices are more likely to be selected as they lie on more paths
+        if (shouldUseDegreeWeightedSampling(graph)) {
+            sampledSources = degreeWeightedSampling(graph, vertexList, sampleSize, random);
+        }
+        // Strategy 2: Uniform random sampling (simpler, often effective)
+        else {
+            sampledSources = uniformRandomSampling(vertexList, sampleSize, random);
+        }
+
+        return sampledSources;
+    }
+
+    /**
+     * Determines whether to use degree-weighted sampling based on graph characteristics.
+     */
+    private boolean shouldUseDegreeWeightedSampling(Graph<V, DefaultEdge> graph) {
+        // Use degree-weighted sampling for larger, more complex networks
+        return graph.vertexSet().size() > 100;
+    }
+
+    /**
+     * Performs degree-weighted random sampling of source vertices.
+     * Vertices with higher degrees have higher probability of being selected.
+     */
+    private Set<V> degreeWeightedSampling(
+            Graph<V, DefaultEdge> graph, List<V> vertexList, int sampleSize, Random random) {
+        Set<V> sampledSources = new HashSet<>();
+
+        // Calculate degree weights
+        Map<V, Integer> degrees = new HashMap<>();
+        int totalDegree = 0;
+
+        for (V vertex : vertexList) {
+            int degree = graph.inDegreeOf(vertex) + graph.outDegreeOf(vertex);
+            degrees.put(vertex, degree);
+            totalDegree += degree;
+        }
+
+        // If all vertices have degree 0, fall back to uniform sampling
+        if (totalDegree == 0) {
+            return uniformRandomSampling(vertexList, sampleSize, random);
+        }
+
+        // Sample vertices with probability proportional to their degree
+        while (sampledSources.size() < sampleSize && sampledSources.size() < vertexList.size()) {
+            double randomValue = random.nextDouble() * totalDegree;
+            double cumulativeWeight = 0;
+
+            for (V vertex : vertexList) {
+                if (sampledSources.contains(vertex)) continue;
+
+                cumulativeWeight += degrees.get(vertex);
+                if (randomValue <= cumulativeWeight) {
+                    sampledSources.add(vertex);
+                    break;
                 }
             }
 
-            // Accumulate centrality values
-            Map<V, Double> dependency = new HashMap<>();
-            vertices.forEach(v -> dependency.put(v, 0.0));
+            // Prevent infinite loop in edge cases
+            if (sampledSources.size() == vertexList.size()) break;
+        }
 
-            while (!stack.isEmpty()) {
-                V vertex = stack.pop();
-                if (predecessors.containsKey(vertex)) {
-                    for (V predecessor : predecessors.get(vertex)) {
-                        double contribution = (pathCounts.get(predecessor) / (double) pathCounts.get(vertex))
-                                * (1.0 + dependency.get(vertex));
-                        dependency.put(predecessor, dependency.get(predecessor) + contribution);
-                    }
-                }
+        return sampledSources;
+    }
 
-                if (!vertex.equals(source)) {
-                    synchronized (centrality) {
-                        centrality.put(vertex, centrality.get(vertex) + dependency.get(vertex));
-                    }
-                }
-            }
+    /**
+     * Performs uniform random sampling of source vertices.
+     */
+    private Set<V> uniformRandomSampling(List<V> vertexList, int sampleSize, Random random) {
+        Set<V> sampledSources = new HashSet<>();
+
+        // Use reservoir sampling for efficiency
+        for (int i = 0; i < Math.min(sampleSize, vertexList.size()); i++) {
+            V vertex;
+            do {
+                vertex = vertexList.get(random.nextInt(vertexList.size()));
+            } while (sampledSources.contains(vertex));
+
+            sampledSources.add(vertex);
+        }
+
+        return sampledSources;
+    }
+
+    /**
+     * Computes betweenness centrality contributions from a single source vertex.
+     * This is the core Brandes algorithm for single-source shortest paths.
+     *
+     * @param graph
+     * @param source the source vertex
+     * @return map of betweenness contributions for each vertex
+     */
+    private Map<V, Double> computeSingleSourceBetweennessContributions(Graph<V, DefaultEdge> graph, V source) {
+        Map<V, Double> contributions = new HashMap<>();
+        Map<V, List<V>> predecessors = new HashMap<>();
+        Map<V, Double> sigma = new HashMap<>(); // Number of shortest paths
+        Map<V, Integer> distance = new HashMap<>();
+        Map<V, Double> delta = new HashMap<>(); // Dependency values
+
+        // Initialize
+        graph.vertexSet().forEach(v -> {
+            predecessors.put(v, new ArrayList<>());
+            sigma.put(v, 0.0);
+            distance.put(v, -1);
+            delta.put(v, 0.0);
+            contributions.put(v, 0.0);
         });
 
-        return centrality;
+        sigma.put(source, 1.0);
+        distance.put(source, 0);
+
+        // BFS to find shortest paths and count them
+        Queue<V> queue = new LinkedList<>();
+        Stack<V> stack = new Stack<>();
+        queue.offer(source);
+
+        while (!queue.isEmpty()) {
+            V vertex = queue.poll();
+            stack.push(vertex);
+
+            // Examine outgoing edges
+            for (DefaultEdge edge : graph.outgoingEdgesOf(vertex)) {
+                V neighbor = graph.getEdgeTarget(edge);
+
+                // First time visiting neighbor
+                if (distance.get(neighbor) < 0) {
+                    queue.offer(neighbor);
+                    distance.put(neighbor, distance.get(vertex) + 1);
+                }
+
+                // Shortest path to neighbor via vertex
+                if (distance.get(neighbor).equals(distance.get(vertex) + 1)) {
+                    sigma.put(neighbor, sigma.get(neighbor) + sigma.get(vertex));
+                    predecessors.get(neighbor).add(vertex);
+                }
+            }
+        }
+
+        // Accumulation phase - compute dependencies
+        while (!stack.isEmpty()) {
+            V vertex = stack.pop();
+
+            for (V predecessor : predecessors.get(vertex)) {
+                double contribution = (sigma.get(predecessor) / sigma.get(vertex)) * (1 + delta.get(vertex));
+                delta.put(predecessor, delta.get(predecessor) + contribution);
+            }
+
+            if (!vertex.equals(source)) {
+                contributions.put(vertex, delta.get(vertex));
+            }
+        }
+
+        return contributions;
+    }
+
+    /**
+     * Computes exact betweenness centrality for small graphs or when high precision is needed.
+     *
+     * @return map of exact betweenness centrality values
+     */
+    private Map<V, Double> computeExactBetweennessCentrality(Graph<V, DefaultEdge> graph) {
+        Map<V, Double> betweenness = new HashMap<>();
+        Set<V> vertices = graph.vertexSet();
+
+        // Initialize all betweenness values to 0
+        vertices.forEach(v -> betweenness.put(v, 0.0));
+
+        // Compute contributions from each vertex as source
+        for (V source : vertices) {
+            Map<V, Double> contributions = computeSingleSourceBetweennessContributions(graph, source);
+
+            for (Map.Entry<V, Double> entry : contributions.entrySet()) {
+                V vertex = entry.getKey();
+                betweenness.merge(vertex, entry.getValue(), Double::sum);
+            }
+        }
+
+        return betweenness;
+    }
+
+    /**
+     * Alternative adaptive sampling approach that adjusts sample size based on convergence.
+     * This can provide better accuracy guarantees but is more computationally expensive.
+     */
+    public Map<V, Double> computeBetweennessCentralityAdaptive(Graph<V, DefaultEdge> graph) {
+        Set<V> vertices = graph.vertexSet();
+        int n = vertices.size();
+
+        Map<V, Double> betweenness = new HashMap<>();
+        vertices.forEach(v -> betweenness.put(v, 0.0));
+
+        List<V> vertexList = new ArrayList<>(vertices);
+        Random random = ThreadLocalRandom.current();
+
+        int minSamples = Math.max(10, n / 100);
+        int maxSamples = Math.min(n, n / 2);
+
+        Map<V, Double> previousBetweenness = new HashMap<>(betweenness);
+        double convergenceThreshold = 0.01; // 1% change threshold
+
+        for (int sampleCount = minSamples; sampleCount <= maxSamples; sampleCount += minSamples) {
+            // Sample additional vertices
+            Set<V> newSamples = uniformRandomSampling(vertexList, minSamples, random);
+
+            // Compute contributions from new samples
+            for (V source : newSamples) {
+                Map<V, Double> contributions = computeSingleSourceBetweennessContributions(graph, source);
+                double scalingFactor = (double) n / sampleCount;
+
+                for (Map.Entry<V, Double> entry : contributions.entrySet()) {
+                    V vertex = entry.getKey();
+                    double contribution = entry.getValue() * scalingFactor;
+                    betweenness.merge(vertex, contribution, Double::sum);
+                }
+            }
+
+            // Check for convergence
+            if (hasConverged(betweenness, previousBetweenness, convergenceThreshold)) {
+                System.out.println("Converged after " + sampleCount + " samples");
+                break;
+            }
+
+            previousBetweenness = new HashMap<>(betweenness);
+        }
+
+        return betweenness;
+    }
+
+    /**
+     * Checks if betweenness centrality values have converged.
+     */
+    private boolean hasConverged(Map<V, Double> current, Map<V, Double> previous, double threshold) {
+        for (V vertex : current.keySet()) {
+            double currentValue = current.get(vertex);
+            double previousValue = previous.getOrDefault(vertex, 0.0);
+
+            if (previousValue > 0) {
+                double relativeChange = Math.abs(currentValue - previousValue) / previousValue;
+                if (relativeChange > threshold) {
+                    return false;
+                }
+            } else if (currentValue > threshold) {
+                return false; // Significant change from zero
+            }
+        }
+        return true;
     }
 
     /**
