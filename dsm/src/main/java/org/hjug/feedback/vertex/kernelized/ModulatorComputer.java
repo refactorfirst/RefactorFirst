@@ -275,6 +275,78 @@ public class ModulatorComputer<V, E> {
     }
 
     /**
+     * Computes betweenness centrality for all vertices
+     */
+    private Map<V, Double> originalComputeBetweennessCentrality(Graph<V, DefaultEdge> graph) {
+        Map<V, Double> centrality = new ConcurrentHashMap<>();
+        List<V> vertices = new ArrayList<>(graph.vertexSet());
+
+        // Initialize all centralities to 0
+        vertices.parallelStream().forEach(v -> centrality.put(v, 0.0));
+
+        // For efficiency, sample pairs of vertices for large graphs
+        // sampleSize and random were not used...
+        int sampleSize = Math.min(vertices.size() * (vertices.size() - 1) / 2, 1000);
+        Random random = new Random(42); // Fixed seed for reproducibility
+
+        vertices.parallelStream().limit(Math.min(50, vertices.size())).forEach(source -> {
+            Map<V, List<V>> predecessors = new HashMap<>();
+            Map<V, Integer> distances = new HashMap<>();
+            Map<V, Integer> pathCounts = new HashMap<>();
+            Stack<V> stack = new Stack<>();
+
+            // BFS from source
+            Queue<V> queue = new ArrayDeque<>();
+            queue.offer(source);
+            distances.put(source, 0);
+            pathCounts.put(source, 1);
+
+            while (!queue.isEmpty()) {
+                V current = queue.poll();
+                stack.push(current);
+
+                for (V neighbor : Graphs.neighborListOf(graph, current)) {
+                    if (!distances.containsKey(neighbor)) {
+                        distances.put(neighbor, distances.get(current) + 1);
+                        pathCounts.put(neighbor, 0);
+                        queue.offer(neighbor);
+                    }
+
+                    if (distances.get(neighbor) == distances.get(current) + 1) {
+                        pathCounts.put(neighbor, pathCounts.get(neighbor) + pathCounts.get(current));
+                        predecessors
+                                .computeIfAbsent(neighbor, k -> new ArrayList<>())
+                                .add(current);
+                    }
+                }
+            }
+
+            // Accumulate centrality values
+            Map<V, Double> dependency = new HashMap<>();
+            vertices.forEach(v -> dependency.put(v, 0.0));
+
+            while (!stack.isEmpty()) {
+                V vertex = stack.pop();
+                if (predecessors.containsKey(vertex)) {
+                    for (V predecessor : predecessors.get(vertex)) {
+                        double contribution = (pathCounts.get(predecessor) / (double) pathCounts.get(vertex))
+                                * (1.0 + dependency.get(vertex));
+                        dependency.put(predecessor, dependency.get(predecessor) + contribution);
+                    }
+                }
+
+                if (!vertex.equals(source)) {
+                    synchronized (centrality) {
+                        centrality.put(vertex, centrality.get(vertex) + dependency.get(vertex));
+                    }
+                }
+            }
+        });
+
+        return centrality;
+    }
+
+    /**
      * Computes approximated betweenness centrality using random sampling.
      *
      * This implementation is based on Brandes' approximation algorithm that uses
