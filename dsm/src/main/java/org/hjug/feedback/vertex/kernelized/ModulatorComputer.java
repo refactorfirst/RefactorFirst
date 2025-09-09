@@ -945,12 +945,12 @@ public class ModulatorComputer<V, E> {
         while (!currentLevel.isEmpty()) {
             nextLevel.clear();
 
-            // Process current level in parallel
-            currentLevel.parallelStream().forEach(vertex -> {
+            // Process current level
+            for (V vertex : currentLevel) {
                 visitOrder.offer(vertex);
 
-                // Examine outgoing edges in parallel
-                graph.outgoingEdgesOf(vertex).parallelStream().forEach(edge -> {
+                // Examine outgoing edges
+                for (DefaultEdge edge : graph.outgoingEdgesOf(vertex)) {
                     V neighbor = graph.getEdgeTarget(edge);
                     int currentDist = distance.get(vertex).get();
 
@@ -964,8 +964,8 @@ public class ModulatorComputer<V, E> {
                         sigma.get(neighbor).addAndGet(sigma.get(vertex).get());
                         predecessors.get(neighbor).add(vertex);
                     }
-                });
-            });
+                }
+            }
 
             // Swap levels
             ConcurrentLinkedQueue<V> temp = currentLevel;
