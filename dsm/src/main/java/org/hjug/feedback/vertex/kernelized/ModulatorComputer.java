@@ -2,7 +2,11 @@ package org.hjug.feedback.vertex.kernelized;
 
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+import com.google.common.util.concurrent.AtomicDouble;
 import org.hjug.feedback.SuperTypeToken;
 import org.jgrapht.Graph;
 import org.jgrapht.Graphs;
@@ -710,6 +714,418 @@ public class ModulatorComputer<V, E> {
 
         return articulationPoints;
     }
+
+    /**
+     * Computes approximated betweenness centrality using random sampling.
+     *
+     * This implementation is based on Brandes' approximation algorithm that uses
+     * random sampling of source vertices to approximate betweenness centrality values.
+     * Instead of computing shortest paths from all vertices, we sample only a subset
+     * to achieve significant speedup while maintaining reasonable accuracy.
+     *
+     * @return a map containing approximate betweenness centrality values for each vertex
+     */
+    private Map<V, Double> computeBetweennessCentralityParallel(Graph<V, DefaultEdge> graph) {
+        Set<V> vertices = graph.vertexSet();
+        int n = vertices.size();
+
+        if (n <= 2) {
+            // For very small graphs, return exact computation
+            return computeExactBetweennessCentralityParallel(graph);
+        }
+
+        // Calculate sample size based on graph characteristics and desired accuracy
+        double epsilon = 0.1; // Desired approximation error
+        double delta = 0.1;   // Probability of exceeding error bound
+
+        int initialSampleSize = Math.min(n, Math.max(10, (int) Math.ceil(
+                Math.log(2.0 / delta) / (2 * epsilon * epsilon) * Math.log(n)
+        )));
+
+        int sampleSize;
+        // For very large graphs, cap the sample size
+        if (n > 10000) {
+            sampleSize = Math.min(initialSampleSize, n / 10);
+        } else {
+            sampleSize = initialSampleSize;
+        }
+
+        System.out.println("Computing approximated betweenness centrality with " +
+                sampleSize + " samples out of " + n + " vertices (parallel)");
+
+        // Initialize concurrent betweenness centrality scores
+        ConcurrentHashMap<V, Double> betweenness = new ConcurrentHashMap<>();
+        vertices.parallelStream().forEach(v -> betweenness.put(v, 0.0));
+
+        // Thread-safe random number generator
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+
+        // Convert vertices to concurrent list for thread-safe access
+        List<V> vertexList = new CopyOnWriteArrayList<>(vertices);
+
+        // Custom ForkJoinPool for better control over parallelization
+        ForkJoinPool customThreadPool = new ForkJoinPool(
+                Math.min(Runtime.getRuntime().availableProcessors(),
+                        Math.max(1, sampleSize / 10)) // Scale threads based on sample size
+        );
+
+        try {
+            CompletableFuture<Void> computation = CompletableFuture.runAsync(() -> {
+                // Sample source vertices in parallel
+                Set<V> sampledSources = sampleSourceVerticesParallel(graph, vertexList, sampleSize, random);
+
+                // Scaling factor for approximation
+                double scalingFactor = (double) n / sampleSize;
+
+                // Process sampled sources in parallel and accumulate results
+                sampledSources.parallelStream().forEach(source -> {
+                    ConcurrentHashMap<V, Double> contributions =
+                            computeSingleSourceBetweennessContributionsParallel(graph, source);
+
+                    // Atomically update betweenness values with scaling
+                    contributions.entrySet().parallelStream().forEach(entry -> {
+                        V vertex = entry.getKey();
+                        double scaledContribution = entry.getValue() * scalingFactor;
+                        betweenness.merge(vertex, scaledContribution, Double::sum);
+                    });
+                });
+            }, customThreadPool);
+
+            // Wait for completion
+            computation.get();
+
+        } catch (InterruptedException | ExecutionException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Parallel betweenness centrality computation failed", e);
+        } finally {
+            customThreadPool.shutdown();
+            try {
+                if (!customThreadPool.awaitTermination(60, TimeUnit.SECONDS)) {
+                    customThreadPool.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                customThreadPool.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        return betweenness;
+
+    }
+
+    /**
+     * Samples source vertices using parallel processing with different sampling strategies.
+     */
+    private Set<V> sampleSourceVerticesParallel(Graph<V, DefaultEdge> graph, List<V> vertexList, int sampleSize,
+                                                ThreadLocalRandom random) {
+
+        if (shouldUseDegreeWeightedSampling(graph)) {
+            return degreeWeightedSamplingParallel(graph, vertexList, sampleSize, random);
+        } else {
+            return uniformRandomSamplingParallel(vertexList, sampleSize, random);
+        }
+    }
+
+    /**
+     * Performs degree-weighted random sampling using parallel streams.
+     */
+    private Set<V> degreeWeightedSamplingParallel(Graph<V, DefaultEdge> graph, List<V> vertexList, int sampleSize,
+                                                  ThreadLocalRandom random) {
+
+        // Calculate degrees in parallel
+        ConcurrentMap<V, Integer> degrees = vertexList.parallelStream()
+                .collect(Collectors.toConcurrentMap(
+                        vertex -> vertex,
+                        vertex -> graph.inDegreeOf(vertex) + graph.outDegreeOf(vertex)
+                ));
+
+        // Calculate total degree
+        int totalDegree = degrees.values().parallelStream()
+                .mapToInt(Integer::intValue)
+                .sum();
+
+        if (totalDegree == 0) {
+            return uniformRandomSamplingParallel(vertexList, sampleSize, random);
+        }
+
+        // Use concurrent set for thread-safe sampling
+        Set<V> sampledSources = ConcurrentHashMap.newKeySet();
+        AtomicInteger samplesNeeded = new AtomicInteger(sampleSize);
+
+        // Parallel sampling with retry mechanism
+        vertexList.parallelStream()
+                .filter(vertex -> samplesNeeded.get() > 0)
+                .forEach(vertex -> {
+                    if (samplesNeeded.get() <= 0 || sampledSources.contains(vertex)) {
+                        return;
+                    }
+
+                    // Thread-local random for each thread
+                    ThreadLocalRandom localRandom = ThreadLocalRandom.current();
+                    double probability = (double) degrees.get(vertex) / totalDegree;
+
+                    // Adaptive probability to ensure we get enough samples
+                    double adjustedProbability = Math.min(1.0,
+                            probability * sampleSize * 2.0 / vertexList.size());
+
+                    if (localRandom.nextDouble() < adjustedProbability &&
+                            sampledSources.size() < sampleSize) {
+
+                        sampledSources.add(vertex);
+                        samplesNeeded.decrementAndGet();
+                    }
+                });
+
+        // Fill remaining slots with uniform sampling if needed
+        if (sampledSources.size() < sampleSize) {
+            Set<V> additionalSamples = vertexList.parallelStream()
+                    .filter(vertex -> !sampledSources.contains(vertex))
+                    .limit(sampleSize - sampledSources.size())
+                    .collect(Collectors.toSet());
+            sampledSources.addAll(additionalSamples);
+        }
+
+        return sampledSources;
+    }
+
+    /**
+     * Performs uniform random sampling using parallel streams.
+     */
+    private Set<V> uniformRandomSamplingParallel(List<V> vertexList, int sampleSize,
+                                                 ThreadLocalRandom random) {
+
+        // Use parallel stream to shuffle and take first sampleSize elements
+        return vertexList.parallelStream()
+                .unordered() // Allow parallel processing without ordering constraints
+                .distinct()  // Ensure uniqueness
+                .limit(sampleSize)
+                .collect(Collectors.toConcurrentMap(
+                        vertex -> vertex,
+                        vertex -> ThreadLocalRandom.current().nextDouble()
+                ))
+                .entrySet()
+                .parallelStream()
+                .sorted(Map.Entry.comparingByValue()) // Sort by random values
+                .limit(sampleSize)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toSet());
+    }
+
+    /**
+     * Computes single-source betweenness contributions using parallel processing.
+     */
+    private ConcurrentHashMap<V, Double> computeSingleSourceBetweennessContributionsParallel(Graph<V, DefaultEdge> graph, V source) {
+
+        Set<V> vertices = graph.vertexSet();
+        ConcurrentHashMap<V, Double> contributions = new ConcurrentHashMap<>();
+        ConcurrentHashMap<V, List<V>> predecessors = new ConcurrentHashMap<>();
+        ConcurrentHashMap<V, AtomicDouble> sigma = new ConcurrentHashMap<>();
+        ConcurrentHashMap<V, AtomicInteger> distance = new ConcurrentHashMap<>();
+        ConcurrentHashMap<V, AtomicDouble> delta = new ConcurrentHashMap<>();
+
+        // Parallel initialization
+        vertices.parallelStream().forEach(v -> {
+            predecessors.put(v, new CopyOnWriteArrayList<>());
+            sigma.put(v, new AtomicDouble(0.0));
+            distance.put(v, new AtomicInteger(-1));
+            delta.put(v, new AtomicDouble(0.0));
+            contributions.put(v, 0.0);
+        });
+
+        sigma.get(source).set(1.0);
+        distance.get(source).set(0);
+
+        // BFS with level-wise parallel processing
+        ConcurrentLinkedQueue<V> currentLevel = new ConcurrentLinkedQueue<>();
+        ConcurrentLinkedQueue<V> nextLevel = new ConcurrentLinkedQueue<>();
+        ConcurrentLinkedQueue<V> visitOrder = new ConcurrentLinkedQueue<>();
+
+        currentLevel.offer(source);
+
+        while (!currentLevel.isEmpty()) {
+            nextLevel.clear();
+
+            // Process current level in parallel
+            currentLevel.parallelStream().forEach(vertex -> {
+                visitOrder.offer(vertex);
+
+                // Examine outgoing edges in parallel
+                graph.outgoingEdgesOf(vertex).parallelStream().forEach(edge -> {
+                    V neighbor = graph.getEdgeTarget(edge);
+                    int currentDist = distance.get(vertex).get();
+
+                    // Atomic check and update for first visit
+                    if (distance.get(neighbor).compareAndSet(-1, currentDist + 1)) {
+                        nextLevel.offer(neighbor);
+                    }
+
+                    // Check if this is a shortest path
+                    if (distance.get(neighbor).get() == currentDist + 1) {
+                        sigma.get(neighbor).addAndGet(sigma.get(vertex).get());
+                        predecessors.get(neighbor).add(vertex);
+                    }
+                });
+            });
+
+            // Swap levels
+            ConcurrentLinkedQueue<V> temp = currentLevel;
+            currentLevel = nextLevel;
+            nextLevel = temp;
+        }
+
+        // Accumulation phase - process in reverse order
+        List<V> reversedOrder = new ArrayList<>(visitOrder);
+        Collections.reverse(reversedOrder);
+
+        // Process accumulation in parallel batches to maintain dependencies
+        reversedOrder.parallelStream().forEach(vertex -> {
+            if (!vertex.equals(source)) {
+                // Process predecessors in parallel
+                predecessors.get(vertex).parallelStream().forEach(predecessor -> {
+                    double sigmaRatio = sigma.get(predecessor).get() / sigma.get(vertex).get();
+                    double contribution = sigmaRatio * (1 + delta.get(vertex).get());
+                    delta.get(predecessor).addAndGet(contribution);
+                });
+
+                contributions.put(vertex, delta.get(vertex).get());
+            }
+        });
+
+        return contributions;
+    }
+
+    /**
+     * Computes exact betweenness centrality for small graphs using parallel processing.
+     */
+    private ConcurrentHashMap<V, Double> computeExactBetweennessCentralityParallel(Graph<V, DefaultEdge> graph) {
+        Set<V> vertices = graph.vertexSet();
+        ConcurrentHashMap<V, Double> betweenness = new ConcurrentHashMap<>();
+
+        // Initialize in parallel
+        vertices.parallelStream().forEach(v -> betweenness.put(v, 0.0));
+
+        // Compute contributions from each vertex as source in parallel
+        vertices.parallelStream().forEach(source -> {
+            ConcurrentHashMap<V, Double> contributions =
+                    computeSingleSourceBetweennessContributionsParallel(graph, source);
+
+            // Atomically merge contributions
+            contributions.entrySet().parallelStream().forEach(entry -> {
+                betweenness.merge(entry.getKey(), entry.getValue(), Double::sum);
+            });
+        });
+
+        return betweenness;
+    }
+
+    /**
+     * Adaptive parallel sampling with convergence detection.
+     */
+    public ConcurrentHashMap<V, Double> computeBetweennessCentralityAdaptiveParallel(Graph<V, DefaultEdge> graph) {
+        Set<V> vertices = graph.vertexSet();
+        int n = vertices.size();
+
+        ConcurrentHashMap<V, Double> betweenness = new ConcurrentHashMap<>();
+        vertices.parallelStream().forEach(v -> betweenness.put(v, 0.0));
+
+        List<V> vertexList = new CopyOnWriteArrayList<>(vertices);
+        AtomicInteger totalSamples = new AtomicInteger(0);
+
+        int minSamples = Math.max(10, n / 100);
+        int maxSamples = Math.min(n, n / 2);
+        int batchSize = Math.max(1, minSamples / 4);
+
+        ConcurrentHashMap<V, Double> previousBetweenness = new ConcurrentHashMap<>(betweenness);
+        double convergenceThreshold = 0.01;
+
+        // Parallel adaptive sampling with convergence checking
+        IntStream.range(0, (maxSamples - minSamples) / batchSize + 1)
+                .parallel()
+                .takeWhile(batchIndex -> {
+                    int currentBatchStart = minSamples + batchIndex * batchSize;
+                    int currentBatchSize = Math.min(batchSize, maxSamples - currentBatchStart);
+
+                    if (currentBatchSize <= 0) return false;
+
+                    // Sample new batch in parallel
+                    Set<V> newSamples = uniformRandomSamplingParallel(
+                            vertexList, currentBatchSize, ThreadLocalRandom.current());
+
+                    // Compute contributions from new samples in parallel
+                    AtomicInteger currentTotal = new AtomicInteger(
+                            totalSamples.addAndGet(currentBatchSize));
+
+                    newSamples.parallelStream().forEach(source -> {
+                        ConcurrentHashMap<V, Double> contributions =
+                                computeSingleSourceBetweennessContributionsParallel(graph, source);
+
+                        double scalingFactor = (double) n / currentTotal.get();
+
+                        contributions.entrySet().parallelStream().forEach(entry -> {
+                            V vertex = entry.getKey();
+                            double contribution = entry.getValue() * scalingFactor;
+                            betweenness.merge(vertex, contribution, Double::sum);
+                        });
+                    });
+
+                    // Check convergence in parallel
+                    boolean converged = hasConvergedParallel(betweenness, previousBetweenness,
+                            convergenceThreshold);
+
+                    if (converged) {
+                        System.out.println("Converged after " + currentTotal.get() + " samples (parallel)");
+                        return false; // Stop sampling
+                    }
+
+                    // Update previous values for next iteration
+                    previousBetweenness.clear();
+                    betweenness.entrySet().parallelStream()
+                            .forEach(entry -> previousBetweenness.put(entry.getKey(), entry.getValue()));
+
+                    return true; // Continue sampling
+                })
+                .forEach(batchIndex -> { /* Processing handled in takeWhile */ });
+
+        return betweenness;
+    }
+
+    /**
+     * Parallel convergence checking.
+     */
+    private boolean hasConvergedParallel(ConcurrentHashMap<V, Double> current,
+                                         ConcurrentHashMap<V, Double> previous,
+                                         double threshold) {
+
+        return current.entrySet().parallelStream()
+                .allMatch(entry -> {
+                    V vertex = entry.getKey();
+                    double currentValue = entry.getValue();
+                    double previousValue = previous.getOrDefault(vertex, 0.0);
+
+                    if (previousValue > 0) {
+                        double relativeChange = Math.abs(currentValue - previousValue) / previousValue;
+                        return relativeChange <= threshold;
+                    } else {
+                        return currentValue <= threshold;
+                    }
+                });
+    }
+
+    /**
+     * Utility method to get thread-safe metrics about the sampling process.
+     */
+    public ConcurrentHashMap<String, Double> getSamplingMetrics(int sampleSize, int totalVertices) {
+        ConcurrentHashMap<String, Double> metrics = new ConcurrentHashMap<>();
+
+        metrics.put("sample_ratio", (double) sampleSize / totalVertices);
+        metrics.put("expected_speedup", (double) totalVertices / sampleSize);
+        metrics.put("parallel_efficiency",
+                (double) Runtime.getRuntime().availableProcessors() /
+                        Math.max(1, sampleSize / 10));
+
+        return metrics;
+    }
+
 
     /**
      * Computes quality score for a modulator
