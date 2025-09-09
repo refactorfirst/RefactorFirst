@@ -154,7 +154,7 @@ public class ModulatorComputer<V, E> {
 
         // Identify vertices that appear in many high-width bags
         Map<V, Integer> bagAppearances = new ConcurrentHashMap<>();
-        Map<V, Double> centralityScores = computeBetweennessCentrality(undirected);
+        Map<V, Double> centralityScores = computeBetweennessCentralityParallel(undirected);
 
         // Compute vertex importance based on structural properties
         Map<V, Double> vertexImportance = undirected.vertexSet().parallelStream()
@@ -214,7 +214,7 @@ public class ModulatorComputer<V, E> {
 
         // Find articulation points and vertices with high betweenness centrality
         Set<V> articulationPoints = findArticulationPoints(undirected);
-        Map<V, Double> centralityScores = computeBetweennessCentrality(undirected);
+        Map<V, Double> centralityScores = computeBetweennessCentralityParallel(undirected);
 
         // Combine articulation points with high centrality vertices
         Set<V> candidates = new HashSet<>(articulationPoints);
