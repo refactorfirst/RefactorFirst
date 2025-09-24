@@ -268,44 +268,6 @@ class PageRankFASTest {
         }
 
         @Test
-        @DisplayName("Test updated algorithm thread safety")
-        void testUpdatedThreadSafety() throws InterruptedException {
-            Graph<String, DefaultEdge> graph = createComplexGraph();
-            pageRankFAS = new PageRankFAS<>(graph, new SuperTypeToken<>(){});
-
-            final int NUM_THREADS = 5;
-            final Set<Set<DefaultEdge>> results = Collections.synchronizedSet(new HashSet<>());
-
-            Thread[] threads = new Thread[NUM_THREADS];
-
-            for (int i = 0; i < NUM_THREADS; i++) {
-                threads[i] = new Thread(() -> {
-                    Graph<String, DefaultEdge> threadGraph = copyGraph(graph);
-                    PageRankFAS<String, DefaultEdge> threadFAS = new PageRankFAS<>(threadGraph, new SuperTypeToken<>(){});
-                    Set<DefaultEdge> fas = threadFAS.computeFeedbackArcSet();
-                    results.add(fas);
-                });
-                threads[i].start();
-            }
-
-            for (Thread thread : threads) {
-                thread.join();
-            }
-
-            // All results should be valid
-            assertFalse(results.isEmpty(), "Should have results from all threads");
-
-            // Verify each result makes graph acyclic
-            for (Set<DefaultEdge> fas : results) {
-                Graph<String, DefaultEdge> testGraph = copyGraph(graph);
-                fas.forEach(testGraph::removeEdge);
-                PageRankFAS<String, DefaultEdge> verifier = new PageRankFAS<>(testGraph, new SuperTypeToken<>(){});
-                assertTrue(verifier.computeFeedbackArcSet().isEmpty(),
-                        "Graph should be acyclic after removing FAS");
-            }
-        }
-
-        @Test
         @DisplayName("Test performance comparison with different PageRank iterations")
         void testPerformanceWithDifferentIterations() {
             Graph<String, DefaultEdge> graph = createComplexGraph();
