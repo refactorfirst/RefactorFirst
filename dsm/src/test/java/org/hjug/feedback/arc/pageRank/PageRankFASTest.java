@@ -1,17 +1,15 @@
 package org.hjug.feedback.arc.pageRank;
 
+import static org.junit.jupiter.api.Assertions.*;
 
+import java.util.*;
 import org.hjug.feedback.SuperTypeToken;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
-
-import java.util.*;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
 
 /**
  * Comprehensive unit tests for the PageRankFAS algorithm with custom LineDigraph
@@ -213,7 +211,7 @@ class PageRankFASTest {
         @DisplayName("Test updated algorithm on simple cycle")
         void testUpdatedAlgorithmSimpleCycle() {
             Graph<String, DefaultEdge> graph = createSimpleCycle();
-            pageRankFAS = new PageRankFAS<>(graph, new SuperTypeToken<>(){});
+            pageRankFAS = new PageRankFAS<>(graph, new SuperTypeToken<>() {});
 
             Set<DefaultEdge> fas = pageRankFAS.computeFeedbackArcSet();
 
@@ -221,16 +219,15 @@ class PageRankFASTest {
 
             // Verify that removing the FAS makes the graph acyclic
             fas.forEach(graph::removeEdge);
-            PageRankFAS<String, DefaultEdge> verifier = new PageRankFAS<>(graph, new SuperTypeToken<>(){});
-            assertTrue(verifier.computeFeedbackArcSet().isEmpty(),
-                    "Graph should be acyclic after removing FAS");
+            PageRankFAS<String, DefaultEdge> verifier = new PageRankFAS<>(graph, new SuperTypeToken<>() {});
+            assertTrue(verifier.computeFeedbackArcSet().isEmpty(), "Graph should be acyclic after removing FAS");
         }
 
         @Test
         @DisplayName("Test updated algorithm execution statistics")
         void testExecutionStatistics() {
             Graph<String, DefaultEdge> graph = createComplexGraph();
-            pageRankFAS = new PageRankFAS<>(graph, new SuperTypeToken<>(){});
+            pageRankFAS = new PageRankFAS<>(graph, new SuperTypeToken<>() {});
 
             Map<String, Object> stats = pageRankFAS.getExecutionStatistics(graph);
 
@@ -251,20 +248,18 @@ class PageRankFASTest {
         @DisplayName("Test updated algorithm with multiple SCCs")
         void testMultipleSCCs() {
             Graph<String, DefaultEdge> graph = createMultipleSCCGraph();
-            pageRankFAS = new PageRankFAS<>(graph, new SuperTypeToken<>(){});
+            pageRankFAS = new PageRankFAS<>(graph, new SuperTypeToken<>() {});
 
             Set<DefaultEdge> fas = pageRankFAS.computeFeedbackArcSet();
 
             // Verify that the result breaks all cycles
             fas.forEach(graph::removeEdge);
-            PageRankFAS<String, DefaultEdge> verifier = new PageRankFAS<>(graph, new SuperTypeToken<>(){});
-            assertTrue(verifier.computeFeedbackArcSet().isEmpty(),
-                    "Graph should be acyclic after removing FAS");
+            PageRankFAS<String, DefaultEdge> verifier = new PageRankFAS<>(graph, new SuperTypeToken<>() {});
+            assertTrue(verifier.computeFeedbackArcSet().isEmpty(), "Graph should be acyclic after removing FAS");
 
             // Check execution statistics
             Map<String, Object> stats = pageRankFAS.getExecutionStatistics(createMultipleSCCGraph());
-            assertTrue((Integer) stats.get("nonTrivialSCCs") >= 2,
-                    "Should have multiple non-trivial SCCs");
+            assertTrue((Integer) stats.get("nonTrivialSCCs") >= 2, "Should have multiple non-trivial SCCs");
         }
 
         @Test
@@ -278,7 +273,8 @@ class PageRankFASTest {
 
             for (int iter : iterations) {
                 Graph<String, DefaultEdge> testGraph = copyGraph(graph);
-                PageRankFAS<String, DefaultEdge> algorithm = new PageRankFAS<>(testGraph, iter, new SuperTypeToken<>(){});
+                PageRankFAS<String, DefaultEdge> algorithm =
+                        new PageRankFAS<>(testGraph, iter, new SuperTypeToken<>() {});
 
                 long startTime = System.currentTimeMillis();
                 Set<DefaultEdge> fas = algorithm.computeFeedbackArcSet();
@@ -289,16 +285,17 @@ class PageRankFASTest {
 
                 // Verify correctness
                 fas.forEach(testGraph::removeEdge);
-                PageRankFAS<String, DefaultEdge> verifier = new PageRankFAS<>(testGraph, new SuperTypeToken<>(){});
-                assertTrue(verifier.computeFeedbackArcSet().isEmpty(),
+                PageRankFAS<String, DefaultEdge> verifier = new PageRankFAS<>(testGraph, new SuperTypeToken<>() {});
+                assertTrue(
+                        verifier.computeFeedbackArcSet().isEmpty(),
                         "Graph should be acyclic after removing FAS (iter=" + iter + ")");
             }
 
             // Log results for analysis
             System.out.println("Performance analysis:");
             for (int iter : iterations) {
-                System.out.printf("Iterations: %d, FAS size: %d, Time: %dms%n",
-                        iter, fasSize.get(iter), executionTime.get(iter));
+                System.out.printf(
+                        "Iterations: %d, FAS size: %d, Time: %dms%n", iter, fasSize.get(iter), executionTime.get(iter));
             }
         }
     }
@@ -328,17 +325,17 @@ class PageRankFASTest {
         // Create multiple cycles
         graph.addEdge("V0", "V1");
         graph.addEdge("V1", "V2");
-        graph.addEdge("V2", "V0");  // Triangle cycle
+        graph.addEdge("V2", "V0"); // Triangle cycle
 
         graph.addEdge("V3", "V4");
         graph.addEdge("V4", "V5");
         graph.addEdge("V5", "V6");
-        graph.addEdge("V6", "V3");  // Square cycle
+        graph.addEdge("V6", "V3"); // Square cycle
 
         // Overlapping cycle
         graph.addEdge("V2", "V3");
         graph.addEdge("V5", "V7");
-        graph.addEdge("V7", "V1");  // Creates larger cycle
+        graph.addEdge("V7", "V1"); // Creates larger cycle
 
         return graph;
     }

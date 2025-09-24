@@ -1,6 +1,5 @@
 package org.hjug.feedback.arc.pageRank;
 
-
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -115,8 +114,7 @@ class LineDigraph<V, E> {
      * @return true if the edge exists, false otherwise
      */
     public boolean containsEdge(LineVertex<V, E> source, LineVertex<V, E> target) {
-        return containsVertex(source) &&
-                adjacencyMap.get(source).contains(target);
+        return containsVertex(source) && adjacencyMap.get(source).contains(target);
     }
 
     /**
@@ -140,9 +138,7 @@ class LineDigraph<V, E> {
      * @return Total number of edges in the digraph
      */
     public int edgeCount() {
-        return adjacencyMap.values().stream()
-                .mapToInt(Set::size)
-                .sum();
+        return adjacencyMap.values().stream().mapToInt(Set::size).sum();
     }
 
     /**
@@ -151,8 +147,7 @@ class LineDigraph<V, E> {
      * @return Set of target LineVertex objects
      */
     public Set<LineVertex<V, E>> getOutgoingNeighbors(LineVertex<V, E> vertex) {
-        return adjacencyMap.getOrDefault(vertex, Collections.emptySet())
-                .stream()
+        return adjacencyMap.getOrDefault(vertex, Collections.emptySet()).stream()
                 .collect(Collectors.toSet());
     }
 
@@ -162,9 +157,7 @@ class LineDigraph<V, E> {
      * @return Set of source LineVertex objects
      */
     public Set<LineVertex<V, E>> getIncomingNeighbors(LineVertex<V, E> vertex) {
-        return incomingMap.getOrDefault(vertex, Collections.emptySet())
-                .stream()
-                .collect(Collectors.toSet());
+        return incomingMap.getOrDefault(vertex, Collections.emptySet()).stream().collect(Collectors.toSet());
     }
 
     /**
@@ -228,9 +221,7 @@ class LineDigraph<V, E> {
      * @return Set of source LineVertex objects
      */
     public Set<LineVertex<V, E>> getSources() {
-        return vertices.stream()
-                .filter(vertex -> getInDegree(vertex) == 0)
-                .collect(Collectors.toSet());
+        return vertices.stream().filter(vertex -> getInDegree(vertex) == 0).collect(Collectors.toSet());
     }
 
     /**
@@ -238,9 +229,7 @@ class LineDigraph<V, E> {
      * @return Set of sink LineVertex objects
      */
     public Set<LineVertex<V, E>> getSinks() {
-        return vertices.stream()
-                .filter(vertex -> getOutDegree(vertex) == 0)
-                .collect(Collectors.toSet());
+        return vertices.stream().filter(vertex -> getOutDegree(vertex) == 0).collect(Collectors.toSet());
     }
 
     /**
@@ -357,15 +346,11 @@ class LineDigraph<V, E> {
         stats.put("isEmpty", isEmpty());
 
         if (!isEmpty()) {
-            double avgOutDegree = vertices.stream()
-                    .mapToInt(this::getOutDegree)
-                    .average()
-                    .orElse(0.0);
+            double avgOutDegree =
+                    vertices.stream().mapToInt(this::getOutDegree).average().orElse(0.0);
 
-            double avgInDegree = vertices.stream()
-                    .mapToInt(this::getInDegree)
-                    .average()
-                    .orElse(0.0);
+            double avgInDegree =
+                    vertices.stream().mapToInt(this::getInDegree).average().orElse(0.0);
 
             stats.put("avgOutDegree", avgOutDegree);
             stats.put("avgInDegree", avgInDegree);

@@ -1,16 +1,13 @@
 package org.hjug.feedback.arc.pageRank;
 
-
-
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import org.hjug.feedback.SuperTypeToken;
 import org.jgrapht.Graph;
 import org.jgrapht.alg.connectivity.KosarajuStrongConnectivityInspector;
 import org.jgrapht.alg.cycle.CycleDetector;
 import org.jgrapht.graph.DefaultDirectedGraph;
-
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 /**
  * PageRankFAS - A PageRank-based algorithm for computing Feedback Arc Set
@@ -133,15 +130,14 @@ public class PageRankFAS<V, E> {
      * Create edges in line digraph based on Algorithm 3 from the paper
      * Updated to use custom LineDigraph methods
      */
-    private void createLineDigraphEdges(Graph<V, E> graph, LineDigraph<V, E> lineDigraph,
-                                        Map<E, LineVertex<V, E>> edgeToLineVertex) {
+    private void createLineDigraphEdges(
+            Graph<V, E> graph, LineDigraph<V, E> lineDigraph, Map<E, LineVertex<V, E>> edgeToLineVertex) {
         Set<V> visited = ConcurrentHashMap.newKeySet();
 
         // Start DFS from a random vertex if graph is not empty
         if (!graph.vertexSet().isEmpty()) {
             V startVertex = graph.vertexSet().iterator().next();
-            createLineDigraphEdgesDFS(graph, lineDigraph, edgeToLineVertex,
-                    startVertex, null, visited);
+            createLineDigraphEdgesDFS(graph, lineDigraph, edgeToLineVertex, startVertex, null, visited);
         }
     }
 
@@ -149,10 +145,13 @@ public class PageRankFAS<V, E> {
      * DFS-based creation of line digraph edges (Algorithm 3 implementation)
      * Updated to use custom LineDigraph.addEdge method
      */
-    private void createLineDigraphEdgesDFS(Graph<V, E> graph, LineDigraph<V, E> lineDigraph,
-                                           Map<E, LineVertex<V, E>> edgeToLineVertex,
-                                           V vertex, LineVertex<V, E> prevLineVertex,
-                                           Set<V> visited) {
+    private void createLineDigraphEdgesDFS(
+            Graph<V, E> graph,
+            LineDigraph<V, E> lineDigraph,
+            Map<E, LineVertex<V, E>> edgeToLineVertex,
+            V vertex,
+            LineVertex<V, E> prevLineVertex,
+            Set<V> visited) {
         visited.add(vertex);
 
         // Get outgoing edges from current vertex
@@ -164,7 +163,7 @@ public class PageRankFAS<V, E> {
 
             // if currentLineVertex is null, skip processing
             // for this edge since it will result in an NPE
-            if(currentLineVertex == null){
+            if (currentLineVertex == null) {
                 continue;
             }
 
@@ -175,14 +174,12 @@ public class PageRankFAS<V, E> {
 
             if (!visited.contains(target)) {
                 // Continue DFS
-                createLineDigraphEdgesDFS(graph, lineDigraph, edgeToLineVertex,
-                        target, currentLineVertex, visited);
+                createLineDigraphEdgesDFS(graph, lineDigraph, edgeToLineVertex, target, currentLineVertex, visited);
             } else {
                 // Target is already visited - add edges to all line vertices originating from target
                 graph.outgoingEdgesOf(target).stream()
                         .map(edgeToLineVertex::get)
-                        .forEach(targetLineVertex ->
-                                lineDigraph.addEdge(currentLineVertex, targetLineVertex));
+                        .forEach(targetLineVertex -> lineDigraph.addEdge(currentLineVertex, targetLineVertex));
             }
         }
     }
@@ -211,8 +208,7 @@ public class PageRankFAS<V, E> {
         // Run PageRank iterations
         for (int iteration = 0; iteration < pageRankIterations; iteration++) {
             // Fresh map each iteration; pre-seed zeros so all vertices exist in the map
-            ConcurrentMap<LineVertex<V, E>, Double> newScores =
-                    new ConcurrentHashMap<>(currentScores.size());
+            ConcurrentMap<LineVertex<V, E>, Double> newScores = new ConcurrentHashMap<>(currentScores.size());
 
             for (LineVertex<V, E> v : vertices) {
                 newScores.put(v, 0.0);
@@ -251,13 +247,11 @@ public class PageRankFAS<V, E> {
         });
     }
 
-
     /**
      * Find strongly connected components using Kosaraju's algorithm
      */
     private List<Set<V>> findStronglyConnectedComponents(Graph<V, E> graph) {
-        KosarajuStrongConnectivityInspector<V, E> inspector =
-                new KosarajuStrongConnectivityInspector<>(graph);
+        KosarajuStrongConnectivityInspector<V, E> inspector = new KosarajuStrongConnectivityInspector<>(graph);
         return inspector.stronglyConnectedSets();
     }
 
@@ -299,8 +293,8 @@ public class PageRankFAS<V, E> {
 
         // Add edges between vertices in the set
         graph.edgeSet().parallelStream()
-                .filter(edge -> vertices.contains(graph.getEdgeSource(edge)) &&
-                        vertices.contains(graph.getEdgeTarget(edge)))
+                .filter(edge ->
+                        vertices.contains(graph.getEdgeSource(edge)) && vertices.contains(graph.getEdgeTarget(edge)))
                 .forEach(edge -> {
                     V source = graph.getEdgeSource(edge);
                     V target = graph.getEdgeTarget(edge);
@@ -324,8 +318,12 @@ public class PageRankFAS<V, E> {
         // Analyze SCCs
         List<Set<V>> sccs = findStronglyConnectedComponents(graph);
         stats.put("sccCount", sccs.size());
-        stats.put("trivialSCCs", sccs.stream().mapToInt(scc -> scc.size() == 1 ? 1 : 0).sum());
-        stats.put("nonTrivialSCCs", sccs.stream().mapToInt(scc -> scc.size() > 1 ? 1 : 0).sum());
+        stats.put(
+                "trivialSCCs",
+                sccs.stream().mapToInt(scc -> scc.size() == 1 ? 1 : 0).sum());
+        stats.put(
+                "nonTrivialSCCs",
+                sccs.stream().mapToInt(scc -> scc.size() > 1 ? 1 : 0).sum());
 
         // Find largest SCC
         int maxSCCSize = sccs.stream().mapToInt(Set::size).max().orElse(0);
@@ -349,9 +347,17 @@ class LineVertex<V, E> {
         this.originalEdge = originalEdge;
     }
 
-    public V getSource() { return source; }
-    public V getTarget() { return target; }
-    public E getOriginalEdge() { return originalEdge; }
+    public V getSource() {
+        return source;
+    }
+
+    public V getTarget() {
+        return target;
+    }
+
+    public E getOriginalEdge() {
+        return originalEdge;
+    }
 
     @Override
     public boolean equals(Object obj) {

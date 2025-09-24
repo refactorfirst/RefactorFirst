@@ -1,12 +1,11 @@
 package org.hjug.feedback.vertex.kernelized;
 
+import com.google.common.util.concurrent.AtomicDouble;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-
-import com.google.common.util.concurrent.AtomicDouble;
 import org.hjug.feedback.SuperTypeToken;
 import org.jgrapht.Graph;
 import org.jgrapht.Graphs;
@@ -88,9 +87,8 @@ public class ModulatorComputer<V, E> {
             }
 
             Optional<Map.Entry<V, Double>> bestVertex =
-            computeVertexRemovalScore(workingGraph, targetTreewidth).entrySet()
-                    .parallelStream()
-                    .max(Map.Entry.comparingByValue());
+                    computeVertexRemovalScore(workingGraph, targetTreewidth).entrySet().parallelStream()
+                            .max(Map.Entry.comparingByValue());
 
             if (bestVertex == null || bestVertex.isEmpty()) break;
 
@@ -832,8 +830,8 @@ public class ModulatorComputer<V, E> {
      * Alternative method for adaptive scoring based on current vs target treewidth.
      * TODO: Revisit?
      */
-        public ConcurrentHashMap<V, Double> computeAdaptiveVertexRemovalScore(Graph<V, DefaultEdge> graph, int targetTreewidth,
-                                                                          int currentTreewidth) {
+    public ConcurrentHashMap<V, Double> computeAdaptiveVertexRemovalScore(
+            Graph<V, DefaultEdge> graph, int targetTreewidth, int currentTreewidth) {
         ConcurrentHashMap<V, Double> baseScores = computeVertexRemovalScore(graph, targetTreewidth);
 
         if (currentTreewidth <= targetTreewidth) {
@@ -841,8 +839,7 @@ public class ModulatorComputer<V, E> {
         }
 
         // Apply adaptive scaling based on the gap between current and target treewidth
-        double scalingFactor = (double) (currentTreewidth - targetTreewidth) /
-                Math.max(1, targetTreewidth);
+        double scalingFactor = (double) (currentTreewidth - targetTreewidth) / Math.max(1, targetTreewidth);
 
         baseScores.entrySet().parallelStream().forEach(entry -> {
             double adjustedScore = entry.getValue() * (1.0 + scalingFactor);
@@ -1328,11 +1325,10 @@ public class ModulatorComputer<V, E> {
 
         // Calculate sample size based on graph characteristics and desired accuracy
         double epsilon = 0.1; // Desired approximation error
-        double delta = 0.1;   // Probability of exceeding error bound
+        double delta = 0.1; // Probability of exceeding error bound
 
-        int initialSampleSize = Math.min(n, Math.max(10, (int) Math.ceil(
-                Math.log(2.0 / delta) / (2 * epsilon * epsilon) * Math.log(n)
-        )));
+        int initialSampleSize = Math.min(
+                n, Math.max(10, (int) Math.ceil(Math.log(2.0 / delta) / (2 * epsilon * epsilon) * Math.log(n))));
 
         int sampleSize;
         // For very large graphs, cap the sample size
@@ -1342,8 +1338,8 @@ public class ModulatorComputer<V, E> {
             sampleSize = initialSampleSize;
         }
 
-        System.out.println("Computing approximated betweenness centrality with " +
-                sampleSize + " samples out of " + n + " vertices (parallel)");
+        System.out.println("Computing approximated betweenness centrality with " + sampleSize + " samples out of " + n
+                + " vertices (parallel)");
 
         // Initialize concurrent betweenness centrality scores
         ConcurrentHashMap<V, Double> betweenness = new ConcurrentHashMap<>();
@@ -1357,31 +1353,34 @@ public class ModulatorComputer<V, E> {
 
         // Custom ForkJoinPool for better control over parallelization
         ForkJoinPool customThreadPool = new ForkJoinPool(
-                Math.min(Runtime.getRuntime().availableProcessors(),
+                Math.min(
+                        Runtime.getRuntime().availableProcessors(),
                         Math.max(1, sampleSize / 10)) // Scale threads based on sample size
-        );
+                );
 
         try {
-            CompletableFuture<Void> computation = CompletableFuture.runAsync(() -> {
-                // Sample source vertices in parallel
-                Set<V> sampledSources = sampleSourceVerticesParallel(graph, vertexList, sampleSize, random);
+            CompletableFuture<Void> computation = CompletableFuture.runAsync(
+                    () -> {
+                        // Sample source vertices in parallel
+                        Set<V> sampledSources = sampleSourceVerticesParallel(graph, vertexList, sampleSize, random);
 
-                // Scaling factor for approximation
-                double scalingFactor = (double) n / sampleSize;
+                        // Scaling factor for approximation
+                        double scalingFactor = (double) n / sampleSize;
 
-                // Process sampled sources in parallel and accumulate results
-                sampledSources.parallelStream().forEach(source -> {
-                    ConcurrentHashMap<V, Double> contributions =
-                            computeSingleSourceBetweennessContributionsParallel(graph, source);
+                        // Process sampled sources in parallel and accumulate results
+                        sampledSources.parallelStream().forEach(source -> {
+                            ConcurrentHashMap<V, Double> contributions =
+                                    computeSingleSourceBetweennessContributionsParallel(graph, source);
 
-                    // Atomically update betweenness values with scaling
-                    contributions.entrySet().parallelStream().forEach(entry -> {
-                        V vertex = entry.getKey();
-                        double scaledContribution = entry.getValue() * scalingFactor;
-                        betweenness.merge(vertex, scaledContribution, Double::sum);
-                    });
-                });
-            }, customThreadPool);
+                            // Atomically update betweenness values with scaling
+                            contributions.entrySet().parallelStream().forEach(entry -> {
+                                V vertex = entry.getKey();
+                                double scaledContribution = entry.getValue() * scalingFactor;
+                                betweenness.merge(vertex, scaledContribution, Double::sum);
+                            });
+                        });
+                    },
+                    customThreadPool);
 
             // Wait for completion
             computation.get();
@@ -1402,14 +1401,13 @@ public class ModulatorComputer<V, E> {
         }
 
         return betweenness;
-
     }
 
     /**
      * Samples source vertices using parallel processing with different sampling strategies.
      */
-    private Set<V> sampleSourceVerticesParallel(Graph<V, DefaultEdge> graph, List<V> vertexList, int sampleSize,
-                                                ThreadLocalRandom random) {
+    private Set<V> sampleSourceVerticesParallel(
+            Graph<V, DefaultEdge> graph, List<V> vertexList, int sampleSize, ThreadLocalRandom random) {
 
         if (shouldUseDegreeWeightedSampling(graph)) {
             return degreeWeightedSamplingParallel(graph, vertexList, sampleSize, random);
@@ -1421,20 +1419,17 @@ public class ModulatorComputer<V, E> {
     /**
      * Performs degree-weighted random sampling using parallel streams.
      */
-    private Set<V> degreeWeightedSamplingParallel(Graph<V, DefaultEdge> graph, List<V> vertexList, int sampleSize,
-                                                  ThreadLocalRandom random) {
+    private Set<V> degreeWeightedSamplingParallel(
+            Graph<V, DefaultEdge> graph, List<V> vertexList, int sampleSize, ThreadLocalRandom random) {
 
         // Calculate degrees in parallel
         ConcurrentMap<V, Integer> degrees = vertexList.parallelStream()
                 .collect(Collectors.toConcurrentMap(
-                        vertex -> vertex,
-                        vertex -> graph.inDegreeOf(vertex) + graph.outDegreeOf(vertex)
-                ));
+                        vertex -> vertex, vertex -> graph.inDegreeOf(vertex) + graph.outDegreeOf(vertex)));
 
         // Calculate total degree
-        int totalDegree = degrees.values().parallelStream()
-                .mapToInt(Integer::intValue)
-                .sum();
+        int totalDegree =
+                degrees.values().parallelStream().mapToInt(Integer::intValue).sum();
 
         if (totalDegree == 0) {
             return uniformRandomSamplingParallel(vertexList, sampleSize, random);
@@ -1445,28 +1440,24 @@ public class ModulatorComputer<V, E> {
         AtomicInteger samplesNeeded = new AtomicInteger(sampleSize);
 
         // Parallel sampling with retry mechanism
-        vertexList.parallelStream()
-                .filter(vertex -> samplesNeeded.get() > 0)
-                .forEach(vertex -> {
-                    if (samplesNeeded.get() <= 0 || sampledSources.contains(vertex)) {
-                        return;
-                    }
+        vertexList.parallelStream().filter(vertex -> samplesNeeded.get() > 0).forEach(vertex -> {
+            if (samplesNeeded.get() <= 0 || sampledSources.contains(vertex)) {
+                return;
+            }
 
-                    // Thread-local random for each thread
-                    ThreadLocalRandom localRandom = ThreadLocalRandom.current();
-                    double probability = (double) degrees.get(vertex) / totalDegree;
+            // Thread-local random for each thread
+            ThreadLocalRandom localRandom = ThreadLocalRandom.current();
+            double probability = (double) degrees.get(vertex) / totalDegree;
 
-                    // Adaptive probability to ensure we get enough samples
-                    double adjustedProbability = Math.min(1.0,
-                            probability * sampleSize * 2.0 / vertexList.size());
+            // Adaptive probability to ensure we get enough samples
+            double adjustedProbability = Math.min(1.0, probability * sampleSize * 2.0 / vertexList.size());
 
-                    if (localRandom.nextDouble() < adjustedProbability &&
-                            sampledSources.size() < sampleSize) {
+            if (localRandom.nextDouble() < adjustedProbability && sampledSources.size() < sampleSize) {
 
-                        sampledSources.add(vertex);
-                        samplesNeeded.decrementAndGet();
-                    }
-                });
+                sampledSources.add(vertex);
+                samplesNeeded.decrementAndGet();
+            }
+        });
 
         // Fill remaining slots with uniform sampling if needed
         if (sampledSources.size() < sampleSize) {
@@ -1483,18 +1474,15 @@ public class ModulatorComputer<V, E> {
     /**
      * Performs uniform random sampling using parallel streams.
      */
-    private Set<V> uniformRandomSamplingParallel(List<V> vertexList, int sampleSize,
-                                                 ThreadLocalRandom random) {
+    private Set<V> uniformRandomSamplingParallel(List<V> vertexList, int sampleSize, ThreadLocalRandom random) {
 
         // Use parallel stream to shuffle and take first sampleSize elements
         return vertexList.parallelStream()
                 .unordered() // Allow parallel processing without ordering constraints
-                .distinct()  // Ensure uniqueness
+                .distinct() // Ensure uniqueness
                 .limit(sampleSize)
                 .collect(Collectors.toConcurrentMap(
-                        vertex -> vertex,
-                        vertex -> ThreadLocalRandom.current().nextDouble()
-                ))
+                        vertex -> vertex, vertex -> ThreadLocalRandom.current().nextDouble()))
                 .entrySet()
                 .parallelStream()
                 .sorted(Map.Entry.comparingByValue()) // Sort by random values
@@ -1506,7 +1494,8 @@ public class ModulatorComputer<V, E> {
     /**
      * Computes single-source betweenness contributions using parallel processing.
      */
-    private ConcurrentHashMap<V, Double> computeSingleSourceBetweennessContributionsParallel(Graph<V, DefaultEdge> graph, V source) {
+    private ConcurrentHashMap<V, Double> computeSingleSourceBetweennessContributionsParallel(
+            Graph<V, DefaultEdge> graph, V source) {
 
         Set<V> vertices = graph.vertexSet();
         ConcurrentHashMap<V, Double> contributions = new ConcurrentHashMap<>();
@@ -1574,7 +1563,8 @@ public class ModulatorComputer<V, E> {
             if (!vertex.equals(source)) {
                 // Process predecessors in parallel
                 predecessors.get(vertex).parallelStream().forEach(predecessor -> {
-                    double sigmaRatio = sigma.get(predecessor).get() / sigma.get(vertex).get();
+                    double sigmaRatio =
+                            sigma.get(predecessor).get() / sigma.get(vertex).get();
                     double contribution = sigmaRatio * (1 + delta.get(vertex).get());
                     delta.get(predecessor).addAndGet(contribution);
                 });
@@ -1640,12 +1630,11 @@ public class ModulatorComputer<V, E> {
                     if (currentBatchSize <= 0) return false;
 
                     // Sample new batch in parallel
-                    Set<V> newSamples = uniformRandomSamplingParallel(
-                            vertexList, currentBatchSize, ThreadLocalRandom.current());
+                    Set<V> newSamples =
+                            uniformRandomSamplingParallel(vertexList, currentBatchSize, ThreadLocalRandom.current());
 
                     // Compute contributions from new samples in parallel
-                    AtomicInteger currentTotal = new AtomicInteger(
-                            totalSamples.addAndGet(currentBatchSize));
+                    AtomicInteger currentTotal = new AtomicInteger(totalSamples.addAndGet(currentBatchSize));
 
                     newSamples.parallelStream().forEach(source -> {
                         ConcurrentHashMap<V, Double> contributions =
@@ -1661,8 +1650,7 @@ public class ModulatorComputer<V, E> {
                     });
 
                     // Check convergence in parallel
-                    boolean converged = hasConvergedParallel(betweenness, previousBetweenness,
-                            convergenceThreshold);
+                    boolean converged = hasConvergedParallel(betweenness, previousBetweenness, convergenceThreshold);
 
                     if (converged) {
                         System.out.println("Converged after " + currentTotal.get() + " samples (parallel)");
@@ -1676,7 +1664,9 @@ public class ModulatorComputer<V, E> {
 
                     return true; // Continue sampling
                 })
-                .forEach(batchIndex -> { /* Processing handled in takeWhile */ });
+                .forEach(batchIndex -> {
+                    /* Processing handled in takeWhile */
+                });
 
         return betweenness;
     }
@@ -1684,23 +1674,21 @@ public class ModulatorComputer<V, E> {
     /**
      * Parallel convergence checking.
      */
-    private boolean hasConvergedParallel(ConcurrentHashMap<V, Double> current,
-                                         ConcurrentHashMap<V, Double> previous,
-                                         double threshold) {
+    private boolean hasConvergedParallel(
+            ConcurrentHashMap<V, Double> current, ConcurrentHashMap<V, Double> previous, double threshold) {
 
-        return current.entrySet().parallelStream()
-                .allMatch(entry -> {
-                    V vertex = entry.getKey();
-                    double currentValue = entry.getValue();
-                    double previousValue = previous.getOrDefault(vertex, 0.0);
+        return current.entrySet().parallelStream().allMatch(entry -> {
+            V vertex = entry.getKey();
+            double currentValue = entry.getValue();
+            double previousValue = previous.getOrDefault(vertex, 0.0);
 
-                    if (previousValue > 0) {
-                        double relativeChange = Math.abs(currentValue - previousValue) / previousValue;
-                        return relativeChange <= threshold;
-                    } else {
-                        return currentValue <= threshold;
-                    }
-                });
+            if (previousValue > 0) {
+                double relativeChange = Math.abs(currentValue - previousValue) / previousValue;
+                return relativeChange <= threshold;
+            } else {
+                return currentValue <= threshold;
+            }
+        });
     }
 
     /**
@@ -1711,13 +1699,12 @@ public class ModulatorComputer<V, E> {
 
         metrics.put("sample_ratio", (double) sampleSize / totalVertices);
         metrics.put("expected_speedup", (double) totalVertices / sampleSize);
-        metrics.put("parallel_efficiency",
-                (double) Runtime.getRuntime().availableProcessors() /
-                        Math.max(1, sampleSize / 10));
+        metrics.put(
+                "parallel_efficiency",
+                (double) Runtime.getRuntime().availableProcessors() / Math.max(1, sampleSize / 10));
 
         return metrics;
     }
-
 
     /**
      * Computes quality score for a modulator

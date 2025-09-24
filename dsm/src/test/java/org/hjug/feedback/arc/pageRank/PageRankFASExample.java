@@ -1,12 +1,10 @@
 package org.hjug.feedback.arc.pageRank;
 
-
+import java.util.Set;
 import org.hjug.feedback.SuperTypeToken;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
-
-import java.util.Set;
 
 /**
  * Example usage of the PageRankFAS algorithm
@@ -59,8 +57,7 @@ public class PageRankFASExample {
         System.out.println("Vertices: " + graph.vertexSet().size());
 
         // Apply PageRankFAS
-        PageRankFAS<String, DefaultEdge> pageRankFAS = new PageRankFAS<>(graph, new SuperTypeToken<>() {
-        });
+        PageRankFAS<String, DefaultEdge> pageRankFAS = new PageRankFAS<>(graph, new SuperTypeToken<>() {});
         Set<DefaultEdge> feedbackArcSet = pageRankFAS.computeFeedbackArcSet();
 
         System.out.println("Feedback Arc Set size: " + feedbackArcSet.size());
@@ -104,8 +101,7 @@ public class PageRankFASExample {
         System.out.println("Vertices: " + graph.vertexSet().size());
 
         // Apply PageRankFAS
-        PageRankFAS<String, DefaultEdge> pageRankFAS = new PageRankFAS<>(graph, new SuperTypeToken<>() {
-        });
+        PageRankFAS<String, DefaultEdge> pageRankFAS = new PageRankFAS<>(graph, new SuperTypeToken<>() {});
         long startTime = System.currentTimeMillis();
         Set<DefaultEdge> feedbackArcSet = pageRankFAS.computeFeedbackArcSet();
         long endTime = System.currentTimeMillis();
@@ -127,16 +123,17 @@ public class PageRankFASExample {
         System.out.println("Vertices: " + graph.vertexSet().size());
 
         // Apply PageRankFAS with timing
-        PageRankFAS<String, DefaultEdge> pageRankFAS = new PageRankFAS<>(graph, new SuperTypeToken<>() {
-        });
+        PageRankFAS<String, DefaultEdge> pageRankFAS = new PageRankFAS<>(graph, new SuperTypeToken<>() {});
         long startTime = System.currentTimeMillis();
         Set<DefaultEdge> feedbackArcSet = pageRankFAS.computeFeedbackArcSet();
         long endTime = System.currentTimeMillis();
 
         System.out.println("Feedback Arc Set size: " + feedbackArcSet.size());
         System.out.println("Computation time: " + (endTime - startTime) + "ms");
-        System.out.println("FAS ratio: " + String.format("%.2f%%",
-                100.0 * feedbackArcSet.size() / graph.edgeSet().size()));
+        System.out.println("FAS ratio: "
+                + String.format(
+                        "%.2f%%",
+                        100.0 * feedbackArcSet.size() / graph.edgeSet().size()));
 
         verifyAcyclicity(graph, feedbackArcSet);
     }
@@ -154,17 +151,16 @@ public class PageRankFASExample {
         for (int size : graphSizes) {
             Graph<String, DefaultEdge> graph = createRandomGraph(size, size * 2);
 
-            PageRankFAS<String, DefaultEdge> pageRankFAS = new PageRankFAS<>(graph, new SuperTypeToken<>() {
-            });
+            PageRankFAS<String, DefaultEdge> pageRankFAS = new PageRankFAS<>(graph, new SuperTypeToken<>() {});
             long startTime = System.currentTimeMillis();
             Set<DefaultEdge> feedbackArcSet = pageRankFAS.computeFeedbackArcSet();
             long endTime = System.currentTimeMillis();
 
             double fasRatio = 100.0 * feedbackArcSet.size() / graph.edgeSet().size();
 
-            System.out.printf("%d\t%d\t%d\t\t%d\t\t%.2f%%\n",
-                    size, graph.edgeSet().size(), feedbackArcSet.size(),
-                    (endTime - startTime), fasRatio);
+            System.out.printf(
+                    "%d\t%d\t%d\t\t%d\t\t%.2f%%\n",
+                    size, graph.edgeSet().size(), feedbackArcSet.size(), (endTime - startTime), fasRatio);
         }
     }
 
@@ -183,15 +179,13 @@ public class PageRankFASExample {
             Graph<String, DefaultEdge> testGraph = copyGraph(graph);
 
             PageRankFAS<String, DefaultEdge> pageRankFAS =
-                    new PageRankFAS<>(testGraph, iter, new SuperTypeToken<>() {
-                    });
+                    new PageRankFAS<>(testGraph, iter, new SuperTypeToken<>() {});
 
             long startTime = System.currentTimeMillis();
             Set<DefaultEdge> feedbackArcSet = pageRankFAS.computeFeedbackArcSet();
             long endTime = System.currentTimeMillis();
 
-            System.out.printf("%d\t\t%d\t\t%d\n",
-                    iter, feedbackArcSet.size(), (endTime - startTime));
+            System.out.printf("%d\t\t%d\t\t%d\n", iter, feedbackArcSet.size(), (endTime - startTime));
         }
     }
 
@@ -224,15 +218,15 @@ public class PageRankFASExample {
         graph.addEdge("V9", "V6");
 
         // Overlapping cycles
-        graph.addEdge("V2", "V6");  // Connect triangle to square
-        graph.addEdge("V8", "V0");  // Create larger cycle
+        graph.addEdge("V2", "V6"); // Connect triangle to square
+        graph.addEdge("V8", "V0"); // Create larger cycle
 
         // Additional complexity
         graph.addEdge("V10", "V11");
         graph.addEdge("V11", "V12");
         graph.addEdge("V12", "V13");
         graph.addEdge("V13", "V14");
-        graph.addEdge("V14", "V10");  // Pentagon cycle
+        graph.addEdge("V14", "V10"); // Pentagon cycle
 
         // Connect to main component
         graph.addEdge("V5", "V10");
@@ -294,24 +288,20 @@ public class PageRankFASExample {
     /**
      * Verify that removing the FAS makes the graph acyclic
      */
-    private static void verifyAcyclicity(Graph<String, DefaultEdge> originalGraph,
-                                         Set<DefaultEdge> feedbackArcSet) {
+    private static void verifyAcyclicity(Graph<String, DefaultEdge> originalGraph, Set<DefaultEdge> feedbackArcSet) {
         Graph<String, DefaultEdge> testGraph = copyGraph(originalGraph);
 
         // Remove FAS edges
         feedbackArcSet.forEach(testGraph::removeEdge);
 
         // Check if acyclic
-        PageRankFAS<String, DefaultEdge> verifier = new PageRankFAS<>(testGraph, new SuperTypeToken<>() {
-        });
+        PageRankFAS<String, DefaultEdge> verifier = new PageRankFAS<>(testGraph, new SuperTypeToken<>() {});
         Set<DefaultEdge> remainingFAS = verifier.computeFeedbackArcSet();
 
         if (remainingFAS.isEmpty()) {
             System.out.println("✓ Verification successful: Graph is acyclic after FAS removal");
         } else {
-            System.out.println("✗ Verification failed: " + remainingFAS.size() +
-                    " cycles remain after FAS removal");
+            System.out.println("✗ Verification failed: " + remainingFAS.size() + " cycles remain after FAS removal");
         }
     }
 }
-
