@@ -1,6 +1,7 @@
 package org.hjug.feedback.arc.pageRank;
 
 
+import org.hjug.feedback.SuperTypeToken;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
@@ -58,7 +59,8 @@ public class PageRankFASExample {
         System.out.println("Vertices: " + graph.vertexSet().size());
 
         // Apply PageRankFAS
-        PageRankFAS<String, DefaultEdge> pageRankFAS = new PageRankFAS<>(graph);
+        PageRankFAS<String, DefaultEdge> pageRankFAS = new PageRankFAS<>(graph, new SuperTypeToken<>() {
+        });
         Set<DefaultEdge> feedbackArcSet = pageRankFAS.computeFeedbackArcSet();
 
         System.out.println("Feedback Arc Set size: " + feedbackArcSet.size());
@@ -102,7 +104,8 @@ public class PageRankFASExample {
         System.out.println("Vertices: " + graph.vertexSet().size());
 
         // Apply PageRankFAS
-        PageRankFAS<String, DefaultEdge> pageRankFAS = new PageRankFAS<>(graph);
+        PageRankFAS<String, DefaultEdge> pageRankFAS = new PageRankFAS<>(graph, new SuperTypeToken<>() {
+        });
         long startTime = System.currentTimeMillis();
         Set<DefaultEdge> feedbackArcSet = pageRankFAS.computeFeedbackArcSet();
         long endTime = System.currentTimeMillis();
@@ -124,7 +127,8 @@ public class PageRankFASExample {
         System.out.println("Vertices: " + graph.vertexSet().size());
 
         // Apply PageRankFAS with timing
-        PageRankFAS<String, DefaultEdge> pageRankFAS = new PageRankFAS<>(graph);
+        PageRankFAS<String, DefaultEdge> pageRankFAS = new PageRankFAS<>(graph, new SuperTypeToken<>() {
+        });
         long startTime = System.currentTimeMillis();
         Set<DefaultEdge> feedbackArcSet = pageRankFAS.computeFeedbackArcSet();
         long endTime = System.currentTimeMillis();
@@ -150,7 +154,8 @@ public class PageRankFASExample {
         for (int size : graphSizes) {
             Graph<String, DefaultEdge> graph = createRandomGraph(size, size * 2);
 
-            PageRankFAS<String, DefaultEdge> pageRankFAS = new PageRankFAS<>(graph);
+            PageRankFAS<String, DefaultEdge> pageRankFAS = new PageRankFAS<>(graph, new SuperTypeToken<>() {
+            });
             long startTime = System.currentTimeMillis();
             Set<DefaultEdge> feedbackArcSet = pageRankFAS.computeFeedbackArcSet();
             long endTime = System.currentTimeMillis();
@@ -178,7 +183,8 @@ public class PageRankFASExample {
             Graph<String, DefaultEdge> testGraph = copyGraph(graph);
 
             PageRankFAS<String, DefaultEdge> pageRankFAS =
-                    new PageRankFAS<>(testGraph, iter);
+                    new PageRankFAS<>(testGraph, iter, new SuperTypeToken<>() {
+                    });
 
             long startTime = System.currentTimeMillis();
             Set<DefaultEdge> feedbackArcSet = pageRankFAS.computeFeedbackArcSet();
@@ -296,7 +302,8 @@ public class PageRankFASExample {
         feedbackArcSet.forEach(testGraph::removeEdge);
 
         // Check if acyclic
-        PageRankFAS<String, DefaultEdge> verifier = new PageRankFAS<>(testGraph);
+        PageRankFAS<String, DefaultEdge> verifier = new PageRankFAS<>(testGraph, new SuperTypeToken<>() {
+        });
         Set<DefaultEdge> remainingFAS = verifier.computeFeedbackArcSet();
 
         if (remainingFAS.isEmpty()) {

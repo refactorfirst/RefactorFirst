@@ -2,6 +2,7 @@ package org.hjug.feedback.arc.pageRank;
 
 
 
+import org.hjug.feedback.SuperTypeToken;
 import org.jgrapht.Graph;
 import org.jgrapht.alg.connectivity.KosarajuStrongConnectivityInspector;
 import org.jgrapht.alg.cycle.CycleDetector;
@@ -23,23 +24,29 @@ public class PageRankFAS<V, E> {
 
     private final Graph<V, E> originalGraph;
     private final int pageRankIterations;
+    private final Class<E> edgeClass;
 
     /**
      * Constructor for PageRankFAS algorithm
-     * @param graph The input directed graph
+     *
+     * @param graph         The input directed graph
+     * @param edgeTypeToken
      */
-    public PageRankFAS(Graph<V, E> graph) {
-        this(graph, DEFAULT_PAGERANK_ITERATIONS);
+    public PageRankFAS(Graph<V, E> graph, SuperTypeToken<E> edgeTypeToken) {
+        this(graph, DEFAULT_PAGERANK_ITERATIONS, edgeTypeToken);
     }
 
     /**
      * Constructor with custom PageRank iterations
-     * @param graph The input directed graph
+     *
+     * @param graph              The input directed graph
      * @param pageRankIterations Number of PageRank iterations
+     * @param edgeTypeToken
      */
-    public PageRankFAS(Graph<V, E> graph, int pageRankIterations) {
+    public PageRankFAS(Graph<V, E> graph, int pageRankIterations, SuperTypeToken<E> edgeTypeToken) {
         this.originalGraph = graph;
         this.pageRankIterations = pageRankIterations;
+        this.edgeClass = edgeTypeToken.getClassFromTypeToken();
     }
 
     /**
@@ -260,7 +267,7 @@ public class PageRankFAS<V, E> {
      * Create a copy of the graph
      */
     private Graph<V, E> createGraphCopy(Graph<V, E> original) {
-        Graph<V, E> copy = new DefaultDirectedGraph<>(original.getEdgeSupplier());
+        Graph<V, E> copy = new DefaultDirectedGraph<>(edgeClass);
 
         // Add vertices
         original.vertexSet().forEach(copy::addVertex);
@@ -279,7 +286,7 @@ public class PageRankFAS<V, E> {
      * Create subgraph containing only specified vertices and their edges
      */
     private Graph<V, E> createSubgraph(Graph<V, E> graph, Set<V> vertices) {
-        Graph<V, E> subgraph = new DefaultDirectedGraph<>(graph.getEdgeSupplier());
+        Graph<V, E> subgraph = new DefaultDirectedGraph<>(edgeClass);
 
         // Add vertices
         vertices.forEach(subgraph::addVertex);
