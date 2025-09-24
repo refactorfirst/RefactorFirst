@@ -162,6 +162,12 @@ public class PageRankFAS<V, E> {
             V target = graph.getEdgeTarget(edge);
             LineVertex<V, E> currentLineVertex = edgeToLineVertex.get(edge);
 
+            // if currentLineVertex is null, skip processing
+            // for this edge since it will result in an NPE
+            if(currentLineVertex == null){
+                continue;
+            }
+
             // Add edge from previous line vertex to current (if prev exists)
             if (prevLineVertex != null) {
                 lineDigraph.addEdge(prevLineVertex, currentLineVertex);
