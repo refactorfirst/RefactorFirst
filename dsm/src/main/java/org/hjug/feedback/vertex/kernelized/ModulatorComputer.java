@@ -87,16 +87,15 @@ public class ModulatorComputer<V, E> {
                 break;
             }
 
-            // Find vertex with highest degree * betweenness centrality score
-            V bestVertex = workingGraph.vertexSet().parallelStream()
-                    .filter(v -> !modulator.contains(v))
-                    .max(Comparator.comparingDouble(v -> computeVertexRemovalScore(workingGraph, v, targetTreewidth)))
-                    .orElse(null);
+            Optional<Map.Entry<V, Double>> bestVertex =
+            computeVertexRemovalScore(workingGraph, targetTreewidth).entrySet()
+                    .parallelStream()
+                    .max(Map.Entry.comparingByValue());
 
-            if (bestVertex == null) break;
+            if (bestVertex == null || bestVertex.isEmpty()) break;
 
-            modulator.add(bestVertex);
-            workingGraph.removeVertex(bestVertex);
+            modulator.add(bestVertex.get().getKey());
+            workingGraph.removeVertex(bestVertex.get().getKey());
         }
 
         return modulator;
@@ -239,25 +238,618 @@ public class ModulatorComputer<V, E> {
     }
 
     /**
-     * Computes vertex removal score based on multiple factors
+     * Computes vertex removal scores based on their impact on achieving the target treewidth.
+     *
+     * This method evaluates vertices based on multiple criteria:
+     * 1. Direct treewidth reduction impact
+     * 2. Degree-based scoring relative to target treewidth
+     * 3. Structural importance (betweenness centrality, clustering coefficient)
+     * 4. Connectivity disruption potential
+     * 5. Distance from target treewidth achievement
+     *
+     * @param targetTreewidth the desired treewidth after vertex removal
+     * @return concurrent map of vertices to their removal scores (higher = more beneficial to remove)
      */
-    private double computeVertexRemovalScore(Graph<V, DefaultEdge> graph, V vertex, int targetTreewidth) {
-        int degree = graph.degreeOf(vertex);
+    public ConcurrentHashMap<V, Double> computeVertexRemovalScore(Graph<V, DefaultEdge> graph, int targetTreewidth) {
+        Set<V> vertices = graph.vertexSet();
+        int n = vertices.size();
 
-        // Check if vertex is in a dense subgraph
-        Set<V> neighbors = Graphs.neighborSetOf(graph, vertex);
-        long neighborConnections = neighbors.parallelStream()
-                .mapToLong(n1 -> neighbors.stream()
-                        .filter(n2 -> !n1.equals(n2))
-                        .mapToLong(n2 -> graph.containsEdge(n1, n2) ? 1 : 0)
-                        .sum())
-                .sum();
+        if (n == 0 || targetTreewidth < 0) {
+            return new ConcurrentHashMap<>();
+        }
 
-        double clusteringCoefficient =
-                neighbors.size() > 1 ? (double) neighborConnections / (neighbors.size() * (neighbors.size() - 1)) : 0.0;
+        // Initialize concurrent data structures
+        ConcurrentHashMap<V, Double> scores = new ConcurrentHashMap<>();
+        ConcurrentHashMap<V, Integer> degrees = new ConcurrentHashMap<>();
+        ConcurrentHashMap<V, Double> structuralImportance = new ConcurrentHashMap<>();
 
-        // Higher score = better candidate for removal
-        return degree * (1.0 + clusteringCoefficient);
+        // Custom thread pool for optimal performance
+        ForkJoinPool customThreadPool =
+                new ForkJoinPool(Math.min(Runtime.getRuntime().availableProcessors(), Math.max(1, n / 100)));
+
+        try {
+            CompletableFuture<Void> computation = CompletableFuture.runAsync(
+                    () -> {
+                        // Phase 1: Compute basic metrics in parallel
+                        computeBasicMetricsParallel(graph, vertices, degrees, targetTreewidth);
+
+                        // Phase 2: Compute structural importance in parallel
+                        computeStructuralImportanceParallel(graph, vertices, structuralImportance, targetTreewidth);
+
+                        // Phase 3: Compute comprehensive scores in parallel
+                        computeComprehensiveScoresParallel(
+                                graph, vertices, scores, degrees, structuralImportance, targetTreewidth);
+
+                        // Phase 4: Apply target treewidth specific adjustments
+                        applyTargetTreewidthAdjustmentsParallel(graph, vertices, scores, targetTreewidth);
+                    },
+                    customThreadPool);
+
+            computation.get();
+
+        } catch (InterruptedException | ExecutionException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Parallel vertex scoring computation failed", e);
+        } finally {
+            shutdownThreadPool(customThreadPool);
+        }
+
+        return scores;
+    }
+
+    /**
+     * Computes basic graph metrics in parallel for vertex scoring.
+     */
+    private void computeBasicMetricsParallel(
+            Graph<V, DefaultEdge> graph, Set<V> vertices, ConcurrentHashMap<V, Integer> degrees, int targetTreewidth) {
+
+        // Compute degrees in parallel
+        vertices.parallelStream().forEach(vertex -> {
+            int degree = graph.inDegreeOf(vertex) + graph.outDegreeOf(vertex);
+            degrees.put(vertex, degree);
+        });
+    }
+
+    /**
+     * Computes structural importance metrics in parallel.
+     */
+    private void computeStructuralImportanceParallel(
+            Graph<V, DefaultEdge> graph,
+            Set<V> vertices,
+            ConcurrentHashMap<V, Double> structuralImportance,
+            int targetTreewidth) {
+
+        // Compute structural metrics in parallel
+        vertices.parallelStream().forEach(vertex -> {
+            double importance = 0.0;
+
+            // Factor 1: Local clustering coefficient impact
+            importance += computeLocalClusteringImpact(graph, vertex, targetTreewidth);
+
+            // Factor 2: Connectivity importance
+            importance += computeConnectivityImportance(graph, vertex, targetTreewidth);
+
+            // Factor 3: Neighborhood density impact
+            importance += computeNeighborhoodDensityImpact(graph, vertex, targetTreewidth);
+
+            structuralImportance.put(vertex, importance);
+        });
+    }
+
+    /**
+     * Computes comprehensive removal scores incorporating all factors and target treewidth.
+     */
+    private void computeComprehensiveScoresParallel(
+            Graph<V, DefaultEdge> graph,
+            Set<V> vertices,
+            ConcurrentHashMap<V, Double> scores,
+            ConcurrentHashMap<V, Integer> degrees,
+            ConcurrentHashMap<V, Double> structuralImportance,
+            int targetTreewidth) {
+
+        // Compute statistics for normalization
+        DoubleSummaryStatistics degreeStats = degrees.values().parallelStream()
+                .mapToDouble(Integer::doubleValue)
+                .summaryStatistics();
+
+        DoubleSummaryStatistics importanceStats = structuralImportance.values().parallelStream()
+                .mapToDouble(Double::doubleValue)
+                .summaryStatistics();
+
+        // Compute comprehensive scores in parallel
+        vertices.parallelStream().forEach(vertex -> {
+            double score = 0.0;
+            int degree = degrees.get(vertex);
+            double importance = structuralImportance.get(vertex);
+
+            // Component 1: Degree-based score relative to target treewidth
+            score += computeDegreeBasedScore(degree, targetTreewidth, degreeStats);
+
+            // Component 2: Structural importance score
+            score += computeNormalizedImportanceScore(importance, importanceStats);
+
+            // Component 3: Target treewidth proximity score
+            score += computeTargetProximityScore(graph, vertex, degree, targetTreewidth);
+
+            // Component 4: Treewidth reduction potential
+            score += computeTreewidthReductionPotential(graph, vertex, targetTreewidth);
+
+            // Component 5: Graph connectivity preservation penalty
+            score -= computeConnectivityPreservationPenalty(graph, vertex, targetTreewidth);
+
+            scores.put(vertex, score);
+        });
+    }
+
+    /**
+     * Computes degree-based score considering the target treewidth.
+     * Higher degree vertices that exceed target treewidth get higher scores.
+     */
+    private double computeDegreeBasedScore(int degree, int targetTreewidth, DoubleSummaryStatistics degreeStats) {
+
+        // Normalize degree
+        double normalizedDegree = degreeStats.getMax() > degreeStats.getMin()
+                ? (degree - degreeStats.getMin()) / (degreeStats.getMax() - degreeStats.getMin())
+                : 0.0;
+
+        // Base score from normalized degree
+        double baseScore = normalizedDegree;
+
+        // Boost score if degree significantly exceeds target treewidth
+        if (degree > targetTreewidth) {
+            double excess = (double) (degree - targetTreewidth) / Math.max(1, targetTreewidth);
+            baseScore *= (1.0 + excess); // Amplify score for high-degree vertices
+        }
+
+        // Penalty if degree is already below or at target
+        else if (degree <= targetTreewidth) {
+            double deficit = (double) (targetTreewidth - degree) / Math.max(1, targetTreewidth);
+            baseScore *= (1.0 - deficit * 0.5); // Reduce score but don't eliminate
+        }
+
+        return baseScore * 0.3; // Weight: 30% of total score
+    }
+
+    /**
+     * Computes local clustering coefficient impact on treewidth.
+     */
+    private double computeLocalClusteringImpact(Graph<V, DefaultEdge> graph, V vertex, int targetTreewidth) {
+        Set<V> neighbors = getNeighbors(vertex, graph);
+
+        if (neighbors.size() < 2) {
+            return 0.0;
+        }
+
+        // Count edges among neighbors
+        AtomicInteger edgeCount = new AtomicInteger(0);
+        List<V> neighborList = new ArrayList<>(neighbors);
+
+        neighborList.parallelStream().forEach(n1 -> {
+            int index1 = neighborList.indexOf(n1);
+            neighborList.stream()
+                    .skip(index1 + 1)
+                    .filter(n2 -> graph.containsEdge(n1, n2) || graph.containsEdge(n2, n1))
+                    .forEach(n2 -> edgeCount.incrementAndGet());
+        });
+
+        int maxPossibleEdges = neighbors.size() * (neighbors.size() - 1) / 2;
+        double clusteringCoefficient = maxPossibleEdges > 0 ? (double) edgeCount.get() / maxPossibleEdges : 0.0;
+
+        // High clustering + high degree suggests clique-like structures that increase treewidth
+        double impact = clusteringCoefficient * Math.min(1.0, (double) neighbors.size() / (targetTreewidth + 1));
+
+        return impact;
+    }
+
+    /**
+     * Computes connectivity importance based on how removal affects graph connectivity.
+     */
+    private double computeConnectivityImportance(Graph<V, DefaultEdge> graph, V vertex, int targetTreewidth) {
+        Set<V> neighbors = getNeighbors(vertex, graph);
+
+        if (neighbors.size() <= 1) {
+            return 0.1; // Low importance for low-degree vertices
+        }
+
+        // Estimate impact on connectivity
+        double connectivityScore = 0.0;
+
+        // Factor 1: Bridge potential (connecting different components)
+        connectivityScore += estimateBridgePotential(graph, vertex, neighbors, targetTreewidth);
+
+        // Factor 2: Articulation point potential
+        connectivityScore += estimateArticulationPotential(graph, vertex, neighbors, targetTreewidth);
+
+        return Math.min(1.0, connectivityScore);
+    }
+
+    /**
+     * Estimates if vertex acts as a bridge relative to target treewidth constraints.
+     */
+    private double estimateBridgePotential(
+            Graph<V, DefaultEdge> graph, V vertex, Set<V> neighbors, int targetTreewidth) {
+        if (neighbors.size() < 2) {
+            return 0.0;
+        }
+
+        // Simple heuristic: check if neighbors are well-connected without this vertex
+        AtomicInteger interNeighborConnections = new AtomicInteger(0);
+
+        neighbors.parallelStream().forEach(n1 -> {
+            long connections = neighbors.parallelStream()
+                    .filter(n2 -> !n1.equals(n2))
+                    .filter(n2 -> graph.containsEdge(n1, n2) || graph.containsEdge(n2, n1))
+                    .count();
+            interNeighborConnections.addAndGet((int) connections);
+        });
+
+        double expectedConnections = neighbors.size() * (neighbors.size() - 1) / 2.0;
+        double actualConnectionRatio =
+                expectedConnections > 0 ? interNeighborConnections.get() / (2.0 * expectedConnections) : 0.0;
+
+        // If neighbors are poorly connected, vertex is more important as bridge
+        double bridgeScore = 1.0 - actualConnectionRatio;
+
+        // Scale by target treewidth considerations
+        double targetFactor = Math.min(1.0, (double) neighbors.size() / Math.max(1, targetTreewidth));
+
+        return bridgeScore * targetFactor;
+    }
+
+    /**
+     * Estimates articulation point potential.
+     */
+    private double estimateArticulationPotential(
+            Graph<V, DefaultEdge> graph, V vertex, Set<V> neighbors, int targetTreewidth) {
+        // Simplified articulation point detection
+        if (neighbors.size() < 2) {
+            return 0.0;
+        }
+
+        // High-degree vertices in sparse neighborhoods are likely articulation points
+        double degreeRatio = Math.min(1.0, (double) neighbors.size() / Math.max(1, targetTreewidth));
+        double sparsityFactor = computeNeighborhoodSparsity(graph, neighbors);
+
+        return degreeRatio * sparsityFactor;
+    }
+
+    /**
+     * Computes neighborhood density impact.
+     */
+    private double computeNeighborhoodDensityImpact(Graph<V, DefaultEdge> graph, V vertex, int targetTreewidth) {
+        Set<V> neighbors = getNeighbors(vertex, graph);
+
+        if (neighbors.size() <= targetTreewidth) {
+            return 0.2; // Low impact if neighborhood already small
+        }
+
+        // Count edges in the neighborhood
+        AtomicInteger neighborhoodEdges = new AtomicInteger(0);
+        List<V> neighborList = new ArrayList<>(neighbors);
+
+        neighborList.parallelStream().forEach(n1 -> {
+            int index1 = neighborList.indexOf(n1);
+            long edgeCount = neighborList.stream()
+                    .skip(index1 + 1)
+                    .parallel()
+                    .filter(n2 -> graph.containsEdge(n1, n2) || graph.containsEdge(n2, n1))
+                    .count();
+            neighborhoodEdges.addAndGet((int) edgeCount);
+        });
+
+        int maxPossibleEdges = neighbors.size() * (neighbors.size() - 1) / 2;
+        double density = maxPossibleEdges > 0 ? (double) neighborhoodEdges.get() / maxPossibleEdges : 0.0;
+
+        // High density neighborhoods contribute more to treewidth
+        double sizeFactor = (double) neighbors.size() / Math.max(1, targetTreewidth);
+
+        return density * Math.min(2.0, sizeFactor);
+    }
+
+    /**
+     * Computes neighborhood sparsity factor.
+     */
+    private double computeNeighborhoodSparsity(Graph<V, DefaultEdge> graph, Set<V> neighbors) {
+        if (neighbors.size() < 2) {
+            return 1.0;
+        }
+
+        AtomicInteger edgeCount = new AtomicInteger(0);
+        List<V> neighborList = new ArrayList<>(neighbors);
+
+        neighborList.parallelStream().forEach(n1 -> {
+            int index1 = neighborList.indexOf(n1);
+            long connections = neighborList.stream()
+                    .skip(index1 + 1)
+                    .parallel()
+                    .filter(n2 -> graph.containsEdge(n1, n2) || graph.containsEdge(n2, n1))
+                    .count();
+            edgeCount.addAndGet((int) connections);
+        });
+
+        int maxPossibleEdges = neighbors.size() * (neighbors.size() - 1) / 2;
+        double density = maxPossibleEdges > 0 ? (double) edgeCount.get() / maxPossibleEdges : 0.0;
+
+        return 1.0 - density; // Higher sparsity = higher score
+    }
+
+    /**
+     * Computes normalized importance score.
+     */
+    private double computeNormalizedImportanceScore(double importance, DoubleSummaryStatistics importanceStats) {
+        if (importanceStats.getMax() <= importanceStats.getMin()) {
+            return 0.0;
+        }
+
+        double normalized =
+                (importance - importanceStats.getMin()) / (importanceStats.getMax() - importanceStats.getMin());
+
+        return normalized * 0.25; // Weight: 25% of total score
+    }
+
+    /**
+     * Computes score based on proximity to target treewidth achievement.
+     */
+    private double computeTargetProximityScore(Graph<V, DefaultEdge> graph, V vertex, int degree, int targetTreewidth) {
+        Set<V> neighbors = getNeighbors(vertex, graph);
+
+        // Estimate local treewidth contribution
+        double localTreewidthContribution = Math.max(degree, neighbors.size());
+
+        // Score based on how much this vertex exceeds the target
+        if (localTreewidthContribution > targetTreewidth) {
+            double excess = (localTreewidthContribution - targetTreewidth) / Math.max(1, targetTreewidth);
+            return Math.min(1.0, excess) * 0.25; // Weight: 25% of total score
+        }
+
+        return 0.0;
+    }
+
+    /**
+     * Estimates the potential for treewidth reduction by removing this vertex.
+     */
+    private double computeTreewidthReductionPotential(Graph<V, DefaultEdge> graph, V vertex, int targetTreewidth) {
+        Set<V> neighbors = getNeighbors(vertex, graph);
+
+        if (neighbors.isEmpty()) {
+            return 0.1; // Isolated vertices have low reduction potential
+        }
+
+        // Estimate reduction potential based on vertex properties
+        double potential = 0.0;
+
+        // Factor 1: High-degree vertices in dense neighborhoods
+        double degreeContribution = Math.min(1.0, (double) neighbors.size() / (targetTreewidth + 1));
+        potential += degreeContribution * 0.4;
+
+        // Factor 2: Vertices that create large cliques when eliminated
+        double cliqueFormationPotential = computeCliqueFormationPotential(graph, vertex, neighbors, targetTreewidth);
+        potential += cliqueFormationPotential * 0.4;
+
+        // Factor 3: Vertices in high-treewidth substructures
+        double substructurePotential = computeSubstructurePotential(graph, vertex, neighbors, targetTreewidth);
+        potential += substructurePotential * 0.2;
+
+        return Math.min(1.0, potential) * 0.15; // Weight: 15% of total score
+    }
+
+    /**
+     * Computes potential for clique formation when vertex is eliminated.
+     */
+    private double computeCliqueFormationPotential(
+            Graph<V, DefaultEdge> graph, V vertex, Set<V> neighbors, int targetTreewidth) {
+        if (neighbors.size() <= targetTreewidth) {
+            return 0.2; // Low potential if neighborhood already small
+        }
+
+        // Estimate how many edges would need to be added to make neighborhood a clique
+        AtomicInteger existingEdges = new AtomicInteger(0);
+        List<V> neighborList = new ArrayList<>(neighbors);
+
+        neighborList.parallelStream().forEach(n1 -> {
+            int index1 = neighborList.indexOf(n1);
+            long edgeCount = neighborList.stream()
+                    .skip(index1 + 1)
+                    .parallel()
+                    .filter(n2 -> graph.containsEdge(n1, n2) || graph.containsEdge(n2, n1))
+                    .count();
+            existingEdges.addAndGet((int) edgeCount);
+        });
+
+        int maxPossibleEdges = neighbors.size() * (neighbors.size() - 1) / 2;
+        int missingEdges = maxPossibleEdges - existingEdges.get();
+
+        // Higher missing edges = higher potential for treewidth increase if not removed
+        double missingRatio = maxPossibleEdges > 0 ? (double) missingEdges / maxPossibleEdges : 0.0;
+
+        // Scale by size relative to target treewidth
+        double sizeFactor = Math.min(2.0, (double) neighbors.size() / Math.max(1, targetTreewidth));
+
+        return missingRatio * sizeFactor;
+    }
+
+    /**
+     * Computes substructure potential impact.
+     */
+    private double computeSubstructurePotential(
+            Graph<V, DefaultEdge> graph, V vertex, Set<V> neighbors, int targetTreewidth) {
+        // Simple heuristic: vertices with many high-degree neighbors
+
+        return neighbors.parallelStream()
+                        .mapToInt(neighbor -> graph.inDegreeOf(neighbor) + graph.outDegreeOf(neighbor))
+                        .filter(degree -> degree > targetTreewidth)
+                        .count()
+                / (double) Math.max(1, neighbors.size());
+    }
+
+    /**
+     * Computes penalty for removing vertices that are crucial for connectivity.
+     */
+    private double computeConnectivityPreservationPenalty(Graph<V, DefaultEdge> graph, V vertex, int targetTreewidth) {
+        Set<V> neighbors = getNeighbors(vertex, graph);
+
+        // Penalty for removing vertices that maintain important connections
+        double penalty = 0.0;
+
+        // Factor 1: Bridge vertices get higher penalty
+        if (isBridgeVertex(graph, vertex, neighbors)) {
+            penalty += 0.3;
+        }
+
+        // Factor 2: Articulation points get penalty
+        if (isLikelyArticulationPoint(graph, vertex, neighbors)) {
+            penalty += 0.2;
+        }
+
+        // Factor 3: Vertices connecting different high-degree components
+        penalty += computeComponentConnectionPenalty(graph, vertex, neighbors, targetTreewidth);
+
+        return Math.min(0.5, penalty); // Cap penalty at 50% of score
+    }
+
+    /**
+     * Applies target treewidth specific adjustments to scores.
+     */
+    private void applyTargetTreewidthAdjustmentsParallel(
+            Graph<V, DefaultEdge> graph, Set<V> vertices, ConcurrentHashMap<V, Double> scores, int targetTreewidth) {
+
+        // Compute current graph statistics
+        DoubleSummaryStatistics scoreStats = scores.values().parallelStream()
+                .mapToDouble(Double::doubleValue)
+                .summaryStatistics();
+
+        // Apply adjustments in parallel
+        vertices.parallelStream().forEach(vertex -> {
+            double currentScore = scores.get(vertex);
+            double adjustedScore = currentScore;
+
+            // Adjustment 1: Boost vertices that significantly exceed target treewidth
+            int degree = graph.inDegreeOf(vertex) + graph.outDegreeOf(vertex);
+            if (degree > targetTreewidth * 1.5) {
+                adjustedScore *= 1.3; // 30% boost for high-degree vertices
+            }
+
+            // Adjustment 2: Normalize relative to target treewidth
+            double targetNormalizedFactor =
+                    1.0 + (double) Math.max(0, degree - targetTreewidth) / Math.max(1, targetTreewidth);
+            adjustedScore *= targetNormalizedFactor;
+
+            // Adjustment 3: Apply final bounds
+            adjustedScore = Math.max(0.0, Math.min(10.0, adjustedScore));
+
+            scores.put(vertex, adjustedScore);
+        });
+    }
+
+    /**
+     * Helper method to get all neighbors of a vertex.
+     */
+    private Set<V> getNeighbors(V vertex, Graph<V, DefaultEdge> graph) {
+        Set<V> neighbors = ConcurrentHashMap.newKeySet();
+
+        // Add in-neighbors
+        graph.incomingEdgesOf(vertex).parallelStream()
+                .map(graph::getEdgeSource)
+                .filter(neighbor -> !neighbor.equals(vertex))
+                .forEach(neighbors::add);
+
+        // Add out-neighbors
+        graph.outgoingEdgesOf(vertex).parallelStream()
+                .map(graph::getEdgeTarget)
+                .filter(neighbor -> !neighbor.equals(vertex))
+                .forEach(neighbors::add);
+
+        return neighbors;
+    }
+
+    /**
+     * Simple bridge vertex detection heuristic.
+     */
+    private boolean isBridgeVertex(Graph<V, DefaultEdge> graph, V vertex, Set<V> neighbors) {
+        if (neighbors.size() < 2) {
+            return false;
+        }
+
+        // Check if removal would significantly disconnect the neighborhood
+        long interNeighborConnections = neighbors.parallelStream()
+                        .mapToLong(n1 -> neighbors.parallelStream()
+                                .filter(n2 -> !n1.equals(n2))
+                                .filter(n2 -> graph.containsEdge(n1, n2) || graph.containsEdge(n2, n1))
+                                .count())
+                        .sum()
+                / 2; // Divide by 2 to avoid double counting
+
+        double expectedConnections = neighbors.size() * (neighbors.size() - 1) / 2.0;
+        return interNeighborConnections < expectedConnections * 0.3; // Less than 30% connected
+    }
+
+    /**
+     * Simple articulation point detection heuristic.
+     */
+    private boolean isLikelyArticulationPoint(Graph<V, DefaultEdge> graph, V vertex, Set<V> neighbors) {
+        return neighbors.size() >= 3 && isBridgeVertex(graph, vertex, neighbors);
+    }
+
+    /**
+     * Computes penalty for removing vertices that connect different components.
+     */
+    private double computeComponentConnectionPenalty(
+            Graph<V, DefaultEdge> graph, V vertex, Set<V> neighbors, int targetTreewidth) {
+        if (neighbors.size() < 2) {
+            return 0.0;
+        }
+
+        // Count high-degree neighbors (potential component representatives)
+        long highDegreeNeighbors = neighbors.parallelStream()
+                .mapToInt(neighbor -> graph.inDegreeOf(neighbor) + graph.outDegreeOf(neighbor))
+                .filter(degree -> degree > targetTreewidth)
+                .count();
+
+        if (highDegreeNeighbors >= 2) {
+            // Vertex connects multiple high-degree components
+            return Math.min(0.3, highDegreeNeighbors * 0.1);
+        }
+
+        return 0.0;
+    }
+
+    /**
+     * Utility method to safely shutdown thread pool.
+     */
+    private void shutdownThreadPool(ForkJoinPool threadPool) {
+        threadPool.shutdown();
+        try {
+            if (!threadPool.awaitTermination(60, TimeUnit.SECONDS)) {
+                threadPool.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            threadPool.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    /**
+     * Alternative method for adaptive scoring based on current vs target treewidth.
+     * TODO: Revisit?
+     */
+        public ConcurrentHashMap<V, Double> computeAdaptiveVertexRemovalScore(Graph<V, DefaultEdge> graph, int targetTreewidth,
+                                                                          int currentTreewidth) {
+        ConcurrentHashMap<V, Double> baseScores = computeVertexRemovalScore(graph, targetTreewidth);
+
+        if (currentTreewidth <= targetTreewidth) {
+            return baseScores; // Already at or below target
+        }
+
+        // Apply adaptive scaling based on the gap between current and target treewidth
+        double scalingFactor = (double) (currentTreewidth - targetTreewidth) /
+                Math.max(1, targetTreewidth);
+
+        baseScores.entrySet().parallelStream().forEach(entry -> {
+            double adjustedScore = entry.getValue() * (1.0 + scalingFactor);
+            entry.setValue(Math.min(10.0, adjustedScore));
+        });
+
+        return baseScores;
     }
 
     /**
