@@ -9,6 +9,7 @@ import org.jgrapht.graph.DefaultDirectedGraph;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * PageRankFAS - A PageRank-based algorithm for computing Feedback Arc Set
@@ -175,7 +176,6 @@ public class PageRankFAS<V, E> {
 
     /**
      * Compute PageRank scores on the line digraph (Algorithm 4 implementation)
-     * Updated to use custom LineDigraph methods
      * @param lineDigraph The line digraph
      * @return Map of line vertices to their PageRank scores
      */
@@ -186,49 +186,58 @@ public class PageRankFAS<V, E> {
         if (numVertices == 0) return new HashMap<>();
 
         // Initialize PageRank scores
-        Map<LineVertex<V, E>, Double> currentScores = new ConcurrentHashMap<>();
-        Map<LineVertex<V, E>, Double> newScores = new ConcurrentHashMap<>();
+        Map<LineVertex<V, E>, Double> currentScores =
+                new ConcurrentHashMap<>(Math.max(16, (int) (numVertices / 0.75f) + 1));
 
-        double initialScore = 1.0 / numVertices;
-        vertices.parallelStream().forEach(vertex -> {
-            currentScores.put(vertex, initialScore);
-            newScores.put(vertex, 0.0);
-        });
+        final double initialScore = 1.0 / numVertices;
+        // No lambdas here, so nothing captures a non-final variable
+        for (LineVertex<V, E> v : vertices) {
+            currentScores.put(v, initialScore);
+        }
 
         // Run PageRank iterations
         for (int iteration = 0; iteration < pageRankIterations; iteration++) {
-            // Reset new scores
-            vertices.parallelStream().forEach(vertex -> newScores.put(vertex, 0.0));
+            // Fresh map each iteration; pre-seed zeros so all vertices exist in the map
+            ConcurrentMap<LineVertex<V, E>, Double> newScores =
+                    new ConcurrentHashMap<>(currentScores.size());
 
-            // Compute new scores in parallel
-            vertices.parallelStream().forEach(vertex -> {
-                double score = currentScores.get(vertex);
-                Set<LineVertex<V, E>> outgoingNeighbors = lineDigraph.getOutgoingNeighbors(vertex);
+            for (LineVertex<V, E> v : vertices) {
+                newScores.put(v, 0.0);
+            }
 
-                if (outgoingNeighbors.isEmpty()) {
-                    // No outgoing edges - keep score to self (sink behavior)
-                    synchronized (newScores) {
-                        newScores.put(vertex, newScores.get(vertex) + score);
-                    }
-                } else {
-                    // Distribute score equally among outgoing edges
-                    double scorePerEdge = score / outgoingNeighbors.size();
-                    outgoingNeighbors.parallelStream().forEach(target -> {
-                        synchronized (newScores) {
-                            newScores.put(target, newScores.get(target) + scorePerEdge);
-                        }
-                    });
-                }
-            });
+            // Do one iteration in parallel; lambdas only see method parameters (effectively final)
+            applyOneIteration(vertices, lineDigraph, currentScores, newScores);
 
-            // Swap score maps
-            Map<LineVertex<V, E>, Double> temp = currentScores;
+            // Swap for next iteration (this reassigns local variables, not captured by lambdas)
             currentScores = newScores;
-            newScores = temp;
         }
 
         return currentScores;
     }
+
+    private void applyOneIteration(
+            Set<LineVertex<V, E>> vertices,
+            LineDigraph<V, E> lineDigraph,
+            Map<LineVertex<V, E>, Double> currentScores,
+            ConcurrentMap<LineVertex<V, E>, Double> newScores) {
+
+        vertices.parallelStream().forEach(vertex -> {
+            double score = currentScores.get(vertex);
+            Set<LineVertex<V, E>> outgoing = lineDigraph.getOutgoingNeighbors(vertex);
+
+            if (outgoing.isEmpty()) {
+                // Sink: keep score on itself
+                newScores.merge(vertex, score, Double::sum);
+            } else {
+                double scorePerEdge = score / outgoing.size();
+                // Inner loop kept sequential: nested parallel often hurts more than it helps
+                for (LineVertex<V, E> target : outgoing) {
+                    newScores.merge(target, scorePerEdge, Double::sum);
+                }
+            }
+        });
+    }
+
 
     /**
      * Find strongly connected components using Kosaraju's algorithm
