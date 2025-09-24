@@ -21,8 +21,7 @@ import org.hjug.dsm.DSM;
 import org.hjug.dsm.EdgeRemovalCalculator;
 import org.hjug.dsm.EdgeToRemoveInfo;
 import org.hjug.feedback.SuperTypeToken;
-import org.hjug.feedback.arc.approximate.FeedbackArcSetResult;
-import org.hjug.feedback.arc.approximate.FeedbackArcSetSolver;
+import org.hjug.feedback.arc.pageRank.PageRankFAS;
 import org.hjug.feedback.vertex.kernelized.DirectedFeedbackVertexSetResult;
 import org.hjug.feedback.vertex.kernelized.DirectedFeedbackVertexSetSolver;
 import org.hjug.feedback.vertex.kernelized.EnhancedParameterComputer;
@@ -240,14 +239,13 @@ public class SimpleHtmlReport {
 
         // Identify edges to remove
         log.info("Identifying edges to remove");
-        FeedbackArcSetSolver<String, DefaultWeightedEdge> edgeSolver = new FeedbackArcSetSolver<>(classGraph);
-        FeedbackArcSetResult<String, DefaultWeightedEdge> edgeSolverResult = edgeSolver.solve();
-        edgesToRemove = edgeSolverResult.getFeedbackArcs();
+        PageRankFAS<String, DefaultWeightedEdge> pageRankFAS = new PageRankFAS<>(classGraph, new SuperTypeToken<>() {});
+        edgesToRemove = pageRankFAS.computeFeedbackArcSet();
 
         // TODO: Incorporate node information and guidance into Edge Infos
         // - Source / target vertex in list of vertexes to remove
-        // - Provide guidance on where to move the method if one is in the list to remove
         // - How many cycles is the edge present in
+        // - Provide guidance on where to move the method if one is in the list to remove
 
         log.info("Performing edge removal what-if analysis");
         EdgeRemovalCalculator edgeRemovalCalculator = new EdgeRemovalCalculator(classGraph, edgesToRemove);
