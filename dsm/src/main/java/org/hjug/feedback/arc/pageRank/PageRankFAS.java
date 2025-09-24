@@ -1,17 +1,14 @@
 package org.hjug.feedback.arc.pageRank;
 
 
+
 import org.jgrapht.Graph;
 import org.jgrapht.alg.connectivity.KosarajuStrongConnectivityInspector;
 import org.jgrapht.alg.cycle.CycleDetector;
 import org.jgrapht.graph.DefaultDirectedGraph;
-import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.DirectedPseudograph;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 /**
  * PageRankFAS - A PageRank-based algorithm for computing Feedback Arc Set
@@ -86,7 +83,7 @@ public class PageRankFAS<V, E> {
         // Create subgraph for this SCC
         Graph<V, E> sccGraph = createSubgraph(graph, scc);
 
-        // Create line digraph
+        // Create line digraph using the new custom implementation
         LineDigraph<V, E> lineDigraph = createLineDigraph(sccGraph);
 
         // Run PageRank on line digraph
@@ -100,7 +97,7 @@ public class PageRankFAS<V, E> {
     }
 
     /**
-     * Create line digraph from the input graph
+     * Create line digraph from the input graph using custom LineDigraph implementation
      * @param graph Input graph
      * @return LineDigraph representation
      */
@@ -126,19 +123,23 @@ public class PageRankFAS<V, E> {
 
     /**
      * Create edges in line digraph based on Algorithm 3 from the paper
+     * Updated to use custom LineDigraph methods
      */
     private void createLineDigraphEdges(Graph<V, E> graph, LineDigraph<V, E> lineDigraph,
                                         Map<E, LineVertex<V, E>> edgeToLineVertex) {
         Set<V> visited = ConcurrentHashMap.newKeySet();
 
-        // Start DFS from a random vertex
-        V startVertex = graph.vertexSet().iterator().next();
-        createLineDigraphEdgesDFS(graph, lineDigraph, edgeToLineVertex,
-                startVertex, null, visited);
+        // Start DFS from a random vertex if graph is not empty
+        if (!graph.vertexSet().isEmpty()) {
+            V startVertex = graph.vertexSet().iterator().next();
+            createLineDigraphEdgesDFS(graph, lineDigraph, edgeToLineVertex,
+                    startVertex, null, visited);
+        }
     }
 
     /**
      * DFS-based creation of line digraph edges (Algorithm 3 implementation)
+     * Updated to use custom LineDigraph.addEdge method
      */
     private void createLineDigraphEdgesDFS(Graph<V, E> graph, LineDigraph<V, E> lineDigraph,
                                            Map<E, LineVertex<V, E>> edgeToLineVertex,
@@ -174,6 +175,7 @@ public class PageRankFAS<V, E> {
 
     /**
      * Compute PageRank scores on the line digraph (Algorithm 4 implementation)
+     * Updated to use custom LineDigraph methods
      * @param lineDigraph The line digraph
      * @return Map of line vertices to their PageRank scores
      */
@@ -201,15 +203,17 @@ public class PageRankFAS<V, E> {
             // Compute new scores in parallel
             vertices.parallelStream().forEach(vertex -> {
                 double score = currentScores.get(vertex);
-                Set<LineVertex<V, E>> outgoing = lineDigraph.outgoingEdgesOf(vertex);
+                Set<LineVertex<V, E>> outgoingNeighbors = lineDigraph.getOutgoingNeighbors(vertex);
 
-                if (outgoing.isEmpty()) {
+                if (outgoingNeighbors.isEmpty()) {
                     // No outgoing edges - keep score to self (sink behavior)
-                    newScores.put(vertex, newScores.get(vertex) + score);
+                    synchronized (newScores) {
+                        newScores.put(vertex, newScores.get(vertex) + score);
+                    }
                 } else {
                     // Distribute score equally among outgoing edges
-                    double scorePerEdge = score / outgoing.size();
-                    outgoing.parallelStream().forEach(target -> {
+                    double scorePerEdge = score / outgoingNeighbors.size();
+                    outgoingNeighbors.parallelStream().forEach(target -> {
                         synchronized (newScores) {
                             newScores.put(target, newScores.get(target) + scorePerEdge);
                         }
@@ -283,6 +287,30 @@ public class PageRankFAS<V, E> {
 
         return subgraph;
     }
+
+    /**
+     * Get detailed statistics about the algorithm execution
+     * @return Map containing execution statistics
+     */
+    public Map<String, Object> getExecutionStatistics(Graph<V, E> graph) {
+        Map<String, Object> stats = new HashMap<>();
+
+        stats.put("originalVertices", graph.vertexSet().size());
+        stats.put("originalEdges", graph.edgeSet().size());
+        stats.put("pageRankIterations", pageRankIterations);
+
+        // Analyze SCCs
+        List<Set<V>> sccs = findStronglyConnectedComponents(graph);
+        stats.put("sccCount", sccs.size());
+        stats.put("trivialSCCs", sccs.stream().mapToInt(scc -> scc.size() == 1 ? 1 : 0).sum());
+        stats.put("nonTrivialSCCs", sccs.stream().mapToInt(scc -> scc.size() > 1 ? 1 : 0).sum());
+
+        // Find largest SCC
+        int maxSCCSize = sccs.stream().mapToInt(Set::size).max().orElse(0);
+        stats.put("largestSCCSize", maxSCCSize);
+
+        return stats;
+    }
 }
 
 /**
@@ -319,24 +347,5 @@ class LineVertex<V, E> {
     @Override
     public String toString() {
         return String.format("LineVertex(%s->%s)", source, target);
-    }
-}
-
-/**
- * Line digraph representation - a directed graph where vertices are LineVertex objects
- */
-class LineDigraph<V, E> extends DefaultDirectedGraph<LineVertex<V, E>, DefaultEdge> {
-
-    public LineDigraph() {
-        super(DefaultEdge.class);
-    }
-
-    /**
-     * Get outgoing line vertices (targets of outgoing edges)
-     */
-    public Set<LineVertex<V, E>> outgoingEdgesOf(LineVertex<V, E> vertex) {
-        return outgoingEdgesOf(vertex).stream()
-                .map(this::getEdgeTarget)
-                .collect(Collectors.toSet());
     }
 }
