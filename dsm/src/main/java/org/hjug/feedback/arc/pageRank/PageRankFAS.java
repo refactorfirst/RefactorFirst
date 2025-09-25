@@ -182,6 +182,7 @@ public class PageRankFAS<V, E> {
                 // Target is already visited - add edges to all line vertices originating from target
                 graph.outgoingEdgesOf(target).stream()
                         .map(edgeToLineVertex::get)
+                        .filter(Objects::nonNull)
                         .forEach(targetLineVertex -> lineDigraph.addEdge(currentLineVertex, targetLineVertex));
             }
         }
