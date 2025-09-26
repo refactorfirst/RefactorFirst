@@ -18,9 +18,10 @@ import org.hjug.cbc.RankedCycle;
 import org.hjug.cbc.RankedDisharmony;
 import org.hjug.dsm.CircularReferenceChecker;
 import org.hjug.dsm.DSM;
-import org.hjug.dsm.EdgeRemovalCalculator;
 import org.hjug.dsm.EdgeToRemoveInfo;
 import org.hjug.feedback.SuperTypeToken;
+import org.hjug.feedback.arc.EdgeInfo;
+import org.hjug.feedback.arc.EdgeInfoCalculator;
 import org.hjug.feedback.arc.pageRank.PageRankFAS;
 import org.hjug.feedback.vertex.kernelized.DirectedFeedbackVertexSetResult;
 import org.hjug.feedback.vertex.kernelized.DirectedFeedbackVertexSetSolver;
@@ -78,7 +79,7 @@ public class SimpleHtmlReport {
 
     Graph<String, DefaultWeightedEdge> classGraph;
     Map<String, AsSubgraph<String, DefaultWeightedEdge>> cycles;
-    DSM<String, DefaultWeightedEdge> dsm;
+//    DSM<String, DefaultWeightedEdge> dsm;
     List<DefaultWeightedEdge> edgesAboveDiagonal = List.of(); // initialize for unit tests
     Set<String> vertexesToRemove = Set.of(); // initialize for unit tests
     Set<DefaultWeightedEdge> edgesToRemove = Set.of();
@@ -222,8 +223,8 @@ public class SimpleHtmlReport {
 
         classGraph = cycleRanker.getClassReferencesGraph();
         cycles = new CircularReferenceChecker<String, DefaultWeightedEdge>().getCycles(classGraph);
-        dsm = new DSM<>(classGraph);
-        edgesAboveDiagonal = dsm.getEdgesAboveDiagonal();
+        //        dsm = new DSM<>(classGraph);
+        //        edgesAboveDiagonal = dsm.getEdgesAboveDiagonal();
 
         // Identify vertexes to remove
         log.info("Identifying vertexes to remove");
@@ -245,13 +246,14 @@ public class SimpleHtmlReport {
         // TODO: Incorporate node information and guidance into Edge Infos
         // - Source / target vertex in list of vertexes to remove
         // - How many cycles is the edge present in
+        // - Edge weight
         // - Provide guidance on where to move the method if one is in the list to remove
 
-        log.info("Performing edge removal what-if analysis");
-        EdgeRemovalCalculator edgeRemovalCalculator = new EdgeRemovalCalculator(classGraph, edgesToRemove);
-        List<EdgeToRemoveInfo> edgeToRemoveInfos = edgeRemovalCalculator.getImpactOfEdges();
+        //        log.info("Performing edge removal what-if analysis");
+        //        EdgeRemovalCalculator edgeRemovalCalculator = new EdgeRemovalCalculator(classGraph, edgesToRemove);
+        //        List<EdgeToRemoveInfo> edgeToRemoveInfos = edgeRemovalCalculator.getImpactOfEdges();
 
-        if (edgeToRemoveInfos.isEmpty()
+        if (edgesToRemove.isEmpty()
                 && rankedGodClassDisharmonies.isEmpty()
                 && rankedCBODisharmonies.isEmpty()
                 && rankedCycles.isEmpty()) {
@@ -266,8 +268,8 @@ public class SimpleHtmlReport {
             return stringBuilder;
         }
 
-        if (!edgeToRemoveInfos.isEmpty()) {
-            stringBuilder.append("<a href=\"#EDGES\">Back Edges</a>\n");
+        if (!edgesToRemove.isEmpty()) {
+            stringBuilder.append("<a href=\"#EDGES\">Edges To Remove</a>\n");
             stringBuilder.append("<br/>\n");
         }
 
@@ -293,9 +295,9 @@ public class SimpleHtmlReport {
 
         // Display impact of each edge if removed
         stringBuilder.append("<br/>\n");
-        String edgeInfos = renderEdgeToRemoveInfos(edgeToRemoveInfos);
+        String edgeInfos = renderEdgeToRemoveInfos(edgesToRemove);
 
-        if (!edgeToRemoveInfos.isEmpty()) {
+        if (!edgesToRemove.isEmpty()) {
             stringBuilder.append(edgeInfos);
             stringBuilder.append(renderGithubButtons());
             stringBuilder.append("<br/>\n" + "<br/>\n" + "<br/>\n" + "<br/>\n" + "<hr/>\n" + "<br/>\n" + "<br/>\n");
@@ -329,90 +331,45 @@ public class SimpleHtmlReport {
 
         stringBuilder.append("<br/>\n");
 
-        //        rankedCycles.stream().limit(10).map(this::renderSingleCycle).forEach(stringBuilder::append);
-        rankedCycles.stream().map(this::renderSingleCycle).forEach(stringBuilder::append);
+        rankedCycles.stream().limit(10).map(this::renderSingleCycle).forEach(stringBuilder::append);
+        //        rankedCycles.stream().map(this::renderSingleCycle).forEach(stringBuilder::append);
 
         return stringBuilder.toString();
     }
 
-    private String renderEdgeToRemoveInfos(List<EdgeToRemoveInfo> edges) {
+    private String renderEdgeToRemoveInfos(Set<DefaultWeightedEdge> edges) {
         StringBuilder stringBuilder = new StringBuilder();
 
         stringBuilder.append(
                 "<div style=\"text-align: center;\"><a id=\"EDGES\"><h1>Backward Edge Removal Impact</h1></a></div>\n");
         stringBuilder.append("<div style=\"text-align: center;\">\n");
-
         stringBuilder.append("Current Cycle Count: ").append(cycles.size()).append("<br>\n");
+
         stringBuilder
-                .append("Current Total Back Edge Count: ")
-                .append(dsm.getEdgesAboveDiagonal().size())
-                .append("<br>\n");
-        stringBuilder
-                .append("Current Total Min Weight Back Edge Count: ")
-                .append(dsm.getMinimumWeightEdgesAboveDiagonal().size())
+                .append("Count of Edges to Remove: ")
+                .append(edgesToRemove.size())
                 .append("<br>\n");
         stringBuilder.append("</div>\n");
-
         stringBuilder.append("<table align=\"center\" border=\"5px\">\n");
 
         // Content
         stringBuilder.append("<thead>\n<tr>\n");
-        for (String heading : getEdgesToRemoveInfoTableHeadings()) {
+        for (String heading : getEdgeInfoTableHeadings()) {
             stringBuilder.append("<th>").append(heading).append("</th>\n");
         }
         stringBuilder.append("</thead>\n");
 
         stringBuilder.append("<tbody>\n");
-        for (EdgeToRemoveInfo edge : edges) {
+
+        EdgeInfoCalculator edgeInfoCalculator =
+                new EdgeInfoCalculator(classGraph, edgesToRemove, vertexesToRemove, cycles);
+
+        for (EdgeInfo edge : edgeInfoCalculator.calculateEdgeInformation()) {
             stringBuilder.append("<tr>\n");
 
-            for (String rowData : getEdgeToRemoveInfos(edge)) {
+            for (String rowData : getEdgeInfo(edge)) {
                 stringBuilder.append(drawTableCell(rowData));
             }
-
-            stringBuilder.append("</tr>\n");
-        }
-
-        stringBuilder.append("</tbody>\n");
-        stringBuilder.append("</table>\n");
-
-        return stringBuilder.toString();
-    }
-
-    private String renderEdgesAndClassesToRemove(Set<String> vertexesToRemove, Set<DefaultWeightedEdge> edgesToRemove) {
-        StringBuilder stringBuilder = new StringBuilder();
-
-        stringBuilder.append(
-                "<div style=\"text-align: center;\"><a id=\"CYCLES\"><h1>Edges and Classes to remove</h1></a></div>\n");
-
-        stringBuilder.append("<h2 align=\"center\">Relationships and classes suggested for removal:</h2>\n");
-        stringBuilder.append("<table align=\"center\" border=\"5px\">\n");
-
-        // Content
-        stringBuilder.append("<thead>\n<tr>\n");
-        for (String heading : new String[] {"Relationship", "Remove src class?", "Remove target class?"}) {
-            stringBuilder.append("<th>").append(heading).append("</th>\n");
-        }
-        stringBuilder.append("</thead>\n");
-
-        stringBuilder.append("<tbody>\n");
-        for (DefaultWeightedEdge edge : edgesToRemove) {
-            stringBuilder.append("<tr>\n");
-
-            if (edgesAboveDiagonal.contains(edge)) {
-                stringBuilder.append("<strong>");
-                stringBuilder.append(renderEdge(edge));
-                stringBuilder.append("</strong>");
-            } else {
-                stringBuilder.append(renderEdge(edge));
-            }
-
-            String[] vertexes = extractVertexes(edge);
-            String start = getClassName(vertexes[0].trim());
-            String end = getClassName(vertexes[1].trim());
-
-            drawTableCell(String.valueOf(vertexesToRemove.contains(start)));
-            drawTableCell(String.valueOf(vertexesToRemove.contains(end)));
 
             stringBuilder.append("</tr>\n");
         }
@@ -490,17 +447,18 @@ public class SimpleHtmlReport {
         return new String[] {"Cycle Name", "Priority", "Class Count", "Relationship Count" /*, "Minimum Cuts"*/};
     }
 
-    private String[] getEdgesToRemoveInfoTableHeadings() {
-        return new String[] {"Edge", "Edge Weight", "New Cycle Count", "Avg Node &Delta; &divide; Effort"};
+    private String[] getEdgeInfoTableHeadings() {
+        return new String[] {"Edge", "In Cycles", "Remove Source", "Remove Target", "Edge Weight"};
     }
 
-    private String[] getEdgeToRemoveInfos(EdgeToRemoveInfo edgeToRemoveInfo) {
+    private String[] getEdgeInfo(EdgeInfo edgeInfo) {
         return new String[] {
-            // "Edge", "Edge Weight", "In # of Cycles", "New Back Edge Count", "New Back Edge Weight Sum", "Payoff"
-            renderEdge(edgeToRemoveInfo.getEdge()),
-            String.valueOf(edgeToRemoveInfo.getRemovedEdgeWeight()),
-            String.valueOf(edgeToRemoveInfo.getNewCycleCount()),
-            String.valueOf(edgeToRemoveInfo.getPayoff())
+            // "Edge", "In Cycles", "Remove Source", "Remove Target", "Edge Weight"
+            renderEdge(edgeInfo.getEdge()),
+            String.valueOf(edgeInfo.getPresentInCycleCount()),
+            String.valueOf(edgeInfo.isRemoveSource()),
+            String.valueOf(edgeInfo.isRemoveTarget()),
+            String.valueOf(edgeInfo.getWeight())
         };
     }
 
