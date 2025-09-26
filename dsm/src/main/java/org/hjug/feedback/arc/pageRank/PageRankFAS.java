@@ -296,7 +296,7 @@ public class PageRankFAS<V, E> {
         vertices.forEach(subgraph::addVertex);
 
         // Add edges between vertices in the set
-        graph.edgeSet().parallelStream()
+        graph.edgeSet().stream()
                 .filter(edge ->
                         vertices.contains(graph.getEdgeSource(edge)) && vertices.contains(graph.getEdgeTarget(edge)))
                 .forEach(edge -> {
