@@ -3,6 +3,9 @@ package org.hjug.feedback.arc.pageRank;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Stream;
+
+import lombok.extern.slf4j.Slf4j;
 import org.hjug.feedback.SuperTypeToken;
 import org.jgrapht.Graph;
 import org.jgrapht.alg.connectivity.KosarajuStrongConnectivityInspector;
@@ -17,6 +20,7 @@ import org.jgrapht.graph.DefaultDirectedGraph;
  * Based on https://arxiv.org/abs/2208.09234
  * https://doi.org/10.48550/arXiv.2208.09234
  */
+@Slf4j
 public class PageRankFAS<V, E> {
 
     private static final int DEFAULT_PAGERANK_ITERATIONS = 5;
@@ -54,6 +58,18 @@ public class PageRankFAS<V, E> {
      * @return Set of edges that form the feedback arc set
      */
     public Set<E> computeFeedbackArcSet() {
+        try {
+            return computeFAS(true);
+        } catch (ConcurrentModificationException e) {
+            // processing in parallel may cause a ConcurrentModificationException
+            log.warn("ConcurrentModificationException during parallel edge processing, falling back to sequential processing");
+            return computeFAS(false);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private Set<E> computeFAS(boolean parallel) {
         Set<E> feedbackArcSet = ConcurrentHashMap.newKeySet();
 
         // Create a working copy of the graph
@@ -64,8 +80,8 @@ public class PageRankFAS<V, E> {
             // Find strongly connected components
             List<Set<V>> sccs = findStronglyConnectedComponents(workingGraph);
 
-            // Process each SCC in parallel
-            sccs.parallelStream()
+            // Process each SCC // processing in parallel can cause a ConcurrentModificationException
+            sccStream(sccs, parallel)
                     .filter(scc -> scc.size() > 1) // Only non-trivial SCCs can have cycles
                     .forEach(scc -> {
                         E edgeToRemove = processStronglyConnectedComponent(workingGraph, scc);
@@ -77,8 +93,11 @@ public class PageRankFAS<V, E> {
                         }
                     });
         }
-
         return feedbackArcSet;
+    }
+
+    private Stream<Set<V>> sccStream(List<Set<V>> sccs, boolean parallel) {
+        return parallel ? sccs.parallelStream() : sccs.stream();
     }
 
     /**
@@ -304,6 +323,11 @@ public class PageRankFAS<V, E> {
                     V target = graph.getEdgeTarget(edge);
                     subgraph.addEdge(source, target, edge);
                 });
+
+        // ConcurrenModificationException
+        // at org.hjug.feedback.arc.pageRank.PageRankFAS.createSubgraph (PageRankFAS.java:302)
+        //    at org.hjug.feedback.arc.pageRank.PageRankFAS.processStronglyConnectedComponent (PageRankFAS.java:92)
+        //    at org.hjug.feedback.arc.pageRank.PageRankFAS.lambda$computeFeedbackArcSet$1 (PageRankFAS.java:71)
 
         return subgraph;
     }
