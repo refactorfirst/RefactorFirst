@@ -1314,6 +1314,7 @@ public class ModulatorComputer<V, E> {
      *
      * @return a map containing approximate betweenness centrality values for each vertex
      */
+    // TODO: Memoize since this method is called twice
     private Map<V, Double> computeBetweennessCentralityParallel(Graph<V, DefaultEdge> graph) {
         Set<V> vertices = graph.vertexSet();
         int n = vertices.size();

@@ -20,6 +20,8 @@ import org.hjug.git.GitLogReader;
 import org.hjug.git.ScmLogInfo;
 import org.hjug.metrics.*;
 import org.hjug.metrics.rules.CBORule;
+import org.jgrapht.Graph;
+import org.jgrapht.graph.DefaultWeightedEdge;
 
 @Slf4j
 public class CostBenefitCalculator implements AutoCloseable {
@@ -101,19 +103,13 @@ public class CostBenefitCalculator implements AutoCloseable {
 
         List<ScmLogInfo> scmLogInfos = getRankedChangeProneness(godClasses);
 
-        Map<String, ScmLogInfo> rankedLogInfosByPath =
-                scmLogInfos.stream().collect(Collectors.toMap(ScmLogInfo::getPath, logInfo -> logInfo, (a, b) -> b));
+        Map<String, ScmLogInfo> rankedLogInfosByPath = getRankedLogInfosByPath(scmLogInfos);
 
-        List<RankedDisharmony> rankedDisharmonies = new ArrayList<>();
-        for (GodClass godClass : godClasses) {
-            if (rankedLogInfosByPath.containsKey(godClass.getFileName())) {
-                rankedDisharmonies.add(
-                        new RankedDisharmony(godClass, rankedLogInfosByPath.get(godClass.getFileName())));
-            }
-        }
-
-        rankedDisharmonies.sort(
-                Comparator.comparing(RankedDisharmony::getRawPriority).reversed());
+        List<RankedDisharmony> rankedDisharmonies = godClasses.stream()
+                .filter(godClass -> rankedLogInfosByPath.containsKey(godClass.getFileName()))
+                .map(godClass -> new RankedDisharmony(godClass, rankedLogInfosByPath.get(godClass.getFileName())))
+                .sorted(Comparator.comparing(RankedDisharmony::getRawPriority).reversed())
+                .collect(Collectors.toList());
 
         int godClassPriority = 1;
         for (RankedDisharmony rankedGodClassDisharmony : rankedDisharmonies) {
@@ -121,6 +117,10 @@ public class CostBenefitCalculator implements AutoCloseable {
         }
 
         return rankedDisharmonies;
+    }
+
+    private static Map<String, ScmLogInfo> getRankedLogInfosByPath(List<ScmLogInfo> scmLogInfos) {
+        return scmLogInfos.stream().collect(Collectors.toMap(ScmLogInfo::getPath, logInfo -> logInfo, (a, b) -> b));
     }
 
     private List<GodClass> getGodClasses() {
@@ -143,7 +143,7 @@ public class CostBenefitCalculator implements AutoCloseable {
         return godClasses;
     }
 
-    <T extends Disharmony> List<ScmLogInfo> getRankedChangeProneness(List<T> disharmonies) {
+    public <T extends Disharmony> List<ScmLogInfo> getRankedChangeProneness(List<T> disharmonies) {
         log.info("Calculating Change Proneness");
 
         List<ScmLogInfo> scmLogInfos = disharmonies.parallelStream()
@@ -172,8 +172,7 @@ public class CostBenefitCalculator implements AutoCloseable {
 
         List<ScmLogInfo> scmLogInfos = getRankedChangeProneness(cboClasses);
 
-        Map<String, ScmLogInfo> rankedLogInfosByPath =
-                scmLogInfos.stream().collect(Collectors.toMap(ScmLogInfo::getPath, logInfo -> logInfo, (a, b) -> b));
+        Map<String, ScmLogInfo> rankedLogInfosByPath = getRankedLogInfosByPath(scmLogInfos);
 
         List<RankedDisharmony> rankedDisharmonies = new ArrayList<>();
         for (CBOClass cboClass : cboClasses) {
@@ -206,6 +205,81 @@ public class CostBenefitCalculator implements AutoCloseable {
             }
         }
         return cboClasses;
+    }
+
+    public List<RankedDisharmony> calculateSourceNodeCostBenefitValues(
+            Graph<String, DefaultWeightedEdge> classGraph,
+            Map<DefaultWeightedEdge, CycleNode> edgeSourceNodeInfos,
+            Map<DefaultWeightedEdge, Integer> edgeToRemoveCycleCounts,
+            Set<String> vertexesToRemove) {
+        List<ScmLogInfo> scmLogInfos = getRankedChangeProneness(new ArrayList<>(edgeSourceNodeInfos.values()));
+
+        Map<String, ScmLogInfo> rankedLogInfosByPath = getRankedLogInfosByPath(scmLogInfos);
+
+        List<RankedDisharmony> rankedDisharmonies = new ArrayList<>();
+
+        for (Map.Entry<DefaultWeightedEdge, CycleNode> entry : edgeSourceNodeInfos.entrySet()) {
+            if (rankedLogInfosByPath.containsKey(entry.getValue().getFileName())) {
+                boolean sourceNodeShouldBeRemoved = vertexesToRemove.contains(classGraph.getEdgeSource(entry.getKey()));
+                String edgeTarget = classGraph.getEdgeTarget(entry.getKey());
+                boolean targetNodeShouldBeRemoved = vertexesToRemove.contains(edgeTarget);
+
+                /*
+                [INFO] Edge source: org.apache.myfaces.tobago.internal.component.AbstractUIPage
+                [INFO] Filename: null
+                [INFO] Path: null
+                */
+
+                String fileName = entry.getValue().getFileName();
+                if (null == fileName) continue;
+                log.info("Edge source: {}", classGraph.getEdgeSource(entry.getKey()));
+                log.info("Filename: {}", fileName);
+                String path = rankedLogInfosByPath.get(fileName).getPath();
+                log.info("Path: {}", path);
+                Paths.get(path).getFileName().toString();
+
+                RankedDisharmony rankedDisharmony = new RankedDisharmony(
+                        entry.getValue().getClassName(),
+                        entry.getKey(),
+                        edgeToRemoveCycleCounts.get(entry.getKey()),
+                        (int) classGraph.getEdgeWeight(entry.getKey()),
+                        sourceNodeShouldBeRemoved,
+                        targetNodeShouldBeRemoved,
+                        rankedLogInfosByPath.get(entry.getValue().getFileName()));
+                rankedDisharmonies.add(rankedDisharmony);
+            }
+        }
+
+        // Sort by impact value
+        // Order by cycle count
+        rankedDisharmonies.sort(Comparator.comparing(RankedDisharmony::getCycleCount)
+                .reversed()
+                // then if the source node is in the list of nodes to be removed
+                .thenComparing(RankedDisharmony::getSourceNodeShouldBeRemoved)
+                .reversed()
+                // then if the target node is in the list of nodes to be removed
+                .thenComparing(RankedDisharmony::getTargetNodeShouldBeRemoved)
+                .reversed()
+                // then by change proneness
+                .thenComparing(RankedDisharmony::getChangePronenessRank)
+                .reversed());
+
+        // Then subtract edge weight
+        int rawPriority = 1;
+        for (RankedDisharmony rankedDisharmony : rankedDisharmonies) {
+            rankedDisharmony.setRawPriority(rawPriority++ - rankedDisharmony.getEffortRank());
+        }
+
+        rankedDisharmonies.sort(
+                Comparator.comparing(RankedDisharmony::getRawPriority).reversed());
+
+        // Then set priority
+        int sourceNodePriority = 1;
+        for (RankedDisharmony rankedSourceNodeDisharmony : rankedDisharmonies) {
+            rankedSourceNodeDisharmony.setPriority(sourceNodePriority++);
+        }
+
+        return rankedDisharmonies;
     }
 
     private String getFileName(RuleViolation violation) {

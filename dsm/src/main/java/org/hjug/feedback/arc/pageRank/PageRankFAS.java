@@ -4,7 +4,6 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Stream;
-
 import lombok.extern.slf4j.Slf4j;
 import org.hjug.feedback.SuperTypeToken;
 import org.jgrapht.Graph;
@@ -62,7 +61,8 @@ public class PageRankFAS<V, E> {
             return computeFAS(true);
         } catch (ConcurrentModificationException e) {
             // processing in parallel may cause a ConcurrentModificationException
-            log.warn("ConcurrentModificationException during parallel edge processing, falling back to sequential processing");
+            log.warn(
+                    "ConcurrentModificationException during parallel edge processing, falling back to sequential processing");
             return computeFAS(false);
         } catch (Exception e) {
             throw new RuntimeException(e);

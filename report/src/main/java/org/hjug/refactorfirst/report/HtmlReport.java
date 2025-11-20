@@ -530,7 +530,8 @@ public class HtmlReport extends SimpleHtmlReport {
         stringBuilder.append(generate2DPopup(graphName));
         stringBuilder.append(generateHidePopup(graphName));
 
-        stringBuilder.append("<div align=\"center\">\nRed lines represent back edges to remove.<br>\n");
+        stringBuilder.append("<div align=\"center\">\nRed lines represent relationships to remove.<br>\n");
+        stringBuilder.append("Red nodes represent classes to remove.<br>\n");
         stringBuilder.append("Zoom in / out with your mouse wheel and click/move to drag the image.\n");
         stringBuilder.append("</div>\n");
         return stringBuilder;

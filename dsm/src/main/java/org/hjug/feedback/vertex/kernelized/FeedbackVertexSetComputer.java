@@ -63,6 +63,7 @@ public class FeedbackVertexSetComputer<V, E> {
 
     /**
      * Greedy feedback vertex set algorithm
+     * TODO: Memoize since this is called 4 times and result will always be the same
      */
     Set<V> greedyFeedbackVertexSet(Graph<V, E> graph) {
         Set<V> feedbackSet = ConcurrentHashMap.newKeySet();
