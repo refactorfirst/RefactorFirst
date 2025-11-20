@@ -510,7 +510,13 @@ public class SimpleHtmlReport {
 
     private String[] getEdgeInfoTableHeadings() {
         return new String[] {
-            "Edge", "Priority", "In Cycles", "Edge Weight", "Source Change Proneness Rank", "Remove Source", "Remove Target"
+            "Edge",
+            "Priority",
+            "In Cycles",
+            "Edge Weight",
+            "Source Change Proneness Rank",
+            "Remove Source",
+            "Remove Target"
         };
     }
 
