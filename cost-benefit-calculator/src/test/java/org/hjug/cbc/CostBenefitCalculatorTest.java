@@ -152,21 +152,21 @@ class CostBenefitCalculatorTest {
             Assertions.assertEquals(2, disharmonies.size());
 
             RankedDisharmony first = disharmonies.get(0);
-            Assertions.assertEquals("ClassA", first.getClassName());
-            Assertions.assertEquals(5, first.getCycleCount().intValue());
-            Assertions.assertEquals(4, first.getEffortRank().intValue());
-            Assertions.assertEquals(1, first.getSourceNodeShouldBeRemoved());
-            Assertions.assertEquals(0, first.getTargetNodeShouldBeRemoved());
+            Assertions.assertEquals("ClassC", first.getClassName());
+            Assertions.assertEquals(3, first.getCycleCount().intValue());
+            Assertions.assertEquals(2, first.getEffortRank().intValue());
+            Assertions.assertEquals(0, first.getSourceNodeShouldBeRemoved());
+            Assertions.assertEquals(1, first.getTargetNodeShouldBeRemoved());
             Assertions.assertEquals(1, first.getPriority().intValue());
+            Assertions.assertEquals(7, first.getChangePronenessRank());
 
             RankedDisharmony second = disharmonies.get(1);
-            Assertions.assertEquals("ClassC", second.getClassName());
-            Assertions.assertEquals(3, second.getCycleCount().intValue());
-            Assertions.assertEquals(2, second.getEffortRank().intValue());
-            Assertions.assertEquals(0, second.getSourceNodeShouldBeRemoved());
-            Assertions.assertEquals(1, second.getTargetNodeShouldBeRemoved());
+            Assertions.assertEquals("ClassA", second.getClassName());
+            Assertions.assertEquals(5, second.getCycleCount().intValue());
+            Assertions.assertEquals(4, second.getEffortRank().intValue());
+            Assertions.assertEquals(1, second.getSourceNodeShouldBeRemoved());
+            Assertions.assertEquals(0, second.getTargetNodeShouldBeRemoved());
             Assertions.assertEquals(2, second.getPriority().intValue());
-            Assertions.assertEquals(7, second.getChangePronenessRank());
         }
     }
 
@@ -216,10 +216,10 @@ class CostBenefitCalculatorTest {
                     classGraph, edgeSourceNodeInfos, edgeToRemoveCycleCounts, vertexesToRemove);
 
             Assertions.assertEquals(2, disharmonies.size());
-            Assertions.assertEquals(8, disharmonies.get(0).getChangePronenessRank());
+            Assertions.assertEquals(2, disharmonies.get(0).getChangePronenessRank());
             Assertions.assertEquals(1, disharmonies.get(0).getPriority().intValue());
             Assertions.assertEquals(2, disharmonies.get(1).getPriority().intValue());
-            Assertions.assertEquals(2, disharmonies.get(1).getChangePronenessRank());
+            Assertions.assertEquals(8, disharmonies.get(1).getChangePronenessRank());
         }
     }
 
