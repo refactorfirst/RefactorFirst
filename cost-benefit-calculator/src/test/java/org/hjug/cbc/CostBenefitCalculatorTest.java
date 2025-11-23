@@ -223,6 +223,100 @@ class CostBenefitCalculatorTest {
         }
     }
 
+    @Test
+    void sortEdgesThatNeedToBeRemoved_sortsByMultipleCriteria() {
+        // Create ScmLogInfo objects for testing
+        ScmLogInfo logInfo1 = new ScmLogInfo("path1.java", 1, 2, 3);
+        logInfo1.setChangePronenessRank(5);
+
+        ScmLogInfo logInfo2 = new ScmLogInfo("path2.java", 1, 2, 3);
+        logInfo2.setChangePronenessRank(3);
+
+        ScmLogInfo logInfo3 = new ScmLogInfo("path3.java", 1, 2, 3);
+        logInfo3.setChangePronenessRank(8);
+
+        ScmLogInfo logInfo4 = new ScmLogInfo("path4.java", 1, 2, 3);
+        logInfo4.setChangePronenessRank(2);
+
+        ScmLogInfo logInfo5 = new ScmLogInfo("path4.java", 1, 2, 3);
+        logInfo5.setChangePronenessRank(5);
+
+        // Create RankedDisharmony objects with different combinations
+        // Expected order after sorting: cycleCount desc, then sourceRemoved desc, then targetRemoved desc, then
+        // changeProneness desc
+        // cycle=5, source=0, target=0, change=5
+        RankedDisharmony disharmony1 = new RankedDisharmony(
+                "Class1", new org.jgrapht.graph.DefaultWeightedEdge(), 5, 1, false, false, logInfo1);
+
+        // cycle=5, source=1, target=0, change=3
+        RankedDisharmony disharmony2 = new RankedDisharmony(
+                "Class2", new org.jgrapht.graph.DefaultWeightedEdge(), 5, 1, true, false, logInfo2);
+
+        // cycle=3, source=0, target=1, change=8
+        RankedDisharmony disharmony3 = new RankedDisharmony(
+                "Class3", new org.jgrapht.graph.DefaultWeightedEdge(), 3, 1, false, true, logInfo3);
+
+        // cycle=3, source=0, target=0, change=2
+        RankedDisharmony disharmony4 = new RankedDisharmony(
+                "Class4", new org.jgrapht.graph.DefaultWeightedEdge(), 3, 1, false, false, logInfo4);
+
+        // cycle=3, source=0, target=0, change=5
+        RankedDisharmony disharmony5 = new RankedDisharmony(
+                "Class5", new org.jgrapht.graph.DefaultWeightedEdge(), 3, 1, false, false, logInfo5);
+
+        List<RankedDisharmony> disharmonies =
+                Arrays.asList(disharmony4, disharmony2, disharmony1, disharmony3, disharmony5);
+
+        // Sort the list
+        CostBenefitCalculator.sortEdgesThatNeedToBeRemoved(disharmonies);
+
+        // Verify the order
+        // Order by cycle count reversed (highest count bubbles to the top)
+        // then Order by source node removed (source nodes needing to be removed bubble to the top)
+        // then Order by target node removed (target nodes needing to be removed bubble to the top)\
+        // then Order by change proneness (highest change proneness bubbles to the top)
+        for (RankedDisharmony disharmony : disharmonies) {
+            System.out.println(disharmony.getClassName() + " "
+                    + disharmony.getCycleCount() + " "
+                    + disharmony.getSourceNodeShouldBeRemoved() + " "
+                    + disharmony.getTargetNodeShouldBeRemoved() + " "
+                    + disharmony.getChangePronenessRank());
+        }
+
+        Assertions.assertEquals("Class2", disharmonies.get(0).getClassName());
+        Assertions.assertEquals(
+                5,
+                disharmonies.get(0).getCycleCount().intValue(),
+                "Expected " + disharmonies.get(0).getClassName());
+        Assertions.assertEquals(1, disharmonies.get(0).getSourceNodeShouldBeRemoved());
+        Assertions.assertEquals(0, disharmonies.get(0).getTargetNodeShouldBeRemoved());
+        Assertions.assertEquals(3, disharmonies.get(0).getChangePronenessRank());
+
+        Assertions.assertEquals("Class1", disharmonies.get(1).getClassName());
+        Assertions.assertEquals(5, disharmonies.get(1).getCycleCount().intValue());
+        Assertions.assertEquals(0, disharmonies.get(1).getSourceNodeShouldBeRemoved());
+        Assertions.assertEquals(0, disharmonies.get(1).getTargetNodeShouldBeRemoved());
+        Assertions.assertEquals(5, disharmonies.get(1).getChangePronenessRank());
+
+        Assertions.assertEquals("Class3", disharmonies.get(2).getClassName());
+        Assertions.assertEquals(3, disharmonies.get(2).getCycleCount().intValue());
+        Assertions.assertEquals(0, disharmonies.get(2).getSourceNodeShouldBeRemoved());
+        Assertions.assertEquals(1, disharmonies.get(2).getTargetNodeShouldBeRemoved());
+        Assertions.assertEquals(8, disharmonies.get(2).getChangePronenessRank());
+
+        Assertions.assertEquals("Class5", disharmonies.get(3).getClassName());
+        Assertions.assertEquals(3, disharmonies.get(3).getCycleCount().intValue());
+        Assertions.assertEquals(0, disharmonies.get(3).getSourceNodeShouldBeRemoved());
+        Assertions.assertEquals(0, disharmonies.get(3).getTargetNodeShouldBeRemoved());
+        Assertions.assertEquals(5, disharmonies.get(3).getChangePronenessRank());
+
+        Assertions.assertEquals("Class4", disharmonies.get(4).getClassName());
+        Assertions.assertEquals(3, disharmonies.get(4).getCycleCount().intValue());
+        Assertions.assertEquals(0, disharmonies.get(4).getSourceNodeShouldBeRemoved());
+        Assertions.assertEquals(0, disharmonies.get(4).getTargetNodeShouldBeRemoved());
+        Assertions.assertEquals(2, disharmonies.get(4).getChangePronenessRank());
+    }
+
     private void writeFile(String name, String content) throws IOException {
         // Files.writeString(Path.of(git.getRepository().getWorkTree().getPath()), content);
         File file = new File(git.getRepository().getWorkTree(), name);

@@ -216,7 +216,7 @@ public class CostBenefitCalculator implements AutoCloseable {
 
         Map<String, ScmLogInfo> rankedLogInfosByPath = getRankedLogInfosByPath(scmLogInfos);
 
-        List<RankedDisharmony> rankedDisharmonies = new ArrayList<>();
+        List<RankedDisharmony> edgesThatNeedToBeRemoved = new ArrayList<>();
 
         for (Map.Entry<DefaultWeightedEdge, CycleNode> entry : edgeSourceNodeInfos.entrySet()) {
             if (rankedLogInfosByPath.containsKey(entry.getValue().getFileName())) {
@@ -238,7 +238,7 @@ public class CostBenefitCalculator implements AutoCloseable {
                 log.info("Path: {}", path);
                 Paths.get(path).getFileName().toString();
 
-                RankedDisharmony rankedDisharmony = new RankedDisharmony(
+                RankedDisharmony edgeThatNeedsToBeRemoved = new RankedDisharmony(
                         entry.getValue().getClassName(),
                         entry.getKey(),
                         edgeToRemoveCycleCounts.get(entry.getKey()),
@@ -246,40 +246,42 @@ public class CostBenefitCalculator implements AutoCloseable {
                         sourceNodeShouldBeRemoved,
                         targetNodeShouldBeRemoved,
                         rankedLogInfosByPath.get(entry.getValue().getFileName()));
-                rankedDisharmonies.add(rankedDisharmony);
+                edgesThatNeedToBeRemoved.add(edgeThatNeedsToBeRemoved);
             }
         }
 
-        // Sort by impact value
-        // Order by cycle count
-        rankedDisharmonies.sort(Comparator.comparing(RankedDisharmony::getCycleCount)
-                .reversed()
-                // then if the source node is in the list of nodes to be removed
-                .thenComparing(RankedDisharmony::getSourceNodeShouldBeRemoved)
-                .reversed()
-                // then if the target node is in the list of nodes to be removed
-                .thenComparing(RankedDisharmony::getTargetNodeShouldBeRemoved)
-                .reversed()
-                // then by change proneness
-                .thenComparing(RankedDisharmony::getChangePronenessRank)
-                .reversed());
+        sortEdgesThatNeedToBeRemoved(edgesThatNeedToBeRemoved);
 
         // Then subtract edge weight
         int rawPriority = 1;
-        for (RankedDisharmony rankedDisharmony : rankedDisharmonies) {
+        for (RankedDisharmony rankedDisharmony : edgesThatNeedToBeRemoved) {
             rankedDisharmony.setRawPriority(rawPriority++ - rankedDisharmony.getEffortRank());
         }
 
-        rankedDisharmonies.sort(
+        edgesThatNeedToBeRemoved.sort(
                 Comparator.comparing(RankedDisharmony::getRawPriority).reversed());
 
         // Then set priority
         int sourceNodePriority = 1;
-        for (RankedDisharmony rankedSourceNodeDisharmony : rankedDisharmonies) {
+        for (RankedDisharmony rankedSourceNodeDisharmony : edgesThatNeedToBeRemoved) {
             rankedSourceNodeDisharmony.setPriority(sourceNodePriority++);
         }
 
-        return rankedDisharmonies;
+        return edgesThatNeedToBeRemoved;
+    }
+
+    static void sortEdgesThatNeedToBeRemoved(List<RankedDisharmony> rankedDisharmonies) {
+        // Sort by impact value
+        // Order by cycle count reversed (highest count bubbles to the top)
+        rankedDisharmonies.sort(Comparator.comparingInt(RankedDisharmony::getCycleCount)
+                .reversed()
+                // then if the source node is in the list of nodes to be removed
+                // multiplying by -1 reverses the sort order (reverse doesn't work in chained comparators)
+                .thenComparingInt(rankedDisharmony -> -1 * rankedDisharmony.getSourceNodeShouldBeRemoved())
+                // then if the target node is in the list of nodes to be removed
+                .thenComparingInt(rankedDisharmUpdaony -> -1 * rankedDisharmony.getTargetNodeShouldBeRemoved())
+                // then by change proneness
+                .thenComparingInt(rankedDisharmony -> -1 * rankedDisharmony.getChangePronenessRank()));
     }
 
     private String getFileName(RuleViolation violation) {
