@@ -219,6 +219,7 @@ public class CostBenefitCalculator implements AutoCloseable {
         List<RankedDisharmony> edgesThatNeedToBeRemoved = new ArrayList<>();
 
         for (Map.Entry<DefaultWeightedEdge, CycleNode> entry : edgeSourceNodeInfos.entrySet()) {
+            log.info("Edge source: {}", entry.getValue().getClassName());
             if (rankedLogInfosByPath.containsKey(entry.getValue().getFileName())) {
                 boolean sourceNodeShouldBeRemoved = vertexesToRemove.contains(classGraph.getEdgeSource(entry.getKey()));
                 String edgeTarget = classGraph.getEdgeTarget(entry.getKey());
@@ -232,11 +233,11 @@ public class CostBenefitCalculator implements AutoCloseable {
 
                 String fileName = entry.getValue().getFileName();
                 if (null == fileName) continue;
-                log.info("Edge source: {}", classGraph.getEdgeSource(entry.getKey()));
-                log.info("Filename: {}", fileName);
-                String path = rankedLogInfosByPath.get(fileName).getPath();
-                log.info("Path: {}", path);
-                Paths.get(path).getFileName().toString();
+                //                log.info("Edge source: {}", classGraph.getEdgeSource(entry.getKey()));
+                //                log.info("Filename: {}", fileName);
+                //                String path = rankedLogInfosByPath.get(fileName).getPath();
+                //                log.info("Path: {}", path);
+                //                Paths.get(path).getFileName().toString();
 
                 RankedDisharmony edgeThatNeedsToBeRemoved = new RankedDisharmony(
                         entry.getValue().getClassName(),
@@ -279,7 +280,7 @@ public class CostBenefitCalculator implements AutoCloseable {
                 // multiplying by -1 reverses the sort order (reverse doesn't work in chained comparators)
                 .thenComparingInt(rankedDisharmony -> -1 * rankedDisharmony.getSourceNodeShouldBeRemoved())
                 // then if the target node is in the list of nodes to be removed
-                .thenComparingInt(rankedDisharmUpdaony -> -1 * rankedDisharmony.getTargetNodeShouldBeRemoved())
+                .thenComparingInt(rankedDisharmony -> -1 * rankedDisharmony.getTargetNodeShouldBeRemoved())
                 // then by change proneness
                 .thenComparingInt(rankedDisharmony -> -1 * rankedDisharmony.getChangePronenessRank()));
     }
