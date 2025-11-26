@@ -402,25 +402,25 @@ public class SimpleHtmlReport {
 
     private String[] getEdgeDisharmonyTableHeadings() {
         return new String[] {
-                "Edge",
-                "Priority",
-                "In Cycles",
-                "Source Change Proneness Rank",
-                "Remove Source",
-                "Remove Target",
-                "Edge Weight"
+            "Edge",
+            "Priority",
+            "In Cycles",
+            "Source Change Proneness Rank",
+            "Remove Source",
+            "Remove Target",
+            "Edge Weight"
         };
     }
 
     private String[] getEdgeDisharmony(RankedDisharmony edgeInfo) {
         return new String[] {
-                renderEdge(edgeInfo.getEdge()),
-                String.valueOf(edgeInfo.getPriority()),
-                String.valueOf(edgeInfo.getCycleCount()),
-                String.valueOf(edgeInfo.getChangePronenessRank()),
-                edgeInfo.getSourceNodeShouldBeRemoved() == 1 ? "Y" : "N",
-                edgeInfo.getTargetNodeShouldBeRemoved() == 1 ? "Y" : "N",
-                String.valueOf(edgeInfo.getEffortRank()),
+            renderEdge(edgeInfo.getEdge()),
+            String.valueOf(edgeInfo.getPriority()),
+            String.valueOf(edgeInfo.getCycleCount()),
+            String.valueOf(edgeInfo.getChangePronenessRank()),
+            edgeInfo.getSourceNodeShouldBeRemoved() == 1 ? "Y" : "N",
+            edgeInfo.getTargetNodeShouldBeRemoved() == 1 ? "Y" : "N",
+            String.valueOf(edgeInfo.getEffortRank()),
         };
     }
 
