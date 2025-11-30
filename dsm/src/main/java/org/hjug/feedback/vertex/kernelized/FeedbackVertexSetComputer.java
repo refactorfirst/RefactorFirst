@@ -18,15 +18,18 @@ public class FeedbackVertexSetComputer<V, E> {
 
     private final Class<E> edgeClass;
     private final ExecutorService executorService;
+    private final Map<Graph<V, E>, Set<V>> greedyFeedbackVertexSetCache;
 
     public FeedbackVertexSetComputer(SuperTypeToken<E> edgeTypeToken) {
         this.edgeClass = edgeTypeToken.getClassFromTypeToken();
         this.executorService = ForkJoinPool.commonPool();
+        this.greedyFeedbackVertexSetCache = new ConcurrentHashMap<>();
     }
 
     public FeedbackVertexSetComputer(SuperTypeToken<E> edgeTypeToken, int parallelismLevel) {
         this.edgeClass = edgeTypeToken.getClassFromTypeToken();
         this.executorService = Executors.newWorkStealingPool(parallelismLevel);
+        this.greedyFeedbackVertexSetCache = new ConcurrentHashMap<>();
     }
 
     /**
@@ -63,23 +66,24 @@ public class FeedbackVertexSetComputer<V, E> {
 
     /**
      * Greedy feedback vertex set algorithm
-     * TODO: Memoize since this is called 4 times and result will always be the same
      */
     Set<V> greedyFeedbackVertexSet(Graph<V, E> graph) {
-        Set<V> feedbackSet = ConcurrentHashMap.newKeySet();
-        Graph<V, E> workingGraph = copyGraph(graph);
+        return greedyFeedbackVertexSetCache.computeIfAbsent(graph, g -> {
+            Set<V> feedbackSet = ConcurrentHashMap.newKeySet();
+            Graph<V, E> workingGraph = copyGraph(g);
 
-        while (hasCycles(workingGraph)) {
-            // Find vertex with maximum degree in current SCCs
-            V maxDegreeVertex = findVertexInCyclesWithMaxDegree(workingGraph);
+            while (hasCycles(workingGraph)) {
+                // Find vertex with maximum degree in current SCCs
+                V maxDegreeVertex = findVertexInCyclesWithMaxDegree(workingGraph);
 
-            if (maxDegreeVertex == null) break;
+                if (maxDegreeVertex == null) break;
 
-            feedbackSet.add(maxDegreeVertex);
-            workingGraph.removeVertex(maxDegreeVertex);
-        }
+                feedbackSet.add(maxDegreeVertex);
+                workingGraph.removeVertex(maxDegreeVertex);
+            }
 
-        return feedbackSet;
+            return feedbackSet;
+        });
     }
 
     /**
