@@ -23,17 +23,20 @@ public class ModulatorComputer<V, E> {
     private final TreewidthComputer<V, E> treewidthComputer;
     private final FeedbackVertexSetComputer<V, E> fvsComputer;
     private final ExecutorService executorService;
+    private final Map<Graph<V, DefaultEdge>, Map<V, Double>> betweennessCentralityCache;
 
     public ModulatorComputer(SuperTypeToken<E> edgeTypeToken) {
         this.treewidthComputer = new TreewidthComputer<>();
         this.fvsComputer = new FeedbackVertexSetComputer<>(edgeTypeToken);
         this.executorService = ForkJoinPool.commonPool();
+        this.betweennessCentralityCache = new ConcurrentHashMap<>();
     }
 
     public ModulatorComputer(SuperTypeToken<E> edgeTypeToken, int parallelismLevel) {
         this.treewidthComputer = new TreewidthComputer<>(parallelismLevel);
         this.fvsComputer = new FeedbackVertexSetComputer<>(edgeTypeToken, parallelismLevel);
         this.executorService = Executors.newWorkStealingPool(parallelismLevel);
+        this.betweennessCentralityCache = new ConcurrentHashMap<>();
     }
 
     /**
@@ -1314,94 +1317,95 @@ public class ModulatorComputer<V, E> {
      *
      * @return a map containing approximate betweenness centrality values for each vertex
      */
-    // TODO: Memoize since this method is called twice
     private Map<V, Double> computeBetweennessCentralityParallel(Graph<V, DefaultEdge> graph) {
-        Set<V> vertices = graph.vertexSet();
-        int n = vertices.size();
+        return betweennessCentralityCache.computeIfAbsent(graph, g -> {
+            Set<V> vertices = g.vertexSet();
+            int n = vertices.size();
 
-        if (n <= 2) {
-            // For very small graphs, return exact computation
-            return computeExactBetweennessCentralityParallel(graph);
-        }
-
-        // Calculate sample size based on graph characteristics and desired accuracy
-        double epsilon = 0.1; // Desired approximation error
-        double delta = 0.1; // Probability of exceeding error bound
-
-        int initialSampleSize = Math.min(
-                n, Math.max(10, (int) Math.ceil(Math.log(2.0 / delta) / (2 * epsilon * epsilon) * Math.log(n))));
-
-        int sampleSize;
-        // For very large graphs, cap the sample size
-        if (n > 10000) {
-            sampleSize = Math.min(initialSampleSize, n / 10);
-        } else {
-            sampleSize = initialSampleSize;
-        }
-
-        System.out.println("Computing approximated betweenness centrality with " + sampleSize + " samples out of " + n
-                + " vertices (parallel)");
-
-        // Initialize concurrent betweenness centrality scores
-        ConcurrentHashMap<V, Double> betweenness = new ConcurrentHashMap<>();
-        vertices.parallelStream().forEach(v -> betweenness.put(v, 0.0));
-
-        // Thread-safe random number generator
-        ThreadLocalRandom random = ThreadLocalRandom.current();
-
-        // Convert vertices to concurrent list for thread-safe access
-        List<V> vertexList = new CopyOnWriteArrayList<>(vertices);
-
-        // Custom ForkJoinPool for better control over parallelization
-        ForkJoinPool customThreadPool = new ForkJoinPool(
-                Math.min(
-                        Runtime.getRuntime().availableProcessors(),
-                        Math.max(1, sampleSize / 10)) // Scale threads based on sample size
-                );
-
-        try {
-            CompletableFuture<Void> computation = CompletableFuture.runAsync(
-                    () -> {
-                        // Sample source vertices in parallel
-                        Set<V> sampledSources = sampleSourceVerticesParallel(graph, vertexList, sampleSize, random);
-
-                        // Scaling factor for approximation
-                        double scalingFactor = (double) n / sampleSize;
-
-                        // Process sampled sources in parallel and accumulate results
-                        sampledSources.parallelStream().forEach(source -> {
-                            ConcurrentHashMap<V, Double> contributions =
-                                    computeSingleSourceBetweennessContributionsParallel(graph, source);
-
-                            // Atomically update betweenness values with scaling
-                            contributions.entrySet().parallelStream().forEach(entry -> {
-                                V vertex = entry.getKey();
-                                double scaledContribution = entry.getValue() * scalingFactor;
-                                betweenness.merge(vertex, scaledContribution, Double::sum);
-                            });
-                        });
-                    },
-                    customThreadPool);
-
-            // Wait for completion
-            computation.get();
-
-        } catch (InterruptedException | ExecutionException e) {
-            Thread.currentThread().interrupt();
-            throw new RuntimeException("Parallel betweenness centrality computation failed", e);
-        } finally {
-            customThreadPool.shutdown();
-            try {
-                if (!customThreadPool.awaitTermination(60, TimeUnit.SECONDS)) {
-                    customThreadPool.shutdownNow();
-                }
-            } catch (InterruptedException e) {
-                customThreadPool.shutdownNow();
-                Thread.currentThread().interrupt();
+            if (n <= 2) {
+                // For very small graphs, return exact computation
+                return computeExactBetweennessCentralityParallel(g);
             }
-        }
 
-        return betweenness;
+            // Calculate sample size based on graph characteristics and desired accuracy
+            double epsilon = 0.1; // Desired approximation error
+            double delta = 0.1; // Probability of exceeding error bound
+
+            int initialSampleSize = Math.min(
+                    n, Math.max(10, (int) Math.ceil(Math.log(2.0 / delta) / (2 * epsilon * epsilon) * Math.log(n))));
+
+            int sampleSize;
+            // For very large graphs, cap the sample size
+            if (n > 10000) {
+                sampleSize = Math.min(initialSampleSize, n / 10);
+            } else {
+                sampleSize = initialSampleSize;
+            }
+
+            System.out.println("Computing approximated betweenness centrality with " + sampleSize + " samples out of "
+                    + n + " vertices (parallel)");
+
+            // Initialize concurrent betweenness centrality scores
+            ConcurrentHashMap<V, Double> betweenness = new ConcurrentHashMap<>();
+            vertices.parallelStream().forEach(v -> betweenness.put(v, 0.0));
+
+            // Thread-safe random number generator
+            ThreadLocalRandom random = ThreadLocalRandom.current();
+
+            // Convert vertices to concurrent list for thread-safe access
+            List<V> vertexList = new CopyOnWriteArrayList<>(vertices);
+
+            // Custom ForkJoinPool for better control over parallelization
+            ForkJoinPool customThreadPool = new ForkJoinPool(
+                    Math.min(
+                            Runtime.getRuntime().availableProcessors(),
+                            Math.max(1, sampleSize / 10)) // Scale threads based on sample size
+                    );
+
+            try {
+                CompletableFuture<Void> computation = CompletableFuture.runAsync(
+                        () -> {
+                            // Sample source vertices in parallel
+                            Set<V> sampledSources = sampleSourceVerticesParallel(g, vertexList, sampleSize, random);
+
+                            // Scaling factor for approximation
+                            double scalingFactor = (double) n / sampleSize;
+
+                            // Process sampled sources in parallel and accumulate results
+                            sampledSources.parallelStream().forEach(source -> {
+                                ConcurrentHashMap<V, Double> contributions =
+                                        computeSingleSourceBetweennessContributionsParallel(g, source);
+
+                                // Atomically update betweenness values with scaling
+                                contributions.entrySet().parallelStream().forEach(entry -> {
+                                    V vertex = entry.getKey();
+                                    double scaledContribution = entry.getValue() * scalingFactor;
+                                    betweenness.merge(vertex, scaledContribution, Double::sum);
+                                });
+                            });
+                        },
+                        customThreadPool);
+
+                // Wait for completion
+                computation.get();
+
+            } catch (InterruptedException | ExecutionException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException("Parallel betweenness centrality computation failed", e);
+            } finally {
+                customThreadPool.shutdown();
+                try {
+                    if (!customThreadPool.awaitTermination(60, TimeUnit.SECONDS)) {
+                        customThreadPool.shutdownNow();
+                    }
+                } catch (InterruptedException e) {
+                    customThreadPool.shutdownNow();
+                    Thread.currentThread().interrupt();
+                }
+            }
+
+            return betweenness;
+        });
     }
 
     /**
