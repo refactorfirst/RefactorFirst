@@ -87,7 +87,7 @@ public class GitLogReader implements AutoCloseable {
                 .next()
                 .getCommitTime();
 
-        return new ScmLogInfo(path, earliestCommit, mostRecentCommit, commitCount);
+        return new ScmLogInfo(path, null, earliestCommit, mostRecentCommit, commitCount);
     }
 
     // based on https://stackoverflow.com/questions/27361538/how-to-show-changes-between-commits-with-jgit
