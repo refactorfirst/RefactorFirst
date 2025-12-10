@@ -83,7 +83,8 @@ public class CsvReport {
 
         // actual calcualte
         List<RankedDisharmony> rankedDisharmonies;
-        try (CostBenefitCalculator costBenefitCalculator = new CostBenefitCalculator(projectBaseDir)) {
+        // TODO: revisit
+        try (CostBenefitCalculator costBenefitCalculator = new CostBenefitCalculator(projectBaseDir, new HashMap<>())) {
             costBenefitCalculator.runPmdAnalysis();
             rankedDisharmonies = costBenefitCalculator.calculateGodClassCostBenefitValues();
         } catch (Exception e) {
