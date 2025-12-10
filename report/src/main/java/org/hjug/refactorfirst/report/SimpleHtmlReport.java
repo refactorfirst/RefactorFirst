@@ -238,23 +238,30 @@ public class SimpleHtmlReport {
 
         // int edgeWeight = (int) classGraph.getEdgeWeight(defaultWeightedEdge);
         // map sources to CycleNodes to get paths and get churn in try/finally block below
-        Map<DefaultWeightedEdge, CycleNode> edgeSourceNodeInfos = new HashMap<>();
+        Map<DefaultWeightedEdge, CycleNode> sourceNodeInfos = new HashMap<>();
+        Map<DefaultWeightedEdge, CycleNode> targetNodeInfos = new HashMap<>();
         for (DefaultWeightedEdge defaultWeightedEdge : edgesToRemove) {
             String edgeSource = classGraph.getEdgeSource(defaultWeightedEdge);
-            CycleNode cycleNode = cycleRanker.classToCycleNode(edgeSource);
-            edgeSourceNodeInfos.put(defaultWeightedEdge, cycleNode);
+            CycleNode sourceNode = cycleRanker.classToCycleNode(edgeSource);
+            sourceNodeInfos.put(defaultWeightedEdge, sourceNode);
+
+            String edgeTarget = classGraph.getEdgeTarget(defaultWeightedEdge);
+            CycleNode targetNode = cycleRanker.classToCycleNode(edgeTarget);
+            targetNodeInfos.put(defaultWeightedEdge, targetNode);
         }
 
         List<RankedDisharmony> rankedGodClassDisharmonies = List.of();
         List<RankedDisharmony> rankedCBODisharmonies = List.of();
         List<RankedDisharmony> edgeDisharmonies = List.of();
         log.info("Identifying Object Oriented Disharmonies");
-        try (CostBenefitCalculator costBenefitCalculator = new CostBenefitCalculator(projectBaseDir)) {
-            costBenefitCalculator.runPmdAnalysis();
+
+        try (CostBenefitCalculator costBenefitCalculator = new CostBenefitCalculator(
+                projectBaseDir, cycleRanker.getCodebaseGraphDTO().getClassToSourceFilePathMapping())) {
+            costBenefitCalculator.runPmdAnalysis(excludeTests, testSourceDirectory);
             rankedGodClassDisharmonies = costBenefitCalculator.calculateGodClassCostBenefitValues();
             rankedCBODisharmonies = costBenefitCalculator.calculateCBOCostBenefitValues();
             edgeDisharmonies = costBenefitCalculator.calculateSourceNodeCostBenefitValues(
-                    classGraph, edgeSourceNodeInfos, edgeToRemoveCycleCounts, vertexesToRemove);
+                    classGraph, sourceNodeInfos, targetNodeInfos, edgeToRemoveCycleCounts, vertexesToRemove);
 
         } catch (Exception e) {
             log.error("Error running analysis.");
@@ -338,9 +345,9 @@ public class SimpleHtmlReport {
             stringBuilder.append("<br/>\n" + "<br/>\n" + "<br/>\n" + "<br/>\n" + "<hr/>\n" + "<br/>\n" + "<br/>\n");
         }
 
-        //        if (!rankedCycles.isEmpty()) {
-        //            stringBuilder.append(renderCycles(rankedCycles));
-        //        }
+        if (!rankedCycles.isEmpty()) {
+            stringBuilder.append(renderCycles(rankedCycles));
+        }
 
         stringBuilder.append("</section>\n");
 
@@ -353,9 +360,10 @@ public class SimpleHtmlReport {
         stringBuilder.append(renderClassCycleSummary(rankedCycles));
 
         stringBuilder.append("<br/>\n");
-
-        rankedCycles.stream().limit(10).map(this::renderSingleCycle).forEach(stringBuilder::append);
-        //        rankedCycles.stream().map(this::renderSingleCycle).forEach(stringBuilder::append);
+        stringBuilder.append("<h2 align=\"center\">Largest Cycle</h2>\n");
+        stringBuilder.append("<h3 align=\"center\">Limiting number of cycles displayed to 1 to keep page load time fast</h3>\n");
+        stringBuilder.append("<br/>\n");
+        rankedCycles.stream().limit(1).map(this::renderSingleCycle).forEach(stringBuilder::append);
 
         return stringBuilder.toString();
     }
@@ -364,12 +372,12 @@ public class SimpleHtmlReport {
         StringBuilder stringBuilder = new StringBuilder();
 
         stringBuilder.append(
-                "<div style=\"text-align: center;\"><a id=\"EDGES\"><h1>Edge Removal Priority</h1></a></div>\n");
+                "<div style=\"text-align: center;\"><a id=\"EDGES\"><h1>Relationship Removal Priority</h1></a></div>\n");
         stringBuilder.append("<div style=\"text-align: center;\">\n");
         stringBuilder.append("Current Cycle Count: ").append(cycles.size()).append("<br>\n");
 
         stringBuilder
-                .append("Count of Edges to Remove: ")
+                .append("Count of Relationships to Remove: ")
                 .append(edgesToRemove.size())
                 .append("<br>\n");
         stringBuilder.append("</div>\n");
@@ -402,13 +410,14 @@ public class SimpleHtmlReport {
 
     private String[] getEdgeDisharmonyTableHeadings() {
         return new String[] {
-            "Edge",
+            "Relationship",
             "Priority",
             "In Cycles",
-            "Source Change Proneness Rank",
-            "Remove Source",
-            "Remove Target",
-            "Edge Weight"
+            "Edge<br>Weight",
+            "Source<br>Change Proneness Rank",
+            "Target<br>Change Proneness Rank",
+            "Remove<br>Source",
+            "Remove<br>Target",
         };
     }
 
@@ -417,10 +426,11 @@ public class SimpleHtmlReport {
             renderEdge(edgeInfo.getEdge()),
             String.valueOf(edgeInfo.getPriority()),
             String.valueOf(edgeInfo.getCycleCount()),
+            String.valueOf(edgeInfo.getEffortRank()),
             String.valueOf(edgeInfo.getChangePronenessRank()),
+            String.valueOf(edgeInfo.getEdgeTargetChangePronenessRank()),
             edgeInfo.getSourceNodeShouldBeRemoved() == 1 ? "Y" : "N",
             edgeInfo.getTargetNodeShouldBeRemoved() == 1 ? "Y" : "N",
-            String.valueOf(edgeInfo.getEffortRank()),
         };
     }
 
