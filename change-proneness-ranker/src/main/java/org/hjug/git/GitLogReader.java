@@ -104,28 +104,27 @@ public class GitLogReader implements AutoCloseable {
             RevCommit oldCommit = iterator.next();
 
             int count = 0;
-            if (null == newCommit) {
+            if (null == newCommit && iterator.hasNext()) {
                 newCommit = oldCommit;
                 continue;
-            }
-
-            for (DiffEntry entry : getDiffEntries(newCommit, oldCommit)) {
-                if (entry.getNewPath().endsWith(JAVA_FILE_TYPE)
-                        || entry.getOldPath().endsWith(JAVA_FILE_TYPE)) {
-                    count++;
-                }
-            }
-
-            if (count > 0) {
-                changesByCommitTimestamp.put(newCommit.getCommitTime(), count);
-            }
-
-            // Handle first / initial commit
-            if (!iterator.hasNext()) {
+            } else if (!iterator.hasNext()) {
+                // Handle first / initial commit
                 changesByCommitTimestamp.putAll(walkFirstCommit(oldCommit));
             }
 
-            newCommit = oldCommit;
+            if (null != newCommit) {
+                for (DiffEntry entry : getDiffEntries(newCommit, oldCommit)) {
+                    if (entry.getNewPath().endsWith(JAVA_FILE_TYPE)
+                            || entry.getOldPath().endsWith(JAVA_FILE_TYPE)) {
+                        count++;
+                    }
+                }
+
+                if (count > 0) {
+                    changesByCommitTimestamp.put(newCommit.getCommitTime(), count);
+                }
+                newCommit = oldCommit;
+            }
         }
 
         return changesByCommitTimestamp;
