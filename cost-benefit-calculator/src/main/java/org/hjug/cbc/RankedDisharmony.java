@@ -34,6 +34,8 @@ public class RankedDisharmony {
     private Integer cycleCount;
     private int sourceNodeShouldBeRemoved;
     private int targetNodeShouldBeRemoved;
+    private String edgeTargetClass;
+    private Integer edgeTargetChangePronenessRank;
 
     public RankedDisharmony(GodClass godClass, ScmLogInfo scmLogInfo) {
         path = scmLogInfo.getPath();
@@ -72,25 +74,28 @@ public class RankedDisharmony {
 
     public RankedDisharmony(
             String edgeSource,
+            String edgeTarget,
             DefaultWeightedEdge edge,
             int cycleCount,
             int weight,
             boolean sourceNodeShouldBeRemoved,
             boolean targetNodeShouldBeRemoved,
-            ScmLogInfo scmLogInfo) {
-        path = scmLogInfo.getPath();
+            ScmLogInfo sourceScmLogInfo,
+            ScmLogInfo targetScmLogInfo) {
+        path = sourceScmLogInfo.getPath();
         // from https://stackoverflow.com/questions/1011287/get-file-name-from-a-file-location-in-java
         fileName = Paths.get(path).getFileName().toString();
         className = edgeSource;
         this.edge = edge;
         this.cycleCount = cycleCount;
-        changePronenessRank = scmLogInfo.getChangePronenessRank();
+        changePronenessRank = sourceScmLogInfo.getChangePronenessRank();
+        edgeTargetChangePronenessRank = null == targetScmLogInfo ? 0 : targetScmLogInfo.getChangePronenessRank();
         effortRank = weight;
         this.sourceNodeShouldBeRemoved = sourceNodeShouldBeRemoved ? 1 : 0;
         this.targetNodeShouldBeRemoved = targetNodeShouldBeRemoved ? 1 : 0;
 
-        firstCommitTime = Instant.ofEpochSecond(scmLogInfo.getEarliestCommit());
-        mostRecentCommitTime = Instant.ofEpochSecond(scmLogInfo.getMostRecentCommit());
-        commitCount = scmLogInfo.getCommitCount();
+        firstCommitTime = Instant.ofEpochSecond(sourceScmLogInfo.getEarliestCommit());
+        mostRecentCommitTime = Instant.ofEpochSecond(sourceScmLogInfo.getMostRecentCommit());
+        commitCount = sourceScmLogInfo.getCommitCount();
     }
 }
