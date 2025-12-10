@@ -11,6 +11,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hjug.dsm.CircularReferenceChecker;
+import org.hjug.graphbuilder.CodebaseGraphDTO;
 import org.hjug.graphbuilder.JavaGraphBuilder;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.AsSubgraph;
@@ -27,6 +28,9 @@ public class CycleRanker {
     private Graph<String, DefaultWeightedEdge> classReferencesGraph;
 
     @Getter
+    private CodebaseGraphDTO codebaseGraphDTO;
+
+    @Getter
     private Map<String, String> classNamesAndPaths = new HashMap<>();
 
     @Getter
@@ -34,8 +38,10 @@ public class CycleRanker {
 
     public void generateClassReferencesGraph(boolean excludeTests, String testSourceDirectory) {
         try {
-            classReferencesGraph =
-                    javaGraphBuilder.getClassReferences(repositoryPath, excludeTests, testSourceDirectory);
+            codebaseGraphDTO = javaGraphBuilder.getCodebaseGraphDTO(repositoryPath, excludeTests, testSourceDirectory);
+
+            classReferencesGraph = codebaseGraphDTO.getClassReferencesGraph();
+
             loadClassNamesAndPaths();
 
             /*for (Map.Entry<String, String> stringStringEntry : fqnsAndPaths.entrySet()) {
