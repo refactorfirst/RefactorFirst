@@ -20,17 +20,17 @@ class JavaGraphBuilderTest {
     @Test
     void parseSourceDirectoryEmptyTest() {
         Assertions.assertThrows(
-                IllegalArgumentException.class, () -> javaGraphBuilder.getClassReferences("", false, ""));
+                IllegalArgumentException.class, () -> javaGraphBuilder.getCodebaseGraphDTO("", false, ""));
         Assertions.assertThrows(
-                IllegalArgumentException.class, () -> javaGraphBuilder.getClassReferences(null, false, ""));
+                IllegalArgumentException.class, () -> javaGraphBuilder.getCodebaseGraphDTO(null, false, ""));
     }
 
     @DisplayName("Given a valid source directory input parameter return a valid graph.")
     @Test
     void parseSourceDirectoryTest() throws IOException {
         File srcDirectory = new File("src/test/resources/javaSrcDirectory");
-        Graph<String, DefaultWeightedEdge> classReferencesGraph =
-                javaGraphBuilder.getClassReferences(srcDirectory.getAbsolutePath(), false, "");
+        CodebaseGraphDTO dto = javaGraphBuilder.getCodebaseGraphDTO(srcDirectory.getAbsolutePath(), false, "");
+        Graph<String, DefaultWeightedEdge> classReferencesGraph = dto.getClassReferencesGraph();
         assertNotNull(classReferencesGraph);
         assertEquals(5, classReferencesGraph.vertexSet().size());
         assertEquals(7, classReferencesGraph.edgeSet().size());
@@ -77,9 +77,8 @@ class JavaGraphBuilderTest {
     @Test
     void removeClassesNotInCodebase() throws IOException {
         File srcDirectory = new File("src/test/resources/javaSrcDirectory");
-        Graph<String, DefaultWeightedEdge> classReferencesGraph =
-                javaGraphBuilder.getClassReferences(srcDirectory.getAbsolutePath(), false, "");
-
+        CodebaseGraphDTO dto = javaGraphBuilder.getCodebaseGraphDTO(srcDirectory.getAbsolutePath(), false, "");
+        Graph<String, DefaultWeightedEdge> classReferencesGraph = dto.getClassReferencesGraph();
         classReferencesGraph.addVertex("org.favioriteoss.FunClass");
         classReferencesGraph.addVertex("org.favioriteoss.AnotherFunClass");
 

@@ -23,23 +23,22 @@ import org.openrewrite.java.JavaParser;
 public class JavaGraphBuilder {
 
     /**
-     * Given a java source directory return a graph of class references
+     * Given a java source directory, return a CodebaseGraphDTO
      *
      * @param srcDirectory
-     * @return
+     * @return CodebaseGraphDTO
      * @throws IOException
      */
-    public Graph<String, DefaultWeightedEdge> getClassReferences(
-            String srcDirectory, boolean excludeTests, String testSourceDirectory) throws IOException {
-        Graph<String, DefaultWeightedEdge> classReferencesGraph;
+    public CodebaseGraphDTO getCodebaseGraphDTO(String srcDirectory, boolean excludeTests, String testSourceDirectory)
+            throws IOException {
+        CodebaseGraphDTO codebaseGraphDTO;
         if (srcDirectory == null || srcDirectory.isEmpty()) {
             throw new IllegalArgumentException();
         } else {
-            classReferencesGraph = processWithOpenRewrite(srcDirectory, excludeTests, testSourceDirectory)
-                    .getClassReferencesGraph();
+            codebaseGraphDTO = processWithOpenRewrite(srcDirectory, excludeTests, testSourceDirectory);
         }
 
-        return classReferencesGraph;
+        return codebaseGraphDTO;
     }
 
     private CodebaseGraphDTO processWithOpenRewrite(String srcDir, boolean excludeTests, String testSourceDirectory)
