@@ -156,76 +156,91 @@ public class CostBenefitCalculator implements AutoCloseable {
 
         Map<String, String> innerClassPaths = new ConcurrentHashMap<>();
         Map<String, ScmLogInfo> scmLogInfosByPath = new ConcurrentHashMap<>();
-        Map<String, ScmLogInfo> scmLogInfosByClass = new ConcurrentHashMap<>();
 
-        disharmonies.parallelStream().forEach(disharmony -> {
-            String className = disharmony.getClassName();
-            String path;
-            ScmLogInfo scmLogInfo = null;
-            if (className.contains("$")) {
-                path = classToSourceFilePathMapping.get(className.substring(0, className.indexOf("$")));
-                log.debug("Found source file {} for nested class: {}", path, className);
-                innerClassPaths.put(className, path);
-            } else {
-                path = disharmony.getFileName();
-                try {
-                    log.debug("Reading scmLogInfo for {}", path);
-                    scmLogInfo = gitLogReader.fileLog(path);
-                    scmLogInfo.setClassName(className);
-                    log.debug("Successfully fetched scmLogInfo for {}", scmLogInfo.getPath());
-                    scmLogInfosByPath.put(path, scmLogInfo);
-                    scmLogInfosByClass.put(className, scmLogInfo);
-                } catch (GitAPIException | IOException e) {
-                    log.error("Error reading Git repository contents.", e);
-                } catch (NullPointerException e) {
-                    // Should not be reached
-                    log.error(
-                            "Encountered nested class in a class containing a violation.  Class: {}, Path: {}",
-                            className,
-                            path);
-                }
-            }
-        });
+        List<Optional<ScmLogInfo>> scmLogInfos = disharmonies.parallelStream()
+                .map(disharmony -> {
+                    String className = disharmony.getClassName();
+                    String path;
+                    ScmLogInfo scmLogInfo = null;
+                    if (className.contains("$")
+                            && classToSourceFilePathMapping.containsKey(
+                                    className.substring(0, className.indexOf("$")))) {
+                        path = classToSourceFilePathMapping.get(className.substring(0, className.indexOf("$")));
+                        log.debug("Found source file {} for nested class: {}", path, className);
+                        innerClassPaths.put(className, path);
+                    } else {
+                        path = disharmony.getFileName();
+                        try {
+                            log.debug("Reading scmLogInfo for {}", path);
+                            scmLogInfo = gitLogReader.fileLog(path);
+                            scmLogInfo.setClassName(className);
+                            log.debug("Successfully fetched scmLogInfo for {}", scmLogInfo.getPath());
+                            scmLogInfosByPath.put(path, scmLogInfo);
+                        } catch (GitAPIException | IOException e) {
+                            log.error("Error reading Git repository contents.", e);
+                        } catch (NullPointerException e) {
+                            // Should not be reached
+                            log.error(
+                                    "Encountered nested class in a class containing a violation.  Class: {}, Path: {}",
+                                    className,
+                                    path);
+                        }
+                    }
 
-        innerClassPaths.entrySet().parallelStream().forEach(innerClassPathEntry -> {
-            ScmLogInfo scmLogInfo = scmLogInfosByPath.get(innerClassPathEntry.getValue());
+                    Optional<ScmLogInfo> scmLogInfoOptional = Optional.ofNullable(scmLogInfo);
+                    if (scmLogInfoOptional.isEmpty()) {
+                        log.warn("No scmLogInfo found for class: {} at path: {}", className, path);
+                    }
+                    return scmLogInfoOptional;
+                })
+                .collect(Collectors.toList());
 
-            ScmLogInfo innerClassScmLogInfo = null;
-            if (scmLogInfo == null) {
-                try {
-                    String className = innerClassPathEntry.getKey();
-                    String path = classToSourceFilePathMapping.get(className.substring(0, className.indexOf("$")));
-                    log.debug("Reading scmLogInfo for inner class {}", canonicaliseURIStringForRepoLookup(path));
-                    innerClassScmLogInfo = gitLogReader.fileLog(canonicaliseURIStringForRepoLookup(path));
-                    innerClassScmLogInfo.setClassName(className);
-                    log.debug(
-                            "Successfully fetched scmLogInfo for inner class {} at {}",
-                            innerClassScmLogInfo.getClassName(),
-                            innerClassScmLogInfo.getPath());
-                    scmLogInfosByPath.put(path, innerClassScmLogInfo);
-                    scmLogInfosByClass.put(className, innerClassScmLogInfo);
-                } catch (GitAPIException | IOException e) {
-                    log.error("Error reading Git repository contents.", e);
-                }
-            } else {
-                innerClassScmLogInfo = new ScmLogInfo(
-                        innerClassPathEntry.getValue(),
-                        innerClassPathEntry.getKey(),
-                        scmLogInfo.getEarliestCommit(),
-                        scmLogInfo.getMostRecentCommit(),
-                        scmLogInfo.getCommitCount());
+        List<Optional<ScmLogInfo>> innerClassScmLogInfos = innerClassPaths.entrySet().parallelStream()
+                .map(innerClassPathEntry -> {
+                    ScmLogInfo scmLogInfo = scmLogInfosByPath.get(innerClassPathEntry.getValue());
 
-                String className = innerClassPathEntry.getKey();
-                innerClassScmLogInfo.setClassName(className);
-                String path = classToSourceFilePathMapping.get(className.substring(0, className.indexOf("$")));
-                scmLogInfosByPath.put(path, innerClassScmLogInfo);
-                scmLogInfosByClass.put(className, innerClassScmLogInfo);
-            }
+                    ScmLogInfo innerClassScmLogInfo = null;
+                    if (scmLogInfo == null) {
+                        try {
+                            String className = innerClassPathEntry.getKey();
+                            String path =
+                                    classToSourceFilePathMapping.get(className.substring(0, className.indexOf("$")));
+                            log.debug(
+                                    "Reading scmLogInfo for inner class {}", canonicaliseURIStringForRepoLookup(path));
+                            innerClassScmLogInfo = gitLogReader.fileLog(canonicaliseURIStringForRepoLookup(path));
+                            innerClassScmLogInfo.setClassName(className);
+                            log.debug(
+                                    "Successfully fetched scmLogInfo for inner class {} at {}",
+                                    innerClassScmLogInfo.getClassName(),
+                                    innerClassScmLogInfo.getPath());
+                            scmLogInfosByPath.put(path, innerClassScmLogInfo);
+                        } catch (GitAPIException | IOException e) {
+                            log.error("Error reading Git repository contents.", e);
+                        }
+                    } else {
+                        innerClassScmLogInfo = new ScmLogInfo(
+                                innerClassPathEntry.getValue(),
+                                innerClassPathEntry.getKey(),
+                                scmLogInfo.getEarliestCommit(),
+                                scmLogInfo.getMostRecentCommit(),
+                                scmLogInfo.getCommitCount());
 
-            scmLogInfosByClass.put(innerClassPathEntry.getKey(), innerClassScmLogInfo);
-        });
+                        String className = innerClassPathEntry.getKey();
+                        innerClassScmLogInfo.setClassName(className);
+                        String path = classToSourceFilePathMapping.get(className.substring(0, className.indexOf("$")));
+                        scmLogInfosByPath.put(path, innerClassScmLogInfo);
+                    }
+                    return Optional.ofNullable(innerClassScmLogInfo);
+                })
+                .collect(Collectors.toList());
 
-        ArrayList<ScmLogInfo> sortedScmInfos = new ArrayList<>(scmLogInfosByClass.values());
+        scmLogInfos.addAll(innerClassScmLogInfos);
+
+        List<ScmLogInfo> sortedScmInfos = new ArrayList<>(scmLogInfos.stream()
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .collect(Collectors.toList()));
+
         changePronenessRanker.rankChangeProneness(sortedScmInfos);
         return sortedScmInfos;
     }
