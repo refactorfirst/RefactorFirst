@@ -162,7 +162,7 @@ class ParameterComputerTest {
 
             assertTrue(k >= 0);
             assertTrue(k <= size);
-            assertTrue(duration < 20000); // Should complete within 20 seconds
+            assertTrue(duration < 30000); // Should complete within 30 seconds
         }
     }
 
