@@ -361,7 +361,8 @@ public class SimpleHtmlReport {
 
         stringBuilder.append("<br/>\n");
         stringBuilder.append("<h2 align=\"center\">Largest Cycle</h2>\n");
-        stringBuilder.append("<h3 align=\"center\">Limiting number of cycles displayed to 1 to keep page load time fast</h3>\n");
+        stringBuilder.append(
+                "<h3 align=\"center\">Limiting number of cycles displayed to 1 to keep page load time fast</h3>\n");
         stringBuilder.append("<br/>\n");
         rankedCycles.stream().limit(1).map(this::renderSingleCycle).forEach(stringBuilder::append);
 
