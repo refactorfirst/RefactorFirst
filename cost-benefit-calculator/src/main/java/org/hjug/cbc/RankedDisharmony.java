@@ -11,12 +11,12 @@ import org.jgrapht.graph.DefaultWeightedEdge;
 @Data
 public class RankedDisharmony {
 
-    private final Instant firstCommitTime;
-    private final Instant mostRecentCommitTime;
-    private final Integer commitCount;
+    private Instant firstCommitTime;
+    private Instant mostRecentCommitTime;
+    private Integer commitCount;
 
-    private final String path;
-    private final String fileName;
+    private String path;
+    private String fileName;
     private final String className;
     private final Integer effortRank;
     private final Integer changePronenessRank;
@@ -74,7 +74,6 @@ public class RankedDisharmony {
 
     public RankedDisharmony(
             String edgeSource,
-            String edgeTarget,
             DefaultWeightedEdge edge,
             int cycleCount,
             int weight,
@@ -82,20 +81,23 @@ public class RankedDisharmony {
             boolean targetNodeShouldBeRemoved,
             ScmLogInfo sourceScmLogInfo,
             ScmLogInfo targetScmLogInfo) {
-        path = sourceScmLogInfo.getPath();
-        // from https://stackoverflow.com/questions/1011287/get-file-name-from-a-file-location-in-java
-        fileName = Paths.get(path).getFileName().toString();
+
+        if (null != sourceScmLogInfo) {
+            path = sourceScmLogInfo.getPath();
+            // from https://stackoverflow.com/questions/1011287/get-file-name-from-a-file-location-in-java
+            fileName = Paths.get(path).getFileName().toString();
+            firstCommitTime = Instant.ofEpochSecond(sourceScmLogInfo.getEarliestCommit());
+            mostRecentCommitTime = Instant.ofEpochSecond(sourceScmLogInfo.getMostRecentCommit());
+            commitCount = sourceScmLogInfo.getCommitCount();
+        }
+
         className = edgeSource;
         this.edge = edge;
         this.cycleCount = cycleCount;
-        changePronenessRank = sourceScmLogInfo.getChangePronenessRank();
+        changePronenessRank = null == sourceScmLogInfo ? 0 : sourceScmLogInfo.getChangePronenessRank();
         edgeTargetChangePronenessRank = null == targetScmLogInfo ? 0 : targetScmLogInfo.getChangePronenessRank();
         effortRank = weight;
         this.sourceNodeShouldBeRemoved = sourceNodeShouldBeRemoved ? 1 : 0;
         this.targetNodeShouldBeRemoved = targetNodeShouldBeRemoved ? 1 : 0;
-
-        firstCommitTime = Instant.ofEpochSecond(sourceScmLogInfo.getEarliestCommit());
-        mostRecentCommitTime = Instant.ofEpochSecond(sourceScmLogInfo.getMostRecentCommit());
-        commitCount = sourceScmLogInfo.getCommitCount();
     }
 }

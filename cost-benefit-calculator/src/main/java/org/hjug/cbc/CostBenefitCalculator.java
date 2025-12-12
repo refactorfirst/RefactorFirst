@@ -331,25 +331,29 @@ public class CostBenefitCalculator implements AutoCloseable {
             String sourceNodeFileName = canonicaliseURIStringForRepoLookup(edgeSourcePath);
             String targetNodeFileName = canonicaliseURIStringForRepoLookup(edgeTargetPath);
 
+            boolean sourceNodeShouldBeRemoved = vertexesToRemove.contains(edgeSource);
+            boolean targetNodeShouldBeRemoved = vertexesToRemove.contains(edgeTarget);
+
+            ScmLogInfo sourceScmLogInfo = null;
             if (sourceRankedLogInfosByPath.containsKey(sourceNodeFileName)) {
-                boolean sourceNodeShouldBeRemoved = vertexesToRemove.contains(edgeSource);
-                boolean targetNodeShouldBeRemoved = vertexesToRemove.contains(edgeTarget);
-
-                ScmLogInfo sourceScmLogInfo = sourceRankedLogInfosByPath.get(sourceNodeFileName);
-                ScmLogInfo targetScmLogInfo = sourceRankedLogInfosByPath.get(targetNodeFileName);
-
-                RankedDisharmony edgeThatNeedsToBeRemoved = new RankedDisharmony(
-                        edgeSource,
-                        edgeTarget,
-                        entry.getKey(),
-                        edgeToRemoveCycleCounts.get(entry.getKey()),
-                        (int) classGraph.getEdgeWeight(entry.getKey()),
-                        sourceNodeShouldBeRemoved,
-                        targetNodeShouldBeRemoved,
-                        sourceScmLogInfo,
-                        targetScmLogInfo);
-                edgesThatNeedToBeRemoved.add(edgeThatNeedsToBeRemoved);
+                sourceScmLogInfo = sourceRankedLogInfosByPath.get(sourceNodeFileName);
             }
+
+            ScmLogInfo targetScmLogInfo = null;
+            if (sourceRankedLogInfosByPath.containsKey(sourceNodeFileName)) {
+                targetScmLogInfo = sourceRankedLogInfosByPath.get(targetNodeFileName);
+            }
+
+            RankedDisharmony edgeThatNeedsToBeRemoved = new RankedDisharmony(
+                    edgeSource,
+                    entry.getKey(),
+                    edgeToRemoveCycleCounts.get(entry.getKey()),
+                    (int) classGraph.getEdgeWeight(entry.getKey()),
+                    sourceNodeShouldBeRemoved,
+                    targetNodeShouldBeRemoved,
+                    sourceScmLogInfo,
+                    targetScmLogInfo);
+            edgesThatNeedToBeRemoved.add(edgeThatNeedsToBeRemoved);
         }
 
         sortEdgesThatNeedToBeRemoved(edgesThatNeedToBeRemoved);
