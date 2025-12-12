@@ -246,23 +246,23 @@ class CostBenefitCalculatorTest {
         // changeProneness desc
         // cycle=5, source=0, target=0, change=5
         RankedDisharmony disharmony1 = new RankedDisharmony(
-                "Class1", "", new org.jgrapht.graph.DefaultWeightedEdge(), 5, 1, false, false, logInfo1, null);
+                "Class1", new org.jgrapht.graph.DefaultWeightedEdge(), 5, 1, false, false, logInfo1, null);
 
         // cycle=5, source=1, target=0, change=3
         RankedDisharmony disharmony2 = new RankedDisharmony(
-                "Class2", "", new org.jgrapht.graph.DefaultWeightedEdge(), 5, 1, true, false, logInfo2, null);
+                "Class2", new org.jgrapht.graph.DefaultWeightedEdge(), 5, 1, true, false, logInfo2, null);
 
         // cycle=3, source=0, target=1, change=8
         RankedDisharmony disharmony3 = new RankedDisharmony(
-                "Class3", "", new org.jgrapht.graph.DefaultWeightedEdge(), 3, 1, false, true, logInfo3, null);
+                "Class3", new org.jgrapht.graph.DefaultWeightedEdge(), 3, 1, false, true, logInfo3, null);
 
         // cycle=3, source=0, target=0, change=2
         RankedDisharmony disharmony4 = new RankedDisharmony(
-                "Class4", "", new org.jgrapht.graph.DefaultWeightedEdge(), 3, 1, false, false, logInfo4, null);
+                "Class4", new org.jgrapht.graph.DefaultWeightedEdge(), 3, 1, false, false, logInfo4, null);
 
         // cycle=3, source=0, target=0, change=5
         RankedDisharmony disharmony5 = new RankedDisharmony(
-                "Class5", "", new org.jgrapht.graph.DefaultWeightedEdge(), 3, 1, false, false, logInfo5, null);
+                "Class5", new org.jgrapht.graph.DefaultWeightedEdge(), 3, 1, false, false, logInfo5, null);
 
         List<RankedDisharmony> disharmonies =
                 Arrays.asList(disharmony4, disharmony2, disharmony1, disharmony3, disharmony5);
