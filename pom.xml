@@ -68,7 +68,7 @@
     <modules>
         <module>test-resources</module>
         <module>codebase-graph-builder</module>
-        <module>dsm</module>
+        <module>graph-algorithms</module>
         <module>change-proneness-ranker</module>
         <module>effort-ranker</module>
         <module>cost-benefit-calculator</module>
@@ -96,7 +96,7 @@
 
             <dependency>
                 <groupId>org.hjug.refactorfirst.dsm</groupId>
-                <artifactId>dsm</artifactId>
+                <artifactId>graph-algorithms</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

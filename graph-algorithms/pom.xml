@@ -9,7 +9,7 @@
     </parent>
 
     <groupId>org.hjug.refactorfirst.dsm</groupId>
-    <artifactId>dsm</artifactId>
+    <artifactId>graph-algorithms</artifactId>
 
     <description>
         Implementation of a DSM that only has JGraphT-Core as a dependency.
