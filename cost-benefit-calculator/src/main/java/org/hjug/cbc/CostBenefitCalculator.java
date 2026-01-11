@@ -183,7 +183,12 @@ public class CostBenefitCalculator implements AutoCloseable {
                         }
                     } catch (NullPointerException e) {
                         // Should not be reached
-                        log.error("Error looking up class SCM info.  Class: {}, Path: {}", className, path, e);
+                        log.error(
+                                "Error looking up class SCM info.  If this error is encountered, "
+                                        + "please log a bug on the RefactorFirst project and describe if the class is a nested class, lambda, etc. \nClass: {}, Path: {}",
+                                className,
+                                path,
+                                e);
                     }
 
                     Optional<ScmLogInfo> scmLogInfoOptional = Optional.ofNullable(scmLogInfo);
