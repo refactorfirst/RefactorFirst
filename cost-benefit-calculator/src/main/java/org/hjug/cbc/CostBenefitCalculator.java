@@ -160,31 +160,30 @@ public class CostBenefitCalculator implements AutoCloseable {
         List<Optional<ScmLogInfo>> scmLogInfos = disharmonies.parallelStream()
                 .map(disharmony -> {
                     String className = disharmony.getClassName();
-                    String path;
+                    String path = null;
                     ScmLogInfo scmLogInfo = null;
-                    if (className.contains("$")
-                            && classToSourceFilePathMapping.containsKey(
-                                    className.substring(0, className.indexOf("$")))) {
-                        path = classToSourceFilePathMapping.get(className.substring(0, className.indexOf("$")));
-                        log.debug("Found source file {} for nested class: {}", path, className);
-                        innerClassPaths.put(className, path);
-                    } else {
-                        path = disharmony.getFileName();
-                        try {
-                            log.debug("Reading scmLogInfo for {}", path);
-                            scmLogInfo = gitLogReader.fileLog(path);
-                            scmLogInfo.setClassName(className);
-                            log.debug("Successfully fetched scmLogInfo for {}", scmLogInfo.getPath());
-                            scmLogInfosByPath.put(path, scmLogInfo);
-                        } catch (GitAPIException | IOException e) {
-                            log.error("Error reading Git repository contents.", e);
-                        } catch (NullPointerException e) {
-                            // Should not be reached
-                            log.error(
-                                    "Encountered nested class in a class containing a violation.  Class: {}, Path: {}",
-                                    className,
-                                    path);
+                    try {
+                        if (className.contains("$")
+                                && classToSourceFilePathMapping.containsKey(
+                                        className.substring(0, className.indexOf("$")))) {
+                            path = classToSourceFilePathMapping.get(className.substring(0, className.indexOf("$")));
+                            log.debug("Found source file {} for nested class: {}", path, className);
+                            innerClassPaths.put(className, path);
+                        } else {
+                            path = disharmony.getFileName();
+                            try {
+                                log.debug("Reading scmLogInfo for {}", path);
+                                scmLogInfo = gitLogReader.fileLog(path);
+                                scmLogInfo.setClassName(className);
+                                log.debug("Successfully fetched scmLogInfo for {}", scmLogInfo.getPath());
+                                scmLogInfosByPath.put(path, scmLogInfo);
+                            } catch (GitAPIException | IOException e) {
+                                log.error("Error reading Git repository contents.", e);
+                            }
                         }
+                    } catch (NullPointerException e) {
+                        // Should not be reached
+                        log.error("Error looking up class SCM info.  Class: {}, Path: {}", className, path, e);
                     }
 
                     Optional<ScmLogInfo> scmLogInfoOptional = Optional.ofNullable(scmLogInfo);
@@ -201,12 +200,10 @@ public class CostBenefitCalculator implements AutoCloseable {
 
                     ScmLogInfo innerClassScmLogInfo = null;
                     if (scmLogInfo == null) {
+                        String className = innerClassPathEntry.getKey();
+                        String path = classToSourceFilePathMapping.get(className.substring(0, className.indexOf("$")));
+                        log.debug("Reading scmLogInfo for inner class {}", canonicaliseURIStringForRepoLookup(path));
                         try {
-                            String className = innerClassPathEntry.getKey();
-                            String path =
-                                    classToSourceFilePathMapping.get(className.substring(0, className.indexOf("$")));
-                            log.debug(
-                                    "Reading scmLogInfo for inner class {}", canonicaliseURIStringForRepoLookup(path));
                             innerClassScmLogInfo = gitLogReader.fileLog(canonicaliseURIStringForRepoLookup(path));
                             innerClassScmLogInfo.setClassName(className);
                             log.debug(
@@ -215,7 +212,11 @@ public class CostBenefitCalculator implements AutoCloseable {
                                     innerClassScmLogInfo.getPath());
                             scmLogInfosByPath.put(path, innerClassScmLogInfo);
                         } catch (GitAPIException | IOException e) {
-                            log.error("Error reading Git repository contents.", e);
+                            log.error(
+                                    "Error reading Git repository contents for class {} with file path {}",
+                                    className,
+                                    path,
+                                    e);
                         }
                     } else {
                         innerClassScmLogInfo = new ScmLogInfo(
