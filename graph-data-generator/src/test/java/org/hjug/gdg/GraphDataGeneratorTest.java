@@ -61,7 +61,7 @@ class GraphDataGeneratorTest {
                 "(WMC=77, ATFD=105, TCC=15.555999755859375)");
         godClass.setOverallRank(0);
         ScmLogInfo scmLogInfo =
-                new ScmLogInfo("org/apache/myfaces/tobago/facelets/AttributeHandler.java", 1595275997, 0, 1);
+                new ScmLogInfo("org/apache/myfaces/tobago/facelets/AttributeHandler.java", null, 1595275997, 0, 1);
         scmLogInfo.setChangePronenessRank(0);
         RankedDisharmony rankedDisharmony = new RankedDisharmony(godClass, scmLogInfo);
         rankedDisharmony.setPriority(1);
@@ -84,7 +84,7 @@ class GraphDataGeneratorTest {
                 "(WMC=77, ATFD=105, TCC=15.555999755859375)");
         godClass.setOverallRank(0);
         ScmLogInfo scmLogInfo =
-                new ScmLogInfo("org/apache/myfaces/tobago/facelets/AttributeHandler.java", 1595275997, 0, 1);
+                new ScmLogInfo("org/apache/myfaces/tobago/facelets/AttributeHandler.java", null, 1595275997, 0, 1);
         scmLogInfo.setChangePronenessRank(0);
         RankedDisharmony rankedDisharmony = new RankedDisharmony(godClass, scmLogInfo);
         rankedDisharmony.setPriority(1);

@@ -50,13 +50,15 @@ public interface TypeProcessor {
     }
 
     private void processType(String ownerFqn, JavaType.GenericTypeVariable typeVariable) {
-        LogHolder.log.debug("Type parameter type name: " + typeVariable.getName());
+        LogHolder.log.debug("Type parameter type name: {}", typeVariable.getName());
 
         for (JavaType bound : typeVariable.getBounds()) {
             if (bound instanceof JavaType.Class) {
-                addType(((JavaType.Class) bound).getFullyQualifiedName(), ownerFqn);
+                addType(ownerFqn, ((JavaType.Class) bound).getFullyQualifiedName());
             } else if (bound instanceof JavaType.Parameterized) {
-                addType(((JavaType.Parameterized) bound).getFullyQualifiedName(), ownerFqn);
+                addType(ownerFqn, ((JavaType.Parameterized) bound).getFullyQualifiedName());
+            } else {
+                LogHolder.log.debug("Unknown type bound: {}", bound);
             }
         }
     }

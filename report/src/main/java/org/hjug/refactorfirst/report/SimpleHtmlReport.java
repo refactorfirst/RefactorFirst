@@ -10,17 +10,18 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
-import java.util.List;
-import java.util.Locale;
-import java.util.Optional;
+import java.util.*;
 import lombok.extern.slf4j.Slf4j;
-import org.hjug.cbc.CycleRanker;
-import org.hjug.cbc.RankedCycle;
-import org.hjug.cbc.RankedDisharmony;
-import org.hjug.dsm.DSM;
-import org.hjug.dsm.EdgeToRemoveInfo;
+import org.hjug.cbc.*;
+import org.hjug.dsm.CircularReferenceChecker;
+import org.hjug.feedback.SuperTypeToken;
+import org.hjug.feedback.arc.pageRank.PageRankFAS;
+import org.hjug.feedback.vertex.kernelized.DirectedFeedbackVertexSetResult;
+import org.hjug.feedback.vertex.kernelized.DirectedFeedbackVertexSetSolver;
+import org.hjug.feedback.vertex.kernelized.EnhancedParameterComputer;
 import org.hjug.git.GitLogReader;
 import org.jgrapht.Graph;
+import org.jgrapht.graph.AsSubgraph;
 import org.jgrapht.graph.DefaultWeightedEdge;
 
 /**
@@ -70,8 +71,9 @@ public class SimpleHtmlReport {
     public final String[] classCycleTableHeadings = {"Classes", "Relationships"};
 
     Graph<String, DefaultWeightedEdge> classGraph;
-    DSM dsm;
-    List<DefaultWeightedEdge> edgesAboveDiagonal = List.of(); // initialize for unit tests
+    Map<String, AsSubgraph<String, DefaultWeightedEdge>> cycles;
+    Set<String> vertexesToRemove = Set.of(); // initialize for unit tests
+    Set<DefaultWeightedEdge> edgesToRemove = Set.of();
 
     DateTimeFormatter formatter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT)
             .withLocale(Locale.getDefault())
@@ -189,18 +191,6 @@ public class SimpleHtmlReport {
             return stringBuilder;
         }
 
-        List<RankedDisharmony> rankedGodClassDisharmonies = List.of();
-        List<RankedDisharmony> rankedCBODisharmonies = List.of();
-        log.info("Identifying Object Oriented Disharmonies");
-        //        try (CostBenefitCalculator costBenefitCalculator = new CostBenefitCalculator(projectBaseDir)) {
-        //            costBenefitCalculator.runPmdAnalysis();
-        //            rankedGodClassDisharmonies = costBenefitCalculator.calculateGodClassCostBenefitValues();
-        //            rankedCBODisharmonies = costBenefitCalculator.calculateCBOCostBenefitValues();
-        //        } catch (Exception e) {
-        //            log.error("Error running analysis.");
-        //            throw new RuntimeException(e);
-        //        }
-
         CycleRanker cycleRanker = new CycleRanker(projectBaseDir);
         List<RankedCycle> rankedCycles = List.of();
         if (analyzeCycles) {
@@ -211,14 +201,77 @@ public class SimpleHtmlReport {
         }
 
         classGraph = cycleRanker.getClassReferencesGraph();
-        dsm = new DSM(classGraph);
-        edgesAboveDiagonal = dsm.getEdgesAboveDiagonal();
+        cycles = new CircularReferenceChecker<String, DefaultWeightedEdge>().getCycles(classGraph);
 
-        log.info("Performing edge removal what-if analysis");
-//        List<EdgeToRemoveInfo> edgeToRemoveInfos = dsm.getImpactOfSparseEdgesAboveDiagonalIfRemoved();
+        // Identify vertexes to remove
+        log.info("Identifying vertexes to remove");
+        EnhancedParameterComputer<String, DefaultWeightedEdge> enhancedParameterComputer =
+                new EnhancedParameterComputer<>(new SuperTypeToken<>() {});
+        EnhancedParameterComputer.EnhancedParameters<String> parameters =
+                enhancedParameterComputer.computeOptimalParameters(classGraph, 4);
+        DirectedFeedbackVertexSetSolver<String, DefaultWeightedEdge> vertexSolver =
+                new DirectedFeedbackVertexSetSolver<>(
+                        classGraph, parameters.getModulator(), null, parameters.getEta(), new SuperTypeToken<>() {});
+        DirectedFeedbackVertexSetResult<String> vertexSetResult = vertexSolver.solve(parameters.getK());
+        vertexesToRemove = vertexSetResult.getFeedbackVertices();
 
-        if (/*edgeToRemoveInfos.isEmpty()
-                &&*/ rankedGodClassDisharmonies.isEmpty()
+        // Identify edges to remove
+        log.info("Identifying edges to remove");
+        PageRankFAS<String, DefaultWeightedEdge> pageRankFAS = new PageRankFAS<>(classGraph, new SuperTypeToken<>() {});
+        edgesToRemove = pageRankFAS.computeFeedbackArcSet();
+
+        // capture the number of cycles each edge to remove is in
+        Map<DefaultWeightedEdge, Integer> edgeToRemoveCycleCounts = new HashMap<>();
+        for (DefaultWeightedEdge edgeToRemove : edgesToRemove) {
+            int cycleCount = 0;
+            for (AsSubgraph<String, DefaultWeightedEdge> cycle : cycles.values()) {
+                if (cycle.containsEdge(edgeToRemove)) {
+                    cycleCount++;
+                }
+            }
+            edgeToRemoveCycleCounts.put(edgeToRemove, cycleCount);
+        }
+
+        // int edgeWeight = (int) classGraph.getEdgeWeight(defaultWeightedEdge);
+        // map sources to CycleNodes to get paths and get churn in try/finally block below
+        Map<DefaultWeightedEdge, CycleNode> sourceNodeInfos = new HashMap<>();
+        Map<DefaultWeightedEdge, CycleNode> targetNodeInfos = new HashMap<>();
+        for (DefaultWeightedEdge defaultWeightedEdge : edgesToRemove) {
+            String edgeSource = classGraph.getEdgeSource(defaultWeightedEdge);
+            CycleNode sourceNode = cycleRanker.classToCycleNode(edgeSource);
+            sourceNodeInfos.put(defaultWeightedEdge, sourceNode);
+
+            String edgeTarget = classGraph.getEdgeTarget(defaultWeightedEdge);
+            CycleNode targetNode = cycleRanker.classToCycleNode(edgeTarget);
+            targetNodeInfos.put(defaultWeightedEdge, targetNode);
+        }
+
+        List<RankedDisharmony> rankedGodClassDisharmonies = List.of();
+        List<RankedDisharmony> rankedCBODisharmonies = List.of();
+        List<RankedDisharmony> edgeDisharmonies = List.of();
+        log.info("Identifying Object Oriented Disharmonies");
+
+        try (CostBenefitCalculator costBenefitCalculator = new CostBenefitCalculator(
+                projectBaseDir, cycleRanker.getCodebaseGraphDTO().getClassToSourceFilePathMapping())) {
+            costBenefitCalculator.runPmdAnalysis(excludeTests, testSourceDirectory);
+            rankedGodClassDisharmonies = costBenefitCalculator.calculateGodClassCostBenefitValues();
+            rankedCBODisharmonies = costBenefitCalculator.calculateCBOCostBenefitValues();
+            edgeDisharmonies = costBenefitCalculator.calculateSourceNodeCostBenefitValues(
+                    classGraph, sourceNodeInfos, targetNodeInfos, edgeToRemoveCycleCounts, vertexesToRemove);
+
+        } catch (Exception e) {
+            log.error("Error running analysis.");
+            throw new RuntimeException(e);
+        }
+
+        // TODO: Incorporate node information and guidance into Edge Infos
+        // - Source / target vertex in list of vertexes to remove
+        // - How many cycles is the edge present in
+        // - Edge weight
+        // - Provide guidance on where to move the method if one is in the list to remove
+
+        if (edgesToRemove.isEmpty()
+                && rankedGodClassDisharmonies.isEmpty()
                 && rankedCBODisharmonies.isEmpty()
                 && rankedCycles.isEmpty()) {
             stringBuilder
@@ -232,10 +285,10 @@ public class SimpleHtmlReport {
             return stringBuilder;
         }
 
-//        if (!edgeToRemoveInfos.isEmpty()) {
-//            stringBuilder.append("<a href=\"#EDGES\">Back Edges</a>\n");
-//            stringBuilder.append("<br/>\n");
-//        }
+        if (!edgesToRemove.isEmpty()) {
+            stringBuilder.append("<a href=\"#EDGES\">Edges To Remove</a>\n");
+            stringBuilder.append("<br/>\n");
+        }
 
         if (!rankedGodClassDisharmonies.isEmpty()) {
             stringBuilder.append("<a href=\"#GOD\">God Classes</a>\n");
@@ -257,15 +310,11 @@ public class SimpleHtmlReport {
         stringBuilder.append("<br/>\n");
         stringBuilder.append(renderGithubButtons());
 
-        // Display impact of each edge if removed
         stringBuilder.append("<br/>\n");
-//        String edgeInfos = renderEdgeToRemoveInfos(edgeToRemoveInfos);
-//
-//        if (!edgeToRemoveInfos.isEmpty()) {
-//            stringBuilder.append(edgeInfos);
-//            stringBuilder.append(renderGithubButtons());
-//            stringBuilder.append("<br/>\n" + "<br/>\n" + "<br/>\n" + "<br/>\n" + "<hr/>\n" + "<br/>\n" + "<br/>\n");
-//        }
+        if (!edgeDisharmonies.isEmpty()) {
+            stringBuilder.append(renderEdgeDisharmonies(edgeDisharmonies));
+            stringBuilder.append("<br/>\n" + "<br/>\n" + "<br/>\n" + "<br/>\n" + "<hr/>\n" + "<br/>\n" + "<br/>\n");
+        }
 
         if (!rankedGodClassDisharmonies.isEmpty()) {
             final String[] godClassTableHeadings =
@@ -293,49 +342,41 @@ public class SimpleHtmlReport {
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append(renderClassCycleSummary(rankedCycles));
 
-        stringBuilder.append("<br/>\n");
-
-        //        rankedCycles.stream().limit(10).map(this::renderSingleCycle).forEach(stringBuilder::append);
-        rankedCycles.stream().map(this::renderSingleCycle).forEach(stringBuilder::append);
+        rankedCycles.stream().limit(1).map(this::renderSingleCycle).forEach(stringBuilder::append);
 
         return stringBuilder.toString();
     }
 
-    private String renderEdgeToRemoveInfos(List<EdgeToRemoveInfo> edges) {
+    private String renderEdgeDisharmonies(List<RankedDisharmony> edgeDisharmonies) {
         StringBuilder stringBuilder = new StringBuilder();
 
         stringBuilder.append(
-                "<div style=\"text-align: center;\"><a id=\"EDGES\"><h1>Backward Edge Removal Impact</h1></a></div>\n");
+                "<div style=\"text-align: center;\"><a id=\"EDGES\"><h1>Relationship Removal Priority</h1></a></div>\n");
+        stringBuilder.append("<h2 align=\"center\">Refactor Starting with Priority 1</h2>\n");
         stringBuilder.append("<div style=\"text-align: center;\">\n");
+        stringBuilder.append("Current Cycle Count: ").append(cycles.size()).append("<br>\n");
 
         stringBuilder
-                .append("Current Cycle Count: ")
-                .append(dsm.getCycles().size())
+                .append("Number of Relationships to Remove: ")
+                .append(edgesToRemove.size())
                 .append("<br>\n");
-        stringBuilder
-                .append("Current Total Back Edge Count: ")
-                .append(dsm.getEdgesAboveDiagonal().size())
-                .append("<br>\n");
-        stringBuilder
-                .append("Current Total Min Weight Back Edge Count: ")
-                .append(dsm.getMinimumWeightEdgesAboveDiagonal().size())
-                .append("<br>\n");
+        stringBuilder.append("Classes in bold should be broken apart").append("<br>\n");
         stringBuilder.append("</div>\n");
 
-        stringBuilder.append("<table align=\"center\" border=\"5px\">\n");
-
         // Content
+        stringBuilder.append("<table align=\"center\" border=\"5px\">\n");
         stringBuilder.append("<thead>\n<tr>\n");
-        for (String heading : getEdgesToRemoveInfoTableHeadings()) {
+        for (String heading : getEdgeDisharmonyTableHeadings()) {
             stringBuilder.append("<th>").append(heading).append("</th>\n");
         }
         stringBuilder.append("</thead>\n");
 
         stringBuilder.append("<tbody>\n");
-        for (EdgeToRemoveInfo edge : edges) {
+
+        for (RankedDisharmony edge : edgeDisharmonies) {
             stringBuilder.append("<tr>\n");
 
-            for (String rowData : getEdgeToRemoveInfos(edge)) {
+            for (String rowData : getEdgeDisharmony(edge)) {
                 stringBuilder.append(drawTableCell(rowData));
             }
 
@@ -348,18 +389,38 @@ public class SimpleHtmlReport {
         return stringBuilder.toString();
     }
 
+    private String[] getEdgeDisharmonyTableHeadings() {
+        return new String[] {
+            "Relationship",
+            "Priority",
+            "In Cycles",
+            "Edge<br>Weight",
+            "Source<br>Change Proneness Rank",
+            "Target<br>Change Proneness Rank",
+        };
+    }
+
+    private String[] getEdgeDisharmony(RankedDisharmony edgeInfo) {
+        return new String[] {
+            renderEdge(edgeInfo.getEdge()),
+            String.valueOf(edgeInfo.getPriority()),
+            String.valueOf(edgeInfo.getCycleCount()),
+            String.valueOf(edgeInfo.getEffortRank()),
+            String.valueOf(edgeInfo.getChangePronenessRank()),
+            String.valueOf(edgeInfo.getEdgeTargetChangePronenessRank()),
+        };
+    }
+
     private String renderClassCycleSummary(List<RankedCycle> rankedCycles) {
         StringBuilder stringBuilder = new StringBuilder();
 
         stringBuilder.append("<div style=\"text-align: center;\"><a id=\"CYCLES\"><h1>Class Cycles</h1></a></div>\n");
-        if (rankedCycles.size() > 10) {
+        /*if (rankedCycles.size() > 10) {
             stringBuilder.append(
                     "<div style=\"text-align: center;\">10 largest cycles are shown in the sections below</div>\n");
-        }
+        }*/
 
         stringBuilder.append("<h2 align=\"center\">Class Cycles by the numbers:</h2>\n");
-        //        stringBuilder.append("<p align=\"center\"><strong>Bold edges are backward edges causing
-        // cycles</strong></p>");
         stringBuilder.append("<table align=\"center\" border=\"5px\">\n");
 
         // Content
@@ -376,7 +437,7 @@ public class SimpleHtmlReport {
             StringBuilder edges = new StringBuilder();
             for (DefaultWeightedEdge edge : cycle.getMinCutEdges()) {
 
-                if (edgesAboveDiagonal.contains(edge)) {
+                if (edgesToRemove.contains(edge)) {
                     stringBuilder.append("<strong>");
                     edges.append(renderEdge(edge));
                     stringBuilder.append("</strong>");
@@ -402,8 +463,22 @@ public class SimpleHtmlReport {
     private String renderEdge(DefaultWeightedEdge edge) {
         StringBuilder edgesToCut = new StringBuilder();
         String[] vertexes = extractVertexes(edge);
-        String start = getClassName(vertexes[0].trim());
-        String end = getClassName(vertexes[1].trim());
+
+        String startVertex = vertexes[0].trim();
+        String start;
+        if (vertexesToRemove.contains(startVertex)) {
+            start = "<strong>" + getClassName(startVertex) + "</strong>";
+        } else {
+            start = getClassName(startVertex);
+        }
+
+        String endVertex = vertexes[1].trim();
+        String end;
+        if (vertexesToRemove.contains(endVertex)) {
+            end = "<strong>" + getClassName(endVertex) + "</strong>";
+        } else {
+            end = getClassName(endVertex);
+        }
 
         // &#8594; is HTML "Right Arrow" code
         return edgesToCut
@@ -413,25 +488,6 @@ public class SimpleHtmlReport {
 
     private String[] getCycleSummaryTableHeadings() {
         return new String[] {"Cycle Name", "Priority", "Class Count", "Relationship Count" /*, "Minimum Cuts"*/};
-    }
-
-    private String[] getEdgesToRemoveInfoTableHeadings() {
-        return new String[] {
-            "Edge",
-            "Edge Weight",
-            "New Cycle Count",
-            "Avg Node &Delta; &divide; Effort"
-        };
-    }
-
-    private String[] getEdgeToRemoveInfos(EdgeToRemoveInfo edgeToRemoveInfo) {
-        return new String[] {
-            // "Edge", "Edge Weight", "In # of Cycles", "New Back Edge Count", "New Back Edge Weight Sum", "Payoff"
-            renderEdge(edgeToRemoveInfo.getEdge()),
-            String.valueOf(edgeToRemoveInfo.getRemovedEdgeWeight()),
-            String.valueOf(edgeToRemoveInfo.getNewCycleCount()),
-            String.valueOf(edgeToRemoveInfo.getPayoff())
-        };
     }
 
     private String[] getRankedCycleSummaryData(RankedCycle rankedCycle, StringBuilder edgesToCut) {
@@ -453,12 +509,15 @@ public class SimpleHtmlReport {
         stringBuilder.append("<br/>\n");
         stringBuilder.append("<br/>\n");
 
-        stringBuilder.append("<h2 align=\"center\">Class Cycle : " + getClassName(cycle.getCycleName()) + "</h2>\n");
+        stringBuilder.append(
+                "<h2 align=\"center\">Largest Class Cycle : " + getClassName(cycle.getCycleName()) + "</h2>\n");
+        stringBuilder.append(
+                "<h3 align=\"center\">Limiting number of cycles displayed to 1 to keep page load time fast</h3>\n");
         stringBuilder.append(renderCycleVisuals(cycle));
 
         stringBuilder.append("<div align=\"center\">");
         stringBuilder.append("<strong>");
-        stringBuilder.append("Bold text indicates back edge to remove to decompose cycle");
+        stringBuilder.append("Bold text indicates class or relationship to remove to decompose cycle");
         stringBuilder.append("</strong>");
         int classCount = cycle.getCycleNodes().size();
         int relationshipCount = cycle.getEdgeSet().size();
@@ -479,12 +538,17 @@ public class SimpleHtmlReport {
 
         for (String vertex : cycle.getVertexSet()) {
             stringBuilder.append("<tr>");
-            stringBuilder.append(drawTableCell(getClassName(vertex)));
+            String className = getClassName(vertex);
+            if (vertexesToRemove.contains(vertex)) {
+                className = "<strong>" + className + "</strong>";
+            }
+
+            stringBuilder.append(drawTableCell(className));
             StringBuilder edges = new StringBuilder();
             for (DefaultWeightedEdge edge : cycle.getEdgeSet()) {
                 if (edge.toString().startsWith("(" + vertex + " :")) {
 
-                    if (edgesAboveDiagonal.contains(edge)) {
+                    if (edgesToRemove.contains(edge)) {
                         edges.append("<strong>");
                         edges.append(renderEdge(edge));
                         if (cycle.getMinCutEdges().contains(edge)) {

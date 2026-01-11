@@ -530,7 +530,8 @@ public class HtmlReport extends SimpleHtmlReport {
         stringBuilder.append(generate2DPopup(graphName));
         stringBuilder.append(generateHidePopup(graphName));
 
-        stringBuilder.append("<div align=\"center\">\nRed lines represent back edges to remove.<br>\n");
+        stringBuilder.append("<div align=\"center\">\nRed lines represent relationships to remove.<br>\n");
+        stringBuilder.append("Red nodes represent classes to remove.<br>\n");
         stringBuilder.append("Zoom in / out with your mouse wheel and click/move to drag the image.\n");
         stringBuilder.append("</div>\n");
         return stringBuilder;
@@ -580,6 +581,11 @@ public class HtmlReport extends SimpleHtmlReport {
         // render vertices
         for (String vertex : vertexesToRender) {
             dot.append(getClassName(vertex).replace("$", "_"));
+
+            if (vertexesToRemove.contains(vertex)) {
+                dot.append(" [color=red style=filled]\n");
+            }
+
             dot.append(";\n");
         }
 
@@ -609,7 +615,7 @@ public class HtmlReport extends SimpleHtmlReport {
         dot.append(edgeWeight);
         dot.append("\"");
 
-        if (edgesAboveDiagonal.contains(edge)) {
+        if (edgesToRemove.contains(edge)) {
             dot.append(" color = \"red\"");
         }
 
@@ -649,6 +655,11 @@ public class HtmlReport extends SimpleHtmlReport {
         // render vertices
         for (String vertex : cycle.getVertexSet()) {
             dot.append(getClassName(vertex).replace("$", "_"));
+
+            if (vertexesToRemove.contains(vertex)) {
+                dot.append(" [color=red style=filled]\n");
+            }
+
             dot.append(";\n");
         }
 

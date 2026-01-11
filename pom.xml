@@ -68,7 +68,7 @@
     <modules>
         <module>test-resources</module>
         <module>codebase-graph-builder</module>
-        <module>dsm</module>
+        <module>graph-algorithms</module>
         <module>change-proneness-ranker</module>
         <module>effort-ranker</module>
         <module>cost-benefit-calculator</module>
@@ -96,7 +96,7 @@
 
             <dependency>
                 <groupId>org.hjug.refactorfirst.dsm</groupId>
-                <artifactId>dsm</artifactId>
+                <artifactId>graph-algorithms</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -241,14 +241,21 @@
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
-            <version>5.9.0</version>
+            <version>5.13.3</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-params</artifactId>
+            <version>5.13.3</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
-            <version>5.9.0</version>
+            <version>5.13.3</version>
             <scope>test</scope>
         </dependency>
 
@@ -290,7 +297,7 @@
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.8</version>
+                <version>0.8.14</version>
                 <executions>
                     <!-- to avoid bugs in some situations -->
                     <execution>

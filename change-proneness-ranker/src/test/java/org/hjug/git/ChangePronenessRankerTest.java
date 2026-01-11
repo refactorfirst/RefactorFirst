@@ -23,7 +23,7 @@ class ChangePronenessRankerTest {
     // TODO: this should probably be a cucumber test
     @Test
     void testChangePronenessCalculation() throws IOException, GitAPIException {
-        ScmLogInfo scmLogInfo = new ScmLogInfo("path", 1595275997, 0, 1);
+        ScmLogInfo scmLogInfo = new ScmLogInfo("path", null, 1595275997, 0, 1);
 
         TreeMap<Integer, Integer> commitsWithChangeCounts = new TreeMap<>();
         commitsWithChangeCounts.put(scmLogInfo.getEarliestCommit(), scmLogInfo.getCommitCount());
@@ -43,30 +43,32 @@ class ChangePronenessRankerTest {
 
     @Test
     void testRankChangeProneness() throws IOException, GitAPIException {
-        ScmLogInfo scmLogInfo = new ScmLogInfo("file1", 1595275997, 0, 1);
+        // more recent commit
+        ScmLogInfo newerCommit = new ScmLogInfo("file1", null, 1595275997, 0, 1);
 
         TreeMap<Integer, Integer> commitsWithChangeCounts = new TreeMap<>();
-        commitsWithChangeCounts.put(scmLogInfo.getEarliestCommit(), scmLogInfo.getCommitCount());
-        commitsWithChangeCounts.put(scmLogInfo.getEarliestCommit() + 5 * 60, 3);
-        commitsWithChangeCounts.put(scmLogInfo.getEarliestCommit() + 10 * 60, 3);
+        commitsWithChangeCounts.put(newerCommit.getEarliestCommit(), newerCommit.getCommitCount());
+        commitsWithChangeCounts.put(newerCommit.getEarliestCommit() + 5 * 60, 3);
+        commitsWithChangeCounts.put(newerCommit.getEarliestCommit() + 10 * 60, 3);
 
-        ScmLogInfo scmLogInfo2 = new ScmLogInfo("file2", 1595175997, 0, 1);
+        // older commit
+        ScmLogInfo olderCommit = new ScmLogInfo("file2", null, 1595175997, 0, 1);
 
-        commitsWithChangeCounts.put(scmLogInfo2.getEarliestCommit(), scmLogInfo2.getCommitCount());
-        commitsWithChangeCounts.put(scmLogInfo2.getEarliestCommit() + 5 * 60, 5);
-        commitsWithChangeCounts.put(scmLogInfo2.getEarliestCommit() + 10 * 60, 5);
+        commitsWithChangeCounts.put(olderCommit.getEarliestCommit(), olderCommit.getCommitCount());
+        commitsWithChangeCounts.put(olderCommit.getEarliestCommit() + 5 * 60, 5);
+        commitsWithChangeCounts.put(olderCommit.getEarliestCommit() + 10 * 60, 5);
 
         when(repositoryLogReader.captureChangeCountByCommitTimestamp()).thenReturn(commitsWithChangeCounts);
         changePronenessRanker = new ChangePronenessRanker(repositoryLogReader);
 
         List<ScmLogInfo> scmLogInfos = new ArrayList<>();
-        scmLogInfos.add(scmLogInfo);
-        scmLogInfos.add(scmLogInfo2);
+        scmLogInfos.add(newerCommit);
+        scmLogInfos.add(olderCommit);
         changePronenessRanker.rankChangeProneness(scmLogInfos);
 
         // ranks higher since fewer commits since initial commit
-        Assertions.assertEquals(2, scmLogInfo.getChangePronenessRank());
+        Assertions.assertEquals(2, newerCommit.getChangePronenessRank());
         // ranks lower since there have been more commits since initial commit
-        Assertions.assertEquals(1, scmLogInfo2.getChangePronenessRank());
+        Assertions.assertEquals(1, olderCommit.getChangePronenessRank());
     }
 }

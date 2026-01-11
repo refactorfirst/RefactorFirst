@@ -9,12 +9,21 @@ import org.hjug.metrics.Disharmony;
 public class CycleNode implements Disharmony {
 
     private final String className;
-    private final String fileName;
+    private String fileName;
     private Integer changePronenessRank;
 
     private Instant firstCommitTime;
     private Instant mostRecentCommitTime;
     private Integer commitCount;
+
+    public CycleNode(String className, String fileName) {
+        this.className = className;
+        this.fileName = fileName;
+    }
+
+    public String getPackageName() {
+        return className.substring(0, className.lastIndexOf('.'));
+    }
 
     public void setScmLogInfo(ScmLogInfo scmLogInfo) {
         firstCommitTime = Instant.ofEpochSecond(scmLogInfo.getEarliestCommit());

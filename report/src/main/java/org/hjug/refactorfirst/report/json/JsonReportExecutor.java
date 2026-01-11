@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -31,7 +32,8 @@ public class JsonReportExecutor {
             projectBaseDir = Paths.get("").toAbsolutePath().toString();
         }
 
-        final CostBenefitCalculator costBenefitCalculator = new CostBenefitCalculator(projectBaseDir);
+        // TODO: revisit
+        final CostBenefitCalculator costBenefitCalculator = new CostBenefitCalculator(projectBaseDir, new HashMap<>());
         try {
             costBenefitCalculator.runPmdAnalysis();
         } catch (IOException e) {
