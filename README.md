@@ -12,7 +12,7 @@ It scans your Git repository generates a single page application by runing:
 - PMD's Coupling Between Objects
 
 Code map viewers are powered by [3D Force Graph](https://vasturiano.github.io/3d-force-graph), [sigma.js](https://www.sigmajs.org/), and [GraphViz DOT](https://graphviz.org/docs/layouts/dot/)
-<br>If there are more than 4000 classes + relationships, a simplified 3D viewer will be used to avoid slowdowns.  Features will be toggleable in the 3D UI in a future release.
+<br>If there are more than 4,000 classes + relationships, a simplified 3D viewer will be used to avoid slowdowns.  Features will be toggleable in the 3D UI in a future release.
 
 Take a look at the [Spring Petclinic REST project sample report](https://rawcdn.githack.com/refactorfirst/RefactorFirst/c46d26211a91ffbe08d4089e04a85ff31eb093c0/spring-petclinic-rest-report.html)!
 
@@ -29,12 +29,13 @@ If you use an old JDK release of your chosen Java version, you may encounter iss
 ## There are several ways to run the analysis on your codebase:
 
 ### From The Command Line As an HTML Report
-Run the following command from the root of your project (the source code does not need to be built):
+Run the following command from the root of your project (the source code does not need to be built), or simply by clicking on the Play icon (a green triangle) in the gutter of IntelliJ IDEA (if you are looking at the source of the README):
 
 ```bash
 mvn org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.7.1:htmlReport
 ```
-View the report at ```target/site/refactor-first-report.html```
+
+View the report [here](target/site/refactor-first-report.html)
 
 ### [As Part of GitHub Actions Output](https://github.blog/news-insights/product-news/supercharging-github-actions-with-job-summaries/)
 This will generate a simplified HTML report (no graphs or images) as the output of a GitHub Action step
@@ -53,7 +54,7 @@ Add the following to your project in the build section.  **showDetails** will sh
         <plugin>
             <groupId>org.hjug.refactorfirst.plugin</groupId>
             <artifactId>refactor-first-maven-plugin</artifactId>
-            <version>0.7.1</version>       
+            <version>0.7.1</version>
             <!-- optional -->
             <configuration>
                 <showDetails>false</showDetails>
@@ -74,14 +75,14 @@ A RefactorFirst report will show up in the site report when you run ```mvn site`
         <plugin>
             <groupId>org.hjug.refactorfirst.plugin</groupId>
             <artifactId>refactor-first-maven-plugin</artifactId>
-            <version>0.7.1</version>       
+            <version>0.7.1</version>
         </plugin>
         ...
     </plugins>
 </reporting>
 ```
 
-## Configuraiton Options
+## Configuration Options
 Care has been taken to use sensible defaults, though if you wish to override these defaults you can specify the following parameters.
 Specify with -D if running on the command line.  e.g. ```-DbackEdgeAnalysisCount=0 `DanalyzeCycles=false``` or in the configuration section (as in the above examples) if including in a Maven build.
 
@@ -100,6 +101,7 @@ Specify with -D if running on the command line.  e.g. ```-DbackEdgeAnalysisCount
 
 ### Seeing Errors?
 
+#### Maven Site
 If you see an error similar to
 ```
  Execution default-site of goal org.apache.maven.plugins:maven-site-plugin:3.3:site failed: A required class was missing while executing org.apache.maven.plugins:maven-site-plugin:3.3:site: org/apache/maven/doxia/siterenderer/DocumentContent
@@ -107,33 +109,36 @@ If you see an error similar to
 you will need to add the following to your pom.xml:
 ```xml
   <build>
-    <plugins>        
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-site-plugin</artifactId>
-        <version>3.12.1</version>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-project-info-reports-plugin</artifactId>
-        <version>3.4.5</version>
-      </plugin>
+    <plugins>
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-site-plugin</artifactId>
+            <version>3.12.1</version>
+        </plugin>
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-project-info-reports-plugin</artifactId>
+            <version>3.4.5</version>
+        </plugin>
     </plugins>
-  </build>
+</build>
 ```
 
+#### Lombok
+
+You _may_ see errors during the build process if you haven't installed (and enabled) the Lombok plugin. Make sure to also enable Java Annotation Processing.
 
 ## But I'm using Gradle / my project layout isn't typical!
 I would like to create a Gradle plugin and (possibly) support non-conventional projects in the future, but in the meantime you can create a dummy POM file in the same directory as your .git directory:
 
 ```xml
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
- 
-  <groupId>com.mycompany.app</groupId>
-  <artifactId>my-app</artifactId>
-  <version>1.0-SNAPSHOT</version>
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.mycompany.app</groupId>
+    <artifactId>my-app</artifactId>
+    <version>1.0-SNAPSHOT</version>
 </project>
 ```
 and then (assuming Maven is installed) run
@@ -155,7 +160,7 @@ If you have IntelliJ Ultimate, you can install the [Method Reference Diagram](ht
 ## Additional Details
 This plugin will work on both single module and multi-module Maven projects that have a typical Maven project layout.
  
-This tool is based on the paper **[Prioritizing Design Debt Investment Opportunities](https://dl.acm.org/doi/10.1145/1985362.1985372)** by Nico Zazworka, Carolyn Seaman, and Forrest Shull.  The presentation based on the paper is available at https://resources.sei.cmu.edu/asset_files/Presentation/2011_017_001_516911.pdf 
+This tool is based on the paper **[Prioritizing Design Debt Investment Opportunities](https://dl.acm.org/doi/10.1145/1985362.1985372)** by Nico Zazworka, Carolyn Seaman, and Forrest Shull.  The presentation based on the paper is available [here](07-Investigating the Impact of Design Debt on Software Quality.pdf). 
 
 ## Limitations
 * My time.  This is a passion project and is developed in my spare time.
