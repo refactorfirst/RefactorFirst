@@ -78,14 +78,14 @@ public class GitLogReader implements AutoCloseable {
         }
 
         // based on https://stackoverflow.com/a/59274329/346247
-        int mostRecentCommit = git.log()
-                .add(branchId)
-                .addPath(path)
-                .setMaxCount(1)
-                .call()
-                .iterator()
-                .next()
-                .getCommitTime();
+        Iterator<RevCommit> iterator =
+                git.log().add(branchId).addPath(path).setMaxCount(1).call().iterator();
+
+        if (!iterator.hasNext()) {
+            return new ScmLogInfo(path, null, earliestCommit, earliestCommit, commitCount);
+        }
+
+        int mostRecentCommit = iterator.next().getCommitTime();
 
         return new ScmLogInfo(path, null, earliestCommit, mostRecentCommit, commitCount);
     }
