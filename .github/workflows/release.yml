@@ -41,7 +41,7 @@ jobs:
           message: "build: Releasing version ${{ github.event.inputs.version }}"
 
       - name: Stage release
-        run: mvn --no-transfer-progress --batch-mode -Ppublication clean deploy -DaltDeploymentRepository=local::default::file://`pwd`/target/staging-deploy
+        run: mvn --no-transfer-progress --batch-mode -Ppublish clean deploy -DaltDeploymentRepository=local::default::file://`pwd`/target/staging-deploy
 
       - name: Run JReleaser
         uses: jreleaser/release-action@v2
