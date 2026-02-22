@@ -1,0 +1,32 @@
+# Generated with JReleaser 1.22.0 at 2026-01-24T15:46:34.8940566-06:00
+project:
+  name: RefactorFirst
+  description: Identifies cycles and God classes in a codebase and suggests which classes should be refactored first.
+  longDescription: Identifies cycles and God classes in a codebase and suggests which classes should be refactored first.
+  authors:
+    - Jim Bethancourt
+  license: Apache-2.0
+  links:
+    homepage: https://github.com/refactorfirst/RefactorFirst
+  languages:
+    java:
+      groupId: com.acme
+#      version: 11
+  inceptionYear: 2020
+
+release:
+  github:
+    owner: refactorfirst
+
+signing:
+  active: ALWAYS
+  armored: true
+deploy:
+  maven:
+    mavenCentral:
+      release-deploy:
+        active: RELEASE
+        url: https://central.sonatype.com/api/v1/publisher
+        applyMavenCentralRules: true
+        stagingRepositories:
+          - target/staging-deploy

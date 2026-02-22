@@ -4,14 +4,14 @@
 
     <groupId>org.hjug.refactorfirst</groupId>
     <artifactId>refactor-first</artifactId>
-    <version>0.7.2-SNAPSHOT</version>
+    <version>0.8.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <url>https://github.com/refactorfirst/RefactorFirst</url>
 
     <name>RefactorFirst</name>
     <description>
-        Plugin that identifies God classes in a codebase and suggests which classes should be refactored first.
+        Plugin that identifies Cycles and God classes in a codebase and suggests which classes should be refactored first.
         Generates a graph and a table providing (hopefully) easy to understand guidance.
         Can be used via command line, as a build plugin, or as a report plugin.
     </description>
@@ -268,6 +268,15 @@
     </dependencies>
 
     <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-deploy-plugin</artifactId>
+                    <version>3.1.4</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -484,7 +493,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-source-plugin</artifactId>
-                        <version>3.0.1</version>
+                        <version>3.4.0</version>
                         <executions>
                             <execution>
                                 <id>attach-sources</id>
@@ -497,7 +506,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-javadoc-plugin</artifactId>
-                        <version>3.0.0</version>
+                        <version>3.12.0</version>
                         <executions>
                             <execution>
                                 <id>attach-javadocs</id>
@@ -506,39 +515,6 @@
                                 </goals>
                             </execution>
                         </executions>
-                    </plugin>
-                    <plugin>
-                        <!--See http://maven.apache.org/plugins/maven-gpg-plugin/usage.html-->
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-gpg-plugin</artifactId>
-                        <version>1.6</version>
-                        <executions>
-                            <execution>
-                                <id>sign-artifacts</id>
-                                <phase>verify</phase>
-                                <goals>
-                                    <goal>sign</goal>
-                                </goals>
-                                <configuration>
-                                    <!-- Prevent 'gpg' from using pinentry programs -->
-                                    <gpgArguments>
-                                        <arg>--pinentry-mode</arg>
-                                        <arg>loopback</arg>
-                                    </gpgArguments>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.sonatype.plugins</groupId>
-                        <artifactId>nexus-staging-maven-plugin</artifactId>
-                        <version>1.6.8</version>
-                        <extensions>true</extensions>
-                        <configuration>
-                            <serverId>ossrh</serverId>
-                            <nexusUrl>https://oss.sonatype.org/</nexusUrl>
-                            <autoReleaseAfterClose>true</autoReleaseAfterClose>
-                        </configuration>
                     </plugin>
                 </plugins>
             </build>
@@ -554,6 +530,4 @@
             </distributionManagement>
         </profile>
     </profiles>
-
-
 </project>
