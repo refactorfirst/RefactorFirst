@@ -10,7 +10,7 @@ project:
     homepage: https://github.com/refactorfirst/RefactorFirst
   languages:
     java:
-      groupId: com.acme
+      groupId: org.hjug
 #      version: 11
   inceptionYear: 2020
 
