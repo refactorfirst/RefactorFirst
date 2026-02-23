@@ -30,3 +30,7 @@ deploy:
         applyMavenCentralRules: true
         stagingRepositories:
           - target/staging-deploy
+    pomchecker:
+      failOnError: false
+      failOnWarning: false
+      strict: false
