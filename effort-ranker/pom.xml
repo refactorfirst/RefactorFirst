@@ -11,6 +11,8 @@
     <groupId>org.hjug.refactorfirst.effortranker</groupId>
     <artifactId>effort-ranker</artifactId>
 
+    <name>RefactorFirst Effort Ranker</name>
+
     <dependencies>
         <dependency>
             <groupId>net.sourceforge.pmd</groupId>

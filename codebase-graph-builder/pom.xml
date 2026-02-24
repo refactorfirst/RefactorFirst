@@ -11,6 +11,8 @@
     <groupId>org.hjug.refactorfirst.codebasegraphbuilder</groupId>
     <artifactId>codebase-graph-builder</artifactId>
 
+    <name>RefactorFirst Codebase Graph Builder</name>
+
     <dependencyManagement>
         <dependencies>
             <dependency>

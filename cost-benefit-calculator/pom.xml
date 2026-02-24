@@ -11,6 +11,8 @@
     <groupId>org.hjug.refactorfirst.costbenefitcalculator</groupId>
     <artifactId>cost-benefit-calculator</artifactId>
 
+    <name>RefactorFirst Cost Benefit Calculator</name>
+
     <dependencies>
         <!-- Needed for PMD -->
         <dependency>

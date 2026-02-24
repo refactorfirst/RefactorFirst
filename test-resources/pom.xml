@@ -11,4 +11,6 @@
     <groupId>org.hjug.refactorfirst.testresources</groupId>
     <artifactId>test-resources</artifactId>
 
+    <name>RefactorFirst Test Resources</name>
+
 </project>

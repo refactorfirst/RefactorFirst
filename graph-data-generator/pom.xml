@@ -11,6 +11,8 @@
     <groupId>org.hjug.refactorfirst.graphdatagenerator</groupId>
     <artifactId>graph-data-generator</artifactId>
 
+    <name>RefactorFirst Graph Data Generator</name>
+
     <dependencies>
         <dependency>
             <groupId>org.hjug.refactorfirst.costbenefitcalculator</groupId>

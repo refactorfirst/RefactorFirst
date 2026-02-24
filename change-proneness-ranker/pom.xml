@@ -11,6 +11,8 @@
     <groupId>org.hjug.refactorfirst.changepronenessranker</groupId>
     <artifactId>change-proneness-ranker</artifactId>
 
+    <name>RefactorFirst Change Proneness Ranker</name>
+
     <build>
         <testResources>
             <testResource>

@@ -10,6 +10,8 @@
     <groupId>org.hjug.refactorfirst.report</groupId>
     <artifactId>report</artifactId>
 
+    <name>RefactorFirst Report</name>
+
     <dependencies>
         <dependency>
             <groupId>org.hjug.refactorfirst.graphdatagenerator</groupId>

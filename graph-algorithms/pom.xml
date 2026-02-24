@@ -11,6 +11,8 @@
     <groupId>org.hjug.refactorfirst.dsm</groupId>
     <artifactId>graph-algorithms</artifactId>
 
+    <name>RefactorFirst Graph Algorithms</name>
+
     <description>
         Implementation of a DSM that only has JGraphT-Core as a dependency.
         Can be used by other projects.
