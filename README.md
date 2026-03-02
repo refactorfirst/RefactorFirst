@@ -14,6 +14,25 @@ It scans your Git repository generates a single page application by runing:
 Code map viewers are powered by [3D Force Graph](https://vasturiano.github.io/3d-force-graph), [sigma.js](https://www.sigmajs.org/), and [GraphViz DOT](https://graphviz.org/docs/layouts/dot/)
 <br>If there are more than 4000 classes + relationships, a simplified 3D viewer will be used to avoid slowdowns.  Features will be toggleable in the 3D UI in a future release.
 
+## Decomposing and Removing Cycles
+Cutting-edge cycle analysis using [Directed Feedback Vertex Set](https://dl.acm.org/doi/10.1145/3711669) and [Directed Feedback Arc Set](https://arxiv.org/abs/2208.09234) 
+algorithms are used to identify the most optimal classes and relationships in a codebase to remove cycles.  
+These algorithms are powerful and will push your CPU to its limits for large codebases, though it does play nice and shouldn't slow your computer down.  
+These graph algorithms can be used outside RefactorFirst.  
+See [DIAGRAM.md](./graph-algorithms/src/main/java/org/hjug/feedback/vertex/kernelized/DIAGRAM.md) for the flow of the vertex kernelized algorithm.    
+See [DIAGRAM.md](./graph-algorithms/src/main/java/org/hjug/feedback/arc/pageRank/DIAGRAM.md) for more details on the arc kernelized algorithm.
+
+
+### How to understand the Relationship Removal Priority table
+
+The Relationship Removal Priority table shows the most optimal relationships to remove from your codebase to remove all cycles.  
+The table is sorted by the number of cycles that a relationship exists in and then the change proneness of the clases in the relationship.
+- Classes that should be broken apart / removed from the codebase are bold.  
+- If only one class is bold, the method(s) called by the non-bold class in the bold class should be moved to the non-bold class.  
+- If both classes are bold, examine both classes and reassess the responsibilities of the classes and refactor to remove the relationship.
+- If neither class is bold, examine both classes determine how the relationship between the classes should be changed to remove the relationship.
+
+
 Take a look at the [Spring Petclinic REST project sample report](https://rawcdn.githack.com/refactorfirst/RefactorFirst/c46d26211a91ffbe08d4089e04a85ff31eb093c0/spring-petclinic-rest-report.html)!
 
 The graphs generated in the report will look similar to this one:
