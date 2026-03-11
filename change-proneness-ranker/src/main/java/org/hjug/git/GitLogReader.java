@@ -2,6 +2,9 @@ package org.hjug.git;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.stream.IntStream;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
@@ -70,22 +73,22 @@ public class GitLogReader implements AutoCloseable {
 
         int commitCount = 0;
         int earliestCommit = Integer.MAX_VALUE;
+        int mostRecentCommit = 0;
+
         for (RevCommit revCommit : revCommits) {
-            if (revCommit.getCommitTime() < earliestCommit) {
-                earliestCommit = revCommit.getCommitTime();
+            int commitTime = revCommit.getCommitTime();
+            if (commitCount == 0) {
+                mostRecentCommit = commitTime;
+            }
+            if (commitTime < earliestCommit) {
+                earliestCommit = commitTime;
             }
             commitCount++;
         }
 
-        // based on https://stackoverflow.com/a/59274329/346247
-        Iterator<RevCommit> iterator =
-                git.log().add(branchId).addPath(path).setMaxCount(1).call().iterator();
-
-        if (!iterator.hasNext()) {
+        if (commitCount == 0) {
             return new ScmLogInfo(path, null, earliestCommit, earliestCommit, commitCount);
         }
-
-        int mostRecentCommit = iterator.next().getCommitTime();
 
         return new ScmLogInfo(path, null, earliestCommit, mostRecentCommit, commitCount);
     }
@@ -96,53 +99,55 @@ public class GitLogReader implements AutoCloseable {
         TreeMap<Integer, Integer> changesByCommitTimestamp = new TreeMap<>();
 
         ObjectId branchId = gitRepository.resolve("HEAD");
-        Iterable<RevCommit> commits = git.log().add(branchId).call();
+        List<RevCommit> commitList = new ArrayList<>();
+        git.log().add(branchId).call().forEach(commitList::add);
 
-        RevCommit newCommit = null;
+        if (commitList.isEmpty()) {
+            return changesByCommitTimestamp;
+        }
 
-        for (Iterator<RevCommit> iterator = commits.iterator(); iterator.hasNext(); ) {
-            RevCommit oldCommit = iterator.next();
+        // Handle first / initial commit
+        changesByCommitTimestamp.putAll(walkFirstCommit(commitList.get(commitList.size() - 1)));
 
-            int count = 0;
-            if (null == newCommit && iterator.hasNext()) {
-                newCommit = oldCommit;
-                continue;
-            } else if (!iterator.hasNext()) {
-                // Handle first / initial commit
-                changesByCommitTimestamp.putAll(walkFirstCommit(oldCommit));
-            }
+        if (commitList.size() < 2) {
+            return changesByCommitTimestamp;
+        }
 
-            if (null != newCommit) {
-                for (DiffEntry entry : getDiffEntries(newCommit, oldCommit)) {
+        // Process adjacent commit pairs in parallel; each pair is independent
+        ConcurrentMap<Integer, Integer> concurrentResults = new ConcurrentHashMap<>();
+        IntStream.range(0, commitList.size() - 1).parallel().forEach(i -> {
+            RevCommit newer = commitList.get(i);
+            RevCommit older = commitList.get(i + 1);
+            try {
+                int count = 0;
+                for (DiffEntry entry : getDiffEntries(newer, older)) {
                     if (entry.getNewPath().endsWith(JAVA_FILE_TYPE)
                             || entry.getOldPath().endsWith(JAVA_FILE_TYPE)) {
                         count++;
                     }
                 }
-
                 if (count > 0) {
-                    changesByCommitTimestamp.put(newCommit.getCommitTime(), count);
+                    concurrentResults.put(newer.getCommitTime(), count);
                 }
-                newCommit = oldCommit;
+            } catch (IOException e) {
+                log.error("Error getting diff entries: {}", e.getMessage());
             }
-        }
+        });
 
+        changesByCommitTimestamp.putAll(concurrentResults);
         return changesByCommitTimestamp;
     }
 
     private List<DiffEntry> getDiffEntries(RevCommit newCommit, RevCommit oldCommit) throws IOException {
-        CanonicalTreeParser oldTreeIter = new CanonicalTreeParser();
-        CanonicalTreeParser newTreeIter = new CanonicalTreeParser();
-        try (ObjectReader reader = git.getRepository().newObjectReader()) {
-            ObjectId oldTree = git.getRepository().resolve(newCommit.getTree().name());
-            oldTreeIter.reset(reader, oldTree);
-            ObjectId newTree = git.getRepository().resolve(oldCommit.getTree().name());
-            newTreeIter.reset(reader, newTree);
+        try (ObjectReader reader = gitRepository.newObjectReader();
+                DiffFormatter df = new DiffFormatter(NullOutputStream.INSTANCE)) {
+            df.setRepository(gitRepository);
+            CanonicalTreeParser oldTreeIter = new CanonicalTreeParser();
+            oldTreeIter.reset(reader, newCommit.getTree());
+            CanonicalTreeParser newTreeIter = new CanonicalTreeParser();
+            newTreeIter.reset(reader, oldCommit.getTree());
+            return df.scan(oldTreeIter, newTreeIter);
         }
-
-        DiffFormatter df = new DiffFormatter(NullOutputStream.INSTANCE);
-        df.setRepository(git.getRepository());
-        return df.scan(oldTreeIter, newTreeIter);
     }
 
     Map<Integer, Integer> walkFirstCommit(RevCommit firstCommit) throws IOException {
