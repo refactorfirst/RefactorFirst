@@ -1,54 +1,32 @@
 package org.hjug.graphbuilder.visitor;
 
 import java.util.List;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.jgrapht.Graph;
-import org.jgrapht.graph.DefaultWeightedEdge;
-import org.jgrapht.graph.SimpleDirectedWeightedGraph;
-import org.openrewrite.java.JavaIsoVisitor;
+import org.hjug.graphbuilder.DependencyCollector;
 import org.openrewrite.java.tree.*;
 
 @Slf4j
-public class JavaVariableTypeVisitor<P> extends JavaIsoVisitor<P> implements TypeProcessor {
+public class JavaVariableTypeVisitor<P> extends BaseCodebaseVisitor<P> {
 
-    @Getter
-    private Graph<String, DefaultWeightedEdge> classReferencesGraph =
-            new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+    private final BaseTypeProcessor typeProcessor;
 
-    @Getter
-    private Graph<String, DefaultWeightedEdge> packageReferencesGraph =
-            new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-
-    private final JavaNewClassVisitor newClassVisitor;
-    private final JavaMethodInvocationVisitor methodInvocationVisitor;
-
-    public JavaVariableTypeVisitor() {
-        newClassVisitor = new JavaNewClassVisitor(classReferencesGraph);
-        methodInvocationVisitor = new JavaMethodInvocationVisitor(classReferencesGraph);
-    }
-
-    public JavaVariableTypeVisitor(
-            Graph<String, DefaultWeightedEdge> classReferencesGraph,
-            Graph<String, DefaultWeightedEdge> packageReferencesGraph) {
-        this.classReferencesGraph = classReferencesGraph;
-        this.packageReferencesGraph = packageReferencesGraph;
-        newClassVisitor = new JavaNewClassVisitor(classReferencesGraph);
-        methodInvocationVisitor = new JavaMethodInvocationVisitor(classReferencesGraph);
+    public JavaVariableTypeVisitor(DependencyCollector dependencyCollector) {
+        super(dependencyCollector);
+        this.typeProcessor = new BaseTypeProcessor() {
+            @Override
+            protected DependencyCollector getDependencyCollector() {
+                return dependencyCollector;
+            }
+        };
     }
 
     @Override
     public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, P p) {
         J.VariableDeclarations variableDeclarations = super.visitVariableDeclarations(multiVariable, p);
 
-        /*
-         * Handles
-         * java.lang.NullPointerException: Cannot invoke "org.openrewrite.java.tree.JavaType$Variable.getOwner()"
-         * because the return value of
-         * "org.openrewrite.java.tree.J$VariableDeclarations$NamedVariable.getVariableType()" is null
-         */
         List<J.VariableDeclarations.NamedVariable> variables = variableDeclarations.getVariables();
         if (null == variables || variables.isEmpty() || null == variables.get(0).getVariableType()) {
+            log.debug("Skipping variable declaration with null variable type");
             return variableDeclarations;
         }
 
@@ -57,17 +35,20 @@ public class JavaVariableTypeVisitor<P> extends JavaIsoVisitor<P> implements Typ
 
         if (owner instanceof JavaType.Method) {
             JavaType.Method m = (JavaType.Method) owner;
-            //            log.debug("Method owner: " + m.getDeclaringType().getFullyQualifiedName());
+            if (m.getDeclaringType() == null) {
+                log.warn("Method owner has null declaring type, skipping variable declaration");
+                return variableDeclarations;
+            }
             ownerFqn = m.getDeclaringType().getFullyQualifiedName();
         } else if (owner instanceof JavaType.Class) {
             JavaType.Class c = (JavaType.Class) owner;
-            //            log.debug("Method owner: " + c.getFullyQualifiedName());
             ownerFqn = c.getFullyQualifiedName();
+        } else {
+            log.debug("Unknown owner type: {}", owner != null ? owner.getClass() : "null");
+            return variableDeclarations;
         }
 
-        log.debug("*************************");
-        log.debug("Processing " + ownerFqn + ":" + variableDeclarations);
-        log.debug("*************************");
+        log.debug("Processing variable declaration in: {}", ownerFqn);
 
         TypeTree typeTree = variableDeclarations.getTypeExpression();
 
@@ -78,33 +59,19 @@ public class JavaVariableTypeVisitor<P> extends JavaIsoVisitor<P> implements Typ
             return variableDeclarations;
         }
 
-        // TODO: getAllAnnotations() is deprecated - need to call
-        // AnnotationService.getAllAnnotations() but not sure which one yet
-        // but I'm not sure how to get a cursor
-        // All types, including primitives can be annotated
-        for (J.Annotation annotation : variableDeclarations.getAllAnnotations()) {
-            processAnnotation(ownerFqn, annotation);
-        }
+        typeProcessor.processAnnotations(ownerFqn, getCursor());
 
-        // skip primitive variable declarations
         if (javaType instanceof JavaType.Primitive) {
             return variableDeclarations;
         }
 
-        processType(ownerFqn, javaType);
-
-        // process variable instantiation if present
-        for (J.VariableDeclarations.NamedVariable variable : variables) {
-            Expression initializer = variable.getInitializer();
-            if (null != initializer && null != initializer.getType() && initializer instanceof J.MethodInvocation) {
-                J.MethodInvocation methodInvocation = (J.MethodInvocation) initializer;
-                methodInvocationVisitor.visitMethodInvocation(ownerFqn, methodInvocation);
-            } else if (null != initializer && null != initializer.getType() && initializer instanceof J.NewClass) {
-                J.NewClass newClassType = (J.NewClass) initializer;
-                newClassVisitor.visitNewClass(ownerFqn, newClassType);
-            }
-        }
+        typeProcessor.processType(ownerFqn, javaType);
 
         return variableDeclarations;
+    }
+
+    @Override
+    protected String getCurrentOwnerFqn() {
+        return null;
     }
 }

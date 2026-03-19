@@ -7,6 +7,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.hjug.graphbuilder.GraphDependencyCollector;
+import org.jgrapht.Graph;
+import org.jgrapht.graph.DefaultDirectedWeightedGraph;
+import org.jgrapht.graph.DefaultWeightedEdge;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.ExecutionContext;
@@ -24,36 +28,29 @@ class JavaVariableTypeVisitorTest {
                 JavaParser.fromJavaVersion().build();
         ExecutionContext ctx = new InMemoryExecutionContext(Throwable::printStackTrace);
 
-        JavaVariableTypeVisitor<ExecutionContext> javaVariableCapturingVisitor = new JavaVariableTypeVisitor<>();
+        Graph<String, DefaultWeightedEdge> classReferencesGraph =
+                new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        Graph<String, DefaultWeightedEdge> packageReferencesGraph =
+                new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        GraphDependencyCollector dependencyCollector =
+                new GraphDependencyCollector(classReferencesGraph, packageReferencesGraph);
+
+        JavaVariableTypeVisitor<ExecutionContext> javaVariableCapturingVisitor =
+                new JavaVariableTypeVisitor<>(dependencyCollector);
 
         List<Path> list = Files.walk(Paths.get(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
         javaParser.parse(list, Paths.get(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> {
             javaVariableCapturingVisitor.visit(cu, ctx);
         });
 
-        Assertions.assertTrue(javaVariableCapturingVisitor
-                .getClassReferencesGraph()
-                .containsVertex("org.hjug.graphbuilder.visitor.testclasses.A"));
-        Assertions.assertTrue(javaVariableCapturingVisitor
-                .getClassReferencesGraph()
-                .containsVertex("org.hjug.graphbuilder.visitor.testclasses.B"));
-        Assertions.assertTrue(javaVariableCapturingVisitor
-                .getClassReferencesGraph()
-                .containsVertex("org.hjug.graphbuilder.visitor.testclasses.C"));
-        Assertions.assertTrue(javaVariableCapturingVisitor
-                .getClassReferencesGraph()
-                .containsVertex("org.hjug.graphbuilder.visitor.testclasses.D"));
-        Assertions.assertTrue(javaVariableCapturingVisitor
-                .getClassReferencesGraph()
-                .containsVertex("org.hjug.graphbuilder.visitor.testclasses.E"));
-        Assertions.assertTrue(javaVariableCapturingVisitor
-                .getClassReferencesGraph()
-                .containsVertex("org.hjug.graphbuilder.visitor.testclasses.MyAnnotation"));
-        Assertions.assertFalse(javaVariableCapturingVisitor
-                .getClassReferencesGraph()
-                .containsVertex("org.hjug.graphbuilder.visitor.testclasses.F"));
-        Assertions.assertFalse(javaVariableCapturingVisitor
-                .getClassReferencesGraph()
-                .containsVertex("org.hjug.graphbuilder.visitor.testclasses.G"));
+        Assertions.assertTrue(classReferencesGraph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.A"));
+        Assertions.assertTrue(classReferencesGraph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.B"));
+        Assertions.assertTrue(classReferencesGraph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.C"));
+        Assertions.assertTrue(classReferencesGraph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.D"));
+        Assertions.assertTrue(classReferencesGraph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.E"));
+        Assertions.assertTrue(
+                classReferencesGraph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.MyAnnotation"));
+        Assertions.assertFalse(classReferencesGraph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.F"));
+        Assertions.assertFalse(classReferencesGraph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.G"));
     }
 }

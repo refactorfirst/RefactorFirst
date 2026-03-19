@@ -7,6 +7,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.hjug.graphbuilder.GraphDependencyCollector;
+import org.jgrapht.Graph;
+import org.jgrapht.graph.DefaultDirectedWeightedGraph;
+import org.jgrapht.graph.DefaultWeightedEdge;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.ExecutionContext;
@@ -24,18 +28,22 @@ class JavaMethodDeclarationVisitorTest {
                 JavaParser.fromJavaVersion().build();
         ExecutionContext ctx = new InMemoryExecutionContext(Throwable::printStackTrace);
 
-        JavaMethodDeclarationVisitor<ExecutionContext> methodDeclarationVisitor = new JavaMethodDeclarationVisitor<>();
+        Graph<String, DefaultWeightedEdge> classReferencesGraph =
+                new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        Graph<String, DefaultWeightedEdge> packageReferencesGraph =
+                new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        GraphDependencyCollector dependencyCollector =
+                new GraphDependencyCollector(classReferencesGraph, packageReferencesGraph);
+
+        JavaMethodDeclarationVisitor<ExecutionContext> methodDeclarationVisitor =
+                new JavaMethodDeclarationVisitor<>(dependencyCollector);
 
         List<Path> list = Files.walk(Paths.get(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
         javaParser.parse(list, Paths.get(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> {
             methodDeclarationVisitor.visit(cu, ctx);
         });
 
-        methodDeclarationVisitor.getClassReferencesGraph();
-
-        Assertions.assertTrue(methodDeclarationVisitor
-                .getClassReferencesGraph()
-                .containsVertex("org.hjug.graphbuilder.visitor.testclasses.A"));
+        Assertions.assertTrue(classReferencesGraph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.A"));
 
         // TODO: Assert stuff
         /*   Assertions.assertTrue(methodDeclarationVisitor.getClassReferencesGraph().containsVertex("org.hjug.javaVariableVisitorTestClasses.A"));

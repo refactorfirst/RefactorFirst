@@ -7,6 +7,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.hjug.graphbuilder.GraphDependencyCollector;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultWeightedEdge;
 import org.jgrapht.graph.SimpleDirectedWeightedGraph;
@@ -28,14 +29,16 @@ public class JavaNewClassVisitorTest {
 
         Graph<String, DefaultWeightedEdge> classReferencesGraph =
                 new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-
         Graph<String, DefaultWeightedEdge> packageReferencesGraph =
                 new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
 
+        GraphDependencyCollector dependencyCollector =
+                new GraphDependencyCollector(classReferencesGraph, packageReferencesGraph);
+
         JavaClassDeclarationVisitor<ExecutionContext> classDeclarationVisitor =
-                new JavaClassDeclarationVisitor<>(classReferencesGraph);
+                new JavaClassDeclarationVisitor<>(dependencyCollector);
         JavaVariableTypeVisitor<ExecutionContext> variableTypeVisitor =
-                new JavaVariableTypeVisitor<>(classReferencesGraph, packageReferencesGraph);
+                new JavaVariableTypeVisitor<>(dependencyCollector);
 
         List<Path> list = Files.walk(Paths.get(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
         javaParser.parse(list, Paths.get(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> {
@@ -43,7 +46,7 @@ public class JavaNewClassVisitorTest {
             variableTypeVisitor.visit(cu, ctx);
         });
 
-        Graph<String, DefaultWeightedEdge> graph = variableTypeVisitor.getClassReferencesGraph();
+        Graph<String, DefaultWeightedEdge> graph = classReferencesGraph;
         Assertions.assertTrue(graph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.newClass.A"));
         Assertions.assertTrue(graph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.newClass.B"));
         Assertions.assertTrue(graph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.newClass.C"));

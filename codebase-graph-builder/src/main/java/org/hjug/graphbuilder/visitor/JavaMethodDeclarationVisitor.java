@@ -1,33 +1,26 @@
 package org.hjug.graphbuilder.visitor;
 
 import java.util.List;
-import lombok.Getter;
-import org.jgrapht.Graph;
-import org.jgrapht.graph.DefaultWeightedEdge;
-import org.jgrapht.graph.SimpleDirectedWeightedGraph;
-import org.openrewrite.java.JavaIsoVisitor;
+import lombok.extern.slf4j.Slf4j;
+import org.hjug.graphbuilder.DependencyCollector;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.NameTree;
 import org.openrewrite.java.tree.TypeTree;
 
-public class JavaMethodDeclarationVisitor<P> extends JavaIsoVisitor<P> implements TypeProcessor {
+@Slf4j
+public class JavaMethodDeclarationVisitor<P> extends BaseCodebaseVisitor<P> {
 
-    @Getter
-    private Graph<String, DefaultWeightedEdge> classReferencesGraph =
-            new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+    private final BaseTypeProcessor typeProcessor;
 
-    @Getter
-    private Graph<String, DefaultWeightedEdge> packageReferencesGraph =
-            new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-
-    public JavaMethodDeclarationVisitor() {}
-
-    public JavaMethodDeclarationVisitor(
-            Graph<String, DefaultWeightedEdge> classReferencesGraph,
-            Graph<String, DefaultWeightedEdge> packageReferencesGraph) {
-        this.classReferencesGraph = classReferencesGraph;
-        this.packageReferencesGraph = packageReferencesGraph;
+    public JavaMethodDeclarationVisitor(DependencyCollector dependencyCollector) {
+        super(dependencyCollector);
+        this.typeProcessor = new BaseTypeProcessor() {
+            @Override
+            protected DependencyCollector getDependencyCollector() {
+                return dependencyCollector;
+            }
+        };
     }
 
     @Override
@@ -36,43 +29,48 @@ public class JavaMethodDeclarationVisitor<P> extends JavaIsoVisitor<P> implement
 
         JavaType.Method methodType = methodDeclaration.getMethodType();
         if (null == methodType) {
-            // sometimes methodType is null, not sure why...
+            log.warn("MethodDeclaration has null methodType, skipping: {}", methodDeclaration.getSimpleName());
+            return methodDeclaration;
+        }
+
+        if (methodType.getDeclaringType() == null) {
+            log.warn("MethodDeclaration has null declaring type, skipping: {}", methodDeclaration.getSimpleName());
             return methodDeclaration;
         }
 
         String owner = methodType.getDeclaringType().getFullyQualifiedName();
 
-        // if returnTypeExpression is null, a constructor declaration is being processed
         TypeTree returnTypeExpression = methodDeclaration.getReturnTypeExpression();
         if (returnTypeExpression != null) {
             JavaType returnType = returnTypeExpression.getType();
 
-            // skip primitive variable declarations
             if (!(returnType instanceof JavaType.Primitive)) {
-                processType(owner, returnType);
+                typeProcessor.processType(owner, returnType);
             }
         }
 
         for (J.Annotation leadingAnnotation : methodDeclaration.getLeadingAnnotations()) {
-            processType(owner, leadingAnnotation.getType());
+            typeProcessor.processAnnotation(owner, leadingAnnotation, getCursor());
         }
 
         if (null != methodDeclaration.getTypeParameters()) {
             for (J.TypeParameter typeParameter : methodDeclaration.getTypeParameters()) {
-                processTypeParameter(owner, typeParameter);
+                typeProcessor.processTypeParameter(owner, typeParameter, getCursor());
             }
         }
-
-        // don't need to capture parameter declarations
-        // they are captured in JavaVariableTypeVisitor
 
         List<NameTree> throwz = methodDeclaration.getThrows();
         if (null != throwz && !throwz.isEmpty()) {
             for (NameTree thrown : throwz) {
-                processType(owner, thrown.getType());
+                typeProcessor.processType(owner, thrown.getType());
             }
         }
 
         return methodDeclaration;
+    }
+
+    @Override
+    protected String getCurrentOwnerFqn() {
+        return null;
     }
 }

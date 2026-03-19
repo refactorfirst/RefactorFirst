@@ -3,37 +3,20 @@ package org.hjug.graphbuilder.visitor;
 import java.util.*;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.jgrapht.Graph;
-import org.jgrapht.graph.DefaultWeightedEdge;
-import org.openrewrite.java.JavaIsoVisitor;
+import org.hjug.graphbuilder.DependencyCollector;
 import org.openrewrite.java.tree.*;
 
 @Slf4j
-public class JavaVisitor<P> extends JavaIsoVisitor<P> implements TypeProcessor {
+public class JavaVisitor<P> extends BaseCodebaseVisitor<P> {
 
-    // used to keep track of what packages are in the codebase
-    // used to remove the nodes that are not in the codebase
-    @Getter
-    private final Set<String> packagesInCodebase = new HashSet<>();
-
-    // used for looking up files where classes reside
     @Getter
     private final Map<String, String> classToSourceFilePathMapping = new HashMap<>();
 
-    @Getter
-    private final Graph<String, DefaultWeightedEdge> classReferencesGraph;
-
-    @Getter
-    private final Graph<String, DefaultWeightedEdge> packageReferencesGraph;
-
     private final JavaClassDeclarationVisitor<P> javaClassDeclarationVisitor;
 
-    public JavaVisitor(
-            Graph<String, DefaultWeightedEdge> classReferencesGraph,
-            Graph<String, DefaultWeightedEdge> packageReferencesGraph) {
-        this.classReferencesGraph = classReferencesGraph;
-        this.packageReferencesGraph = packageReferencesGraph;
-        javaClassDeclarationVisitor = new JavaClassDeclarationVisitor<>(classReferencesGraph);
+    public JavaVisitor(DependencyCollector dependencyCollector) {
+        super(dependencyCollector);
+        javaClassDeclarationVisitor = new JavaClassDeclarationVisitor<>(dependencyCollector);
     }
 
     @Override
@@ -51,14 +34,20 @@ public class JavaVisitor<P> extends JavaIsoVisitor<P> implements TypeProcessor {
             return compilationUnit;
         }
 
-        packagesInCodebase.add(packageDeclaration.getPackageName());
+        dependencyCollector.registerPackage(packageDeclaration.getPackageName());
 
         for (J.ClassDeclaration aClass : compilationUnit.getClasses()) {
-            classToSourceFilePathMapping.put(
-                    aClass.getType().getFullyQualifiedName(),
-                    compilationUnit.getSourcePath().toUri().toString());
+            String classFqn = aClass.getType().getFullyQualifiedName();
+            String sourcePath = compilationUnit.getSourcePath().toUri().toString();
+            classToSourceFilePathMapping.put(classFqn, sourcePath);
+            dependencyCollector.recordClassLocation(classFqn, sourcePath);
         }
 
         return compilationUnit;
+    }
+
+    @Override
+    protected String getCurrentOwnerFqn() {
+        return null;
     }
 }

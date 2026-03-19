@@ -26,26 +26,8 @@ public class JavaFqnCapturingVisitor<P> extends JavaIsoVisitor<P> {
     }
 
     J.ClassDeclaration captureClassDeclarations(J.ClassDeclaration classDecl, Map<String, Map<String, String>> fqnMap) {
-        // get class fqn (including "$")
         String fqn = classDecl.getType().getFullyQualifiedName();
         fqns.add(fqn);
-
-        /* String currentPackage = getPackage(fqn);
-        String className = getClassName(fqn);
-        Map<String, String> classesInPackage = fqnMap.getOrDefault(currentPackage, new HashMap<>());
-
-        if (className.contains("$")) {
-            String normalizedClassName = className.replace('$', '.');
-            List<String> parts = Arrays.asList(normalizedClassName.split("\\."));
-            for (int i = 0; i < parts.size(); i++) {
-                String key = String.join(".", parts.subList(i, parts.size()));
-                classesInPackage.put(key, currentPackage + "." + normalizedClassName);
-            }
-        } else {
-            classesInPackage.put(className, fqn);
-        }
-
-        fqnMap.put(currentPackage, classesInPackage);*/
         return classDecl;
     }
 

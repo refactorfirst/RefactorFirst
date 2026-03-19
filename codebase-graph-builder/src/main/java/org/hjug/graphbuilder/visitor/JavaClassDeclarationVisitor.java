@@ -1,118 +1,198 @@
 package org.hjug.graphbuilder.visitor;
 
 import java.util.List;
-import lombok.Getter;
-import org.jgrapht.Graph;
-import org.jgrapht.graph.DefaultWeightedEdge;
-import org.jgrapht.graph.SimpleDirectedWeightedGraph;
-import org.openrewrite.java.JavaIsoVisitor;
+import lombok.extern.slf4j.Slf4j;
+import org.hjug.graphbuilder.DependencyCollector;
 import org.openrewrite.java.tree.*;
 
-public class JavaClassDeclarationVisitor<P> extends JavaIsoVisitor<P> implements TypeProcessor {
+@Slf4j
+public class JavaClassDeclarationVisitor<P> extends BaseCodebaseVisitor<P> {
 
-    private final JavaMethodInvocationVisitor methodInvocationVisitor;
-    private final JavaNewClassVisitor newClassVisitor;
+    private final BaseTypeProcessor typeProcessor;
+    private String currentOwnerFqn;
 
-    @Getter
-    private Graph<String, DefaultWeightedEdge> classReferencesGraph =
-            new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-
-    public JavaClassDeclarationVisitor() {
-        methodInvocationVisitor = new JavaMethodInvocationVisitor(classReferencesGraph);
-        newClassVisitor = new JavaNewClassVisitor(classReferencesGraph);
-    }
-
-    public JavaClassDeclarationVisitor(Graph<String, DefaultWeightedEdge> classReferencesGraph) {
-        this.classReferencesGraph = classReferencesGraph;
-        methodInvocationVisitor = new JavaMethodInvocationVisitor(classReferencesGraph);
-        newClassVisitor = new JavaNewClassVisitor(classReferencesGraph);
+    public JavaClassDeclarationVisitor(DependencyCollector dependencyCollector) {
+        super(dependencyCollector);
+        this.typeProcessor = new BaseTypeProcessor() {
+            @Override
+            protected DependencyCollector getDependencyCollector() {
+                return dependencyCollector;
+            }
+        };
     }
 
     @Override
     public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, P p) {
-        J.ClassDeclaration classDeclaration = super.visitClassDeclaration(classDecl, p);
+        JavaType.FullyQualified type = classDecl.getType();
+        if (type == null) {
+            log.warn("ClassDeclaration has null type, skipping: {}", classDecl.getSimpleName());
+            return classDecl;
+        }
 
-        JavaType.FullyQualified type = classDeclaration.getType();
         String owningFqn = type.getFullyQualifiedName();
+        String previousOwner = currentOwnerFqn;
+        currentOwnerFqn = owningFqn;
 
-        processType(owningFqn, type);
+        try {
+            typeProcessor.processType(owningFqn, type);
 
-        TypeTree extendsTypeTree = classDeclaration.getExtends();
-        if (null != extendsTypeTree) {
-            processType(owningFqn, extendsTypeTree.getType());
-        }
-
-        List<TypeTree> implementsTypeTree = classDeclaration.getImplements();
-        if (null != implementsTypeTree) {
-            for (TypeTree typeTree : implementsTypeTree) {
-                processType(owningFqn, typeTree.getType());
+            TypeTree extendsTypeTree = classDecl.getExtends();
+            if (null != extendsTypeTree) {
+                typeProcessor.processType(owningFqn, extendsTypeTree.getType());
             }
-        }
 
-        for (J.Annotation leadingAnnotation : classDeclaration.getLeadingAnnotations()) {
-            processAnnotation(owningFqn, leadingAnnotation);
-        }
-
-        if (null != classDeclaration.getTypeParameters()) {
-            for (J.TypeParameter typeParameter : classDeclaration.getTypeParameters()) {
-                processTypeParameter(owningFqn, typeParameter);
+            List<TypeTree> implementsTypeTree = classDecl.getImplements();
+            if (null != implementsTypeTree) {
+                for (TypeTree typeTree : implementsTypeTree) {
+                    typeProcessor.processType(owningFqn, typeTree.getType());
+                }
             }
-        }
 
-        // process method invocations and lambda invocations
-        processInvocations(classDeclaration);
-
-        return classDeclaration;
-    }
-
-    private void processInvocations(J.ClassDeclaration classDeclaration) {
-        JavaType.FullyQualified type = classDeclaration.getType();
-        String owningFqn = type.getFullyQualifiedName();
-
-        for (Statement statement : classDeclaration.getBody().getStatements()) {
-            if (statement instanceof J.Block) {
-                processBlock((J.Block) statement, owningFqn);
+            for (J.Annotation leadingAnnotation : classDecl.getLeadingAnnotations()) {
+                typeProcessor.processAnnotation(owningFqn, leadingAnnotation, getCursor());
             }
-            if (statement instanceof J.MethodDeclaration) {
-                J.MethodDeclaration methodDeclaration = (J.MethodDeclaration) statement;
-                processBlock(methodDeclaration.getBody(), owningFqn);
+
+            if (null != classDecl.getTypeParameters()) {
+                for (J.TypeParameter typeParameter : classDecl.getTypeParameters()) {
+                    typeProcessor.processTypeParameter(owningFqn, typeParameter, getCursor());
+                }
             }
+
+            return super.visitClassDeclaration(classDecl, p);
+        } finally {
+            currentOwnerFqn = previousOwner;
         }
     }
 
-    private void processBlock(J.Block block, String owningFqn) {
-        if (null != block && null != block.getStatements()) {
-            for (Statement statementInBlock : block.getStatements()) {
-                if (statementInBlock instanceof J.MethodInvocation) {
-                    J.MethodInvocation methodInvocation = (J.MethodInvocation) statementInBlock;
-                    methodInvocationVisitor.visitMethodInvocation(owningFqn, methodInvocation);
-                } else if (statementInBlock instanceof J.Lambda) {
-                    J.Lambda lambda = (J.Lambda) statementInBlock;
-                    processType(owningFqn, lambda.getType());
-                } else if (statementInBlock instanceof J.NewClass) {
-                    J.NewClass newClass = (J.NewClass) statementInBlock;
-                    newClassVisitor.visitNewClass(owningFqn, newClass);
-                } else if (statementInBlock instanceof J.Return) {
-                    J.Return returnStmt = (J.Return) statementInBlock;
-                    visitReturn(owningFqn, returnStmt);
+    @Override
+    public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, P p) {
+        J.MethodInvocation methodInvocation = super.visitMethodInvocation(method, p);
+        if (currentOwnerFqn == null) {
+            return methodInvocation;
+        }
+
+        JavaType.Method methodType = methodInvocation.getMethodType();
+        if (null != methodType && null != methodType.getDeclaringType()) {
+            typeProcessor.processType(currentOwnerFqn, methodType.getDeclaringType());
+        }
+
+        if (null != methodInvocation.getTypeParameters()
+                && !methodInvocation.getTypeParameters().isEmpty()) {
+            for (Expression typeParameter : methodInvocation.getTypeParameters()) {
+                typeProcessor.processType(currentOwnerFqn, typeParameter.getType());
+            }
+        }
+
+        return methodInvocation;
+    }
+
+    @Override
+    public J.NewClass visitNewClass(J.NewClass newClass, P p) {
+        J.NewClass result = super.visitNewClass(newClass, p);
+        if (currentOwnerFqn != null) {
+            typeProcessor.processType(currentOwnerFqn, newClass.getType());
+        }
+        return result;
+    }
+
+    @Override
+    public J.Lambda visitLambda(J.Lambda lambda, P p) {
+        if (currentOwnerFqn != null && lambda.getType() != null) {
+            typeProcessor.processType(currentOwnerFqn, lambda.getType());
+        }
+
+        // Recursively visit the lambda body to capture method invocations and type references
+        // The super.visitLambda call will traverse into the lambda's body and parameters
+        return super.visitLambda(lambda, p);
+    }
+
+    @Override
+    public J.If visitIf(J.If iff, P p) {
+        return super.visitIf(iff, p);
+    }
+
+    @Override
+    public J.ForLoop visitForLoop(J.ForLoop forLoop, P p) {
+        return super.visitForLoop(forLoop, p);
+    }
+
+    @Override
+    public J.ForEachLoop visitForEachLoop(J.ForEachLoop forEachLoop, P p) {
+        return super.visitForEachLoop(forEachLoop, p);
+    }
+
+    @Override
+    public J.WhileLoop visitWhileLoop(J.WhileLoop whileLoop, P p) {
+        return super.visitWhileLoop(whileLoop, p);
+    }
+
+    @Override
+    public J.DoWhileLoop visitDoWhileLoop(J.DoWhileLoop doWhileLoop, P p) {
+        return super.visitDoWhileLoop(doWhileLoop, p);
+    }
+
+    @Override
+    public J.Switch visitSwitch(J.Switch switchStatement, P p) {
+        return super.visitSwitch(switchStatement, p);
+    }
+
+    @Override
+    public J.Try visitTry(J.Try tryStatement, P p) {
+        J.Try result = super.visitTry(tryStatement, p);
+        if (currentOwnerFqn != null && tryStatement.getCatches() != null) {
+            for (J.Try.Catch catchClause : tryStatement.getCatches()) {
+                if (catchClause.getParameter().getTree() instanceof J.VariableDeclarations) {
+                    J.VariableDeclarations varDecl =
+                            (J.VariableDeclarations) catchClause.getParameter().getTree();
+                    if (varDecl.getTypeExpression() != null) {
+                        typeProcessor.processType(
+                                currentOwnerFqn, varDecl.getTypeExpression().getType());
+                    }
                 }
             }
         }
+        return result;
     }
 
-    public J.Return visitReturn(String owningFqn, J.Return visitedReturn) {
-        Expression expression = visitedReturn.getExpression();
-        if (expression instanceof J.MethodInvocation) {
-            J.MethodInvocation methodInvocation = (J.MethodInvocation) expression;
-            methodInvocationVisitor.visitMethodInvocation(owningFqn, methodInvocation);
-        } else if (expression instanceof J.NewClass) {
-            J.NewClass newClass = (J.NewClass) expression;
-            newClassVisitor.visitNewClass(owningFqn, newClass);
-        } else if (expression instanceof J.Lambda) {
-            J.Lambda lambda = (J.Lambda) expression;
-            processType(owningFqn, lambda.getType());
+    @Override
+    public J.InstanceOf visitInstanceOf(J.InstanceOf instanceOf, P p) {
+        J.InstanceOf result = super.visitInstanceOf(instanceOf, p);
+        if (currentOwnerFqn != null && instanceOf.getClazz() != null && instanceOf.getClazz() instanceof TypeTree) {
+            typeProcessor.processType(currentOwnerFqn, ((TypeTree) instanceOf.getClazz()).getType());
         }
+        return result;
+    }
 
-        return visitedReturn;
+    @Override
+    public J.TypeCast visitTypeCast(J.TypeCast typeCast, P p) {
+        J.TypeCast result = super.visitTypeCast(typeCast, p);
+        if (currentOwnerFqn != null && typeCast.getClazz() != null) {
+            typeProcessor.processType(
+                    currentOwnerFqn, typeCast.getClazz().getTree().getType());
+        }
+        return result;
+    }
+
+    @Override
+    public J.MemberReference visitMemberReference(J.MemberReference memberRef, P p) {
+        J.MemberReference result = super.visitMemberReference(memberRef, p);
+        if (currentOwnerFqn != null && memberRef.getType() != null) {
+            typeProcessor.processType(currentOwnerFqn, memberRef.getType());
+        }
+        return result;
+    }
+
+    @Override
+    public J.NewArray visitNewArray(J.NewArray newArray, P p) {
+        J.NewArray result = super.visitNewArray(newArray, p);
+        if (currentOwnerFqn != null && newArray.getType() != null) {
+            typeProcessor.processType(currentOwnerFqn, newArray.getType());
+        }
+        return result;
+    }
+
+    @Override
+    protected String getCurrentOwnerFqn() {
+        return currentOwnerFqn;
     }
 }
