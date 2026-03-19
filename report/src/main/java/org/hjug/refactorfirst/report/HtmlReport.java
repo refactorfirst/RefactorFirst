@@ -580,7 +580,17 @@ public class HtmlReport extends SimpleHtmlReport {
 
         // render vertices
         for (String vertex : vertexesToRender) {
-            dot.append(getClassName(vertex).replace("$", "_"));
+            String className = getClassName(vertex);
+
+            // if the vertex is a nested class and has no outgoing edges, skip it
+            if (className.contains("$")
+                    && className.split("\\$")[className.split("\\$").length - 1].matches("\\d+")
+                    && classGraph.outDegreeOf(vertex) == 0) {
+                log.info("Skipping vertex: {}", className);
+                continue;
+            }
+
+            dot.append(className.replace("$", "_"));
 
             if (vertexesToRemove.contains(vertex)) {
                 dot.append(" [color=red style=filled]\n");
@@ -598,9 +608,30 @@ public class HtmlReport extends SimpleHtmlReport {
         // render edge
         String[] vertexes = extractVertexes(edge);
 
-        String start = getClassName(vertexes[0].trim()).replace("$", "_");
-        String end = getClassName(vertexes[1].trim()).replace("$", "_");
+        //        String start = getClassName(vertexes[0].trim()).replace("$", "_");
+        //        String end = getClassName(vertexes[1].trim()).replace("$", "_");
 
+        String startVertex = vertexes[0].trim();
+        String start = getClassName(startVertex.trim()).replace("$", "_");
+        String endVertex = vertexes[1].trim();
+        String end = getClassName(endVertex.trim()).replace("$", "_");
+
+        // if the vertex is a nested class and has no outgoing edges, skip it
+        if (start.contains("$")
+                && start.split("\\$")[startVertex.split("\\$").length - 1].matches("\\d+")
+                && classGraph.outDegreeOf(startVertex) == 0) {
+            log.info("Skipping edge: {} -> {}", startVertex, endVertex);
+            return;
+        }
+
+        if (endVertex.contains("$")
+                && endVertex.split("\\$")[endVertex.split("\\$").length - 1].matches("\\d+")
+                && classGraph.outDegreeOf(endVertex) == 0) {
+            log.info("Skipping edge: {} -> {}", startVertex, endVertex);
+            return;
+        }
+
+        log.info("Rendering edge: {} -> {}", startVertex, endVertex);
         dot.append(start);
         dot.append(" -> ");
         dot.append(end);

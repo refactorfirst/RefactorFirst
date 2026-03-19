@@ -23,26 +23,39 @@ import org.openrewrite.java.JavaParser;
 public class JavaGraphBuilder {
 
     /**
-     * Given a java source directory, return a CodebaseGraphDTO
+     * Given a java source directory, return a CodebaseGraphDTO using default configuration
      *
-     * @param srcDirectory
+     * @param srcDirectory The source directory to analyze
+     * @param excludeTests Whether to exclude test files
+     * @param testSourceDirectory The test source directory pattern to exclude
      * @return CodebaseGraphDTO
      * @throws IOException
      */
     public CodebaseGraphDTO getCodebaseGraphDTO(String srcDirectory, boolean excludeTests, String testSourceDirectory)
             throws IOException {
-        CodebaseGraphDTO codebaseGraphDTO;
-        if (srcDirectory == null || srcDirectory.isEmpty()) {
-            throw new IllegalArgumentException();
-        } else {
-            codebaseGraphDTO = processWithOpenRewrite(srcDirectory, excludeTests, testSourceDirectory);
-        }
-
-        return codebaseGraphDTO;
+        GraphBuilderConfig config = GraphBuilderConfig.builder()
+                .excludeTests(excludeTests)
+                .testSourceDirectory(testSourceDirectory)
+                .build();
+        return getCodebaseGraphDTO(srcDirectory, config);
     }
 
-    private CodebaseGraphDTO processWithOpenRewrite(String srcDir, boolean excludeTests, String testSourceDirectory)
-            throws IOException {
+    /**
+     * Given a java source directory and configuration, return a CodebaseGraphDTO
+     *
+     * @param srcDirectory The source directory to analyze
+     * @param config The configuration for the graph builder
+     * @return CodebaseGraphDTO
+     * @throws IOException
+     */
+    public CodebaseGraphDTO getCodebaseGraphDTO(String srcDirectory, GraphBuilderConfig config) throws IOException {
+        if (srcDirectory == null || srcDirectory.isEmpty()) {
+            throw new IllegalArgumentException("Source directory cannot be null or empty");
+        }
+        return processWithOpenRewrite(srcDirectory, config);
+    }
+
+    private CodebaseGraphDTO processWithOpenRewrite(String srcDir, GraphBuilderConfig config) throws IOException {
         File srcDirectory = new File(srcDir);
 
         JavaParser javaParser = JavaParser.fromJavaVersion().build();
@@ -50,22 +63,23 @@ public class JavaGraphBuilder {
 
         final Graph<String, DefaultWeightedEdge> classReferencesGraph =
                 new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-
         final Graph<String, DefaultWeightedEdge> packageReferencesGraph =
                 new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
 
-        final JavaVisitor<ExecutionContext> javaVisitor =
-                new JavaVisitor<>(classReferencesGraph, packageReferencesGraph);
+        final GraphDependencyCollector dependencyCollector =
+                new GraphDependencyCollector(classReferencesGraph, packageReferencesGraph);
+
+        final JavaVisitor<ExecutionContext> javaVisitor = new JavaVisitor<>(dependencyCollector);
         final JavaVariableTypeVisitor<ExecutionContext> javaVariableTypeVisitor =
-                new JavaVariableTypeVisitor<>(classReferencesGraph, packageReferencesGraph);
+                new JavaVariableTypeVisitor<>(dependencyCollector);
         final JavaMethodDeclarationVisitor<ExecutionContext> javaMethodDeclarationVisitor =
-                new JavaMethodDeclarationVisitor<>(classReferencesGraph, packageReferencesGraph);
+                new JavaMethodDeclarationVisitor<>(dependencyCollector);
 
         try (Stream<Path> pathStream = Files.walk(Paths.get(srcDirectory.getAbsolutePath()))) {
             List<Path> list;
-            if (excludeTests) {
+            if (config.isExcludeTests()) {
                 list = pathStream
-                        .filter(file -> !file.toString().contains(testSourceDirectory))
+                        .filter(file -> !file.toString().contains(config.getTestSourceDirectory()))
                         .collect(Collectors.toList());
             } else {
                 list = pathStream.collect(Collectors.toList());
@@ -80,7 +94,7 @@ public class JavaGraphBuilder {
                     });
         }
 
-        removeClassesNotInCodebase(javaVisitor.getPackagesInCodebase(), classReferencesGraph);
+        removeClassesNotInCodebase(dependencyCollector.getPackagesInCodebase(), classReferencesGraph);
 
         return new CodebaseGraphDTO(
                 classReferencesGraph, packageReferencesGraph, javaVisitor.getClassToSourceFilePathMapping());

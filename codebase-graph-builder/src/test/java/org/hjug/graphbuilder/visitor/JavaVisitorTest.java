@@ -9,6 +9,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.hjug.graphbuilder.GraphDependencyCollector;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultWeightedEdge;
 import org.jgrapht.graph.SimpleDirectedWeightedGraph;
@@ -30,12 +31,13 @@ class JavaVisitorTest {
 
         final Graph<String, DefaultWeightedEdge> classReferencesGraph =
                 new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-
         final Graph<String, DefaultWeightedEdge> packageReferencesGraph =
                 new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
 
-        final JavaVisitor<ExecutionContext> javaVisitor =
-                new JavaVisitor<>(classReferencesGraph, packageReferencesGraph);
+        final GraphDependencyCollector dependencyCollector =
+                new GraphDependencyCollector(classReferencesGraph, packageReferencesGraph);
+
+        final JavaVisitor<ExecutionContext> javaVisitor = new JavaVisitor<>(dependencyCollector);
 
         List<Path> list = Files.walk(Paths.get(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
         javaParser.parse(list, Paths.get(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> {
@@ -43,6 +45,6 @@ class JavaVisitorTest {
             javaVisitor.visit(cu, ctx);
         });
 
-        assertEquals(3, javaVisitor.getPackagesInCodebase().size());
+        assertEquals(5, dependencyCollector.getPackagesInCodebase().size());
     }
 }
