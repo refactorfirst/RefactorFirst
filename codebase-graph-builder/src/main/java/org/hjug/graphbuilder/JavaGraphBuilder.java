@@ -9,6 +9,12 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
+import org.hjug.graphbuilder.metrics.ClassMetrics;
+import org.hjug.graphbuilder.metrics.DisharmonyDetector;
+import org.hjug.graphbuilder.metrics.DisharmonyDetector.ClassDisharmony;
+import org.hjug.graphbuilder.metrics.DisharmonyDetector.MethodDisharmony;
+import org.hjug.graphbuilder.metrics.GraphMetricsCollector;
+import org.hjug.graphbuilder.metrics.MetricsCollectingVisitor;
 import org.hjug.graphbuilder.visitor.JavaMethodDeclarationVisitor;
 import org.hjug.graphbuilder.visitor.JavaVariableTypeVisitor;
 import org.hjug.graphbuilder.visitor.JavaVisitor;
@@ -75,6 +81,10 @@ public class JavaGraphBuilder {
         final JavaMethodDeclarationVisitor<ExecutionContext> javaMethodDeclarationVisitor =
                 new JavaMethodDeclarationVisitor<>(dependencyCollector);
 
+        GraphMetricsCollector metricsCollector =
+                new GraphMetricsCollector(classReferencesGraph, packageReferencesGraph);
+        MetricsCollectingVisitor metricsVisitor = new MetricsCollectingVisitor(metricsCollector);
+
         try (Stream<Path> pathStream = Files.walk(Paths.get(srcDirectory.getAbsolutePath()))) {
             List<Path> list;
             if (config.isExcludeTests()) {
@@ -91,13 +101,44 @@ public class JavaGraphBuilder {
                         javaVisitor.visit(cu, ctx);
                         javaVariableTypeVisitor.visit(cu, ctx);
                         javaMethodDeclarationVisitor.visit(cu, ctx);
+                        metricsVisitor.visit(cu, ctx);
                     });
         }
 
         removeClassesNotInCodebase(dependencyCollector.getPackagesInCodebase(), classReferencesGraph);
 
+        metricsCollector.finalizeMetrics();
+        DisharmonyDetector detector = new DisharmonyDetector();
+        Collection<ClassMetrics> metrics = metricsCollector.getAllClassMetrics().values();
+
         return new CodebaseGraphDTO(
-                classReferencesGraph, packageReferencesGraph, javaVisitor.getClassToSourceFilePathMapping());
+                classReferencesGraph,
+                packageReferencesGraph,
+                javaVisitor.getClassToSourceFilePathMapping(),
+                getClassDisharmonies(detector, metrics),
+                getMethodDisharmonies(detector, metrics));
+    }
+
+    private static List<MethodDisharmony> getMethodDisharmonies(
+            DisharmonyDetector detector, Collection<ClassMetrics> metrics) {
+        List<MethodDisharmony> methodDisharmonies = new ArrayList<>();
+        methodDisharmonies.addAll(detector.detectBrainMethods(List.copyOf(metrics)));
+        methodDisharmonies.addAll(detector.detectIntensiveCoupling(List.copyOf(metrics)));
+        methodDisharmonies.addAll(detector.detectDispersedCoupling(List.copyOf(metrics)));
+        return methodDisharmonies;
+    }
+
+    private static List<ClassDisharmony> getClassDisharmonies(
+            DisharmonyDetector detector, Collection<ClassMetrics> metrics) {
+        List<ClassDisharmony> classDisharmonies = new ArrayList<>();
+        classDisharmonies.addAll(detector.detectGodClasses(List.copyOf(metrics)));
+        classDisharmonies.addAll(detector.detectDataClasses(List.copyOf(metrics)));
+        classDisharmonies.addAll(detector.detectBrainClasses(List.copyOf(metrics)));
+        classDisharmonies.addAll(detector.detectFeatureEnvy(List.copyOf(metrics)));
+        classDisharmonies.addAll(detector.detectShotgunSurgery(List.copyOf(metrics)));
+        classDisharmonies.addAll(detector.detectRefusedParentBequest(List.copyOf(metrics)));
+        classDisharmonies.addAll(detector.detectTraditionBreaker(List.copyOf(metrics)));
+        return classDisharmonies;
     }
 
     // remove node if package not in codebase
