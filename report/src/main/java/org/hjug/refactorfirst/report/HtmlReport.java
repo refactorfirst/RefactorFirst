@@ -586,7 +586,6 @@ public class HtmlReport extends SimpleHtmlReport {
             if (className.contains("$")
                     && className.split("\\$")[className.split("\\$").length - 1].matches("\\d+")
                     && classGraph.outDegreeOf(vertex) == 0) {
-                log.info("Skipping vertex: {}", className);
                 continue;
             }
 
@@ -608,9 +607,6 @@ public class HtmlReport extends SimpleHtmlReport {
         // render edge
         String[] vertexes = extractVertexes(edge);
 
-        //        String start = getClassName(vertexes[0].trim()).replace("$", "_");
-        //        String end = getClassName(vertexes[1].trim()).replace("$", "_");
-
         String startVertex = vertexes[0].trim();
         String start = getClassName(startVertex.trim()).replace("$", "_");
         String endVertex = vertexes[1].trim();
@@ -620,18 +616,18 @@ public class HtmlReport extends SimpleHtmlReport {
         if (start.contains("$")
                 && start.split("\\$")[startVertex.split("\\$").length - 1].matches("\\d+")
                 && classGraph.outDegreeOf(startVertex) == 0) {
-            log.info("Skipping edge: {} -> {}", startVertex, endVertex);
+            log.debug("Skipping edge: {} -> {}", startVertex, endVertex);
             return;
         }
 
         if (endVertex.contains("$")
                 && endVertex.split("\\$")[endVertex.split("\\$").length - 1].matches("\\d+")
                 && classGraph.outDegreeOf(endVertex) == 0) {
-            log.info("Skipping edge: {} -> {}", startVertex, endVertex);
+            log.debug("Skipping edge: {} -> {}", startVertex, endVertex);
             return;
         }
 
-        log.info("Rendering edge: {} -> {}", startVertex, endVertex);
+        log.debug("Rendering edge: {} -> {}", startVertex, endVertex);
         dot.append(start);
         dot.append(" -> ");
         dot.append(end);
