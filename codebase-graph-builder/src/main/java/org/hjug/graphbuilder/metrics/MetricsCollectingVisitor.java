@@ -166,13 +166,55 @@ public class MetricsCollectingVisitor extends BaseCodebaseVisitor<ExecutionConte
             if (fieldType.getOwner() instanceof JavaType.FullyQualified) {
                 JavaType.FullyQualified owner = (JavaType.FullyQualified) fieldType.getOwner();
                 String ownerFqn = owner.getFullyQualifiedName();
+                String attributeName = identifier.getSimpleName();
                 if (!ownerFqn.equals(currentClassName)) {
                     currentMethodMetrics.addAccessedForeignClass(ownerFqn);
+                    currentMethodMetrics.addAccessedForeignAttribute(ownerFqn + "." + attributeName);
+                    if (currentClassMetrics != null && ownerFqn.equals(currentClassMetrics.getParentClass())) {
+                        currentClassMetrics.addUsedParentMember(attributeName);
+                    }
+                } else {
+                    currentMethodMetrics.addAccessedOwnAttribute(attributeName);
                 }
             }
             currentMethodMetrics.addAccessedVariable(identifier.getSimpleName());
         }
         return super.visitIdentifier(identifier, ctx);
+    }
+
+    @Override
+    public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
+        if (currentMethodMetrics != null) {
+            JavaType.Method methodType = method.getMethodType();
+            if (methodType != null && !methodType.isConstructor()) {
+                JavaType declaringType = methodType.getDeclaringType();
+                if (declaringType instanceof JavaType.FullyQualified) {
+                    String declaringFqn = ((JavaType.FullyQualified) declaringType).getFullyQualifiedName();
+                    if (!declaringFqn.equals(currentClassName)) {
+                        StringBuilder sig = new StringBuilder();
+                        sig.append(declaringFqn)
+                                .append(".")
+                                .append(methodType.getName())
+                                .append("(");
+                        java.util.List<JavaType> params = methodType.getParameterTypes();
+                        for (int i = 0; i < params.size(); i++) {
+                            if (i > 0) sig.append(",");
+                            sig.append(params.get(i));
+                        }
+                        sig.append(")");
+                        currentMethodMetrics.addCalledForeignMethod(sig.toString());
+                        currentMethodMetrics.addCalledForeignMethodClass(declaringFqn);
+                        if (currentClassMetrics != null && declaringFqn.equals(currentClassMetrics.getParentClass())) {
+                            currentClassMetrics.addUsedParentMember(methodType.getName());
+                        }
+                        // Record the reverse (incoming) edge for Shotgun Surgery (CM/CC)
+                        String callerMethodSig = currentClassName + "::" + currentMethodSignature;
+                        metricsCollector.recordIncomingCall(sig.toString(), currentClassName, callerMethodSig);
+                    }
+                }
+            }
+        }
+        return super.visitMethodInvocation(method, ctx);
     }
 
     @Override
@@ -184,8 +226,15 @@ public class MetricsCollectingVisitor extends BaseCodebaseVisitor<ExecutionConte
                 if (varType.getOwner() instanceof JavaType.FullyQualified) {
                     JavaType.FullyQualified owner = (JavaType.FullyQualified) varType.getOwner();
                     String ownerFqn = owner.getFullyQualifiedName();
+                    String attributeName = fieldAccess.getSimpleName();
                     if (!ownerFqn.equals(currentClassName)) {
                         currentMethodMetrics.addAccessedForeignClass(ownerFqn);
+                        currentMethodMetrics.addAccessedForeignAttribute(ownerFqn + "." + attributeName);
+                        if (currentClassMetrics != null && ownerFqn.equals(currentClassMetrics.getParentClass())) {
+                            currentClassMetrics.addUsedParentMember(attributeName);
+                        }
+                    } else {
+                        currentMethodMetrics.addAccessedOwnAttribute(attributeName);
                     }
                 }
             }

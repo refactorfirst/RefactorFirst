@@ -1,63 +1,35 @@
 package org.hjug.graphbuilder.metrics.testclasses;
 
 import org.hjug.graphbuilder.metrics.testclasses.external.CustomerService;
-import org.hjug.graphbuilder.metrics.testclasses.external.ExternalDataService;
-import org.hjug.graphbuilder.metrics.testclasses.external.InventoryService;
-import org.hjug.graphbuilder.metrics.testclasses.external.NotificationService;
-import org.hjug.graphbuilder.metrics.testclasses.external.OrderService;
-import org.hjug.graphbuilder.metrics.testclasses.external.PaymentService;
-import org.hjug.graphbuilder.metrics.testclasses.external.ProductService;
-import org.hjug.graphbuilder.metrics.testclasses.external.ShippingService;
 
+/**
+ * Example class exhibiting Feature Envy disharmony.
+ * Per Lanza & Marinescu "Object-Oriented Metrics in Practice" Fig. 5.4:
+ * A method has Feature Envy when:
+ *   ATFD > FEW (5)  — accesses more than 5 foreign attributes
+ *   LAA < ONE_THIRD (0.33) — less than 1/3 of accessed attributes belong to its own class
+ *   FDP <= FEW (5)  — foreign accesses are concentrated in at most 5 classes
+ *
+ * methodWithFeatureEnvy accesses all 6 public fields of CustomerService:
+ *   ATFD = 6 > FEW(5)
+ *   LAA = 0 own attributes / (0 + 6 foreign) = 0.0 < ONE_THIRD(0.33)
+ *   FDP = 1 (only CustomerService) <= FEW(5)
+ */
 public class FeatureEnvyExample {
 
     private String localData;
     private int localCounter;
 
-    public void methodWithFeatureEnvy() {
-        ExternalDataService dataService = new ExternalDataService();
-        CustomerService customerService = new CustomerService();
-        OrderService orderService = new OrderService();
-        ProductService productService = new ProductService();
-        InventoryService inventoryService = new InventoryService();
-        PaymentService paymentService = new PaymentService();
-        ShippingService shippingService = new ShippingService();
-        NotificationService notificationService = new NotificationService();
-
-        String result = dataService.name
-                + customerService.customerId
-                + orderService.orderId
-                + productService.productId
-                + inventoryService.warehouseId
-                + paymentService.paymentId
-                + shippingService.trackingNumber
-                + notificationService.notificationId;
-
-        localData = result;
-    }
-
-    public void anotherMethodWithFeatureEnvy() {
-        ExternalDataService dataService = new ExternalDataService();
-        CustomerService customerService = new CustomerService();
-        OrderService orderService = new OrderService();
-        ProductService productService = new ProductService();
-        InventoryService inventoryService = new InventoryService();
-        PaymentService paymentService = new PaymentService();
-        ShippingService shippingService = new ShippingService();
-        NotificationService notificationService = new NotificationService();
-
-        String combined = dataService.description
-                + customerService.customerName
-                + productService.productName
-                + paymentService.paymentMethod
-                + shippingService.carrier
-                + notificationService.message;
-
-        int total = dataService.value + inventoryService.stockLevel;
-        double amount = orderService.amount;
-
-        localData = combined;
-        localCounter = total + (int) amount;
+    public String methodWithFeatureEnvy(CustomerService customer) {
+        // Access all 6 public fields of CustomerService (ATFD=6, FDP=1)
+        String id = customer.customerId;
+        String name = customer.customerName;
+        String email = customer.email;
+        String phone = customer.phone;
+        String address = customer.address;
+        double credit = customer.creditLimit;
+        // No own-attribute accesses in this method → LAA = 0 < 1/3
+        return id + "|" + name + "|" + email + "|" + phone + "|" + address + "|" + credit;
     }
 
     public void simpleMethod() {

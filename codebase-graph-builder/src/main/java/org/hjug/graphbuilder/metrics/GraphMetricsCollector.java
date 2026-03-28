@@ -1,6 +1,7 @@
 package org.hjug.graphbuilder.metrics;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import lombok.Getter;
@@ -14,6 +15,10 @@ public class GraphMetricsCollector implements MetricsCollector {
     private final Graph<String, DefaultWeightedEdge> packageGraph;
     private final Map<String, ClassMetrics> classMetrics = new HashMap<>();
     private final Map<String, String> classToSourceFileMapping = new HashMap<>();
+    /** Maps callee full-qualified method signature → set of caller method signatures (CM). */
+    private final Map<String, Set<String>> calleeToCallerMethods = new HashMap<>();
+    /** Maps callee full-qualified method signature → set of caller class FQNs (CC). */
+    private final Map<String, Set<String>> calleeToCallerClasses = new HashMap<>();
 
     public GraphMetricsCollector(
             Graph<String, DefaultWeightedEdge> classGraph, Graph<String, DefaultWeightedEdge> packageGraph) {
@@ -141,10 +146,32 @@ public class GraphMetricsCollector implements MetricsCollector {
     }
 
     @Override
+    public void recordIncomingCall(String calleeFqnSig, String callerClassFqn, String callerMethodSig) {
+        calleeToCallerMethods
+                .computeIfAbsent(calleeFqnSig, k -> new HashSet<>())
+                .add(callerMethodSig);
+        calleeToCallerClasses
+                .computeIfAbsent(calleeFqnSig, k -> new HashSet<>())
+                .add(callerClassFqn);
+    }
+
+    @Override
     public void finalizeMetrics() {
         for (ClassMetrics metrics : classMetrics.values()) {
             metrics.calculateAccessToForeignData();
             metrics.calculateTightClassCohesion();
+            // Populate CM/CC (Changing Methods / Changing Classes) for each method
+            for (MethodMetrics method : metrics.getMethods().values()) {
+                String calleeFqnSig = metrics.getFullyQualifiedName() + "." + method.getSignature();
+                Set<String> callerMethods = calleeToCallerMethods.get(calleeFqnSig);
+                Set<String> callerClasses = calleeToCallerClasses.get(calleeFqnSig);
+                if (callerMethods != null) {
+                    callerMethods.forEach(method::addChangingMethod);
+                }
+                if (callerClasses != null) {
+                    callerClasses.forEach(method::addChangingClass);
+                }
+            }
         }
     }
 

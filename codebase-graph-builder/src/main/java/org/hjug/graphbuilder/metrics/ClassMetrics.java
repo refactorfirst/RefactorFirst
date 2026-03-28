@@ -10,6 +10,10 @@ import lombok.Setter;
 public class ClassMetrics {
     @Getter
     @Setter
+    private String sourceFilePath;
+
+    @Getter
+    @Setter
     private String fullyQualifiedName;
 
     @Getter
@@ -52,6 +56,9 @@ public class ClassMetrics {
     @Setter
     private int numberOfProtectedMembers;
 
+    @Getter
+    private Set<String> usedParentMembers = new HashSet<>();
+
     public ClassMetrics(String fullyQualifiedName) {
         this.fullyQualifiedName = fullyQualifiedName;
     }
@@ -62,6 +69,14 @@ public class ClassMetrics {
 
     public int getNumberOfOverriddenMethods() {
         return overriddenMethods.size();
+    }
+
+    public void addUsedParentMember(String memberName) {
+        this.usedParentMembers.add(memberName);
+    }
+
+    public int getNumberOfUsedParentMembers() {
+        return usedParentMembers.size();
     }
 
     public void addMethod(MethodMetrics methodMetrics) {
@@ -103,7 +118,7 @@ public class ClassMetrics {
         if (numMethods == 0) {
             return 0.0;
         }
-        return (double) getNumberOfAccessorMethods() / numMethods;
+        return (double) (numMethods - getNumberOfAccessorMethods()) / numMethods;
     }
 
     public void calculateAccessToForeignData() {

@@ -22,6 +22,13 @@ public class BrainClassExample {
     private String method3Result = "";
     private int method3Value = 0;
 
+    private String m4result = "";
+    private int m4low = 0;
+    private int m4high = 0;
+
+    private boolean m5flag = false;
+    private String m5data = "";
+
     public void complexMethod1(int param1, String param2, boolean param3) {
         int localVar1 = 0;
         int localVar2 = 0;
@@ -113,6 +120,9 @@ public class BrainClassExample {
         String temp1 = "";
         String temp2 = "";
         String temp3 = "";
+        String prefix = "";
+        String suffix = "";
+        int maxVal = 0;
 
         if (items != null && items.size() > 0) {
             for (String item : items) {
@@ -158,9 +168,21 @@ public class BrainClassExample {
             index = 0;
         }
 
-        if (found) {
-            method2Result = result;
-            method2Total = total;
+        if (count > 0) {
+            prefix = "count:" + count;
+            suffix = "total:" + total;
+            maxVal = total / count;
+            method2Result = prefix + ";" + result + ";" + suffix;
+            method2Total = maxVal;
+        } else if (index > 0) {
+            prefix = "new:" + index;
+            suffix = "none";
+            method2Result = prefix + ";" + suffix;
+            method2Total = index;
+        } else {
+            method2Result = found ? result : "";
+            method2Total = found ? total : 0;
+            maxVal = 0;
         }
     }
 
@@ -221,6 +243,66 @@ public class BrainClassExample {
             method3Result = var1 + var2 + var3 + var4;
             method3Value = num1 + num2 + num3;
         }
+    }
+
+    // CC=7 (4 if-elif branches + for + if inside for)
+    public String complexMethod4(int value, String prefix) {
+        String r1 = "";
+        String r2 = "";
+        String r3 = "";
+        int n1 = 0;
+        if (value > 100) {
+            r1 = prefix + ":vhigh";
+            m4high = value;
+        } else if (value > 50) {
+            r1 = prefix + ":high";
+            n1 = value / 2;
+            m4high = n1;
+        } else if (value > 20) {
+            r1 = prefix + ":mid";
+            n1 = value;
+        } else if (value > 0) {
+            r1 = prefix + ":low";
+            m4low = value;
+            n1 = value;
+        } else {
+            r1 = prefix + ":zero";
+            m4low = 0;
+        }
+        for (int k = 0; k < n1; k++) {
+            r2 += k + ";";
+            if (r2.length() > 50) {
+                r3 = r2.substring(0, 50);
+                break;
+            }
+        }
+        m4result = r1 + r2 + r3;
+        return m4result;
+    }
+
+    // CC=6 (if + 2 elif + if inside + ternary)
+    public int complexMethod5(String key, boolean strict) {
+        int n1 = 0;
+        String s1 = "";
+        if (key == null) {
+            return 0;
+        } else if (strict) {
+            int len = key.length();
+            n1 = len * 2;
+            s1 = key.substring(0, len > 5 ? 5 : len);
+            m5flag = true;
+        } else if (key.length() > 5) {
+            n1 = key.length();
+            s1 = key;
+            m5flag = false;
+        } else {
+            n1 = 1;
+            s1 = key;
+        }
+        if (m5flag) {
+            m5data = s1 + ":" + n1;
+        }
+        return n1;
     }
 
     public void simpleMethod1() {

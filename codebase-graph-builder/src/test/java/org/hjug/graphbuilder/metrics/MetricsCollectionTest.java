@@ -47,6 +47,12 @@ class MetricsCollectionTest {
         Assertions.assertTrue(godClassMetrics.getLinesOfCode() > 0, "LOC should be greater than 0");
         Assertions.assertTrue(godClassMetrics.getNumberOfMethods() >= 10, "Should have at least 10 methods");
         Assertions.assertTrue(godClassMetrics.getNumberOfAttributes() > 0, "Should have attributes (fields)");
+        Assertions.assertTrue(
+                godClassMetrics.getWeightedMethodCount() >= 47,
+                "GodClassExample WMC should be >= 47, was: " + godClassMetrics.getWeightedMethodCount());
+        Assertions.assertTrue(
+                godClassMetrics.getAccessToForeignData() > 5,
+                "GodClassExample ATFD should be > 5, was: " + godClassMetrics.getAccessToForeignData());
 
         System.out.println("\nGodClassExample Metrics:");
         System.out.println("  LOC: " + godClassMetrics.getLinesOfCode());
@@ -137,14 +143,32 @@ class MetricsCollectionTest {
             System.out.println(classDisharmony.getClassName() + ": " + classDisharmony.getDescription());
         }
 
-        // Verify the detector can run and metrics are available for detection
-        Assertions.assertNotNull(godClasses, "God class detection should return a list");
-
-        // Verify GodClassExample has the expected characteristics
+        // Verify GodClassExample meets book-defined God Class thresholds
+        // (Lanza & Marinescu: ATFD > 5, WMC >= 47, TCC < 1/3)
         ClassMetrics godClass =
                 metricsCollector.getClassMetrics("org.hjug.graphbuilder.metrics.testclasses.GodClassExample");
-        Assertions.assertTrue(godClass.getNumberOfMethods() >= 10, "GodClassExample should have many methods");
-        Assertions.assertTrue(godClass.getWeightedMethodCount() >= 10, "GodClassExample should have high WMC");
+        Assertions.assertNotNull(godClass, "GodClassExample metrics should be collected");
+        Assertions.assertTrue(
+                godClass.getAccessToForeignData() > 5,
+                "GodClassExample ATFD should be > 5 (accesses fields of more than 5 foreign classes), was: "
+                        + godClass.getAccessToForeignData());
+        Assertions.assertTrue(
+                godClass.getWeightedMethodCount() >= 47,
+                "GodClassExample WMC should be >= 47 (sum of cyclomatic complexity), was: "
+                        + godClass.getWeightedMethodCount());
+        Assertions.assertTrue(
+                godClass.getTightClassCohesion() < 0.33,
+                "GodClassExample TCC should be < 1/3, was: " + godClass.getTightClassCohesion());
+
+        boolean foundGodClass = false;
+        for (DisharmonyDetector.ClassDisharmony disharmony : godClasses) {
+            if (disharmony.getClassName().contains("GodClassExample")) {
+                foundGodClass = true;
+                Assertions.assertEquals("God Class", disharmony.getDisharmonyType());
+                break;
+            }
+        }
+        Assertions.assertTrue(foundGodClass, "GodClassExample should be detected as a God Class");
     }
 
     @Test
@@ -188,6 +212,16 @@ class MetricsCollectionTest {
         Assertions.assertTrue(dataClass.getNumberOfAttributes() >= 5, "DataClassExample should have many attributes");
         Assertions.assertTrue(
                 dataClass.getNumberOfAccessorMethods() >= 10, "DataClassExample should have many accessors");
+
+        boolean foundDataClass = false;
+        for (DisharmonyDetector.ClassDisharmony classDisharmony : dataClasses) {
+            if (classDisharmony.getClassName().contains("DataClassExample")) {
+                foundDataClass = true;
+                Assertions.assertEquals("Data Class", classDisharmony.getDisharmonyType());
+                break;
+            }
+        }
+        Assertions.assertTrue(foundDataClass, "DataClassExample should be detected as a Data Class");
     }
 
     @Test
@@ -268,9 +302,37 @@ class MetricsCollectionTest {
             System.out.println(classDisharmony.getClassName() + ": " + classDisharmony.getDescription());
         }
 
+        // Count Brain Methods in BrainClassExample (Fig. 5.12 Term 1 requires > 1)
+        DisharmonyDetector brainMethodDetector = new DisharmonyDetector();
+        List<DisharmonyDetector.MethodDisharmony> allBrainMethods = brainMethodDetector.detectBrainMethods(
+                List.copyOf(metricsCollector.getAllClassMetrics().values()));
+        long brainMethodsInClass = allBrainMethods.stream()
+                .filter(m -> m.getClassName().contains("BrainClassExample"))
+                .count();
+        Assertions.assertTrue(
+                brainMethodsInClass > 1,
+                "BrainClassExample should have > 1 Brain Methods (Term 1 path), found: " + brainMethodsInClass);
+
         Assertions.assertTrue(brainClasses.size() > 0, "Should detect at least one Brain Class");
-        Assertions.assertTrue(brainClass.getLinesOfCode() > 50, "BrainClassExample should have high LOC");
-        Assertions.assertTrue(brainClass.getWeightedMethodCount() >= 10, "BrainClassExample should have high WMC");
+        Assertions.assertTrue(
+                brainClass.getLinesOfCode() >= 195,
+                "BrainClassExample LOC should be >= 195 (VERY_HIGH), was: " + brainClass.getLinesOfCode());
+        Assertions.assertTrue(
+                brainClass.getWeightedMethodCount() >= 47,
+                "BrainClassExample WMC should be >= 47 (VERY_HIGH), was: " + brainClass.getWeightedMethodCount());
+        Assertions.assertTrue(
+                brainClass.getTightClassCohesion() < 0.5,
+                "BrainClassExample TCC should be < 0.5 (HALF), was: " + brainClass.getTightClassCohesion());
+
+        boolean foundBrainClass = false;
+        for (DisharmonyDetector.ClassDisharmony classDisharmony : brainClasses) {
+            if (classDisharmony.getClassName().contains("BrainClassExample")) {
+                foundBrainClass = true;
+                Assertions.assertEquals("Brain Class", classDisharmony.getDisharmonyType());
+                break;
+            }
+        }
+        Assertions.assertTrue(foundBrainClass, "BrainClassExample should be detected as a Brain Class");
     }
 
     @Test
@@ -300,34 +362,59 @@ class MetricsCollectionTest {
                 metricsCollector.getClassMetrics("org.hjug.graphbuilder.metrics.testclasses.FeatureEnvyExample");
         Assertions.assertNotNull(featureEnvyClass, "FeatureEnvyExample should be collected");
 
-        System.out.println("\nFeatureEnvyExample Metrics:");
-        System.out.println("  ATFD: " + featureEnvyClass.getAccessToForeignData());
-        System.out.println("  NOM: " + featureEnvyClass.getNumberOfMethods());
-        System.out.println("  LOC: " + featureEnvyClass.getLinesOfCode());
-
-        DisharmonyDetector detector = new DisharmonyDetector();
-        List<DisharmonyDetector.ClassDisharmony> featureEnvyClasses = detector.detectFeatureEnvy(
-                List.copyOf(metricsCollector.getAllClassMetrics().values()));
-
-        System.out.println("\n=== Feature Envy Classes Detected ===");
-        for (DisharmonyDetector.ClassDisharmony classDisharmony : featureEnvyClasses) {
-            System.out.println(classDisharmony.getClassName() + ": " + classDisharmony.getDescription());
-        }
-
-        Assertions.assertTrue(featureEnvyClasses.size() > 0, "Should detect at least one Feature Envy class");
-        Assertions.assertTrue(
-                featureEnvyClass.getAccessToForeignData() > 7, "FeatureEnvyExample should have high ATFD (> 7)");
-
-        boolean foundFeatureEnvy = false;
-        for (DisharmonyDetector.ClassDisharmony classDisharmony : featureEnvyClasses) {
-            if (classDisharmony.getClassName().contains("FeatureEnvyExample")) {
-                foundFeatureEnvy = true;
-                Assertions.assertEquals("Feature Envy", classDisharmony.getDisharmonyType());
-                Assertions.assertTrue(classDisharmony.getDescription().contains("ATFD="));
+        // Verify that methodWithFeatureEnvy meets the per-method thresholds
+        MethodMetrics envyMethod = null;
+        for (MethodMetrics m : featureEnvyClass.getMethods().values()) {
+            if (m.getMethodName().equals("methodWithFeatureEnvy")) {
+                envyMethod = m;
                 break;
             }
         }
-        Assertions.assertTrue(foundFeatureEnvy, "FeatureEnvyExample should be detected as Feature Envy");
+        Assertions.assertNotNull(envyMethod, "methodWithFeatureEnvy should be collected");
+
+        System.out.println("\nFeatureEnvyExample.methodWithFeatureEnvy Metrics:");
+        System.out.println("  ATFD: " + envyMethod.getAccessToForeignData());
+        System.out.println("  LAA:  " + envyMethod.getLocalityOfAttributeAccess());
+        System.out.println("  FDP:  " + envyMethod.getAccessedForeignClasses().size());
+
+        Assertions.assertTrue(
+                envyMethod.getAccessToForeignData() > 5,
+                "methodWithFeatureEnvy ATFD should be > 5 (FEW), was: " + envyMethod.getAccessToForeignData());
+        Assertions.assertTrue(
+                envyMethod.getLocalityOfAttributeAccess() < 0.33,
+                "methodWithFeatureEnvy LAA should be < 0.33 (ONE_THIRD), was: "
+                        + envyMethod.getLocalityOfAttributeAccess());
+        Assertions.assertTrue(
+                envyMethod.getAccessedForeignClasses().size() <= 5,
+                "methodWithFeatureEnvy FDP should be <= 5 (FEW), was: "
+                        + envyMethod.getAccessedForeignClasses().size());
+
+        DisharmonyDetector detector = new DisharmonyDetector();
+        List<DisharmonyDetector.MethodDisharmony> featureEnvyMethods = detector.detectFeatureEnvy(
+                List.copyOf(metricsCollector.getAllClassMetrics().values()));
+
+        System.out.println("\n=== Feature Envy Methods Detected ===");
+        for (DisharmonyDetector.MethodDisharmony disharmony : featureEnvyMethods) {
+            System.out.println(disharmony.getClassName() + "." + disharmony.getMethodSignature() + ": "
+                    + disharmony.getDescription());
+        }
+
+        Assertions.assertTrue(featureEnvyMethods.size() > 0, "Should detect at least one Feature Envy method");
+
+        boolean foundFeatureEnvy = false;
+        for (DisharmonyDetector.MethodDisharmony disharmony : featureEnvyMethods) {
+            if (disharmony.getClassName().contains("FeatureEnvyExample")
+                    && disharmony.getMethodSignature().contains("methodWithFeatureEnvy")) {
+                foundFeatureEnvy = true;
+                Assertions.assertEquals("Feature Envy", disharmony.getDisharmonyType());
+                Assertions.assertTrue(disharmony.getDescription().contains("ATFD="));
+                Assertions.assertTrue(disharmony.getDescription().contains("LAA="));
+                Assertions.assertTrue(disharmony.getDescription().contains("FDP="));
+                break;
+            }
+        }
+        Assertions.assertTrue(
+                foundFeatureEnvy, "FeatureEnvyExample.methodWithFeatureEnvy should be detected as Feature Envy");
     }
 
     @Test
@@ -363,6 +450,32 @@ class MetricsCollectionTest {
                     + disharmony.getDescription());
         }
 
+        // Verify IntensiveCouplingExample.methodWithIntensiveCoupling metrics
+        ClassMetrics intensiveClass =
+                metricsCollector.getClassMetrics("org.hjug.graphbuilder.metrics.testclasses.IntensiveCouplingExample");
+        Assertions.assertNotNull(intensiveClass, "IntensiveCouplingExample should be collected");
+        MethodMetrics intensiveMethod = null;
+        for (MethodMetrics m : intensiveClass.getMethods().values()) {
+            if (m.getMethodName().equals("methodWithIntensiveCoupling")) {
+                intensiveMethod = m;
+                break;
+            }
+        }
+        Assertions.assertNotNull(intensiveMethod, "methodWithIntensiveCoupling should be collected");
+        System.out.println("\nIntensiveCouplingExample.methodWithIntensiveCoupling Metrics:");
+        System.out.println("  CINT: " + intensiveMethod.getCouplingIntensity());
+        System.out.println("  CDISP: " + intensiveMethod.getCouplingDispersion());
+        System.out.println("  MAXNESTING: " + intensiveMethod.getMaxNestingDepth());
+        Assertions.assertTrue(
+                intensiveMethod.getCouplingIntensity() > 7,
+                "CINT should be > SHORT_MEMORY_CAP(7), was: " + intensiveMethod.getCouplingIntensity());
+        Assertions.assertTrue(
+                intensiveMethod.getCouplingDispersion() < 0.5,
+                "CDISP should be < HALF(0.5), was: " + intensiveMethod.getCouplingDispersion());
+        Assertions.assertTrue(
+                intensiveMethod.getMaxNestingDepth() > 1,
+                "MAXNESTING should be > SHALLOW(1), was: " + intensiveMethod.getMaxNestingDepth());
+
         Assertions.assertTrue(
                 intensivelyCoupledMethods.size() > 0, "Should detect at least one Intensive Coupling method");
 
@@ -371,7 +484,8 @@ class MetricsCollectionTest {
             if (disharmony.getClassName().contains("IntensiveCouplingExample")) {
                 foundIntensiveCoupling = true;
                 Assertions.assertEquals("Intensive Coupling", disharmony.getDisharmonyType());
-                Assertions.assertTrue(disharmony.getDescription().contains("foreign classes"));
+                Assertions.assertTrue(disharmony.getDescription().contains("CINT="));
+                Assertions.assertTrue(disharmony.getDescription().contains("CDISP="));
                 break;
             }
         }
@@ -412,6 +526,32 @@ class MetricsCollectionTest {
                     + disharmony.getDescription());
         }
 
+        // Verify DispersedCouplingExample.methodWithDispersedCoupling metrics
+        ClassMetrics dispersedClass =
+                metricsCollector.getClassMetrics("org.hjug.graphbuilder.metrics.testclasses.DispersedCouplingExample");
+        Assertions.assertNotNull(dispersedClass, "DispersedCouplingExample should be collected");
+        MethodMetrics dispersedMethod = null;
+        for (MethodMetrics m : dispersedClass.getMethods().values()) {
+            if (m.getMethodName().equals("methodWithDispersedCoupling")) {
+                dispersedMethod = m;
+                break;
+            }
+        }
+        Assertions.assertNotNull(dispersedMethod, "methodWithDispersedCoupling should be collected");
+        System.out.println("\nDispersedCouplingExample.methodWithDispersedCoupling Metrics:");
+        System.out.println("  CINT: " + dispersedMethod.getCouplingIntensity());
+        System.out.println("  CDISP: " + dispersedMethod.getCouplingDispersion());
+        System.out.println("  MAXNESTING: " + dispersedMethod.getMaxNestingDepth());
+        Assertions.assertTrue(
+                dispersedMethod.getCouplingIntensity() > 7,
+                "CINT should be > SHORT_MEMORY_CAP(7), was: " + dispersedMethod.getCouplingIntensity());
+        Assertions.assertTrue(
+                dispersedMethod.getCouplingDispersion() >= 0.5,
+                "CDISP should be >= HALF(0.5), was: " + dispersedMethod.getCouplingDispersion());
+        Assertions.assertTrue(
+                dispersedMethod.getMaxNestingDepth() > 1,
+                "MAXNESTING should be > SHALLOW(1), was: " + dispersedMethod.getMaxNestingDepth());
+
         Assertions.assertTrue(
                 dispersedCoupledMethods.size() > 0, "Should detect at least one Dispersed Coupling method");
 
@@ -420,7 +560,8 @@ class MetricsCollectionTest {
             if (disharmony.getClassName().contains("DispersedCouplingExample")) {
                 foundDispersedCoupling = true;
                 Assertions.assertEquals("Dispersed Coupling", disharmony.getDisharmonyType());
-                Assertions.assertTrue(disharmony.getDescription().contains("different foreign classes"));
+                Assertions.assertTrue(disharmony.getDescription().contains("CINT="));
+                Assertions.assertTrue(disharmony.getDescription().contains("CDISP="));
                 break;
             }
         }
@@ -451,35 +592,53 @@ class MetricsCollectionTest {
 
         metricsCollector.finalizeMetrics();
 
-        ClassMetrics shotgunSurgeryClass =
+        // Verify that performService() has CM > 7 and CC > 7 (called by 8 distinct classes)
+        ClassMetrics shotgunClass =
                 metricsCollector.getClassMetrics("org.hjug.graphbuilder.metrics.testclasses.ShotgunSurgeryExample");
-        Assertions.assertNotNull(shotgunSurgeryClass, "ShotgunSurgeryExample should be collected");
-
-        System.out.println("\nShotgunSurgeryExample Metrics:");
-        System.out.println("  ATFD: " + shotgunSurgeryClass.getAccessToForeignData());
-        System.out.println("  NOM: " + shotgunSurgeryClass.getNumberOfMethods());
-
-        DisharmonyDetector detector = new DisharmonyDetector();
-        List<DisharmonyDetector.ClassDisharmony> shotgunSurgeryClasses = detector.detectShotgunSurgery(
-                List.copyOf(metricsCollector.getAllClassMetrics().values()));
-
-        System.out.println("\n=== Shotgun Surgery Classes Detected ===");
-        for (DisharmonyDetector.ClassDisharmony classDisharmony : shotgunSurgeryClasses) {
-            System.out.println(classDisharmony.getClassName() + ": " + classDisharmony.getDescription());
-        }
-
-        Assertions.assertTrue(shotgunSurgeryClasses.size() > 0, "Should detect at least one Shotgun Surgery class");
-
-        boolean foundShotgunSurgery = false;
-        for (DisharmonyDetector.ClassDisharmony classDisharmony : shotgunSurgeryClasses) {
-            if (classDisharmony.getClassName().contains("ShotgunSurgeryExample")) {
-                foundShotgunSurgery = true;
-                Assertions.assertEquals("Shotgun Surgery", classDisharmony.getDisharmonyType());
-                Assertions.assertTrue(classDisharmony.getDescription().contains("ATFD="));
+        Assertions.assertNotNull(shotgunClass, "ShotgunSurgeryExample should be collected");
+        MethodMetrics performService = null;
+        for (MethodMetrics m : shotgunClass.getMethods().values()) {
+            if (m.getMethodName().equals("performService")) {
+                performService = m;
                 break;
             }
         }
-        Assertions.assertTrue(foundShotgunSurgery, "ShotgunSurgeryExample should be detected as Shotgun Surgery");
+        Assertions.assertNotNull(performService, "performService should be collected");
+        System.out.println("\nShotgunSurgeryExample.performService Metrics:");
+        System.out.println("  CM: " + performService.getChangingMethodCount());
+        System.out.println("  CC: " + performService.getChangingClassCount());
+        Assertions.assertTrue(
+                performService.getChangingMethodCount() > 7,
+                "CM should be > SHORT_MEMORY_CAP(7), was: " + performService.getChangingMethodCount());
+        Assertions.assertTrue(
+                performService.getChangingClassCount() > 7,
+                "CC should be > MANY(7), was: " + performService.getChangingClassCount());
+
+        DisharmonyDetector detector = new DisharmonyDetector();
+        List<DisharmonyDetector.MethodDisharmony> shotgunSurgeryMethods = detector.detectShotgunSurgery(
+                List.copyOf(metricsCollector.getAllClassMetrics().values()));
+
+        System.out.println("\n=== Shotgun Surgery Methods Detected ===");
+        for (DisharmonyDetector.MethodDisharmony disharmony : shotgunSurgeryMethods) {
+            System.out.println(disharmony.getClassName() + "." + disharmony.getMethodSignature() + ": "
+                    + disharmony.getDescription());
+        }
+
+        Assertions.assertTrue(shotgunSurgeryMethods.size() > 0, "Should detect at least one Shotgun Surgery method");
+
+        boolean foundShotgunSurgery = false;
+        for (DisharmonyDetector.MethodDisharmony disharmony : shotgunSurgeryMethods) {
+            if (disharmony.getClassName().contains("ShotgunSurgeryExample")
+                    && disharmony.getMethodSignature().contains("performService")) {
+                foundShotgunSurgery = true;
+                Assertions.assertEquals("Shotgun Surgery", disharmony.getDisharmonyType());
+                Assertions.assertTrue(disharmony.getDescription().contains("CM="));
+                Assertions.assertTrue(disharmony.getDescription().contains("CC="));
+                break;
+            }
+        }
+        Assertions.assertTrue(
+                foundShotgunSurgery, "ShotgunSurgeryExample.performService should be detected as Shotgun Surgery");
     }
 
     @Test
@@ -538,7 +697,33 @@ class MetricsCollectionTest {
             if (classDisharmony.getClassName().contains("RefusedBequestExample")) {
                 foundRefusedBequest = true;
                 Assertions.assertEquals("Refused Parent Bequest", classDisharmony.getDisharmonyType());
-                Assertions.assertTrue(classDisharmony.getDescription().contains("Protected Members="));
+                Assertions.assertTrue(
+                        classDisharmony.getDescription().contains("NProtM="), "Description should include NProtM");
+                Assertions.assertTrue(
+                        classDisharmony.getDescription().contains("BUR="), "Description should include BUR");
+                Assertions.assertTrue(
+                        classDisharmony.getDescription().contains("BOvR="), "Description should include BOvR");
+                Assertions.assertTrue(
+                        classDisharmony.getDescription().contains("NOM="), "Description should include NOM");
+                ClassMetrics rbMetrics = classDisharmony.getMetrics();
+                int nom = rbMetrics.getNumberOfMethods();
+                int overridden = rbMetrics.getNumberOfOverriddenMethods();
+                int nprotm = 15; // BaseService has 15 protected members
+                int usedParent = rbMetrics.getNumberOfUsedParentMembers();
+                int wmc = rbMetrics.getWeightedMethodCount();
+                double amw = nom > 0 ? (double) wmc / nom : 0.0;
+                // refusesBequest: BOvR < 1/3 OR (NProtM > FEW AND BUR < 1/3)
+                double bovr = nom > 0 ? (double) overridden / nom : 0.0;
+                double bur = nprotm > 0 ? (double) usedParent / nprotm : 0.0;
+                boolean refusesBequest = bovr < (1.0 / 3.0) || (nprotm > 5 && bur < (1.0 / 3.0));
+                Assertions.assertTrue(
+                        refusesBequest,
+                        "Should satisfy BOvR<1/3 OR (NProtM>5 AND BUR<1/3), got BOvR=" + bovr + " BUR=" + bur
+                                + " NProtM=" + nprotm);
+                // isLargeClass: NOM > 7 AND (AMW > 2.0 OR WMC > 14)
+                Assertions.assertTrue(nom > 7, "NOM should be > 7 (NOM_AVERAGE), got: " + nom);
+                Assertions.assertTrue(
+                        amw > 2.0 || wmc > 14, "Should satisfy AMW > 2.0 OR WMC > 14, got AMW=" + amw + " WMC=" + wmc);
                 break;
             }
         }
@@ -594,7 +779,35 @@ class MetricsCollectionTest {
             if (classDisharmony.getClassName().contains("TraditionBreakerExample")) {
                 foundTraditionBreaker = true;
                 Assertions.assertEquals("Tradition Breaker", classDisharmony.getDisharmonyType());
-                Assertions.assertTrue(classDisharmony.getDescription().contains("Overridden="));
+
+                ClassMetrics tbMetrics = classDisharmony.getMetrics();
+                int nom = tbMetrics.getNumberOfMethods();
+                int overridden = tbMetrics.getNumberOfOverriddenMethods();
+                int nas = nom - overridden;
+                double pnas = nom > 0 ? (double) nas / nom : 0.0;
+                int wmc = tbMetrics.getWeightedMethodCount();
+                double amw = nom > 0 ? (double) wmc / nom : 0.0;
+
+                // Condition 1: NAS >= 7 AND PNAS >= 0.67
+                Assertions.assertTrue(nas >= 7, "NAS should be >= 7 (NOM_AVERAGE), got: " + nas);
+                Assertions.assertTrue(pnas >= 0.67, "PNAS should be >= 0.67 (TWO_THIRDS), got: " + pnas);
+
+                // Condition 2: NOM >= 12 AND (AMW > 2.0 OR WMC >= 47)
+                Assertions.assertTrue(nom >= 12, "NOM should be >= 12 (NOM_HIGH), got: " + nom);
+                Assertions.assertTrue(
+                        amw > 2.0 || wmc >= 47,
+                        "Should satisfy AMW > 2.0 OR WMC >= 47, got AMW=" + amw + " WMC=" + wmc);
+
+                // Description includes key metrics
+                Assertions.assertTrue(
+                        classDisharmony.getDescription().contains("NAS="), "Description should include NAS=");
+                Assertions.assertTrue(
+                        classDisharmony.getDescription().contains("PNAS="), "Description should include PNAS=");
+                Assertions.assertTrue(
+                        classDisharmony.getDescription().contains("NOM="), "Description should include NOM=");
+                Assertions.assertTrue(
+                        classDisharmony.getDescription().contains("Overridden="),
+                        "Description should include Overridden=");
                 break;
             }
         }

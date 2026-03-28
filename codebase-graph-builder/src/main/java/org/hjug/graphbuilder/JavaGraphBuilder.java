@@ -123,8 +123,10 @@ public class JavaGraphBuilder {
             DisharmonyDetector detector, Collection<ClassMetrics> metrics) {
         List<MethodDisharmony> methodDisharmonies = new ArrayList<>();
         methodDisharmonies.addAll(detector.detectBrainMethods(List.copyOf(metrics)));
+        methodDisharmonies.addAll(detector.detectFeatureEnvy(List.copyOf(metrics)));
         methodDisharmonies.addAll(detector.detectIntensiveCoupling(List.copyOf(metrics)));
         methodDisharmonies.addAll(detector.detectDispersedCoupling(List.copyOf(metrics)));
+        methodDisharmonies.addAll(detector.detectShotgunSurgery(List.copyOf(metrics)));
         return methodDisharmonies;
     }
 
@@ -134,8 +136,6 @@ public class JavaGraphBuilder {
         classDisharmonies.addAll(detector.detectGodClasses(List.copyOf(metrics)));
         classDisharmonies.addAll(detector.detectDataClasses(List.copyOf(metrics)));
         classDisharmonies.addAll(detector.detectBrainClasses(List.copyOf(metrics)));
-        classDisharmonies.addAll(detector.detectFeatureEnvy(List.copyOf(metrics)));
-        classDisharmonies.addAll(detector.detectShotgunSurgery(List.copyOf(metrics)));
         classDisharmonies.addAll(detector.detectRefusedParentBequest(List.copyOf(metrics)));
         classDisharmonies.addAll(detector.detectTraditionBreaker(List.copyOf(metrics)));
         return classDisharmonies;
