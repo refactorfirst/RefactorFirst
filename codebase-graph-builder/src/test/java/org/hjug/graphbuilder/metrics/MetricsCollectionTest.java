@@ -813,4 +813,42 @@ class MetricsCollectionTest {
         }
         Assertions.assertTrue(foundTraditionBreaker, "TraditionBreakerExample should be detected as Tradition Breaker");
     }
+
+    @Test
+    void sourceFilePathCapturedForAllClasses() throws IOException {
+        File srcDirectory = new File("src/test/java/org/hjug/graphbuilder/metrics/testclasses");
+
+        JavaParser javaParser = JavaParser.fromJavaVersion().build();
+        ExecutionContext ctx = new InMemoryExecutionContext(Throwable::printStackTrace);
+
+        DefaultDirectedWeightedGraph<String, DefaultWeightedEdge> classGraph =
+                new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        DefaultDirectedWeightedGraph<String, DefaultWeightedEdge> packageGraph =
+                new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+
+        GraphMetricsCollector metricsCollector = new GraphMetricsCollector(classGraph, packageGraph);
+
+        MetricsCollectingVisitor metricsVisitor = new MetricsCollectingVisitor(metricsCollector);
+
+        List<Path> list = Files.walk(Paths.get(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
+        javaParser.parse(list, Paths.get(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> {
+            metricsVisitor.visit(cu, ctx);
+        });
+
+        metricsCollector.finalizeMetrics();
+
+        ClassMetrics godClass =
+                metricsCollector.getClassMetrics("org.hjug.graphbuilder.metrics.testclasses.GodClassExample");
+        Assertions.assertNotNull(godClass, "GodClassExample metrics should be collected");
+        Assertions.assertNotNull(godClass.getSourceFilePath(), "GodClassExample sourceFilePath should not be null");
+        Assertions.assertTrue(
+                godClass.getSourceFilePath().contains("GodClassExample"),
+                "sourceFilePath should reference the source file, was: " + godClass.getSourceFilePath());
+
+        for (ClassMetrics classMetrics : metricsCollector.getAllClassMetrics().values()) {
+            Assertions.assertNotNull(
+                    classMetrics.getSourceFilePath(),
+                    "sourceFilePath should not be null for " + classMetrics.getFullyQualifiedName());
+        }
+    }
 }

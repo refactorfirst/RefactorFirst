@@ -13,10 +13,17 @@ public class MetricsCollectingVisitor extends BaseCodebaseVisitor<ExecutionConte
     private String currentMethodSignature;
     private ClassMetrics currentClassMetrics;
     private MethodMetrics currentMethodMetrics;
+    private String currentSourcePath;
 
     public MetricsCollectingVisitor(MetricsCollector metricsCollector) {
         super(metricsCollector);
         this.metricsCollector = metricsCollector;
+    }
+
+    @Override
+    public J.CompilationUnit visitCompilationUnit(J.CompilationUnit cu, ExecutionContext ctx) {
+        currentSourcePath = cu.getSourcePath().toUri().toString();
+        return super.visitCompilationUnit(cu, ctx);
     }
 
     @Override
@@ -41,6 +48,8 @@ public class MetricsCollectingVisitor extends BaseCodebaseVisitor<ExecutionConte
                 currentClassMetrics = new ClassMetrics(currentClassName);
             }
         }
+
+        currentClassMetrics.setSourceFilePath(currentSourcePath);
 
         int loc = calculateLinesOfCode(classDecl);
         currentClassMetrics.setLinesOfCode(loc);
