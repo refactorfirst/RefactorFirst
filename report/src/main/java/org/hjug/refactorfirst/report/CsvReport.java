@@ -86,7 +86,8 @@ public class CsvReport {
         // TODO: revisit
         try (CostBenefitCalculator costBenefitCalculator = new CostBenefitCalculator(projectBaseDir, new HashMap<>())) {
             costBenefitCalculator.runPmdAnalysis();
-            rankedDisharmonies = costBenefitCalculator.calculateGodClassCostBenefitValues();
+            rankedDisharmonies =
+                    costBenefitCalculator.calculateGodClassCostBenefitValues(costBenefitCalculator.getGodClasses());
         } catch (Exception e) {
             log.error("Error running analysis.");
             throw new RuntimeException(e);

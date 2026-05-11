@@ -19,6 +19,9 @@ import org.eclipse.jgit.api.errors.GitAPIException;
 import org.hjug.git.ChangePronenessRanker;
 import org.hjug.git.GitLogReader;
 import org.hjug.git.ScmLogInfo;
+import org.hjug.graphbuilder.CodebaseGraphDTO;
+import org.hjug.graphbuilder.metrics.DisharmonyDetector.ClassDisharmony;
+import org.hjug.graphbuilder.metrics.DisharmonyTypes;
 import org.hjug.metrics.*;
 import org.hjug.metrics.rules.CBORule;
 import org.jgrapht.Graph;
@@ -101,16 +104,14 @@ public class CostBenefitCalculator implements AutoCloseable {
         log.info("files to be scanned: " + Paths.get(repositoryPath));
     }
 
-    public List<RankedDisharmony> calculateGodClassCostBenefitValues() {
-        List<GodClass> godClasses = getGodClasses();
-
+    public List<RankedDisharmony> calculateGodClassCostBenefitValues(List<GodClass> godClasses) {
         List<ScmLogInfo> scmLogInfos = getRankedChangeProneness(godClasses);
 
         Map<String, ScmLogInfo> rankedLogInfosByPath = getRankedLogInfosByPath(scmLogInfos);
 
         List<RankedDisharmony> rankedDisharmonies = godClasses.stream()
-                .filter(godClass -> rankedLogInfosByPath.containsKey(godClass.getFileName()))
-                .map(godClass -> new RankedDisharmony(godClass, rankedLogInfosByPath.get(godClass.getFileName())))
+                .filter(godClass -> rankedLogInfosByPath.containsKey(godClass.getFileRepoPath()))
+                .map(godClass -> new RankedDisharmony(godClass, rankedLogInfosByPath.get(godClass.getFileRepoPath())))
                 .sorted(Comparator.comparing(RankedDisharmony::getRawPriority).reversed())
                 .collect(Collectors.toList());
 
@@ -131,7 +132,28 @@ public class CostBenefitCalculator implements AutoCloseable {
                 .collect(Collectors.toMap(ScmLogInfo::getClassName, logInfo -> logInfo, (a, b) -> b));
     }
 
-    private List<GodClass> getGodClasses() {
+    public List<GodClass> getGodClasses(CodebaseGraphDTO codebaseGraphDTO) {
+        List<ClassDisharmony> raw = codebaseGraphDTO.getClassDisharmoniesOfType(DisharmonyTypes.GOD_CLASS);
+
+        List<GodClass> godClasses = new ArrayList<>();
+        for (ClassDisharmony classDisharmony : raw) {
+            GodClass godClass = new GodClass(
+                    classDisharmony.getMetrics().getClassName(),
+                    canonicaliseURIStringForRepoLookup(
+                            classDisharmony.getMetrics().getSourceFilePath()),
+                    classDisharmony.getMetrics().getPackageName(),
+                    classDisharmony.getDescription());
+
+            godClasses.add(godClass);
+        }
+
+        GodClassRanker godClassRanker = new GodClassRanker();
+        godClassRanker.rankGodClasses(godClasses);
+
+        return godClasses;
+    }
+
+    public List<GodClass> getGodClasses() {
         List<GodClass> godClasses = new ArrayList<>();
         for (RuleViolation violation : report.getViolations()) {
             if (violation.getRule().getName().contains("GodClass")) {
@@ -140,7 +162,7 @@ public class CostBenefitCalculator implements AutoCloseable {
                         getFileName(violation),
                         violation.getAdditionalInfo().get(PACKAGE_NAME),
                         violation.getDescription());
-                log.info("God Class identified: {}", godClass.getFileName());
+                log.info("God Class identified: {}", godClass.getFileRepoPath());
                 godClasses.add(godClass);
             }
         }
@@ -170,7 +192,7 @@ public class CostBenefitCalculator implements AutoCloseable {
                             log.debug("Found source file {} for nested class: {}", path, className);
                             innerClassPaths.put(className, path);
                         } else {
-                            path = disharmony.getFileName();
+                            path = disharmony.getFileRepoPath();
                             try {
                                 log.debug("Reading scmLogInfo for {}", path);
                                 scmLogInfo = gitLogReader.fileLog(path);
@@ -266,11 +288,12 @@ public class CostBenefitCalculator implements AutoCloseable {
 
         List<RankedDisharmony> rankedDisharmonies = new ArrayList<>();
         for (CBOClass cboClass : cboClasses) {
-            log.debug("CBO Class identified: {}", cboClass.getFileName());
+            log.debug("CBO Class identified: {}", cboClass.getFileRepoPath());
             log.debug(
                     "ScmLogInfo: {}",
-                    rankedLogInfosByPath.get(cboClass.getFileName()).getPath());
-            rankedDisharmonies.add(new RankedDisharmony(cboClass, rankedLogInfosByPath.get(cboClass.getFileName())));
+                    rankedLogInfosByPath.get(cboClass.getFileRepoPath()).getPath());
+            rankedDisharmonies.add(
+                    new RankedDisharmony(cboClass, rankedLogInfosByPath.get(cboClass.getFileRepoPath())));
         }
 
         rankedDisharmonies.sort(
@@ -294,7 +317,7 @@ public class CostBenefitCalculator implements AutoCloseable {
                         getFileName(violation),
                         violation.getAdditionalInfo().get(PACKAGE_NAME),
                         violation.getDescription());
-                log.debug("Highly Coupled class identified: {}", godClass.getFileName());
+                log.debug("Highly Coupled class identified: {}", godClass.getFileRepoPath());
                 cboClasses.add(godClass);
             }
         }

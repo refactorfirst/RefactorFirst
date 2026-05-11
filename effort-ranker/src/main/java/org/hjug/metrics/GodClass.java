@@ -1,7 +1,7 @@
 package org.hjug.metrics;
 
-import java.text.NumberFormat;
-import java.text.ParseException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import lombok.Data;
 
 /**
@@ -11,7 +11,7 @@ import lombok.Data;
 public class GodClass implements Disharmony {
 
     private String className;
-    private String fileName;
+    private String fileRepoPath;
     private String packageName;
     private Integer wmc;
     private Integer atfd;
@@ -23,26 +23,21 @@ public class GodClass implements Disharmony {
     private Integer sumOfRanks;
     private Integer overallRank;
 
-    public GodClass(String className, String fileName, String packageName, String result) {
+    // Regex to capture digits for ATFD/WMC and decimal for TCC
+    Pattern pattern = Pattern.compile("ATFD=(\\d+), WMC=(\\d+), TCC=([\\d.]+)");
+
+    public GodClass(String className, String fileRepoPath, String packageName, String result) {
         this.className = className;
-        this.fileName = fileName;
+        this.fileRepoPath = fileRepoPath;
         this.packageName = packageName;
 
-        NumberFormat integerFormat = NumberFormat.getIntegerInstance();
+        // Regex to capture digits for ATFD/WMC and decimal for TCC
+        Matcher matcher = pattern.matcher(result);
 
-        String[] values =
-                result.substring(result.indexOf("(") + 1, result.indexOf(")")).split(", ");
-        try {
-            wmc = (int) (long) integerFormat.parse(extractValue(values[0]));
-            atfd = (int) (long) integerFormat.parse(extractValue(values[1]));
-        } catch (ParseException e) {
-            throw new RuntimeException(e);
+        if (matcher.find()) {
+            atfd = Integer.parseInt(matcher.group(1));
+            wmc = Integer.parseInt(matcher.group(2));
+            tcc = Float.parseFloat(matcher.group(3));
         }
-        String rawTcc = extractValue(values[2]);
-        tcc = Float.valueOf(rawTcc.replace("%", ""));
-    }
-
-    private String extractValue(String value) {
-        return value.split("=")[1];
     }
 }

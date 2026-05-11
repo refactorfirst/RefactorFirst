@@ -20,6 +20,7 @@ import org.hjug.feedback.vertex.kernelized.DirectedFeedbackVertexSetResult;
 import org.hjug.feedback.vertex.kernelized.DirectedFeedbackVertexSetSolver;
 import org.hjug.feedback.vertex.kernelized.EnhancedParameterComputer;
 import org.hjug.git.GitLogReader;
+import org.hjug.graphbuilder.CodebaseGraphDTO;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.AsSubgraph;
 import org.jgrapht.graph.DefaultWeightedEdge;
@@ -251,10 +252,15 @@ public class SimpleHtmlReport {
         List<RankedDisharmony> edgeDisharmonies = List.of();
         log.info("Identifying Object Oriented Disharmonies");
 
-        try (CostBenefitCalculator costBenefitCalculator = new CostBenefitCalculator(
-                projectBaseDir, cycleRanker.getCodebaseGraphDTO().getClassToSourceFilePathMapping())) {
+        CodebaseGraphDTO codebaseGraphDTO = cycleRanker.getCodebaseGraphDTO();
+        try (CostBenefitCalculator costBenefitCalculator =
+                new CostBenefitCalculator(projectBaseDir, codebaseGraphDTO.getClassToSourceFilePathMapping())) {
             costBenefitCalculator.runPmdAnalysis(excludeTests, testSourceDirectory);
-            rankedGodClassDisharmonies = costBenefitCalculator.calculateGodClassCostBenefitValues();
+            rankedGodClassDisharmonies = costBenefitCalculator.calculateGodClassCostBenefitValues(
+                    costBenefitCalculator.getGodClasses(codebaseGraphDTO));
+            //            log.warn("Classic God Class count: " + rankedGodClassDisharmonies.size());
+            //            log.warn("Updated God Class count: "
+            //                    + codebaseGraphDTO.getClassDisharmoniesOfType(DisharmonyTypes.GOD_CLASS).size());
             rankedCBODisharmonies = costBenefitCalculator.calculateCBOCostBenefitValues();
             edgeDisharmonies = costBenefitCalculator.calculateSourceNodeCostBenefitValues(
                     classGraph, sourceNodeInfos, targetNodeInfos, edgeToRemoveCycleCounts, vertexesToRemove);

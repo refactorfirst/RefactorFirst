@@ -60,9 +60,9 @@ class CostBenefitCalculatorTest {
     @Test
     void testCostBenefitCalculation() throws IOException, GitAPIException, InterruptedException {
 
-        String attributeHandler = "AttributeHandler.java";
-        InputStream resourceAsStream = getClass().getClassLoader().getResourceAsStream(faceletsPath + attributeHandler);
-        writeFile(faceletsPath + attributeHandler, convertInputStreamToString(resourceAsStream));
+        String updateCenter = "UpdateCenter.java";
+        InputStream resourceAsStream = getClass().getClassLoader().getResourceAsStream(hudsonPath + updateCenter);
+        writeFile(hudsonPath + updateCenter, convertInputStreamToString(resourceAsStream));
 
         git.add().addFilepattern(".").call();
         RevCommit firstCommit = git.commit().setMessage("message").call();
@@ -72,20 +72,23 @@ class CostBenefitCalculatorTest {
 
         // write contents of updated file to original file
         InputStream resourceAsStream2 =
-                getClass().getClassLoader().getResourceAsStream(faceletsPath + "AttributeHandler2.java");
-        writeFile(faceletsPath + attributeHandler, convertInputStreamToString(resourceAsStream2));
+                getClass().getClassLoader().getResourceAsStream(hudsonPath + "UpdateCenter2.java");
+        writeFile(hudsonPath + updateCenter, convertInputStreamToString(resourceAsStream2));
 
-        InputStream resourceAsStream3 =
-                getClass().getClassLoader().getResourceAsStream(faceletsPath + "AttributeHandlerAndSorter.java");
-        writeFile(faceletsPath + "AttributeHandlerAndSorter.java", convertInputStreamToString(resourceAsStream3));
+        InputStream resourceAsStream3 = getClass().getClassLoader().getResourceAsStream(hudsonPath + "FilePath.java");
+        writeFile(hudsonPath + "FilePath.java", convertInputStreamToString(resourceAsStream3));
 
         git.add().addFilepattern(".").call();
         RevCommit secondCommit = git.commit().setMessage("message").call();
 
+        CycleRanker cycleRanker =
+                new CycleRanker(git.getRepository().getDirectory().getParent());
+        cycleRanker.generateClassReferencesGraph(true, "src/test");
+
         CostBenefitCalculator costBenefitCalculator =
                 new CostBenefitCalculator(git.getRepository().getDirectory().getParent(), new HashMap<>());
-        costBenefitCalculator.runPmdAnalysis();
-        List<RankedDisharmony> disharmonies = costBenefitCalculator.calculateGodClassCostBenefitValues();
+        List<RankedDisharmony> disharmonies = costBenefitCalculator.calculateGodClassCostBenefitValues(
+                costBenefitCalculator.getGodClasses(cycleRanker.getCodebaseGraphDTO()));
 
         Assertions.assertEquals(1, disharmonies.get(0).getRawPriority().intValue());
         Assertions.assertEquals(1, disharmonies.get(1).getRawPriority().intValue());

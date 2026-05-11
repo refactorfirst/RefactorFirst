@@ -9,16 +9,16 @@ import org.hjug.metrics.Disharmony;
 public class CycleNode implements Disharmony {
 
     private final String className;
-    private String fileName;
+    private String fileRepoPath;
     private Integer changePronenessRank;
 
     private Instant firstCommitTime;
     private Instant mostRecentCommitTime;
     private Integer commitCount;
 
-    public CycleNode(String className, String fileName) {
+    public CycleNode(String className, String fileRepoPath) {
         this.className = className;
-        this.fileName = fileName;
+        this.fileRepoPath = fileRepoPath;
     }
 
     public String getPackageName() {
