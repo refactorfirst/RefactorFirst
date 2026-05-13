@@ -164,7 +164,7 @@ class MetricsCollectionTest {
         for (DisharmonyDetector.ClassDisharmony disharmony : godClasses) {
             if (disharmony.getClassName().contains("GodClassExample")) {
                 foundGodClass = true;
-                Assertions.assertEquals("God Class", disharmony.getDisharmonyType());
+                Assertions.assertEquals(DisharmonyTypes.GOD_CLASS, disharmony.getDisharmonyType());
                 break;
             }
         }
@@ -217,7 +217,7 @@ class MetricsCollectionTest {
         for (DisharmonyDetector.ClassDisharmony classDisharmony : dataClasses) {
             if (classDisharmony.getClassName().contains("DataClassExample")) {
                 foundDataClass = true;
-                Assertions.assertEquals("Data Class", classDisharmony.getDisharmonyType());
+                Assertions.assertEquals(DisharmonyTypes.DATA_CLASS, classDisharmony.getDisharmonyType());
                 break;
             }
         }
@@ -328,7 +328,7 @@ class MetricsCollectionTest {
         for (DisharmonyDetector.ClassDisharmony classDisharmony : brainClasses) {
             if (classDisharmony.getClassName().contains("BrainClassExample")) {
                 foundBrainClass = true;
-                Assertions.assertEquals("Brain Class", classDisharmony.getDisharmonyType());
+                Assertions.assertEquals(DisharmonyTypes.BRAIN_CLASS, classDisharmony.getDisharmonyType());
                 break;
             }
         }
@@ -406,7 +406,7 @@ class MetricsCollectionTest {
             if (disharmony.getClassName().contains("FeatureEnvyExample")
                     && disharmony.getMethodSignature().contains("methodWithFeatureEnvy")) {
                 foundFeatureEnvy = true;
-                Assertions.assertEquals("Feature Envy", disharmony.getDisharmonyType());
+                Assertions.assertEquals(DisharmonyTypes.FEATURE_ENVY, disharmony.getDisharmonyType());
                 Assertions.assertTrue(disharmony.getDescription().contains("ATFD="));
                 Assertions.assertTrue(disharmony.getDescription().contains("LAA="));
                 Assertions.assertTrue(disharmony.getDescription().contains("FDP="));
@@ -483,7 +483,7 @@ class MetricsCollectionTest {
         for (DisharmonyDetector.MethodDisharmony disharmony : intensivelyCoupledMethods) {
             if (disharmony.getClassName().contains("IntensiveCouplingExample")) {
                 foundIntensiveCoupling = true;
-                Assertions.assertEquals("Intensive Coupling", disharmony.getDisharmonyType());
+                Assertions.assertEquals(DisharmonyTypes.INTENSIVE_COUPLING, disharmony.getDisharmonyType());
                 Assertions.assertTrue(disharmony.getDescription().contains("CINT="));
                 Assertions.assertTrue(disharmony.getDescription().contains("CDISP="));
                 break;
@@ -559,7 +559,7 @@ class MetricsCollectionTest {
         for (DisharmonyDetector.MethodDisharmony disharmony : dispersedCoupledMethods) {
             if (disharmony.getClassName().contains("DispersedCouplingExample")) {
                 foundDispersedCoupling = true;
-                Assertions.assertEquals("Dispersed Coupling", disharmony.getDisharmonyType());
+                Assertions.assertEquals(DisharmonyTypes.DISPERSED_COUPLING, disharmony.getDisharmonyType());
                 Assertions.assertTrue(disharmony.getDescription().contains("CINT="));
                 Assertions.assertTrue(disharmony.getDescription().contains("CDISP="));
                 break;
@@ -631,7 +631,7 @@ class MetricsCollectionTest {
             if (disharmony.getClassName().contains("ShotgunSurgeryExample")
                     && disharmony.getMethodSignature().contains("performService")) {
                 foundShotgunSurgery = true;
-                Assertions.assertEquals("Shotgun Surgery", disharmony.getDisharmonyType());
+                Assertions.assertEquals(DisharmonyTypes.SHOTGUN_SURGERY, disharmony.getDisharmonyType());
                 Assertions.assertTrue(disharmony.getDescription().contains("CM="));
                 Assertions.assertTrue(disharmony.getDescription().contains("CC="));
                 break;
@@ -696,7 +696,7 @@ class MetricsCollectionTest {
         for (DisharmonyDetector.ClassDisharmony classDisharmony : refusedBequestClasses) {
             if (classDisharmony.getClassName().contains("RefusedBequestExample")) {
                 foundRefusedBequest = true;
-                Assertions.assertEquals("Refused Parent Bequest", classDisharmony.getDisharmonyType());
+                Assertions.assertEquals(DisharmonyTypes.REFUSED_PARENT_BEQUEST, classDisharmony.getDisharmonyType());
                 Assertions.assertTrue(
                         classDisharmony.getDescription().contains("NProtM="), "Description should include NProtM");
                 Assertions.assertTrue(
@@ -778,7 +778,7 @@ class MetricsCollectionTest {
         for (DisharmonyDetector.ClassDisharmony classDisharmony : traditionBreakerClasses) {
             if (classDisharmony.getClassName().contains("TraditionBreakerExample")) {
                 foundTraditionBreaker = true;
-                Assertions.assertEquals("Tradition Breaker", classDisharmony.getDisharmonyType());
+                Assertions.assertEquals(DisharmonyTypes.TRADITION_BREAKER, classDisharmony.getDisharmonyType());
 
                 ClassMetrics tbMetrics = classDisharmony.getMetrics();
                 int nom = tbMetrics.getNumberOfMethods();

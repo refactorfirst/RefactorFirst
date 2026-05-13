@@ -1,14 +1,15 @@
 package org.hjug.graphbuilder.metrics;
 
 import lombok.extern.slf4j.Slf4j;
-import org.hjug.graphbuilder.visitor.BaseCodebaseVisitor;
 import org.openrewrite.ExecutionContext;
+import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.*;
 
 @Slf4j
-public class MetricsCollectingVisitor extends BaseCodebaseVisitor<ExecutionContext> {
+public class MetricsCollectingVisitor extends JavaIsoVisitor<ExecutionContext> {
 
     private final MetricsCollector metricsCollector;
+    private String currentPackageName;
     private String currentClassName;
     private String currentMethodSignature;
     private ClassMetrics currentClassMetrics;
@@ -16,13 +17,12 @@ public class MetricsCollectingVisitor extends BaseCodebaseVisitor<ExecutionConte
     private String currentSourcePath;
 
     public MetricsCollectingVisitor(MetricsCollector metricsCollector) {
-        super(metricsCollector);
         this.metricsCollector = metricsCollector;
     }
 
     @Override
     public J.CompilationUnit visitCompilationUnit(J.CompilationUnit cu, ExecutionContext ctx) {
-        currentSourcePath = cu.getSourcePath().toUri().toString();
+        currentSourcePath = cu.getSourcePath().toString(); // .toUri().toString();
         return super.visitCompilationUnit(cu, ctx);
     }
 
@@ -33,10 +33,12 @@ public class MetricsCollectingVisitor extends BaseCodebaseVisitor<ExecutionConte
             return classDecl;
         }
 
+        String previousPackageName = currentPackageName;
         String previousClassName = currentClassName;
         ClassMetrics previousClassMetrics = currentClassMetrics;
 
         currentClassName = type.getFullyQualifiedName();
+        currentPackageName = type.getPackageName();
 
         // Get or create metrics - this ensures it's stored in the collector
         if (metricsCollector instanceof GraphMetricsCollector) {
@@ -50,6 +52,9 @@ public class MetricsCollectingVisitor extends BaseCodebaseVisitor<ExecutionConte
         }
 
         currentClassMetrics.setSourceFilePath(currentSourcePath);
+
+        currentClassMetrics.setPackageName(type.getPackageName());
+        currentClassMetrics.setClassName(type.getClassName());
 
         int loc = calculateLinesOfCode(classDecl);
         currentClassMetrics.setLinesOfCode(loc);
@@ -82,6 +87,7 @@ public class MetricsCollectingVisitor extends BaseCodebaseVisitor<ExecutionConte
 
         metricsCollector.recordClassMetric(currentClassName, "LOC", loc);
 
+        currentPackageName = previousPackageName;
         currentClassName = previousClassName;
         currentClassMetrics = previousClassMetrics;
 
@@ -295,10 +301,5 @@ public class MetricsCollectingVisitor extends BaseCodebaseVisitor<ExecutionConte
             return statements <= 1;
         }
         return false;
-    }
-
-    @Override
-    protected String getCurrentOwnerFqn() {
-        return currentClassName;
     }
 }

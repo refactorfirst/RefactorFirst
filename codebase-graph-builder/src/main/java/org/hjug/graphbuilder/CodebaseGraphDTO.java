@@ -2,6 +2,7 @@ package org.hjug.graphbuilder;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.Data;
 import org.hjug.graphbuilder.metrics.DisharmonyDetector.ClassDisharmony;
 import org.hjug.graphbuilder.metrics.DisharmonyDetector.MethodDisharmony;
@@ -18,4 +19,10 @@ public class CodebaseGraphDTO {
 
     private final List<ClassDisharmony> classDisharmonies;
     private final List<MethodDisharmony> methodDisharmonies;
+
+    public List<ClassDisharmony> getClassDisharmoniesOfType(String disharmonyType) {
+        return classDisharmonies.stream()
+                .filter(d -> disharmonyType.equals(d.getDisharmonyType()))
+                .collect(Collectors.toList());
+    }
 }

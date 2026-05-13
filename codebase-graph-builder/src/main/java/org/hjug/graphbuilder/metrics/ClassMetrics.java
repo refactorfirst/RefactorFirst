@@ -18,6 +18,14 @@ public class ClassMetrics {
 
     @Getter
     @Setter
+    private String className;
+
+    @Getter
+    @Setter
+    private String packageName;
+
+    @Getter
+    @Setter
     private int linesOfCode;
 
     @Getter

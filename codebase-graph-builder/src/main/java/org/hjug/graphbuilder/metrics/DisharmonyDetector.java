@@ -70,7 +70,8 @@ public class DisharmonyDetector {
                         metrics.getAccessToForeignData(),
                         metrics.getWeightedMethodCount(),
                         metrics.getTightClassCohesion());
-                godClasses.add(new ClassDisharmony(metrics.getFullyQualifiedName(), "God Class", description, metrics));
+                godClasses.add(new ClassDisharmony(
+                        metrics.getFullyQualifiedName(), DisharmonyTypes.GOD_CLASS, description, metrics));
             }
         }
         return godClasses;
@@ -85,8 +86,8 @@ public class DisharmonyDetector {
                         metrics.getWeightOfClass(),
                         metrics.getNumberOfPublicAttributes() + metrics.getNumberOfAccessorMethods(),
                         metrics.getWeightedMethodCount());
-                dataClasses.add(
-                        new ClassDisharmony(metrics.getFullyQualifiedName(), "Data Class", description, metrics));
+                dataClasses.add(new ClassDisharmony(
+                        metrics.getFullyQualifiedName(), DisharmonyTypes.DATA_CLASS, description, metrics));
             }
         }
         return dataClasses;
@@ -106,7 +107,7 @@ public class DisharmonyDetector {
                     brainMethods.add(new MethodDisharmony(
                             classMetrics.getFullyQualifiedName(),
                             methodMetrics.getSignature(),
-                            "Brain Method",
+                            DisharmonyTypes.BRAIN_METHOD,
                             description,
                             methodMetrics));
                 }
@@ -126,8 +127,8 @@ public class DisharmonyDetector {
                         metrics.getLinesOfCode(),
                         metrics.getWeightedMethodCount(),
                         metrics.getTightClassCohesion());
-                brainClasses.add(
-                        new ClassDisharmony(metrics.getFullyQualifiedName(), "Brain Class", description, metrics));
+                brainClasses.add(new ClassDisharmony(
+                        metrics.getFullyQualifiedName(), DisharmonyTypes.BRAIN_CLASS, description, metrics));
             }
         }
         return brainClasses;
@@ -146,7 +147,7 @@ public class DisharmonyDetector {
                     featureEnvyMethods.add(new MethodDisharmony(
                             classMetrics.getFullyQualifiedName(),
                             methodMetrics.getSignature(),
-                            "Feature Envy",
+                            DisharmonyTypes.FEATURE_ENVY,
                             description,
                             methodMetrics));
                 }
@@ -164,7 +165,7 @@ public class DisharmonyDetector {
                     longMethods.add(new MethodDisharmony(
                             classMetrics.getFullyQualifiedName(),
                             methodMetrics.getSignature(),
-                            "Long Method",
+                            DisharmonyTypes.LONG_METHOD,
                             description,
                             methodMetrics));
                 }
@@ -184,7 +185,7 @@ public class DisharmonyDetector {
                     intensivelyCoupledMethods.add(new MethodDisharmony(
                             classMetrics.getFullyQualifiedName(),
                             methodMetrics.getSignature(),
-                            "Intensive Coupling",
+                            DisharmonyTypes.INTENSIVE_COUPLING,
                             description,
                             methodMetrics));
                 }
@@ -204,7 +205,7 @@ public class DisharmonyDetector {
                     dispersedCoupledMethods.add(new MethodDisharmony(
                             classMetrics.getFullyQualifiedName(),
                             methodMetrics.getSignature(),
-                            "Dispersed Coupling",
+                            DisharmonyTypes.DISPERSED_COUPLING,
                             description,
                             methodMetrics));
                 }
@@ -224,7 +225,7 @@ public class DisharmonyDetector {
                     shotgunSurgeryMethods.add(new MethodDisharmony(
                             classMetrics.getFullyQualifiedName(),
                             methodMetrics.getSignature(),
-                            "Shotgun Surgery",
+                            DisharmonyTypes.SHOTGUN_SURGERY,
                             description,
                             methodMetrics));
                 }
@@ -249,7 +250,7 @@ public class DisharmonyDetector {
                         "Refused Parent Bequest detected: NProtM=%d, BUR=%.2f, BOvR=%.2f, NOM=%d, AMW=%.2f, WMC=%d",
                         parentProtected, bur, bovr, descNom, amw, wmc);
                 refusedBequestClasses.add(new ClassDisharmony(
-                        metrics.getFullyQualifiedName(), "Refused Parent Bequest", description, metrics));
+                        metrics.getFullyQualifiedName(), DisharmonyTypes.REFUSED_PARENT_BEQUEST, description, metrics));
             }
         }
         return refusedBequestClasses;
@@ -268,7 +269,7 @@ public class DisharmonyDetector {
                         "Tradition Breaker detected: NAS=%d, PNAS=%.2f, NOM=%d, AMW=%.2f, WMC=%d, Overridden=%d",
                         nas, pnas, nom, amw, wmc, metrics.getNumberOfOverriddenMethods());
                 traditionBreakerClasses.add(new ClassDisharmony(
-                        metrics.getFullyQualifiedName(), "Tradition Breaker", description, metrics));
+                        metrics.getFullyQualifiedName(), DisharmonyTypes.TRADITION_BREAKER, description, metrics));
             }
         }
         return traditionBreakerClasses;
