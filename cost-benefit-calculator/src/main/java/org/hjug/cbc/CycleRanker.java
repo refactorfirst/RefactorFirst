@@ -104,34 +104,4 @@ public class CycleRanker {
             rankedCycle.setPriority(priority++);
         }
     }
-
-    private static String getPackageName(Path path) {
-        try {
-            return Files.readAllLines(path).stream()
-                    .filter(line -> line.startsWith("package"))
-                    .map(line -> line.replace("package", "").replace(";", "").trim())
-                    .findFirst()
-                    .orElse("");
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private String canonicaliseURIStringForRepoLookup(String uriString) {
-        if (repositoryPath.startsWith("/") || repositoryPath.startsWith("\\")) {
-            return uriString.replace("file://" + repositoryPath.replace("\\", "/") + "/", "");
-        }
-        return uriString.replace("file:///" + repositoryPath.replace("\\", "/") + "/", "");
-    }
-
-    /**
-     * Extract class name from java file name
-     * Example : MyJavaClass.java becomes MyJavaClass
-     *
-     * @param javaFileName
-     * @return
-     */
-    private String getClassName(String javaFileName) {
-        return javaFileName.substring(0, javaFileName.indexOf('.'));
-    }
 }
