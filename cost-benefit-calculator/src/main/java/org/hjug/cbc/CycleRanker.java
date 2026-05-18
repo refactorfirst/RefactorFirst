@@ -1,8 +1,6 @@
 package org.hjug.cbc;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
 import lombok.Getter;
@@ -55,7 +53,8 @@ public class CycleRanker {
     }
 
     private void identifyRankedCycles(List<RankedCycle> rankedCycles) throws IOException {
-        CircularReferenceChecker circularReferenceChecker = new CircularReferenceChecker();
+        CircularReferenceChecker<String, DefaultWeightedEdge> circularReferenceChecker =
+                new CircularReferenceChecker<>();
         Map<String, AsSubgraph<String, DefaultWeightedEdge>> cycles =
                 circularReferenceChecker.getCycles(classReferencesGraph);
         cycles.forEach((vertex, subGraph) -> {
