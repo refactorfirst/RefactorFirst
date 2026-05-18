@@ -6,6 +6,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.hjug.graphbuilder.DependencyCollector;
 import org.openrewrite.java.tree.*;
 
+/**
+ * BUG: Static method calls and definitions are not being captured, but were previously being captured.
+ * Classes with static methods are also not being captured in the graph.
+ * Will take this as a bug for now and address this issue ASAP.
+ * @param <P>
+ */
 @Slf4j
 public class JavaVisitor<P> extends BaseCodebaseVisitor<P> {
 
