@@ -22,7 +22,8 @@ public class JavaNewClassVisitorFullTest {
     @Test
     void visitNewClass() throws IOException {
 
-        File srcDirectory = new File("src/test/java/org/hjug/graphbuilder/visitor/testclasses/newClass");
+        String pathString = "src/test/java/org/hjug/graphbuilder/visitor/testclasses/newClass";
+        File srcDirectory = new File(pathString);
 
         JavaParser javaParser = JavaParser.fromJavaVersion().build();
         ExecutionContext ctx = new InMemoryExecutionContext(Throwable::printStackTrace);
@@ -35,7 +36,8 @@ public class JavaNewClassVisitorFullTest {
         GraphDependencyCollector dependencyCollector =
                 new GraphDependencyCollector(classReferencesGraph, packageReferencesGraph);
 
-        final JavaVisitor<ExecutionContext> javaVisitor = new JavaVisitor<>(dependencyCollector);
+        String repo = srcDirectory.toURI().toString().replace("/" + pathString, "");
+        final JavaVisitor<ExecutionContext> javaVisitor = new JavaVisitor<>(repo, dependencyCollector);
         final JavaVariableTypeVisitor<ExecutionContext> javaVariableTypeVisitor =
                 new JavaVariableTypeVisitor<>(dependencyCollector);
         final JavaMethodDeclarationVisitor<ExecutionContext> javaMethodDeclarationVisitor =

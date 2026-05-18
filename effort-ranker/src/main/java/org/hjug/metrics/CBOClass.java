@@ -17,7 +17,7 @@ public class CBOClass implements Disharmony {
 
     public CBOClass(String className, String fileRepoPath, String packageName, String result) {
         this.className = className;
-        this.fileRepoPath = fileRepoPath;
+        this.fileRepoPath = fileRepoPath.replace("\\", "/");
         this.packageName = packageName;
 
         try (Scanner scanner = new Scanner(result)) {

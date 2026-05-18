@@ -28,7 +28,7 @@ public class GodClass implements Disharmony {
 
     public GodClass(String className, String fileRepoPath, String packageName, String result) {
         this.className = className;
-        this.fileRepoPath = fileRepoPath;
+        this.fileRepoPath = fileRepoPath.replace("\\", "/");
         this.packageName = packageName;
 
         // Regex to capture digits for ATFD/WMC and decimal for TCC

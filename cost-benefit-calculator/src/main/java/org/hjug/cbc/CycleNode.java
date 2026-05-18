@@ -17,8 +17,9 @@ public class CycleNode implements Disharmony {
     private Integer commitCount;
 
     public CycleNode(String className, String fileRepoPath) {
+        System.out.println("Creating CycleNode for " + className);
         this.className = className;
-        this.fileRepoPath = fileRepoPath;
+        this.fileRepoPath = fileRepoPath.replace("\\", "/");
     }
 
     public String getPackageName() {

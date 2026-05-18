@@ -90,8 +90,10 @@ class CostBenefitCalculatorTest {
         List<RankedDisharmony> disharmonies = costBenefitCalculator.calculateGodClassCostBenefitValues(
                 costBenefitCalculator.getGodClasses(cycleRanker.getCodebaseGraphDTO()));
 
+        Assertions.assertNotEquals(0, disharmonies.get(0).getCommitCount());
+
         Assertions.assertEquals(1, disharmonies.get(0).getRawPriority().intValue());
-        Assertions.assertEquals(1, disharmonies.get(1).getRawPriority().intValue());
+        Assertions.assertEquals(-1, disharmonies.get(1).getRawPriority().intValue());
 
         Assertions.assertEquals(1, disharmonies.get(0).getPriority().intValue());
         Assertions.assertEquals(2, disharmonies.get(1).getPriority().intValue());

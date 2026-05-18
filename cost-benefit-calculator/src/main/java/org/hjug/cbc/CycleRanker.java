@@ -3,10 +3,8 @@ package org.hjug.cbc;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +20,6 @@ import org.jgrapht.graph.DefaultWeightedEdge;
 public class CycleRanker {
 
     private final String repositoryPath;
-    private final JavaGraphBuilder javaGraphBuilder = new JavaGraphBuilder();
 
     @Getter
     private Graph<String, DefaultWeightedEdge> classReferencesGraph;
@@ -30,24 +27,13 @@ public class CycleRanker {
     @Getter
     private CodebaseGraphDTO codebaseGraphDTO;
 
-    @Getter
-    private Map<String, String> classNamesAndPaths = new HashMap<>();
-
-    @Getter
-    private Map<String, String> fqnsAndPaths = new HashMap<>();
-
     public void generateClassReferencesGraph(boolean excludeTests, String testSourceDirectory) {
         try {
+            JavaGraphBuilder javaGraphBuilder = new JavaGraphBuilder();
+
             codebaseGraphDTO = javaGraphBuilder.getCodebaseGraphDTO(repositoryPath, excludeTests, testSourceDirectory);
 
             classReferencesGraph = codebaseGraphDTO.getClassReferencesGraph();
-
-            loadClassNamesAndPaths();
-
-            /*for (Map.Entry<String, String> stringStringEntry : fqnsAndPaths.entrySet()) {
-                log.info(stringStringEntry.getKey() + " : " + stringStringEntry.getValue());
-            }*/
-
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -73,15 +59,10 @@ public class CycleRanker {
         Map<String, AsSubgraph<String, DefaultWeightedEdge>> cycles =
                 circularReferenceChecker.getCycles(classReferencesGraph);
         cycles.forEach((vertex, subGraph) -> {
-            // TODO: Calculate min cuts for smaller graphs - has a runtime of O(V^4) for a graph
-            /*Set<DefaultWeightedEdge> minCutEdges;
-            GusfieldGomoryHuCutTree<String, DefaultWeightedEdge> gusfieldGomoryHuCutTree =
-                    new GusfieldGomoryHuCutTree<>(new AsUndirectedGraph<>(subGraph));
-            double minCut = gusfieldGomoryHuCutTree.calculateMinCut();
-            minCutEdges = gusfieldGomoryHuCutTree.getCutEdges();*/
-
             List<CycleNode> cycleNodes = subGraph.vertexSet().stream()
-                    .map(classInCycle -> new CycleNode(classInCycle, classNamesAndPaths.get(classInCycle)))
+                    .map(classInCycle -> new CycleNode(
+                            classInCycle,
+                            codebaseGraphDTO.getClassToSourceFilePathMapping().get(classInCycle)))
                     //                        .peek(cycleNode -> log.info(cycleNode.toString()))
                     .collect(Collectors.toList());
 
@@ -90,7 +71,8 @@ public class CycleRanker {
     }
 
     public CycleNode classToCycleNode(String fqnClass) {
-        return new CycleNode(fqnClass, fqnsAndPaths.get(fqnClass));
+        return new CycleNode(
+                fqnClass, codebaseGraphDTO.getClassToSourceFilePathMapping().get(fqnClass));
     }
 
     private RankedCycle createRankedCycle(
@@ -120,23 +102,6 @@ public class CycleRanker {
         int priority = 1;
         for (RankedCycle rankedCycle : rankedCycles) {
             rankedCycle.setPriority(priority++);
-        }
-    }
-
-    void loadClassNamesAndPaths() throws IOException {
-        try (Stream<Path> walk = Files.walk(Paths.get(repositoryPath))) {
-            walk.forEach(path -> {
-                String filename = path.getFileName().toString();
-                if (filename.endsWith(".java")) {
-                    // extract package and class name
-                    String packageName = getPackageName(path);
-                    String uriString = path.toUri().toString();
-                    String className = getClassName(filename);
-                    String canonicalUri = canonicaliseURIStringForRepoLookup(uriString);
-                    fqnsAndPaths.put(packageName + "." + className, canonicalUri);
-                    classNamesAndPaths.put(className, canonicalUri);
-                }
-            });
         }
     }
 

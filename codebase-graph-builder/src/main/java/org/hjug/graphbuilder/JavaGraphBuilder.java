@@ -31,38 +31,39 @@ public class JavaGraphBuilder {
     /**
      * Given a java source directory, return a CodebaseGraphDTO using default configuration
      *
-     * @param srcDirectory The source directory to analyze
+     * @param repositoryPath The source directory to analyze
      * @param excludeTests Whether to exclude test files
      * @param testSourceDirectory The test source directory pattern to exclude
      * @return CodebaseGraphDTO
      * @throws IOException
      */
-    public CodebaseGraphDTO getCodebaseGraphDTO(String srcDirectory, boolean excludeTests, String testSourceDirectory)
+    public CodebaseGraphDTO getCodebaseGraphDTO(String repositoryPath, boolean excludeTests, String testSourceDirectory)
             throws IOException {
         GraphBuilderConfig config = GraphBuilderConfig.builder()
                 .excludeTests(excludeTests)
                 .testSourceDirectory(testSourceDirectory)
                 .build();
-        return getCodebaseGraphDTO(srcDirectory, config);
+        return getCodebaseGraphDTO(repositoryPath, config);
     }
 
     /**
      * Given a java source directory and configuration, return a CodebaseGraphDTO
      *
-     * @param srcDirectory The source directory to analyze
+     * @param repositoryPath The source directory to analyze
      * @param config The configuration for the graph builder
      * @return CodebaseGraphDTO
      * @throws IOException
      */
-    public CodebaseGraphDTO getCodebaseGraphDTO(String srcDirectory, GraphBuilderConfig config) throws IOException {
-        if (srcDirectory == null || srcDirectory.isEmpty()) {
+    private CodebaseGraphDTO getCodebaseGraphDTO(String repositoryPath, GraphBuilderConfig config) throws IOException {
+        if (repositoryPath == null || repositoryPath.isEmpty()) {
             throw new IllegalArgumentException("Source directory cannot be null or empty");
         }
-        return processWithOpenRewrite(srcDirectory, config);
+        return processWithOpenRewrite(repositoryPath, config);
     }
 
-    private CodebaseGraphDTO processWithOpenRewrite(String srcDir, GraphBuilderConfig config) throws IOException {
-        File srcDirectory = new File(srcDir);
+    private CodebaseGraphDTO processWithOpenRewrite(String repositoryPath, GraphBuilderConfig config)
+            throws IOException {
+        File srcDirectory = new File(repositoryPath);
 
         JavaParser javaParser = JavaParser.fromJavaVersion().build();
         ExecutionContext ctx = new InMemoryExecutionContext(Throwable::printStackTrace);
@@ -75,7 +76,7 @@ public class JavaGraphBuilder {
         final GraphDependencyCollector dependencyCollector =
                 new GraphDependencyCollector(classReferencesGraph, packageReferencesGraph);
 
-        final JavaVisitor<ExecutionContext> javaVisitor = new JavaVisitor<>(dependencyCollector);
+        final JavaVisitor<ExecutionContext> javaVisitor = new JavaVisitor<>(repositoryPath, dependencyCollector);
         final JavaVariableTypeVisitor<ExecutionContext> javaVariableTypeVisitor =
                 new JavaVariableTypeVisitor<>(dependencyCollector);
         final JavaMethodDeclarationVisitor<ExecutionContext> javaMethodDeclarationVisitor =
@@ -114,7 +115,8 @@ public class JavaGraphBuilder {
         return new CodebaseGraphDTO(
                 classReferencesGraph,
                 packageReferencesGraph,
-                javaVisitor.getClassToSourceFilePathMapping(),
+                javaVisitor.getClassToSourceFilePathMapping(), // hudson.model.FilePath ->
+                // file:///C:/Code/RefactorFirst/cost-benefit-calculator/hudson/model/FilePath.java
                 getClassDisharmonies(detector, metrics),
                 getMethodDisharmonies(detector, metrics));
     }

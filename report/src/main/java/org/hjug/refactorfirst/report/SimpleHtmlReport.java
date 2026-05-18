@@ -255,13 +255,10 @@ public class SimpleHtmlReport {
         CodebaseGraphDTO codebaseGraphDTO = cycleRanker.getCodebaseGraphDTO();
         try (CostBenefitCalculator costBenefitCalculator =
                 new CostBenefitCalculator(projectBaseDir, codebaseGraphDTO.getClassToSourceFilePathMapping())) {
-            costBenefitCalculator.runPmdAnalysis(excludeTests, testSourceDirectory);
+            // costBenefitCalculator.runPmdAnalysis(excludeTests, testSourceDirectory);
             rankedGodClassDisharmonies = costBenefitCalculator.calculateGodClassCostBenefitValues(
                     costBenefitCalculator.getGodClasses(codebaseGraphDTO));
-            //            log.warn("Classic God Class count: " + rankedGodClassDisharmonies.size());
-            //            log.warn("Updated God Class count: "
-            //                    + codebaseGraphDTO.getClassDisharmoniesOfType(DisharmonyTypes.GOD_CLASS).size());
-            rankedCBODisharmonies = costBenefitCalculator.calculateCBOCostBenefitValues();
+            //            rankedCBODisharmonies = costBenefitCalculator.calculateCBOCostBenefitValues();
             edgeDisharmonies = costBenefitCalculator.calculateSourceNodeCostBenefitValues(
                     classGraph, sourceNodeInfos, targetNodeInfos, edgeToRemoveCycleCounts, vertexesToRemove);
 

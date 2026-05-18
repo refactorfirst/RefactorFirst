@@ -23,7 +23,8 @@ class JavaVisitorTest {
     @Test
     void visitClasses() throws IOException {
 
-        File srcDirectory = new File("src/test/java/org/hjug/graphbuilder/visitor/testclasses");
+        String pathString = "src/test/java/org/hjug/graphbuilder/visitor/testclasses";
+        File srcDirectory = new File(pathString);
 
         org.openrewrite.java.JavaParser javaParser =
                 JavaParser.fromJavaVersion().build();
@@ -37,7 +38,10 @@ class JavaVisitorTest {
         final GraphDependencyCollector dependencyCollector =
                 new GraphDependencyCollector(classReferencesGraph, packageReferencesGraph);
 
-        final JavaVisitor<ExecutionContext> javaVisitor = new JavaVisitor<>(dependencyCollector);
+        String repo = srcDirectory.toURI().toString().replace("/" + pathString, "");
+        final JavaVisitor<ExecutionContext> javaVisitor = new JavaVisitor<>(repo, dependencyCollector);
+
+        //        final JavaVisitor<ExecutionContext> javaVisitor = new JavaVisitor<>(dependencyCollector);
 
         List<Path> list = Files.walk(Paths.get(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
         javaParser.parse(list, Paths.get(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> {
