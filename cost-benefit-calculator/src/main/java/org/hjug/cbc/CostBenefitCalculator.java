@@ -123,6 +123,14 @@ public class CostBenefitCalculator implements AutoCloseable {
         return rankedDisharmonies;
     }
 
+    /**
+     *  Returns a map of ScmLogInfo objects keyed by the path of the file.
+     *  If there are multiple ScmLogInfo objects for a single path, the last one is returned.
+     *  TODO: this method should be revisited to make it more robust to allow it to handle nested classes
+     *
+     * @param scmLogInfos
+     * @return A map of ScmLogInfo objects keyed by the path of the file.  If there are multiple ScmLogInfo objects for a single path, the last one is returned.
+     */
     private static Map<String, ScmLogInfo> getRankedLogInfosByPath(List<ScmLogInfo> scmLogInfos) {
         return scmLogInfos.stream().collect(Collectors.toMap(ScmLogInfo::getPath, logInfo -> logInfo, (a, b) -> b));
     }
