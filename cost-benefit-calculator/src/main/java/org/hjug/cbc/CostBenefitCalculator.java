@@ -71,28 +71,6 @@ public class CostBenefitCalculator implements AutoCloseable {
         }
     }
 
-    public void runPmdAnalysis(boolean excludeTests, String testSourceDirectory) throws IOException {
-        PMDConfiguration configuration = new PMDConfiguration();
-
-        try (PmdAnalysis pmd = PmdAnalysis.create(configuration)) {
-            loadRules(pmd);
-
-            try (Stream<Path> files = Files.walk(Paths.get(repositoryPath))) {
-                Stream<Path> pathStream;
-                if (excludeTests) {
-                    pathStream = files.filter(Files::isRegularFile)
-                            .filter(file -> !file.toString().contains(testSourceDirectory));
-                } else {
-                    pathStream = files.filter(Files::isRegularFile);
-                }
-
-                pathStream.forEach(file -> pmd.files().addFile(file));
-            }
-
-            report = pmd.performAnalysisAndCollectReport();
-        }
-    }
-
     private void loadRules(PmdAnalysis pmd) {
         RuleSetLoader rulesetLoader = pmd.newRuleSetLoader();
         pmd.addRuleSets(rulesetLoader.loadRuleSetsWithoutException(List.of("category/java/design.xml")));
