@@ -38,17 +38,11 @@ public class JavaNewClassVisitorFullTest {
 
         String repo = srcDirectory.toURI().toString().replace("/" + pathString, "");
         final JavaVisitor<ExecutionContext> javaVisitor = new JavaVisitor<>(repo, dependencyCollector);
-        final JavaVariableTypeVisitor<ExecutionContext> javaVariableTypeVisitor =
-                new JavaVariableTypeVisitor<>(dependencyCollector);
-        final JavaMethodDeclarationVisitor<ExecutionContext> javaMethodDeclarationVisitor =
-                new JavaMethodDeclarationVisitor<>(dependencyCollector);
 
         List<Path> list = Files.walk(Paths.get(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
 
         javaParser.parse(list, Paths.get(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> {
             javaVisitor.visit(cu, ctx);
-            javaVariableTypeVisitor.visit(cu, ctx);
-            javaMethodDeclarationVisitor.visit(cu, ctx);
         });
 
         Graph<String, DefaultWeightedEdge> graph = classReferencesGraph;

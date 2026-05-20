@@ -22,7 +22,8 @@ class JavaMethodInvocationVisitorTest {
     @Test
     void visitMethodInvocations() throws IOException {
 
-        File srcDirectory = new File("src/test/java/org/hjug/graphbuilder/visitor/testclasses/methodInvocation");
+        String pathString = "src/test/java/org/hjug/graphbuilder/visitor/testclasses/methodInvocation";
+        File srcDirectory = new File(pathString);
 
         JavaParser javaParser = JavaParser.fromJavaVersion().build();
         ExecutionContext ctx = new InMemoryExecutionContext(Throwable::printStackTrace);
@@ -35,15 +36,12 @@ class JavaMethodInvocationVisitorTest {
         GraphDependencyCollector dependencyCollector =
                 new GraphDependencyCollector(classReferencesGraph, packageReferencesGraph);
 
-        JavaClassDeclarationVisitor<ExecutionContext> classDeclarationVisitor =
-                new JavaClassDeclarationVisitor<>(dependencyCollector);
-        JavaVariableTypeVisitor<ExecutionContext> variableTypeVisitor =
-                new JavaVariableTypeVisitor<>(dependencyCollector);
+        String repo = srcDirectory.toURI().toString().replace("/" + pathString, "");
+        JavaVisitor<ExecutionContext> classDeclarationVisitor = new JavaVisitor<>(repo, dependencyCollector);
 
         List<Path> list = Files.walk(Paths.get(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
         javaParser.parse(list, Paths.get(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> {
             classDeclarationVisitor.visit(cu, ctx);
-            variableTypeVisitor.visit(cu, ctx);
         });
 
         Graph<String, DefaultWeightedEdge> graph = classReferencesGraph;

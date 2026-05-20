@@ -22,7 +22,8 @@ class JavaVariableTypeVisitorTest {
     @Test
     void visitClasses() throws IOException {
 
-        File srcDirectory = new File("src/test/java/org/hjug/graphbuilder/visitor/testclasses");
+        String pathString = "src/test/java/org/hjug/graphbuilder/visitor/testclasses";
+        File srcDirectory = new File(pathString);
 
         org.openrewrite.java.JavaParser javaParser =
                 JavaParser.fromJavaVersion().build();
@@ -35,8 +36,8 @@ class JavaVariableTypeVisitorTest {
         GraphDependencyCollector dependencyCollector =
                 new GraphDependencyCollector(classReferencesGraph, packageReferencesGraph);
 
-        JavaVariableTypeVisitor<ExecutionContext> javaVariableCapturingVisitor =
-                new JavaVariableTypeVisitor<>(dependencyCollector);
+        String repo = srcDirectory.toURI().toString().replace("/" + pathString, "");
+        JavaVisitor<ExecutionContext> javaVariableCapturingVisitor = new JavaVisitor<>(repo, dependencyCollector);
 
         List<Path> list = Files.walk(Paths.get(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
         javaParser.parse(list, Paths.get(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> {
@@ -50,7 +51,7 @@ class JavaVariableTypeVisitorTest {
         Assertions.assertTrue(classReferencesGraph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.E"));
         Assertions.assertTrue(
                 classReferencesGraph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.MyAnnotation"));
-        Assertions.assertFalse(classReferencesGraph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.F"));
-        Assertions.assertFalse(classReferencesGraph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.G"));
+        Assertions.assertTrue(classReferencesGraph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.F"));
+        Assertions.assertTrue(classReferencesGraph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.G"));
     }
 }

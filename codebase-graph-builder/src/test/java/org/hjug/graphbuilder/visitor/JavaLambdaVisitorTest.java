@@ -22,7 +22,8 @@ class JavaLambdaVisitorTest {
     @Test
     void visitLambdaBodiesRecursively() throws IOException {
 
-        File srcDirectory = new File("src/test/java/org/hjug/graphbuilder/visitor/testclasses/lambda");
+        String pathString = "src/test/java/org/hjug/graphbuilder/visitor/testclasses/lambda";
+        File srcDirectory = new File(pathString);
 
         JavaParser javaParser = JavaParser.fromJavaVersion().build();
         ExecutionContext ctx = new InMemoryExecutionContext(Throwable::printStackTrace);
@@ -35,8 +36,8 @@ class JavaLambdaVisitorTest {
         GraphDependencyCollector dependencyCollector =
                 new GraphDependencyCollector(classReferencesGraph, packageReferencesGraph);
 
-        JavaClassDeclarationVisitor<ExecutionContext> classDeclarationVisitor =
-                new JavaClassDeclarationVisitor<>(dependencyCollector);
+        String repo = srcDirectory.toURI().toString().replace("/" + pathString, "");
+        JavaVisitor<ExecutionContext> classDeclarationVisitor = new JavaVisitor<>(repo, dependencyCollector);
 
         List<Path> list = Files.walk(Paths.get(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
         javaParser.parse(list, Paths.get(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> {
@@ -103,7 +104,8 @@ class JavaLambdaVisitorTest {
     @Test
     void visitNestedLambdaBodiesRecursively() throws IOException {
 
-        File srcDirectory = new File("src/test/java/org/hjug/graphbuilder/visitor/testclasses/lambda");
+        String pathString = "src/test/java/org/hjug/graphbuilder/visitor/testclasses/lambda";
+        File srcDirectory = new File(pathString);
 
         JavaParser javaParser = JavaParser.fromJavaVersion().build();
         ExecutionContext ctx = new InMemoryExecutionContext(Throwable::printStackTrace);
@@ -116,8 +118,8 @@ class JavaLambdaVisitorTest {
         GraphDependencyCollector dependencyCollector =
                 new GraphDependencyCollector(classReferencesGraph, packageReferencesGraph);
 
-        JavaClassDeclarationVisitor<ExecutionContext> classDeclarationVisitor =
-                new JavaClassDeclarationVisitor<>(dependencyCollector);
+        String repo = srcDirectory.toURI().toString().replace("/" + pathString, "");
+        JavaVisitor<ExecutionContext> classDeclarationVisitor = new JavaVisitor<>(repo, dependencyCollector);
 
         List<Path> list = Files.walk(Paths.get(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
         javaParser.parse(list, Paths.get(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> {

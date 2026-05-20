@@ -15,8 +15,6 @@ import org.hjug.graphbuilder.metrics.DisharmonyDetector.ClassDisharmony;
 import org.hjug.graphbuilder.metrics.DisharmonyDetector.MethodDisharmony;
 import org.hjug.graphbuilder.metrics.GraphMetricsCollector;
 import org.hjug.graphbuilder.metrics.MetricsCollectingVisitor;
-import org.hjug.graphbuilder.visitor.JavaMethodDeclarationVisitor;
-import org.hjug.graphbuilder.visitor.JavaVariableTypeVisitor;
 import org.hjug.graphbuilder.visitor.JavaVisitor;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultDirectedWeightedGraph;
@@ -77,10 +75,6 @@ public class JavaGraphBuilder {
                 new GraphDependencyCollector(classReferencesGraph, packageReferencesGraph);
 
         final JavaVisitor<ExecutionContext> javaVisitor = new JavaVisitor<>(repositoryPath, dependencyCollector);
-        final JavaVariableTypeVisitor<ExecutionContext> javaVariableTypeVisitor =
-                new JavaVariableTypeVisitor<>(dependencyCollector);
-        final JavaMethodDeclarationVisitor<ExecutionContext> javaMethodDeclarationVisitor =
-                new JavaMethodDeclarationVisitor<>(dependencyCollector);
 
         GraphMetricsCollector metricsCollector =
                 new GraphMetricsCollector(classReferencesGraph, packageReferencesGraph);
@@ -100,8 +94,6 @@ public class JavaGraphBuilder {
                     .parse(list, Paths.get(srcDirectory.getAbsolutePath()), ctx)
                     .forEach(cu -> {
                         javaVisitor.visit(cu, ctx);
-                        javaVariableTypeVisitor.visit(cu, ctx);
-                        javaMethodDeclarationVisitor.visit(cu, ctx);
                         metricsVisitor.visit(cu, ctx);
                     });
         }

@@ -22,7 +22,8 @@ public class JavaNewClassVisitorTest {
     @Test
     void visitNewClass() throws IOException {
 
-        File srcDirectory = new File("src/test/java/org/hjug/graphbuilder/visitor/testclasses/newClass");
+        String pathString = "src/test/java/org/hjug/graphbuilder/visitor/testclasses/newClass";
+        File srcDirectory = new File(pathString);
 
         JavaParser javaParser = JavaParser.fromJavaVersion().build();
         ExecutionContext ctx = new InMemoryExecutionContext(Throwable::printStackTrace);
@@ -35,15 +36,12 @@ public class JavaNewClassVisitorTest {
         GraphDependencyCollector dependencyCollector =
                 new GraphDependencyCollector(classReferencesGraph, packageReferencesGraph);
 
-        JavaClassDeclarationVisitor<ExecutionContext> classDeclarationVisitor =
-                new JavaClassDeclarationVisitor<>(dependencyCollector);
-        JavaVariableTypeVisitor<ExecutionContext> variableTypeVisitor =
-                new JavaVariableTypeVisitor<>(dependencyCollector);
+        String repo = srcDirectory.toURI().toString().replace("/" + pathString, "");
+        JavaVisitor<ExecutionContext> classDeclarationVisitor = new JavaVisitor<>(repo, dependencyCollector);
 
         List<Path> list = Files.walk(Paths.get(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
         javaParser.parse(list, Paths.get(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> {
             classDeclarationVisitor.visit(cu, ctx);
-            variableTypeVisitor.visit(cu, ctx);
         });
 
         Graph<String, DefaultWeightedEdge> graph = classReferencesGraph;
@@ -51,9 +49,8 @@ public class JavaNewClassVisitorTest {
         Assertions.assertTrue(graph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.newClass.B"));
         Assertions.assertTrue(graph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.newClass.C"));
 
-        // only looking for what was visited by classDeclarationVisitor and variableTypeVisitor
         Assertions.assertEquals(
-                5,
+                6,
                 graph.getEdgeWeight(graph.getEdge(
                         "org.hjug.graphbuilder.visitor.testclasses.newClass.A",
                         "org.hjug.graphbuilder.visitor.testclasses.newClass.B")));
