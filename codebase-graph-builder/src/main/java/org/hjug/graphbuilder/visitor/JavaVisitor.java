@@ -52,7 +52,7 @@ public class JavaVisitor<P> extends JavaIsoVisitor<P> {
             if (cu != null) {
                 String classFqn = type.getFullyQualifiedName();
                 String sourcePath = cu.getSourcePath().toUri().toString();
-                log.info("Inner Class FQN: {}, Source Path: {}", classFqn, sourcePath);
+                log.debug("Inner Class FQN: {}, Source Path: {}", classFqn, sourcePath);
                 if (repositoryPath.contains("junit-")) {
                     String outerFqn = classFqn.contains("$") ? classFqn.substring(0, classFqn.indexOf('$')) : classFqn;
                     classToSourceFilePathMapping.put(classFqn, outerFqn.replace(".", "/") + ".java");
@@ -114,7 +114,7 @@ public class JavaVisitor<P> extends JavaIsoVisitor<P> {
             String classFqn = aClass.getType().getFullyQualifiedName();
             String sourcePath = compilationUnit.getSourcePath().toUri().toString();
             // looking for com.tonikelope.megabasterd.MegaProxyServer$Handler
-            log.info("Class FQN: {}, Source Path: {}", classFqn, sourcePath);
+            log.debug("Class FQN: {}, Source Path: {}", classFqn, sourcePath);
 
             // check for junit Temp directory being used as repo (for unit tests)
             if (repositoryPath.contains("junit-")) {
