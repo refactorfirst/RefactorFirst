@@ -200,20 +200,7 @@ public class JavaVisitor<P> extends BaseCodebaseVisitor<P> {
 
     @Override
     public J.Try visitTry(J.Try tryStatement, P p) {
-        J.Try result = super.visitTry(tryStatement, p);
-        if (currentOwnerFqn != null && tryStatement.getCatches() != null) {
-            for (J.Try.Catch catchClause : tryStatement.getCatches()) {
-                if (catchClause.getParameter().getTree() instanceof J.VariableDeclarations) {
-                    J.VariableDeclarations varDecl =
-                            (J.VariableDeclarations) catchClause.getParameter().getTree();
-                    if (varDecl.getTypeExpression() != null) {
-                        typeProcessor.processType(
-                                currentOwnerFqn, varDecl.getTypeExpression().getType());
-                    }
-                }
-            }
-        }
-        return result;
+        return super.visitTry(tryStatement, p);
     }
 
     @Override
@@ -257,48 +244,24 @@ public class JavaVisitor<P> extends BaseCodebaseVisitor<P> {
     public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, P p) {
         J.VariableDeclarations variableDeclarations = super.visitVariableDeclarations(multiVariable, p);
 
-        List<J.VariableDeclarations.NamedVariable> variables = variableDeclarations.getVariables();
-        if (null == variables || variables.isEmpty() || null == variables.get(0).getVariableType()) {
-            log.debug("Skipping variable declaration with null variable type");
+        if (currentOwnerFqn == null) {
             return variableDeclarations;
         }
-
-        JavaType owner = variables.get(0).getVariableType().getOwner();
-        String ownerFqn = "";
-
-        if (owner instanceof JavaType.Method) {
-            JavaType.Method m = (JavaType.Method) owner;
-            if (m.getDeclaringType() == null) {
-                log.warn("Method owner has null declaring type, skipping variable declaration");
-                return variableDeclarations;
-            }
-            ownerFqn = m.getDeclaringType().getFullyQualifiedName();
-        } else if (owner instanceof JavaType.Class) {
-            JavaType.Class c = (JavaType.Class) owner;
-            ownerFqn = c.getFullyQualifiedName();
-        } else {
-            log.debug("Unknown owner type: {}", owner != null ? owner.getClass() : "null");
-            return variableDeclarations;
-        }
-
-        log.debug("Processing variable declaration in: {}", ownerFqn);
 
         TypeTree typeTree = variableDeclarations.getTypeExpression();
-
-        JavaType javaType;
-        if (null != typeTree) {
-            javaType = typeTree.getType();
-        } else {
+        if (null == typeTree) {
             return variableDeclarations;
         }
 
-        typeProcessor.processAnnotations(ownerFqn, getCursor());
+        JavaType javaType = typeTree.getType();
+
+        typeProcessor.processAnnotations(currentOwnerFqn, getCursor());
 
         if (javaType instanceof JavaType.Primitive) {
             return variableDeclarations;
         }
 
-        typeProcessor.processType(ownerFqn, javaType);
+        typeProcessor.processType(currentOwnerFqn, javaType);
 
         return variableDeclarations;
     }

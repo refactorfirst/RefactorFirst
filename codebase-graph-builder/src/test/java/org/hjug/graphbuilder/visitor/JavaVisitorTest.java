@@ -13,6 +13,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import org.hjug.graphbuilder.CodebaseGraphDTO;
 import org.hjug.graphbuilder.DependencyCollector;
 import org.hjug.graphbuilder.GraphDependencyCollector;
 import org.jgrapht.Graph;
@@ -31,6 +33,8 @@ class JavaVisitorTest {
     private static final String METHOD_INVOCATION = TESTCLASSES + "/methodInvocation";
     private static final String NEW_CLASS = TESTCLASSES + "/newClass";
     private static final String INITIALIZERS = TESTCLASSES + "/initializers";
+    private static final String VARIABLE_INITIALIZERS = TESTCLASSES + "/variableInitializers";
+    private static final String TRY_CATCH = TESTCLASSES + "/tryCatch";
 
     private static String repoFrom(String pathString) {
         return new File(pathString).toURI().toString().replace("/" + pathString, "");
@@ -82,7 +86,7 @@ class JavaVisitorTest {
         javaParser
                 .parse(list, Paths.get(srcDirectory.getAbsolutePath()), ctx)
                 .forEach(cu -> javaVisitor.visit(cu, ctx));
-        assertEquals(5, dependencyCollector.getPackagesInCodebase().size());
+        assertEquals(7, dependencyCollector.getPackagesInCodebase().size());
     }
 
     @Test
@@ -333,5 +337,32 @@ class JavaVisitorTest {
                 graph.containsVertex(
                         "org.hjug.graphbuilder.visitor.testclasses.initializers.ComplexInitializerClass$HelperService"),
                 "HelperService nested class should be captured from instance initializer");
+    }
+
+    @Test
+    void instanceInitializerVariableTypeIsRecorded() throws IOException {
+        Graph<String, DefaultWeightedEdge> graph = buildAndVisit(VARIABLE_INITIALIZERS);
+
+        assertTrue(
+                graph.containsEdge(
+                        "org.hjug.graphbuilder.visitor.testclasses.variableInitializers.InstanceInitOwner",
+                        "org.hjug.graphbuilder.visitor.testclasses.variableInitializers.InstanceInitDependency"),
+                "instance initializer variable type should be recorded as a dependency via currentOwnerFqn");
+    }
+
+    @Test
+    void catchClauseTypeIsCountedOnce() throws IOException {
+        Graph<String, DefaultWeightedEdge> graph = buildAndVisit(TRY_CATCH);
+
+        assertEquals(
+                2.0,
+                getEdgeWeight(
+                        graph, "org.hjug.graphbuilder.visitor.testclasses.tryCatch.TryCatchOwner", "org.hjug.graphbuilder.visitor.testclasses.tryCatch.CaughtDependency"),
+                "catch clause exception type is double-processed by visitTry manual loop after super already handled it");
+    }
+
+    private static double getEdgeWeight(
+            Graph<String, DefaultWeightedEdge> classReferencesGraph, String sourceVertex, String targetVertex) {
+        return classReferencesGraph.getEdgeWeight(classReferencesGraph.getEdge(sourceVertex, targetVertex));
     }
 }
