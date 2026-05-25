@@ -9,7 +9,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
@@ -113,11 +112,6 @@ public class CostBenefitCalculator implements AutoCloseable {
         return scmLogInfos.stream().collect(Collectors.toMap(ScmLogInfo::getPath, logInfo -> logInfo, (a, b) -> b));
     }
 
-    private static Map<String, ScmLogInfo> getRankedLogInfosByClass(List<ScmLogInfo> scmLogInfos) {
-        return scmLogInfos.stream()
-                .collect(Collectors.toMap(ScmLogInfo::getClassName, logInfo -> logInfo, (a, b) -> b));
-    }
-
     public List<GodClass> getGodClasses(CodebaseGraphDTO codebaseGraphDTO) {
         List<ClassDisharmony> raw = codebaseGraphDTO.getClassDisharmoniesOfType(DisharmonyTypes.GOD_CLASS);
 
@@ -139,6 +133,7 @@ public class CostBenefitCalculator implements AutoCloseable {
         return godClasses;
     }
 
+    // TODO: Go away
     public List<GodClass> getGodClasses() {
         List<GodClass> godClasses = new ArrayList<>();
         for (RuleViolation violation : report.getViolations()) {
@@ -162,32 +157,26 @@ public class CostBenefitCalculator implements AutoCloseable {
     public <T extends Disharmony> List<ScmLogInfo> getRankedChangeProneness(List<T> disharmonies) {
         log.info("Calculating Change Proneness");
 
-        Map<String, String> innerClassPaths = new ConcurrentHashMap<>();
-        Map<String, ScmLogInfo> scmLogInfosByPath = new ConcurrentHashMap<>();
-
         List<Optional<ScmLogInfo>> scmLogInfos = disharmonies.parallelStream()
                 .map(disharmony -> {
                     String className = disharmony.getClassName();
                     String path = null;
                     ScmLogInfo scmLogInfo = null;
                     try {
-                        if (className.contains("$")
-                                && classToSourceFilePathMapping.containsKey(
-                                        className.substring(0, className.indexOf("$")))) {
-                            path = classToSourceFilePathMapping.get(className.substring(0, className.indexOf("$")));
-                            log.debug("Found source file {} for nested class: {}", path, className);
-                            innerClassPaths.put(className, path);
-                        } else {
-                            path = disharmony.getFileRepoPath();
-                            try {
-                                log.debug("Reading scmLogInfo for {}", path);
-                                scmLogInfo = gitLogReader.fileLog(path);
-                                scmLogInfo.setClassName(className);
-                                log.debug("Successfully fetched scmLogInfo for {}", scmLogInfo.getPath());
-                                scmLogInfosByPath.put(path, scmLogInfo);
-                            } catch (GitAPIException | IOException e) {
-                                log.error("Error reading Git repository contents.", e);
+                        path = disharmony.getFileRepoPath();
+                        try {
+                            if (className.contains("$") && !classToSourceFilePathMapping.containsKey(className)) {
+                                path = classToSourceFilePathMapping.get(className.substring(0, className.indexOf("$")));
+                                log.debug("Found source file {} for lambda: {}", path, className);
                             }
+
+                            log.debug("Reading scmLogInfo for {}", path);
+                            scmLogInfo = gitLogReader.fileLog(path);
+                            scmLogInfo.setClassName(className);
+                            log.debug("Successfully fetched scmLogInfo for {}", scmLogInfo.getPath());
+
+                        } catch (GitAPIException | IOException e) {
+                            log.error("Error reading Git repository contents.", e);
                         }
                     } catch (NullPointerException e) {
                         // Should not be reached
@@ -207,53 +196,10 @@ public class CostBenefitCalculator implements AutoCloseable {
                 })
                 .collect(Collectors.toList());
 
-        List<Optional<ScmLogInfo>> innerClassScmLogInfos = innerClassPaths.entrySet().parallelStream()
-                .map(innerClassPathEntry -> {
-                    ScmLogInfo scmLogInfo = scmLogInfosByPath.get(innerClassPathEntry.getValue());
-
-                    ScmLogInfo innerClassScmLogInfo = null;
-                    if (scmLogInfo == null) {
-                        String className = innerClassPathEntry.getKey();
-                        String path = classToSourceFilePathMapping.get(className.substring(0, className.indexOf("$")));
-                        log.debug("Reading scmLogInfo for inner class {}", canonicaliseURIStringForRepoLookup(path));
-                        try {
-                            innerClassScmLogInfo = gitLogReader.fileLog(canonicaliseURIStringForRepoLookup(path));
-                            innerClassScmLogInfo.setClassName(className);
-                            log.debug(
-                                    "Successfully fetched scmLogInfo for inner class {} at {}",
-                                    innerClassScmLogInfo.getClassName(),
-                                    innerClassScmLogInfo.getPath());
-                            scmLogInfosByPath.put(path, innerClassScmLogInfo);
-                        } catch (GitAPIException | IOException e) {
-                            log.error(
-                                    "Error reading Git repository contents for class {} with file path {}",
-                                    className,
-                                    path,
-                                    e);
-                        }
-                    } else {
-                        innerClassScmLogInfo = new ScmLogInfo(
-                                innerClassPathEntry.getValue(),
-                                innerClassPathEntry.getKey(),
-                                scmLogInfo.getEarliestCommit(),
-                                scmLogInfo.getMostRecentCommit(),
-                                scmLogInfo.getCommitCount());
-
-                        String className = innerClassPathEntry.getKey();
-                        innerClassScmLogInfo.setClassName(className);
-                        String path = classToSourceFilePathMapping.get(className.substring(0, className.indexOf("$")));
-                        scmLogInfosByPath.put(path, innerClassScmLogInfo);
-                    }
-                    return Optional.ofNullable(innerClassScmLogInfo);
-                })
-                .collect(Collectors.toList());
-
-        scmLogInfos.addAll(innerClassScmLogInfos);
-
-        List<ScmLogInfo> sortedScmInfos = new ArrayList<>(scmLogInfos.stream()
+        List<ScmLogInfo> sortedScmInfos = scmLogInfos.stream()
                 .filter(Optional::isPresent)
                 .map(Optional::get)
-                .collect(Collectors.toList()));
+                .collect(Collectors.toList());
 
         changePronenessRanker.rankChangeProneness(sortedScmInfos);
         return sortedScmInfos;

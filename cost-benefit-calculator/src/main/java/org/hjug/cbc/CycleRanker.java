@@ -59,9 +59,7 @@ public class CycleRanker {
                 circularReferenceChecker.getCycles(classReferencesGraph);
         cycles.forEach((vertex, subGraph) -> {
             List<CycleNode> cycleNodes = subGraph.vertexSet().stream()
-                    .map(classInCycle -> new CycleNode(
-                            classInCycle,
-                            codebaseGraphDTO.getClassToSourceFilePathMapping().get(classInCycle)))
+                    .map(classInCycle -> new CycleNode(classInCycle, getClassRepoPath(classInCycle)))
                     //                        .peek(cycleNode -> log.info(cycleNode.toString()))
                     .collect(Collectors.toList());
 
@@ -70,8 +68,18 @@ public class CycleRanker {
     }
 
     public CycleNode classToCycleNode(String fqnClass) {
-        return new CycleNode(
-                fqnClass, codebaseGraphDTO.getClassToSourceFilePathMapping().get(fqnClass));
+        return new CycleNode(fqnClass, getClassRepoPath(fqnClass));
+    }
+
+    private String getClassRepoPath(String classInCycle) {
+        String fileRepoPath;
+        Map<String, String> classToSourceFilePathMapping = codebaseGraphDTO.getClassToSourceFilePathMapping();
+        if (classInCycle.contains("$") && !classToSourceFilePathMapping.containsKey(classInCycle)) {
+            fileRepoPath = classToSourceFilePathMapping.get(classInCycle.substring(0, classInCycle.indexOf("$")));
+        } else {
+            fileRepoPath = classToSourceFilePathMapping.get(classInCycle);
+        }
+        return fileRepoPath;
     }
 
     private RankedCycle createRankedCycle(

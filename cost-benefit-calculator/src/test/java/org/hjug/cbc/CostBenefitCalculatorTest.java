@@ -9,6 +9,7 @@ import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.hjug.git.ScmLogInfo;
+import org.hjug.graphbuilder.CodebaseGraphDTO;
 import org.hjug.metrics.Disharmony;
 import org.jetbrains.annotations.NotNull;
 import org.jgrapht.graph.DefaultWeightedEdge;
@@ -85,10 +86,11 @@ class CostBenefitCalculatorTest {
                 new CycleRanker(git.getRepository().getDirectory().getParent());
         cycleRanker.generateClassReferencesGraph(true, "src/test");
 
-        CostBenefitCalculator costBenefitCalculator =
-                new CostBenefitCalculator(git.getRepository().getDirectory().getParent(), new HashMap<>());
+        CodebaseGraphDTO codebaseGraphDTO = cycleRanker.getCodebaseGraphDTO();
+        CostBenefitCalculator costBenefitCalculator = new CostBenefitCalculator(
+                git.getRepository().getDirectory().getParent(), codebaseGraphDTO.getClassToSourceFilePathMapping());
         List<RankedDisharmony> disharmonies = costBenefitCalculator.calculateGodClassCostBenefitValues(
-                costBenefitCalculator.getGodClasses(cycleRanker.getCodebaseGraphDTO()));
+                costBenefitCalculator.getGodClasses(codebaseGraphDTO));
 
         Assertions.assertNotEquals(0, disharmonies.get(0).getCommitCount());
 
