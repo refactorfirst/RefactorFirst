@@ -13,8 +13,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import org.hjug.graphbuilder.CodebaseGraphDTO;
 import org.hjug.graphbuilder.DependencyCollector;
 import org.hjug.graphbuilder.GraphDependencyCollector;
 import org.jgrapht.Graph;
@@ -357,7 +355,9 @@ class JavaVisitorTest {
         assertEquals(
                 2.0,
                 getEdgeWeight(
-                        graph, "org.hjug.graphbuilder.visitor.testclasses.tryCatch.TryCatchOwner", "org.hjug.graphbuilder.visitor.testclasses.tryCatch.CaughtDependency"),
+                        graph,
+                        "org.hjug.graphbuilder.visitor.testclasses.tryCatch.TryCatchOwner",
+                        "org.hjug.graphbuilder.visitor.testclasses.tryCatch.CaughtDependency"),
                 "catch clause exception type is double-processed by visitTry manual loop after super already handled it");
     }
 
