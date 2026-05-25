@@ -4,6 +4,7 @@ import java.util.*;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.hjug.graphbuilder.DependencyCollector;
+import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.*;
 
 /**
@@ -13,19 +14,21 @@ import org.openrewrite.java.tree.*;
  * @param <P>
  */
 @Slf4j
-public class JavaVisitor<P> extends BaseCodebaseVisitor<P> {
+public class JavaVisitor<P> extends JavaIsoVisitor<P> {
+
+    private final DependencyCollector dependencyCollector;
 
     @Getter
     private final Map<String, String> classToSourceFilePathMapping = new HashMap<>();
 
-    private String repositoryPath;
+    private final String repositoryPath;
 
     private final BaseTypeProcessor typeProcessor;
 
     private String currentOwnerFqn;
 
     public JavaVisitor(String repositoryPath, DependencyCollector dependencyCollector) {
-        super(dependencyCollector);
+        this.dependencyCollector = dependencyCollector;
         this.repositoryPath = repositoryPath;
         this.typeProcessor = new BaseTypeProcessor() {
             @Override
@@ -310,11 +313,6 @@ public class JavaVisitor<P> extends BaseCodebaseVisitor<P> {
         }
 
         return methodDeclaration;
-    }
-
-    @Override
-    protected String getCurrentOwnerFqn() {
-        return currentOwnerFqn;
     }
 
     private String canonicaliseURIStringForRepoLookup(String repositoryPath, String uriString) {
