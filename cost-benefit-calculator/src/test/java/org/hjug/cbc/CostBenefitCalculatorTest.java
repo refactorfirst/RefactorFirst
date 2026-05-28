@@ -1,6 +1,9 @@
 package org.hjug.cbc;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.io.*;
 import java.util.*;
@@ -150,8 +153,11 @@ class CostBenefitCalculatorTest {
         try (TestableCostBenefitCalculator costBenefitCalculator = new TestableCostBenefitCalculator(
                 git.getRepository().getDirectory().getParent(), scmLogInfos)) {
 
+            CodebaseGraphDTO dto = mock(CodebaseGraphDTO.class);
+            when(dto.getClassDisharmonyCountForClass(any())).thenReturn(0L);
+
             List<RankedDisharmony> disharmonies = costBenefitCalculator.calculateSourceNodeCostBenefitValues(
-                    classGraph, edgeTargeteNodeInfos, edgeTargeteNodeInfos, edgeToRemoveCycleCounts, vertexesToRemove);
+                    classGraph, edgeToRemoveCycleCounts, dto, vertexesToRemove);
 
             Assertions.assertEquals(2, disharmonies.size());
 
@@ -170,7 +176,7 @@ class CostBenefitCalculatorTest {
             Assertions.assertEquals(0, classC.getSourceNodeShouldBeRemoved());
             Assertions.assertEquals(1, classC.getTargetNodeShouldBeRemoved());
             Assertions.assertEquals(2, classC.getPriority().intValue());
-            Assertions.assertEquals(7, classC.getChangePronenessRank());
+            Assertions.assertEquals(0, classC.getChangePronenessRank());
         }
     }
 
@@ -219,14 +225,17 @@ class CostBenefitCalculatorTest {
         try (TestableCostBenefitCalculator costBenefitCalculator = new TestableCostBenefitCalculator(
                 git.getRepository().getDirectory().getParent(), scmLogInfos)) {
 
+            CodebaseGraphDTO dto = mock(CodebaseGraphDTO.class);
+            when(dto.getClassDisharmonyCountForClass(any())).thenReturn(0L).thenReturn(1L);
+
             List<RankedDisharmony> disharmonies = costBenefitCalculator.calculateSourceNodeCostBenefitValues(
-                    classGraph, edgeSourceNodeInfos, edgeTargetNodeInfos, edgeToRemoveCycleCounts, vertexesToRemove);
+                    classGraph, edgeToRemoveCycleCounts, dto, vertexesToRemove);
 
             Assertions.assertEquals(2, disharmonies.size());
-            Assertions.assertEquals(8, disharmonies.get(0).getChangePronenessRank());
+            Assertions.assertEquals(0, disharmonies.get(0).getChangePronenessRank());
             Assertions.assertEquals(1, disharmonies.get(0).getPriority().intValue());
             Assertions.assertEquals(2, disharmonies.get(1).getPriority().intValue());
-            Assertions.assertEquals(2, disharmonies.get(1).getChangePronenessRank());
+            Assertions.assertEquals(1, disharmonies.get(1).getChangePronenessRank());
         }
     }
 
@@ -252,24 +261,24 @@ class CostBenefitCalculatorTest {
         // Expected order after sorting: cycleCount desc, then sourceRemoved desc, then targetRemoved desc, then
         // changeProneness desc
         // cycle=5, source=0, target=0, change=5
-        RankedDisharmony disharmony1 = new RankedDisharmony(
-                "Class1", new org.jgrapht.graph.DefaultWeightedEdge(), 5, 1, false, false, logInfo1, null);
+        RankedDisharmony disharmony1 =
+                new RankedDisharmony("Class1", new org.jgrapht.graph.DefaultWeightedEdge(), 5, 1, false, false, 0, 0);
 
         // cycle=5, source=1, target=0, change=3
-        RankedDisharmony disharmony2 = new RankedDisharmony(
-                "Class2", new org.jgrapht.graph.DefaultWeightedEdge(), 5, 1, true, false, logInfo2, null);
+        RankedDisharmony disharmony2 =
+                new RankedDisharmony("Class2", new org.jgrapht.graph.DefaultWeightedEdge(), 5, 1, true, false, 1, 1);
 
         // cycle=3, source=0, target=1, change=8
-        RankedDisharmony disharmony3 = new RankedDisharmony(
-                "Class3", new org.jgrapht.graph.DefaultWeightedEdge(), 3, 1, false, true, logInfo3, null);
+        RankedDisharmony disharmony3 =
+                new RankedDisharmony("Class3", new org.jgrapht.graph.DefaultWeightedEdge(), 3, 1, false, true, 2, 2);
 
         // cycle=3, source=0, target=0, change=2
-        RankedDisharmony disharmony4 = new RankedDisharmony(
-                "Class4", new org.jgrapht.graph.DefaultWeightedEdge(), 3, 1, false, false, logInfo4, null);
+        RankedDisharmony disharmony4 =
+                new RankedDisharmony("Class4", new org.jgrapht.graph.DefaultWeightedEdge(), 3, 1, false, false, 6, 3);
 
         // cycle=3, source=0, target=0, change=5
-        RankedDisharmony disharmony5 = new RankedDisharmony(
-                "Class5", new org.jgrapht.graph.DefaultWeightedEdge(), 3, 1, false, false, logInfo5, null);
+        RankedDisharmony disharmony5 =
+                new RankedDisharmony("Class5", new org.jgrapht.graph.DefaultWeightedEdge(), 3, 1, false, false, 5, 0);
 
         List<RankedDisharmony> disharmonies =
                 Arrays.asList(disharmony4, disharmony2, disharmony1, disharmony3, disharmony5);
@@ -297,7 +306,7 @@ class CostBenefitCalculatorTest {
         Assertions.assertEquals(1, orderedDisharmony0.getEffortRank().intValue());
         Assertions.assertEquals(0, orderedDisharmony0.getSourceNodeShouldBeRemoved());
         Assertions.assertEquals(0, orderedDisharmony0.getTargetNodeShouldBeRemoved());
-        Assertions.assertEquals(5, orderedDisharmony0.getChangePronenessRank());
+        Assertions.assertEquals(0, orderedDisharmony0.getChangePronenessRank());
 
         RankedDisharmony orderedDisharmony1 = disharmonies.get(1);
         Assertions.assertEquals("Class2", orderedDisharmony1.getClassName());
@@ -305,7 +314,7 @@ class CostBenefitCalculatorTest {
         Assertions.assertEquals(1, orderedDisharmony1.getEffortRank().intValue());
         Assertions.assertEquals(1, orderedDisharmony1.getSourceNodeShouldBeRemoved());
         Assertions.assertEquals(0, orderedDisharmony1.getTargetNodeShouldBeRemoved());
-        Assertions.assertEquals(3, orderedDisharmony1.getChangePronenessRank());
+        Assertions.assertEquals(1, orderedDisharmony1.getChangePronenessRank());
 
         RankedDisharmony orderedDisharmony2 = disharmonies.get(2);
         Assertions.assertEquals("Class3", orderedDisharmony2.getClassName());
@@ -313,7 +322,7 @@ class CostBenefitCalculatorTest {
         Assertions.assertEquals(1, orderedDisharmony2.getEffortRank().intValue());
         Assertions.assertEquals(0, orderedDisharmony2.getSourceNodeShouldBeRemoved());
         Assertions.assertEquals(1, orderedDisharmony2.getTargetNodeShouldBeRemoved());
-        Assertions.assertEquals(8, orderedDisharmony2.getChangePronenessRank());
+        Assertions.assertEquals(2, orderedDisharmony2.getChangePronenessRank());
 
         RankedDisharmony orderedDisharmony3 = disharmonies.get(3);
         Assertions.assertEquals("Class5", orderedDisharmony3.getClassName());
@@ -329,7 +338,7 @@ class CostBenefitCalculatorTest {
         Assertions.assertEquals(3, orderedDisharmony4.getCycleCount().intValue());
         Assertions.assertEquals(0, orderedDisharmony4.getSourceNodeShouldBeRemoved());
         Assertions.assertEquals(0, orderedDisharmony4.getTargetNodeShouldBeRemoved());
-        Assertions.assertEquals(2, orderedDisharmony4.getChangePronenessRank());
+        Assertions.assertEquals(6, orderedDisharmony4.getChangePronenessRank());
     }
 
     private void writeFile(String name, String content) throws IOException {

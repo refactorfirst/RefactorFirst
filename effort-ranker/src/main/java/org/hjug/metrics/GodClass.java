@@ -23,6 +23,7 @@ public class GodClass implements Disharmony {
     private Integer sumOfRanks;
     private Integer overallRank;
 
+    // "God Class detected: ATFD=%d, WMC=%d, TCC=%.2f"
     // Regex to capture digits for ATFD/WMC and decimal for TCC
     Pattern pattern = Pattern.compile("ATFD=(\\d+), WMC=(\\d+), TCC=([\\d.]+)");
 

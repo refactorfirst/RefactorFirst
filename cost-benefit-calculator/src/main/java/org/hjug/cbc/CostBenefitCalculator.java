@@ -115,17 +115,32 @@ public class CostBenefitCalculator implements AutoCloseable {
     public List<GodClass> getGodClasses(CodebaseGraphDTO codebaseGraphDTO) {
         List<ClassDisharmony> raw = codebaseGraphDTO.getClassDisharmoniesOfType(DisharmonyTypes.GOD_CLASS);
 
-        List<GodClass> godClasses = new ArrayList<>();
-        for (ClassDisharmony classDisharmony : raw) {
-            GodClass godClass = new GodClass(
-                    classDisharmony.getMetrics().getClassName(),
-                    canonicaliseURIStringForRepoLookup(
-                            classDisharmony.getMetrics().getSourceFilePath()),
-                    classDisharmony.getMetrics().getPackageName(),
-                    classDisharmony.getDescription());
+        List<GodClass> godClasses = raw.stream()
+                .map(classDisharmony -> new GodClass(
+                        classDisharmony.getMetrics().getClassName(),
+                        canonicaliseURIStringForRepoLookup(
+                                classDisharmony.getMetrics().getSourceFilePath()),
+                        classDisharmony.getMetrics().getPackageName(),
+                        classDisharmony.getDescription()))
+                .collect(Collectors.toList());
 
-            godClasses.add(godClass);
-        }
+        GodClassRanker godClassRanker = new GodClassRanker();
+        godClassRanker.rankGodClasses(godClasses);
+
+        return godClasses;
+    }
+
+    public List<GodClass> getBrainClasses(CodebaseGraphDTO codebaseGraphDTO) {
+        List<ClassDisharmony> raw = codebaseGraphDTO.getClassDisharmoniesOfType(DisharmonyTypes.BRAIN_CLASS);
+
+        List<GodClass> godClasses = raw.stream()
+                .map(classDisharmony -> new GodClass(
+                        classDisharmony.getMetrics().getClassName(),
+                        canonicaliseURIStringForRepoLookup(
+                                classDisharmony.getMetrics().getSourceFilePath()),
+                        classDisharmony.getMetrics().getPackageName(),
+                        classDisharmony.getDescription()))
+                .collect(Collectors.toList());
 
         GodClassRanker godClassRanker = new GodClassRanker();
         godClassRanker.rankGodClasses(godClasses);
@@ -258,62 +273,30 @@ public class CostBenefitCalculator implements AutoCloseable {
 
     public List<RankedDisharmony> calculateSourceNodeCostBenefitValues(
             Graph<String, DefaultWeightedEdge> classGraph,
-            Map<DefaultWeightedEdge, CycleNode> edgeSourceNodeInfos,
-            Map<DefaultWeightedEdge, CycleNode> edgeTargetNodeInfos,
             Map<DefaultWeightedEdge, Integer> edgeToRemoveCycleCounts,
+            CodebaseGraphDTO dto,
             Set<String> vertexesToRemove) {
-        List<ScmLogInfo> sourceLogInfos = getRankedChangeProneness(new ArrayList<>(edgeSourceNodeInfos.values()));
-        List<ScmLogInfo> targetLogInfos = getRankedChangeProneness(new ArrayList<>(edgeTargetNodeInfos.values()));
-        List<ScmLogInfo> scmLogInfos = new ArrayList<>(sourceLogInfos.size() + targetLogInfos.size());
-        scmLogInfos.addAll(sourceLogInfos);
-        scmLogInfos.addAll(targetLogInfos);
-
-        Map<String, ScmLogInfo> sourceRankedLogInfosByPath = getRankedLogInfosByPath(scmLogInfos);
         List<RankedDisharmony> edgesThatNeedToBeRemoved = new ArrayList<>();
 
-        for (Map.Entry<DefaultWeightedEdge, CycleNode> entry : edgeSourceNodeInfos.entrySet()) {
-            String edgeSource = classGraph.getEdgeSource(entry.getKey());
+        for (DefaultWeightedEdge edge : classGraph.edgeSet()) {
+            // shouldn't have to check for null edges & counts :-(
+            if (null == edge || null == edgeToRemoveCycleCounts.get(edge)) continue;
 
-            String edgeSourcePath;
-            if (edgeSource.contains("$")) {
-                edgeSourcePath = classToSourceFilePathMapping.get(edgeSource.substring(0, edgeSource.indexOf("$")));
-            } else {
-                edgeSourcePath = classToSourceFilePathMapping.get(edgeSource);
-            }
-
-            String edgeTarget = classGraph.getEdgeTarget(entry.getKey());
-            String edgeTargetPath;
-            if (edgeTarget.contains("$")) {
-                edgeTargetPath = classToSourceFilePathMapping.get(edgeTarget.substring(0, edgeTarget.indexOf("$")));
-            } else {
-                edgeTargetPath = classToSourceFilePathMapping.get(edgeTarget);
-            }
-
-            String sourceNodeFileName = canonicaliseURIStringForRepoLookup(edgeSourcePath);
-            String targetNodeFileName = canonicaliseURIStringForRepoLookup(edgeTargetPath);
+            String edgeSource = classGraph.getEdgeSource(edge);
+            String edgeTarget = classGraph.getEdgeTarget(edge);
 
             boolean sourceNodeShouldBeRemoved = vertexesToRemove.contains(edgeSource);
             boolean targetNodeShouldBeRemoved = vertexesToRemove.contains(edgeTarget);
 
-            ScmLogInfo sourceScmLogInfo = null;
-            if (sourceRankedLogInfosByPath.containsKey(sourceNodeFileName)) {
-                sourceScmLogInfo = sourceRankedLogInfosByPath.get(sourceNodeFileName);
-            }
-
-            ScmLogInfo targetScmLogInfo = null;
-            if (sourceRankedLogInfosByPath.containsKey(sourceNodeFileName)) {
-                targetScmLogInfo = sourceRankedLogInfosByPath.get(targetNodeFileName);
-            }
-
             RankedDisharmony edgeThatNeedsToBeRemoved = new RankedDisharmony(
                     edgeSource,
-                    entry.getKey(),
-                    edgeToRemoveCycleCounts.get(entry.getKey()),
-                    (int) classGraph.getEdgeWeight(entry.getKey()),
+                    edge,
+                    edgeToRemoveCycleCounts.get(edge),
+                    (int) classGraph.getEdgeWeight(edge),
                     sourceNodeShouldBeRemoved,
                     targetNodeShouldBeRemoved,
-                    sourceScmLogInfo,
-                    targetScmLogInfo);
+                    dto.getClassDisharmonyCountForClass(edgeSource),
+                    dto.getClassDisharmonyCountForClass(edgeTarget));
             edgesThatNeedToBeRemoved.add(edgeThatNeedsToBeRemoved);
         }
 
@@ -344,9 +327,9 @@ public class CostBenefitCalculator implements AutoCloseable {
                 .reversed()
                 // then by weight, with lowest weight edges bubbling to the top
                 .thenComparingInt(RankedDisharmony::getEffortRank)
-                // then by change proneness
-                .thenComparingInt(rankedDisharmony -> -1 * rankedDisharmony.getChangePronenessRank())
-                .thenComparingInt(rankedDisharmony -> -1 * rankedDisharmony.getEdgeTargetChangePronenessRank())
+                // then by disharmony count
+                .thenComparingInt(RankedDisharmony::getChangePronenessRank)
+                .thenComparingInt(RankedDisharmony::getEdgeTargetChangePronenessRank)
                 // then if the source node is in the list of nodes to be removed
                 // multiplying by -1 reverses the sort order (reverse doesn't work in chained comparators)
                 .thenComparingInt(rankedDisharmony -> -1 * rankedDisharmony.getSourceNodeShouldBeRemoved())

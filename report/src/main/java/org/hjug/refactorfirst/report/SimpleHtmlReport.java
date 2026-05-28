@@ -260,7 +260,7 @@ public class SimpleHtmlReport {
                     costBenefitCalculator.getGodClasses(codebaseGraphDTO));
             //            rankedCBODisharmonies = costBenefitCalculator.calculateCBOCostBenefitValues();
             edgeDisharmonies = costBenefitCalculator.calculateSourceNodeCostBenefitValues(
-                    classGraph, sourceNodeInfos, targetNodeInfos, edgeToRemoveCycleCounts, vertexesToRemove);
+                    classGraph, edgeToRemoveCycleCounts, codebaseGraphDTO, vertexesToRemove);
 
         } catch (Exception e) {
             log.error("Error running analysis.");
@@ -398,8 +398,8 @@ public class SimpleHtmlReport {
             "Priority",
             "In Cycles",
             "Edge<br>Weight",
-            "Source<br>Change Proneness Rank",
-            "Target<br>Change Proneness Rank",
+            "Source<br>Disharmony Count",
+            "Target<br>Disharmony Count",
         };
     }
 

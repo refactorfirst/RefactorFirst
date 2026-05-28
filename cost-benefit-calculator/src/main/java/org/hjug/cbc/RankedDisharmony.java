@@ -79,23 +79,14 @@ public class RankedDisharmony {
             int weight,
             boolean sourceNodeShouldBeRemoved,
             boolean targetNodeShouldBeRemoved,
-            ScmLogInfo sourceScmLogInfo,
-            ScmLogInfo targetScmLogInfo) {
-
-        if (null != sourceScmLogInfo) {
-            path = sourceScmLogInfo.getPath();
-            // from https://stackoverflow.com/questions/1011287/get-file-name-from-a-file-location-in-java
-            fileName = Paths.get(path).getFileName().toString();
-            firstCommitTime = Instant.ofEpochSecond(sourceScmLogInfo.getEarliestCommit());
-            mostRecentCommitTime = Instant.ofEpochSecond(sourceScmLogInfo.getMostRecentCommit());
-            commitCount = sourceScmLogInfo.getCommitCount();
-        }
+            long sourceDisharmonyCount,
+            long targetDisharmonyCount) {
 
         className = edgeSource;
         this.edge = edge;
         this.cycleCount = cycleCount;
-        changePronenessRank = null == sourceScmLogInfo ? 0 : sourceScmLogInfo.getChangePronenessRank();
-        edgeTargetChangePronenessRank = null == targetScmLogInfo ? 0 : targetScmLogInfo.getChangePronenessRank();
+        changePronenessRank = Math.toIntExact(sourceDisharmonyCount);
+        edgeTargetChangePronenessRank = Math.toIntExact(targetDisharmonyCount);
         effortRank = weight;
         this.sourceNodeShouldBeRemoved = sourceNodeShouldBeRemoved ? 1 : 0;
         this.targetNodeShouldBeRemoved = targetNodeShouldBeRemoved ? 1 : 0;
