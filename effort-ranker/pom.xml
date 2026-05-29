@@ -15,6 +15,11 @@
 
     <dependencies>
         <dependency>
+            <groupId>org.hjug.refactorfirst.codebasegraphbuilder</groupId>
+            <artifactId>codebase-graph-builder</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>net.sourceforge.pmd</groupId>
             <artifactId>pmd-java</artifactId>
         </dependency>

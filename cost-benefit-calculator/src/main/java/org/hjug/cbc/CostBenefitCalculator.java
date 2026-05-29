@@ -20,8 +20,11 @@ import org.hjug.git.GitLogReader;
 import org.hjug.git.ScmLogInfo;
 import org.hjug.graphbuilder.CodebaseGraphDTO;
 import org.hjug.graphbuilder.metrics.DisharmonyDetector.ClassDisharmony;
+import org.hjug.graphbuilder.metrics.DisharmonyDetector.MethodDisharmony;
 import org.hjug.graphbuilder.metrics.DisharmonyTypes;
 import org.hjug.metrics.*;
+import org.hjug.metrics.DisharmonyInstance;
+import org.hjug.metrics.DisharmonyRanker;
 import org.hjug.metrics.rules.CBORule;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultWeightedEdge;
@@ -130,22 +133,62 @@ public class CostBenefitCalculator implements AutoCloseable {
         return godClasses;
     }
 
-    public List<GodClass> getBrainClasses(CodebaseGraphDTO codebaseGraphDTO) {
-        List<ClassDisharmony> raw = codebaseGraphDTO.getClassDisharmoniesOfType(DisharmonyTypes.BRAIN_CLASS);
+    public List<DisharmonyInstance> getClassDisharmonies(CodebaseGraphDTO codebaseGraphDTO, String disharmonyType) {
+        List<ClassDisharmony> raw = codebaseGraphDTO.getClassDisharmoniesOfType(disharmonyType);
 
-        List<GodClass> godClasses = raw.stream()
-                .map(classDisharmony -> new GodClass(
-                        classDisharmony.getMetrics().getClassName(),
-                        canonicaliseURIStringForRepoLookup(
-                                classDisharmony.getMetrics().getSourceFilePath()),
-                        classDisharmony.getMetrics().getPackageName(),
-                        classDisharmony.getDescription()))
+        List<DisharmonyInstance> instances = raw.stream()
+                .map(d -> new DisharmonyInstance(
+                        disharmonyType,
+                        d.getClassName(),
+                        canonicaliseURIStringForRepoLookup(d.getMetrics().getSourceFilePath()),
+                        d.getMetrics().getPackageName(),
+                        null,
+                        new java.util.ArrayList<>(d.getMetricValues())))
                 .collect(Collectors.toList());
 
-        GodClassRanker godClassRanker = new GodClassRanker();
-        godClassRanker.rankGodClasses(godClasses);
+        new DisharmonyRanker().rank(instances);
+        return instances;
+    }
 
-        return godClasses;
+    public List<DisharmonyInstance> getMethodDisharmonies(CodebaseGraphDTO codebaseGraphDTO, String disharmonyType) {
+        List<MethodDisharmony> raw = codebaseGraphDTO.getMethodDisharmoniesOfType(disharmonyType);
+
+        List<DisharmonyInstance> instances = raw.stream()
+                .map(d -> {
+                    String filePath = classToSourceFilePathMapping.get(d.getClassName());
+                    if (filePath == null) {
+                        filePath = canonicaliseURIStringForRepoLookup(
+                                d.getMetrics().getSignature());
+                    }
+                    return new DisharmonyInstance(
+                            disharmonyType,
+                            d.getClassName(),
+                            filePath,
+                            "",
+                            d.getMethodSignature(),
+                            new java.util.ArrayList<>(d.getMetricValues()));
+                })
+                .collect(Collectors.toList());
+
+        new DisharmonyRanker().rank(instances);
+        return instances;
+    }
+
+    public List<RankedDisharmony> calculateDisharmonyCostBenefitValues(List<DisharmonyInstance> instances) {
+        List<ScmLogInfo> scmLogInfos = getRankedChangeProneness(instances);
+        Map<String, ScmLogInfo> rankedLogInfosByPath = getRankedLogInfosByPath(scmLogInfos);
+
+        List<RankedDisharmony> rankedDisharmonies = instances.stream()
+                .filter(i -> rankedLogInfosByPath.containsKey(i.getFileRepoPath()))
+                .map(i -> new RankedDisharmony(i, rankedLogInfosByPath.get(i.getFileRepoPath())))
+                .sorted(Comparator.comparing(RankedDisharmony::getRawPriority).reversed())
+                .collect(Collectors.toList());
+
+        int priority = 1;
+        for (RankedDisharmony rd : rankedDisharmonies) {
+            rd.setPriority(priority++);
+        }
+        return rankedDisharmonies;
     }
 
     // TODO: Go away

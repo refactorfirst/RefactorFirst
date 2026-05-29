@@ -3,6 +3,7 @@ package org.hjug.graphbuilder.metrics;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Data;
+import org.hjug.graphbuilder.metrics.DisharmonyMetric.Direction;
 
 public class DisharmonyDetector {
 
@@ -50,6 +51,7 @@ public class DisharmonyDetector {
         private final String disharmonyType;
         private final String description;
         private final ClassMetrics metrics;
+        private final List<DisharmonyMetric> metricValues;
     }
 
     @Data
@@ -59,6 +61,7 @@ public class DisharmonyDetector {
         private final String disharmonyType;
         private final String description;
         private final MethodMetrics metrics;
+        private final List<DisharmonyMetric> metricValues;
     }
 
     public List<ClassDisharmony> detectGodClasses(List<ClassMetrics> allMetrics) {
@@ -70,8 +73,16 @@ public class DisharmonyDetector {
                         metrics.getAccessToForeignData(),
                         metrics.getWeightedMethodCount(),
                         metrics.getTightClassCohesion());
+                List<DisharmonyMetric> metricValues = List.of(
+                        new DisharmonyMetric("ATFD", metrics.getAccessToForeignData(), Direction.ASCENDING),
+                        new DisharmonyMetric("WMC", metrics.getWeightedMethodCount(), Direction.ASCENDING),
+                        new DisharmonyMetric("TCC", metrics.getTightClassCohesion(), Direction.ASCENDING));
                 godClasses.add(new ClassDisharmony(
-                        metrics.getFullyQualifiedName(), DisharmonyTypes.GOD_CLASS, description, metrics));
+                        metrics.getFullyQualifiedName(),
+                        DisharmonyTypes.GOD_CLASS,
+                        description,
+                        metrics,
+                        metricValues));
             }
         }
         return godClasses;
@@ -81,13 +92,22 @@ public class DisharmonyDetector {
         List<ClassDisharmony> dataClasses = new ArrayList<>();
         for (ClassMetrics metrics : allMetrics) {
             if (isDataClass(metrics)) {
+                double woc = metrics.getWeightOfClass();
+                int publicAccessors = metrics.getNumberOfPublicAttributes() + metrics.getNumberOfAccessorMethods();
+                int wmc = metrics.getWeightedMethodCount();
                 String description = String.format(
                         "Data Class detected: WOC=%.2f, Public Attributes + Accessors=%d, WMC=%d",
-                        metrics.getWeightOfClass(),
-                        metrics.getNumberOfPublicAttributes() + metrics.getNumberOfAccessorMethods(),
-                        metrics.getWeightedMethodCount());
+                        woc, publicAccessors, wmc);
+                List<DisharmonyMetric> metricValues = List.of(
+                        new DisharmonyMetric("WOC", woc, Direction.DESCENDING),
+                        new DisharmonyMetric("PublicAttrsAndAccessors", publicAccessors, Direction.ASCENDING),
+                        new DisharmonyMetric("WMC", wmc, Direction.ASCENDING));
                 dataClasses.add(new ClassDisharmony(
-                        metrics.getFullyQualifiedName(), DisharmonyTypes.DATA_CLASS, description, metrics));
+                        metrics.getFullyQualifiedName(),
+                        DisharmonyTypes.DATA_CLASS,
+                        description,
+                        metrics,
+                        metricValues));
             }
         }
         return dataClasses;
@@ -104,12 +124,19 @@ public class DisharmonyDetector {
                             methodMetrics.getCyclomaticComplexity(),
                             methodMetrics.getMaxNestingDepth(),
                             methodMetrics.getNumberOfAccessedVariables());
+                    List<DisharmonyMetric> metricValues = List.of(
+                            new DisharmonyMetric("LOC", methodMetrics.getLinesOfCode(), Direction.ASCENDING),
+                            new DisharmonyMetric("CYCLO", methodMetrics.getCyclomaticComplexity(), Direction.ASCENDING),
+                            new DisharmonyMetric("MAXNESTING", methodMetrics.getMaxNestingDepth(), Direction.ASCENDING),
+                            new DisharmonyMetric(
+                                    "NOAV", methodMetrics.getNumberOfAccessedVariables(), Direction.ASCENDING));
                     brainMethods.add(new MethodDisharmony(
                             classMetrics.getFullyQualifiedName(),
                             methodMetrics.getSignature(),
                             DisharmonyTypes.BRAIN_METHOD,
                             description,
-                            methodMetrics));
+                            methodMetrics,
+                            metricValues));
                 }
             }
         }
@@ -127,8 +154,17 @@ public class DisharmonyDetector {
                         metrics.getLinesOfCode(),
                         metrics.getWeightedMethodCount(),
                         metrics.getTightClassCohesion());
+                List<DisharmonyMetric> metricValues = List.of(
+                        new DisharmonyMetric("BrainMethods", brainMethodCount, Direction.ASCENDING),
+                        new DisharmonyMetric("LOC", metrics.getLinesOfCode(), Direction.ASCENDING),
+                        new DisharmonyMetric("WMC", metrics.getWeightedMethodCount(), Direction.ASCENDING),
+                        new DisharmonyMetric("TCC", metrics.getTightClassCohesion(), Direction.DESCENDING));
                 brainClasses.add(new ClassDisharmony(
-                        metrics.getFullyQualifiedName(), DisharmonyTypes.BRAIN_CLASS, description, metrics));
+                        metrics.getFullyQualifiedName(),
+                        DisharmonyTypes.BRAIN_CLASS,
+                        description,
+                        metrics,
+                        metricValues));
             }
         }
         return brainClasses;
@@ -139,17 +175,22 @@ public class DisharmonyDetector {
         for (ClassMetrics classMetrics : allMetrics) {
             for (MethodMetrics methodMetrics : classMetrics.getMethods().values()) {
                 if (hasFeatureEnvy(methodMetrics)) {
+                    int fdp = methodMetrics.getAccessedForeignClasses().size();
                     String description = String.format(
                             "Feature Envy detected: ATFD=%d, LAA=%.2f, FDP=%d",
-                            methodMetrics.getAccessToForeignData(),
-                            methodMetrics.getLocalityOfAttributeAccess(),
-                            methodMetrics.getAccessedForeignClasses().size());
+                            methodMetrics.getAccessToForeignData(), methodMetrics.getLocalityOfAttributeAccess(), fdp);
+                    List<DisharmonyMetric> metricValues = List.of(
+                            new DisharmonyMetric("ATFD", methodMetrics.getAccessToForeignData(), Direction.ASCENDING),
+                            new DisharmonyMetric(
+                                    "LAA", methodMetrics.getLocalityOfAttributeAccess(), Direction.DESCENDING),
+                            new DisharmonyMetric("FDP", fdp, Direction.ASCENDING));
                     featureEnvyMethods.add(new MethodDisharmony(
                             classMetrics.getFullyQualifiedName(),
                             methodMetrics.getSignature(),
                             DisharmonyTypes.FEATURE_ENVY,
                             description,
-                            methodMetrics));
+                            methodMetrics,
+                            metricValues));
                 }
             }
         }
@@ -162,12 +203,15 @@ public class DisharmonyDetector {
             for (MethodMetrics methodMetrics : classMetrics.getMethods().values()) {
                 if (isLongMethod(methodMetrics)) {
                     String description = String.format("Long Method detected: LOC=%d", methodMetrics.getLinesOfCode());
+                    List<DisharmonyMetric> metricValues =
+                            List.of(new DisharmonyMetric("LOC", methodMetrics.getLinesOfCode(), Direction.ASCENDING));
                     longMethods.add(new MethodDisharmony(
                             classMetrics.getFullyQualifiedName(),
                             methodMetrics.getSignature(),
                             DisharmonyTypes.LONG_METHOD,
                             description,
-                            methodMetrics));
+                            methodMetrics,
+                            metricValues));
                 }
             }
         }
@@ -179,15 +223,21 @@ public class DisharmonyDetector {
         for (ClassMetrics classMetrics : allMetrics) {
             for (MethodMetrics methodMetrics : classMetrics.getMethods().values()) {
                 if (hasIntensiveCoupling(methodMetrics)) {
+                    int cint = methodMetrics.getCouplingIntensity();
+                    double cdisp = methodMetrics.getCouplingDispersion();
                     String description = String.format(
                             "Intensive Coupling detected: CINT=%d, CDISP=%.2f (calls concentrated in few classes)",
-                            methodMetrics.getCouplingIntensity(), methodMetrics.getCouplingDispersion());
+                            cint, cdisp);
+                    List<DisharmonyMetric> metricValues = List.of(
+                            new DisharmonyMetric("CINT", cint, Direction.ASCENDING),
+                            new DisharmonyMetric("CDISP", cdisp, Direction.DESCENDING));
                     intensivelyCoupledMethods.add(new MethodDisharmony(
                             classMetrics.getFullyQualifiedName(),
                             methodMetrics.getSignature(),
                             DisharmonyTypes.INTENSIVE_COUPLING,
                             description,
-                            methodMetrics));
+                            methodMetrics,
+                            metricValues));
                 }
             }
         }
@@ -199,15 +249,21 @@ public class DisharmonyDetector {
         for (ClassMetrics classMetrics : allMetrics) {
             for (MethodMetrics methodMetrics : classMetrics.getMethods().values()) {
                 if (hasDispersedCoupling(methodMetrics)) {
+                    int cint = methodMetrics.getCouplingIntensity();
+                    double cdisp = methodMetrics.getCouplingDispersion();
                     String description = String.format(
                             "Dispersed Coupling detected: CINT=%d, CDISP=%.2f (calls spread across many classes)",
-                            methodMetrics.getCouplingIntensity(), methodMetrics.getCouplingDispersion());
+                            cint, cdisp);
+                    List<DisharmonyMetric> metricValues = List.of(
+                            new DisharmonyMetric("CINT", cint, Direction.ASCENDING),
+                            new DisharmonyMetric("CDISP", cdisp, Direction.ASCENDING));
                     dispersedCoupledMethods.add(new MethodDisharmony(
                             classMetrics.getFullyQualifiedName(),
                             methodMetrics.getSignature(),
                             DisharmonyTypes.DISPERSED_COUPLING,
                             description,
-                            methodMetrics));
+                            methodMetrics,
+                            metricValues));
                 }
             }
         }
@@ -219,15 +275,21 @@ public class DisharmonyDetector {
         for (ClassMetrics classMetrics : allMetrics) {
             for (MethodMetrics methodMetrics : classMetrics.getMethods().values()) {
                 if (hasShotgunSurgery(methodMetrics)) {
+                    int cm = methodMetrics.getChangingMethodCount();
+                    int cc = methodMetrics.getChangingClassCount();
                     String description = String.format(
                             "Shotgun Surgery detected: CM=%d, CC=%d (called by many methods from many classes)",
-                            methodMetrics.getChangingMethodCount(), methodMetrics.getChangingClassCount());
+                            cm, cc);
+                    List<DisharmonyMetric> metricValues = List.of(
+                            new DisharmonyMetric("CM", cm, Direction.ASCENDING),
+                            new DisharmonyMetric("CC", cc, Direction.ASCENDING));
                     shotgunSurgeryMethods.add(new MethodDisharmony(
                             classMetrics.getFullyQualifiedName(),
                             methodMetrics.getSignature(),
                             DisharmonyTypes.SHOTGUN_SURGERY,
                             description,
-                            methodMetrics));
+                            methodMetrics,
+                            metricValues));
                 }
             }
         }
@@ -249,8 +311,19 @@ public class DisharmonyDetector {
                 String description = String.format(
                         "Refused Parent Bequest detected: NProtM=%d, BUR=%.2f, BOvR=%.2f, NOM=%d, AMW=%.2f, WMC=%d",
                         parentProtected, bur, bovr, descNom, amw, wmc);
+                List<DisharmonyMetric> metricValues = List.of(
+                        new DisharmonyMetric("NProtM", parentProtected, Direction.ASCENDING),
+                        new DisharmonyMetric("BUR", bur, Direction.DESCENDING),
+                        new DisharmonyMetric("BOvR", bovr, Direction.DESCENDING),
+                        new DisharmonyMetric("NOM", descNom, Direction.ASCENDING),
+                        new DisharmonyMetric("AMW", amw, Direction.ASCENDING),
+                        new DisharmonyMetric("WMC", wmc, Direction.ASCENDING));
                 refusedBequestClasses.add(new ClassDisharmony(
-                        metrics.getFullyQualifiedName(), DisharmonyTypes.REFUSED_PARENT_BEQUEST, description, metrics));
+                        metrics.getFullyQualifiedName(),
+                        DisharmonyTypes.REFUSED_PARENT_BEQUEST,
+                        description,
+                        metrics,
+                        metricValues));
             }
         }
         return refusedBequestClasses;
@@ -268,8 +341,20 @@ public class DisharmonyDetector {
                 String description = String.format(
                         "Tradition Breaker detected: NAS=%d, PNAS=%.2f, NOM=%d, AMW=%.2f, WMC=%d, Overridden=%d",
                         nas, pnas, nom, amw, wmc, metrics.getNumberOfOverriddenMethods());
+                List<DisharmonyMetric> metricValues = List.of(
+                        new DisharmonyMetric("NAS", nas, Direction.ASCENDING),
+                        new DisharmonyMetric("PNAS", pnas, Direction.ASCENDING),
+                        new DisharmonyMetric("NOM", nom, Direction.ASCENDING),
+                        new DisharmonyMetric("AMW", amw, Direction.ASCENDING),
+                        new DisharmonyMetric("WMC", wmc, Direction.ASCENDING),
+                        new DisharmonyMetric(
+                                "Overridden", metrics.getNumberOfOverriddenMethods(), Direction.ASCENDING));
                 traditionBreakerClasses.add(new ClassDisharmony(
-                        metrics.getFullyQualifiedName(), DisharmonyTypes.TRADITION_BREAKER, description, metrics));
+                        metrics.getFullyQualifiedName(),
+                        DisharmonyTypes.TRADITION_BREAKER,
+                        description,
+                        metrics,
+                        metricValues));
             }
         }
         return traditionBreakerClasses;

@@ -2,9 +2,12 @@ package org.hjug.cbc;
 
 import java.nio.file.Paths;
 import java.time.Instant;
+import java.util.List;
 import lombok.Data;
 import org.hjug.git.ScmLogInfo;
+import org.hjug.graphbuilder.metrics.DisharmonyMetric;
 import org.hjug.metrics.CBOClass;
+import org.hjug.metrics.DisharmonyInstance;
 import org.hjug.metrics.GodClass;
 import org.jgrapht.graph.DefaultWeightedEdge;
 
@@ -29,6 +32,10 @@ public class RankedDisharmony {
     private Integer atfdRank;
     private Float tcc;
     private Integer tccRank;
+
+    private String disharmonyType;
+    private String methodSignature;
+    private List<DisharmonyMetric> rankedMetrics;
 
     private DefaultWeightedEdge edge;
     private Integer cycleCount;
@@ -66,6 +73,23 @@ public class RankedDisharmony {
         changePronenessRank = scmLogInfo.getChangePronenessRank();
         effortRank = cboClass.getCouplingCount();
         rawPriority = changePronenessRank - effortRank;
+
+        firstCommitTime = Instant.ofEpochSecond(scmLogInfo.getEarliestCommit());
+        mostRecentCommitTime = Instant.ofEpochSecond(scmLogInfo.getMostRecentCommit());
+        commitCount = scmLogInfo.getCommitCount();
+    }
+
+    public RankedDisharmony(DisharmonyInstance instance, ScmLogInfo scmLogInfo) {
+        path = scmLogInfo.getPath();
+        fileName = Paths.get(path).getFileName().toString();
+        className = instance.getClassName();
+        changePronenessRank = scmLogInfo.getChangePronenessRank();
+        effortRank = instance.getOverallRank();
+        rawPriority = changePronenessRank - effortRank;
+
+        disharmonyType = instance.getDisharmonyType();
+        methodSignature = instance.getMethodSignature();
+        rankedMetrics = instance.getMetrics();
 
         firstCommitTime = Instant.ofEpochSecond(scmLogInfo.getEarliestCommit());
         mostRecentCommitTime = Instant.ofEpochSecond(scmLogInfo.getMostRecentCommit());

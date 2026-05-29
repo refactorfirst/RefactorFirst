@@ -484,6 +484,30 @@ public class HtmlReport extends SimpleHtmlReport {
     }
 
     @Override
+    String renderDisharmonyChart(String anchorId, String title, List<RankedDisharmony> ranked, int maxPriority) {
+        String slug = anchorId.toLowerCase().replaceAll("[^a-z0-9]", "_");
+        String funcName = "draw_" + slug;
+        String dataVar = "data_" + slug;
+        String chartVar = "chart_" + slug;
+        String divId = "chart_div_" + slug;
+
+        GraphDataGenerator gen = new GraphDataGenerator();
+        String script = gen.getDisharmonyScriptStart(funcName, dataVar)
+                + gen.generateBubbleChartData(ranked, maxPriority - 1, "Effort")
+                + gen.getDisharmonyScriptEnd(
+                        funcName, chartVar, divId, dataVar, "Priority Ranking for Refactoring " + title, "Effort");
+
+        return "<div id=\"" + divId + "\" align=\"center\"><script>" + script + "</script></div>\n"
+                + "<h2>" + title + " Chart Legend:</h2>"
+                + "<table border=\"5px\"><tbody>"
+                + "<tr><td><strong>X-Axis:</strong> Effort to refactor</td></tr>"
+                + "<tr><td><strong>Y-Axis:</strong> Relative churn</td></tr>"
+                + "<tr><td><strong>Color:</strong> Priority of what to fix first</td></tr>"
+                + "<tr><td><strong>Circle size:</strong> Priority (Visual) of what to fix first</td></tr>"
+                + "</tbody></table><br/>";
+    }
+
+    @Override
     String renderCBOChart(List<RankedDisharmony> rankedCBODisharmonies, int maxCboPriority) {
         StringBuilder stringBuilder = new StringBuilder();
 

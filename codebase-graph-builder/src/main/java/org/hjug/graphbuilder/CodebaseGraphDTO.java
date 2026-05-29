@@ -54,6 +54,12 @@ public class CodebaseGraphDTO {
                 .collect(Collectors.toList());
     }
 
+    public List<MethodDisharmony> getMethodDisharmoniesOfType(String disharmonyType) {
+        return methodDisharmonies.stream()
+                .filter(d -> disharmonyType.equals(d.getDisharmonyType()))
+                .collect(Collectors.toList());
+    }
+
     public long getClassDisharmonyCountForClass(String classFqn) {
         return disharmonyCountByClass.getOrDefault(classFqn, 0L);
     }
