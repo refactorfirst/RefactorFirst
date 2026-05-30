@@ -76,7 +76,7 @@ public class DisharmonyDetector {
                 List<DisharmonyMetric> metricValues = List.of(
                         new DisharmonyMetric("ATFD", metrics.getAccessToForeignData(), Direction.ASCENDING),
                         new DisharmonyMetric("WMC", metrics.getWeightedMethodCount(), Direction.ASCENDING),
-                        new DisharmonyMetric("TCC", metrics.getTightClassCohesion(), Direction.ASCENDING));
+                        new DisharmonyMetric("TCC", metrics.getTightClassCohesion(), Direction.DESCENDING));
                 godClasses.add(new ClassDisharmony(
                         metrics.getFullyQualifiedName(),
                         DisharmonyTypes.GOD_CLASS,
