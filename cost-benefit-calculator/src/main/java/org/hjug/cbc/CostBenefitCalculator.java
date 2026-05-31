@@ -156,9 +156,13 @@ public class CostBenefitCalculator implements AutoCloseable {
         List<DisharmonyInstance> instances = raw.stream()
                 .map(d -> {
                     String filePath = classToSourceFilePathMapping.get(d.getClassName());
+                    // Try outer class for inner/anonymous classes (e.g., "Outer$Inner" → "Outer")
+                    if (filePath == null && d.getClassName().contains("$")) {
+                        filePath = classToSourceFilePathMapping.get(
+                                d.getClassName().substring(0, d.getClassName().indexOf("$")));
+                    }
                     if (filePath == null) {
-                        filePath = canonicaliseURIStringForRepoLookup(
-                                d.getMetrics().getSignature());
+                        log.warn("No source file mapping found for method disharmony in class: {}", d.getClassName());
                     }
                     return new DisharmonyInstance(
                             disharmonyType,
