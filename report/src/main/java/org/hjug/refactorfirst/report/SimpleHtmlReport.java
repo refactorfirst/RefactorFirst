@@ -775,6 +775,10 @@ public class SimpleHtmlReport {
                 sb.append("<th>").append(m.getName()).append(" Rank</th>\n");
             }
         }
+        boolean showPartners = ranked.get(0).getDescription() != null;
+        if (showPartners) {
+            sb.append("<th>Duplicate Partners</th>\n");
+        }
         sb.append("<th>Most Recent Commit Date</th>\n");
         sb.append("<th>Commit Count</th>\n");
         if (showDetails) {
@@ -804,6 +808,9 @@ public class SimpleHtmlReport {
                 if (showDetails) {
                     sb.append(drawTableCell(m.getRank() != null ? m.getRank().toString() : ""));
                 }
+            }
+            if (showPartners) {
+                sb.append(drawTableCell(rd.getDescription() != null ? rd.getDescription() : ""));
             }
             sb.append(drawTableCell(formatter.format(rd.getMostRecentCommitTime())));
             sb.append(drawTableCell(rd.getCommitCount().toString()));

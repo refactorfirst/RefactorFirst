@@ -112,6 +112,29 @@ class DisharmonyRenderingTest {
                 "Brain class chart must not reference Feature Envy slug");
     }
 
+    // ── Duplicate Partners column ──────────────────────────────────────────────
+
+    @Test
+    void significantDuplicationTableShowsDuplicatePartnersColumn() {
+        RankedDisharmony rd = makeRankedDisharmony("DupClass.java", null, 1, 7.0, 14.0, 0.0);
+        rd.setDescription("computeResult(int) ↔ CrossClassB.computeResult(int)");
+
+        String html =
+                simpleReport.renderDisharmonyInfo("SIG_DUP", "Significant Duplication", false, false, List.of(rd));
+
+        assertTrue(html.contains("Duplicate Partners"), "Table must show 'Duplicate Partners' column header");
+        assertTrue(html.contains("CrossClassB"), "Table must show partner class name in the Duplicate Partners cell");
+    }
+
+    @Test
+    void otherDisharmonyTableOmitsDuplicatePartnersColumn() {
+        RankedDisharmony rd = makeRankedDisharmony("BrainClass.java", null, 1, 57.0, 3.0, 0.3);
+
+        String html = simpleReport.renderDisharmonyInfo("BRAIN", "Brain Classes", false, false, List.of(rd));
+
+        assertFalse(html.contains("Duplicate Partners"), "Non-duplication table must not show 'Duplicate Partners'");
+    }
+
     // ── helper ─────────────────────────────────────────────────────────────────
 
     private RankedDisharmony makeRankedDisharmony(

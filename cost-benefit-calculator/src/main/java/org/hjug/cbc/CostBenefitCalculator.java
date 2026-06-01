@@ -137,14 +137,18 @@ public class CostBenefitCalculator implements AutoCloseable {
         List<ClassDisharmony> raw = codebaseGraphDTO.getClassDisharmoniesOfType(disharmonyType);
 
         List<DisharmonyInstance> instances = raw.stream()
-                .map(d -> new DisharmonyInstance(
-                        disharmonyType,
-                        d.getClassName(),
-                        canonicaliseURIStringForRepoLookup(
-                                d.getMetrics().getSourceFilePath().replace("\\", "/")),
-                        d.getMetrics().getPackageName(),
-                        null,
-                        new java.util.ArrayList<>(d.getMetricValues())))
+                .map(d -> {
+                    DisharmonyInstance instance = new DisharmonyInstance(
+                            disharmonyType,
+                            d.getClassName(),
+                            canonicaliseURIStringForRepoLookup(
+                                    d.getMetrics().getSourceFilePath().replace("\\", "/")),
+                            d.getMetrics().getPackageName(),
+                            null,
+                            new java.util.ArrayList<>(d.getMetricValues()));
+                    instance.setDescription(d.getDescription());
+                    return instance;
+                })
                 .collect(Collectors.toList());
 
         new DisharmonyRanker().rank(instances);

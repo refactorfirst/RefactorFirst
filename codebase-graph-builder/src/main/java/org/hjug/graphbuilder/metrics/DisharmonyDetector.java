@@ -2,8 +2,10 @@ package org.hjug.graphbuilder.metrics;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import lombok.Data;
 import org.hjug.graphbuilder.metrics.DisharmonyMetric.Direction;
 
@@ -581,7 +583,7 @@ public class DisharmonyDetector {
             classMetricsMap.put(cm.getFullyQualifiedName(), cm);
         }
 
-        Map<String, int[]> flaggedClasses = new HashMap<>();
+        Map<String, FlaggedClassData> flaggedClasses = new HashMap<>();
 
         for (int i = 0; i < eligibleMethods.size(); i++) {
             for (int j = i + 1; j < eligibleMethods.size(); j++) {
@@ -630,27 +632,36 @@ public class DisharmonyDetector {
                 }
 
                 if (significant) {
-                    updateFlagged(flaggedClasses, entryA.classMetrics.getFullyQualifiedName(), maxSEC, maxSDC);
-                    if (!entryA.classMetrics
-                            .getFullyQualifiedName()
-                            .equals(entryB.classMetrics.getFullyQualifiedName())) {
-                        updateFlagged(flaggedClasses, entryB.classMetrics.getFullyQualifiedName(), maxSEC, maxSDC);
+                    String fqnA = entryA.classMetrics.getFullyQualifiedName();
+                    String fqnB = entryB.classMetrics.getFullyQualifiedName();
+                    String sigA = entryA.method.getSignature();
+                    String sigB = entryB.method.getSignature();
+                    String simpleA = fqnA.substring(fqnA.lastIndexOf('.') + 1);
+                    String simpleB = fqnB.substring(fqnB.lastIndexOf('.') + 1);
+                    flaggedClasses
+                            .computeIfAbsent(fqnA, k -> new FlaggedClassData())
+                            .update(maxSEC, maxSDC, sigA + " ↔ " + simpleB + "." + sigB);
+                    if (!fqnA.equals(fqnB)) {
+                        flaggedClasses
+                                .computeIfAbsent(fqnB, k -> new FlaggedClassData())
+                                .update(maxSEC, maxSDC, sigB + " ↔ " + simpleA + "." + sigA);
                     }
                 }
             }
         }
 
         List<ClassDisharmony> results = new ArrayList<>();
-        for (Map.Entry<String, int[]> entry : flaggedClasses.entrySet()) {
+        for (Map.Entry<String, FlaggedClassData> entry : flaggedClasses.entrySet()) {
             String fqn = entry.getKey();
-            int maxSEC = entry.getValue()[0];
-            int maxSDC = entry.getValue()[1];
+            FlaggedClassData data = entry.getValue();
             ClassMetrics cm = classMetricsMap.get(fqn);
             if (cm == null) continue;
-            String description = String.format("Significant Duplication: SEC=%d, SDC=%d", maxSEC, maxSDC);
+            String description = String.format(
+                    "Significant Duplication: SEC=%d, SDC=%d | %s",
+                    data.maxSEC, data.maxSDC, String.join("; ", data.partnerDescriptions));
             List<DisharmonyMetric> metricValues = List.of(
-                    new DisharmonyMetric("SEC", maxSEC, Direction.ASCENDING),
-                    new DisharmonyMetric("SDC", maxSDC, Direction.ASCENDING));
+                    new DisharmonyMetric("SEC", data.maxSEC, Direction.ASCENDING),
+                    new DisharmonyMetric("SDC", data.maxSDC, Direction.ASCENDING));
             results.add(
                     new ClassDisharmony(fqn, DisharmonyTypes.SIGNIFICANT_DUPLICATION, description, cm, metricValues));
         }
@@ -706,13 +717,15 @@ public class DisharmonyDetector {
         return chains;
     }
 
-    private void updateFlagged(Map<String, int[]> flaggedClasses, String fqn, int maxSEC, int maxSDC) {
-        int[] scores = flaggedClasses.get(fqn);
-        if (scores == null) {
-            flaggedClasses.put(fqn, new int[] {maxSEC, maxSDC});
-        } else {
-            if (maxSEC > scores[0]) scores[0] = maxSEC;
-            if (maxSDC > scores[1]) scores[1] = maxSDC;
+    private static final class FlaggedClassData {
+        int maxSEC = 0;
+        int maxSDC = 0;
+        final Set<String> partnerDescriptions = new LinkedHashSet<>();
+
+        void update(int sec, int sdc, String partnerDescription) {
+            if (sec > maxSEC) maxSEC = sec;
+            if (sdc > maxSDC) maxSDC = sdc;
+            partnerDescriptions.add(partnerDescription);
         }
     }
 

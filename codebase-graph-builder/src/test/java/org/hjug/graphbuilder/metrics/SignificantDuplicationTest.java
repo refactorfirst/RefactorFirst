@@ -156,6 +156,37 @@ class SignificantDuplicationTest {
     }
 
     @Test
+    void detectedDescriptionIncludesMethodNames() {
+        DisharmonyDetector.ClassDisharmony intraClass = detected.stream()
+                .filter(d -> d.getClassName().equals(INTRA_CLASS_FQN))
+                .findFirst()
+                .orElse(null);
+        Assertions.assertNotNull(intraClass, "SignificantDuplicationIntraClass must be detected");
+
+        String desc = intraClass.getDescription();
+        System.out.println("IntraClass description: " + desc);
+        Assertions.assertTrue(desc.contains("methodA"), "Description should contain 'methodA', was: " + desc);
+        Assertions.assertTrue(desc.contains("methodB"), "Description should contain 'methodB', was: " + desc);
+    }
+
+    @Test
+    void detectedDescriptionIncludesPartnerClassForCrossClass() {
+        DisharmonyDetector.ClassDisharmony crossA = detected.stream()
+                .filter(d -> d.getClassName().equals(CROSS_CLASS_A_FQN))
+                .findFirst()
+                .orElse(null);
+        Assertions.assertNotNull(crossA, "SignificantDuplicationCrossClassA must be detected");
+
+        String desc = crossA.getDescription();
+        System.out.println("CrossClassA description: " + desc);
+        Assertions.assertTrue(
+                desc.contains("CrossClassB"), "Description should contain partner class 'CrossClassB', was: " + desc);
+        Assertions.assertTrue(
+                desc.contains("computeResult"),
+                "Description should contain partner method 'computeResult', was: " + desc);
+    }
+
+    @Test
     void detectedDisharmoniesHaveCorrectMetricStructure() {
         Assertions.assertFalse(detected.isEmpty(), "Should detect at least one Significant Duplication");
 
