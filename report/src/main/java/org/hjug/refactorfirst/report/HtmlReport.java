@@ -360,17 +360,6 @@ public class HtmlReport extends SimpleHtmlReport {
             + "    }\n"
             + "</script>";
 
-    private static final String GOD_CLASS_CHART_LEGEND =
-            "       <h2>God Class Chart Legend:</h2>" + "       <table border=\"5px\">\n"
-                    + "          <tbody>\n"
-                    + "            <tr><td><strong>X-Axis:</strong> Effort to refactor to a non-God class</td></tr>\n"
-                    + "            <tr><td><strong>Y-Axis:</strong> Relative churn</td></tr>\n"
-                    + "            <tr><td><strong>Color:</strong> Priority of what to fix first</td></tr>\n"
-                    + "            <tr><td><strong>Circle size:</strong> Priority (Visual) of what to fix first</td></tr>\n"
-                    + "          </tbody>\n"
-                    + "        </table>"
-                    + "        <br/>";
-
     private static final String COUPLING_BETWEEN_OBJECT_CHART_LEGEND =
             "       <h2>Coupling Between Objects Chart Legend:</h2>" + "       <table border=\"5px\">\n"
                     + "          <tbody>\n"
@@ -440,16 +429,6 @@ public class HtmlReport extends SimpleHtmlReport {
     }
 
     @Override
-    String writeGodClassGchartJs(List<RankedDisharmony> rankedDisharmonies, int maxPriority) {
-        GraphDataGenerator graphDataGenerator = new GraphDataGenerator();
-        String scriptStart = graphDataGenerator.getGodClassScriptStart();
-        String bubbleChartData = graphDataGenerator.generateGodClassBubbleChartData(rankedDisharmonies, maxPriority);
-        String scriptEnd = graphDataGenerator.getGodClassScriptEnd();
-
-        return scriptStart + bubbleChartData + scriptEnd;
-    }
-
-    @Override
     String writeGCBOGchartJs(List<RankedDisharmony> rankedDisharmonies, int maxPriority) {
         GraphDataGenerator graphDataGenerator = new GraphDataGenerator();
         String scriptStart = graphDataGenerator.getCBOScriptStart();
@@ -468,19 +447,6 @@ public class HtmlReport extends SimpleHtmlReport {
         // Description of the report when listed in the project-reports.html page of a project
         return "Ranks the disharmonies in a codebase.  The classes that should be refactored first "
                 + " have the highest priority values.";
-    }
-
-    @Override
-    String renderGodClassChart(List<RankedDisharmony> rankedGodClassDisharmonies, int maxGodClassPriority) {
-        StringBuilder stringBuilder = new StringBuilder();
-
-        String godClassChart = writeGodClassGchartJs(rankedGodClassDisharmonies, maxGodClassPriority - 1);
-        stringBuilder.append(
-                "<div id=\"series_chart_div\" align=\"center\"><script>" + godClassChart + "</script></div>\n");
-        stringBuilder.append(renderGithubButtons());
-        stringBuilder.append(GOD_CLASS_CHART_LEGEND);
-
-        return stringBuilder.toString();
     }
 
     @Override

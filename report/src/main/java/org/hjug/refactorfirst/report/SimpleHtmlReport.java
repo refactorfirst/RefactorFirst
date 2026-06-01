@@ -39,34 +39,6 @@ public class SimpleHtmlReport {
 
     public static final String THE_END = "</div>\n" + "    </div>\n" + "  </body>\n" + "</html>\n";
 
-    public final String[] godClassSimpleTableHeadings = {
-        "Class",
-        "Priority",
-        "Change Proneness Rank",
-        "Effort Rank",
-        "Method Count",
-        "Most Recent Commit Date",
-        "Commit Count"
-    };
-
-    public final String[] godClassDetailedTableHeadings = {
-        "Class",
-        "Priority",
-        "Raw Priority",
-        "Change Proneness Rank",
-        "Effort Rank",
-        "WMC",
-        "WMC Rank",
-        "ATFD",
-        "ATFD Rank",
-        "TCC",
-        "TCC Rank",
-        "Date of First Commit",
-        "Most Recent Commit Date",
-        "Commit Count",
-        "Full Path"
-    };
-
     public final String[] cboTableHeadings = {
         "Class", "Priority", "Change Proneness Rank", "Coupling Count", "Most Recent Commit Date", "Commit Count"
     };
@@ -249,12 +221,12 @@ public class SimpleHtmlReport {
             targetNodeInfos.put(defaultWeightedEdge, targetNode);
         }
 
-        List<RankedDisharmony> rankedGodClassDisharmonies = List.of();
         List<RankedDisharmony> rankedCBODisharmonies = List.of();
         List<RankedDisharmony> edgeDisharmonies = List.of();
 
-        // Ordered (type, anchorId, displayTitle, isMethodLevel) for all non-God-Class disharmonies
+        // Ordered (type, anchorId, displayTitle, isMethodLevel) for all disharmonies
         final List<DisharmonySpec> disharmonySpecs = List.of(
+                new DisharmonySpec(DisharmonyTypes.GOD_CLASS, "GOD", "God Classes", false),
                 new DisharmonySpec(DisharmonyTypes.DATA_CLASS, "DATA_CLASS", "Data Classes", false),
                 new DisharmonySpec(DisharmonyTypes.BRAIN_CLASS, "BRAIN_CLASS", "Brain Classes", false),
                 new DisharmonySpec(DisharmonyTypes.REFUSED_PARENT_BEQUEST, "RPB", "Refused Parent Bequest", false),
@@ -275,8 +247,6 @@ public class SimpleHtmlReport {
         CodebaseGraphDTO codebaseGraphDTO = cycleRanker.getCodebaseGraphDTO();
         try (CostBenefitCalculator costBenefitCalculator =
                 new CostBenefitCalculator(projectBaseDir, codebaseGraphDTO.getClassToSourceFilePathMapping())) {
-            rankedGodClassDisharmonies = costBenefitCalculator.calculateGodClassCostBenefitValues(
-                    costBenefitCalculator.getGodClasses(codebaseGraphDTO));
             edgeDisharmonies = costBenefitCalculator.calculateSourceNodeCostBenefitValues(
                     classGraph, edgeToRemoveCycleCounts, codebaseGraphDTO, vertexesToRemove);
 
@@ -302,7 +272,6 @@ public class SimpleHtmlReport {
         // - Provide guidance on where to move the method if one is in the list to remove
 
         boolean hasAnyDisharmony = !edgesToRemove.isEmpty()
-                || !rankedGodClassDisharmonies.isEmpty()
                 || !rankedCBODisharmonies.isEmpty()
                 || !rankedCycles.isEmpty()
                 || !rankedDisharmoniesByAnchor.isEmpty();
@@ -321,11 +290,6 @@ public class SimpleHtmlReport {
 
         if (!edgesToRemove.isEmpty()) {
             stringBuilder.append("<a href=\"#EDGES\">Edges To Remove</a>\n");
-            stringBuilder.append("<br/>\n");
-        }
-
-        if (!rankedGodClassDisharmonies.isEmpty()) {
-            stringBuilder.append("<a href=\"#GOD\">God Classes</a>\n");
             stringBuilder.append("<br/>\n");
         }
 
@@ -359,13 +323,6 @@ public class SimpleHtmlReport {
         stringBuilder.append("<br/>\n");
         if (!edgeDisharmonies.isEmpty()) {
             stringBuilder.append(renderEdgeDisharmonies(edgeDisharmonies));
-            stringBuilder.append("<br/>\n" + "<br/>\n" + "<br/>\n" + "<br/>\n" + "<hr/>\n" + "<br/>\n" + "<br/>\n");
-        }
-
-        if (!rankedGodClassDisharmonies.isEmpty()) {
-            final String[] godClassTableHeadings =
-                    showDetails ? godClassDetailedTableHeadings : godClassSimpleTableHeadings;
-            stringBuilder.append(renderGodClassInfo(showDetails, rankedGodClassDisharmonies, godClassTableHeadings));
             stringBuilder.append("<br/>\n" + "<br/>\n" + "<br/>\n" + "<br/>\n" + "<hr/>\n" + "<br/>\n" + "<br/>\n");
         }
 
@@ -636,76 +593,6 @@ public class SimpleHtmlReport {
         return ""; // empty on purpose
     }
 
-    private String renderGodClassInfo(
-            boolean showDetails, List<RankedDisharmony> rankedGodClassDisharmonies, String[] godClassTableHeadings) {
-        int maxGodClassPriority = rankedGodClassDisharmonies
-                .get(rankedGodClassDisharmonies.size() - 1)
-                .getPriority();
-
-        StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append("<div style=\"text-align: center;\"><a id=\"GOD\"><h1>God Classes</h1></a></div>\n");
-
-        stringBuilder.append(renderGodClassChart(rankedGodClassDisharmonies, maxGodClassPriority));
-
-        stringBuilder.append(
-                "<h2 align=\"center\">God classes by the numbers: (Refactor Starting with Priority 1)</h2>\n");
-        stringBuilder.append("<table align=\"center\" border=\"5px\">\n");
-
-        // Content
-        stringBuilder.append("<thead><tr>");
-        for (String heading : godClassTableHeadings) {
-            stringBuilder.append("<th>").append(heading).append("</th>\n");
-        }
-        stringBuilder.append("</tr>\n</thead>\n");
-
-        stringBuilder.append("<tbody>\n");
-        for (RankedDisharmony rankedGodClassDisharmony : rankedGodClassDisharmonies) {
-            stringBuilder.append("<tr>\n");
-
-            String[] simpleRankedGodClassDisharmonyData = {
-                rankedGodClassDisharmony.getFileName(),
-                rankedGodClassDisharmony.getPriority().toString(),
-                rankedGodClassDisharmony.getChangePronenessRank().toString(),
-                rankedGodClassDisharmony.getEffortRank().toString(),
-                rankedGodClassDisharmony.getWmc().toString(),
-                formatter.format(rankedGodClassDisharmony.getMostRecentCommitTime()),
-                rankedGodClassDisharmony.getCommitCount().toString()
-            };
-
-            String[] detailedRankedGodClassDisharmonyData = {
-                rankedGodClassDisharmony.getFileName(),
-                rankedGodClassDisharmony.getPriority().toString(),
-                rankedGodClassDisharmony.getRawPriority().toString(),
-                rankedGodClassDisharmony.getChangePronenessRank().toString(),
-                rankedGodClassDisharmony.getEffortRank().toString(),
-                rankedGodClassDisharmony.getWmc().toString(),
-                rankedGodClassDisharmony.getWmcRank().toString(),
-                rankedGodClassDisharmony.getAtfd().toString(),
-                rankedGodClassDisharmony.getAtfdRank().toString(),
-                rankedGodClassDisharmony.getTcc().toString(),
-                rankedGodClassDisharmony.getTccRank().toString(),
-                formatter.format(rankedGodClassDisharmony.getFirstCommitTime()),
-                formatter.format(rankedGodClassDisharmony.getMostRecentCommitTime()),
-                rankedGodClassDisharmony.getCommitCount().toString(),
-                rankedGodClassDisharmony.getPath()
-            };
-
-            final String[] rankedDisharmonyData =
-                    showDetails ? detailedRankedGodClassDisharmonyData : simpleRankedGodClassDisharmonyData;
-
-            for (String rowData : rankedDisharmonyData) {
-                stringBuilder.append(drawTableCell(rowData));
-            }
-
-            stringBuilder.append("</tr>\n");
-        }
-
-        stringBuilder.append("</tbody>\n");
-        stringBuilder.append("</table>\n");
-
-        return stringBuilder.toString();
-    }
-
     private String renderHighlyCoupledClassInfo(List<RankedDisharmony> rankedCBODisharmonies) {
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append(
@@ -828,15 +715,6 @@ public class SimpleHtmlReport {
     String getOutputName() {
         // This report will generate simple-report.html when invoked in a project with `mvn site`
         return "refactor-first-report";
-    }
-
-    String renderGodClassChart(List<RankedDisharmony> rankedGodClassDisharmonies, int maxGodClassPriority) {
-        return ""; // empty on purpose
-    }
-
-    String writeGodClassGchartJs(List<RankedDisharmony> rankedDisharmonies, int maxPriority) {
-        // return empty string on purpose
-        return "";
     }
 
     String writeGCBOGchartJs(List<RankedDisharmony> rankedDisharmonies, int maxPriority) {
