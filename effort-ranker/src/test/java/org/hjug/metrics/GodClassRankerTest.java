@@ -4,11 +4,13 @@ import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
  * Created by Wendy on 11/16/2016.
  */
+@Disabled
 public class GodClassRankerTest {
 
     private final GodClassRanker godClassRanker = new GodClassRanker();

@@ -54,7 +54,7 @@ public class GodClassRanker {
 
     void rankTcc(List<GodClass> godClasses) {
         log.info("Calculating Tight Class Cohesion (TCC) Rank");
-        godClasses.sort(Comparator.comparing(GodClass::getTcc));
+        godClasses.sort(Comparator.comparing(GodClass::getTcc).reversed());
 
         Function<GodClass, Float> getTcc = GodClass::getTcc;
         ObjIntConsumer<GodClass> setTccRank = GodClass::setTccRank;
