@@ -140,7 +140,8 @@ public class CostBenefitCalculator implements AutoCloseable {
                 .map(d -> new DisharmonyInstance(
                         disharmonyType,
                         d.getClassName(),
-                        canonicaliseURIStringForRepoLookup(d.getMetrics().getSourceFilePath()),
+                        canonicaliseURIStringForRepoLookup(
+                                d.getMetrics().getSourceFilePath().replace("\\", "/")),
                         d.getMetrics().getPackageName(),
                         null,
                         new java.util.ArrayList<>(d.getMetricValues())))
