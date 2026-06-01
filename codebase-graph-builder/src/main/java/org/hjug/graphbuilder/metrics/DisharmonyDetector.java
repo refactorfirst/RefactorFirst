@@ -101,7 +101,7 @@ public class DisharmonyDetector {
                 List<DisharmonyMetric> metricValues = List.of(
                         new DisharmonyMetric("WOC", woc, Direction.DESCENDING),
                         new DisharmonyMetric("PublicAttrsAndAccessors", publicAccessors, Direction.ASCENDING),
-                        new DisharmonyMetric("WMC", wmc, Direction.ASCENDING));
+                        new DisharmonyMetric("WMC", wmc, Direction.DESCENDING));
                 dataClasses.add(new ClassDisharmony(
                         metrics.getFullyQualifiedName(),
                         DisharmonyTypes.DATA_CLASS,
@@ -183,7 +183,7 @@ public class DisharmonyDetector {
                             new DisharmonyMetric("ATFD", methodMetrics.getAccessToForeignData(), Direction.ASCENDING),
                             new DisharmonyMetric(
                                     "LAA", methodMetrics.getLocalityOfAttributeAccess(), Direction.DESCENDING),
-                            new DisharmonyMetric("FDP", fdp, Direction.ASCENDING));
+                            new DisharmonyMetric("FDP", fdp, Direction.DESCENDING));
                     featureEnvyMethods.add(new MethodDisharmony(
                             classMetrics.getFullyQualifiedName(),
                             methodMetrics.getSignature(),
@@ -197,6 +197,7 @@ public class DisharmonyDetector {
         return featureEnvyMethods;
     }
 
+    // !Not used in production code for metric capture
     public List<MethodDisharmony> detectLongMethods(List<ClassMetrics> allMetrics) {
         List<MethodDisharmony> longMethods = new ArrayList<>();
         for (ClassMetrics classMetrics : allMetrics) {
@@ -225,12 +226,14 @@ public class DisharmonyDetector {
                 if (hasIntensiveCoupling(methodMetrics)) {
                     int cint = methodMetrics.getCouplingIntensity();
                     double cdisp = methodMetrics.getCouplingDispersion();
+                    int nest = methodMetrics.getMaxNestingDepth();
                     String description = String.format(
                             "Intensive Coupling detected: CINT=%d, CDISP=%.2f (calls concentrated in few classes)",
                             cint, cdisp);
                     List<DisharmonyMetric> metricValues = List.of(
                             new DisharmonyMetric("CINT", cint, Direction.ASCENDING),
-                            new DisharmonyMetric("CDISP", cdisp, Direction.DESCENDING));
+                            new DisharmonyMetric("CDISP", cdisp, Direction.DESCENDING),
+                            new DisharmonyMetric("MAXNESTING", nest, Direction.ASCENDING));
                     intensivelyCoupledMethods.add(new MethodDisharmony(
                             classMetrics.getFullyQualifiedName(),
                             methodMetrics.getSignature(),
@@ -251,12 +254,14 @@ public class DisharmonyDetector {
                 if (hasDispersedCoupling(methodMetrics)) {
                     int cint = methodMetrics.getCouplingIntensity();
                     double cdisp = methodMetrics.getCouplingDispersion();
+                    int nest = methodMetrics.getMaxNestingDepth();
                     String description = String.format(
                             "Dispersed Coupling detected: CINT=%d, CDISP=%.2f (calls spread across many classes)",
                             cint, cdisp);
                     List<DisharmonyMetric> metricValues = List.of(
                             new DisharmonyMetric("CINT", cint, Direction.ASCENDING),
-                            new DisharmonyMetric("CDISP", cdisp, Direction.ASCENDING));
+                            new DisharmonyMetric("CDISP", cdisp, Direction.ASCENDING),
+                            new DisharmonyMetric("MAXNESTING", nest, Direction.ASCENDING));
                     dispersedCoupledMethods.add(new MethodDisharmony(
                             classMetrics.getFullyQualifiedName(),
                             methodMetrics.getSignature(),

@@ -293,7 +293,7 @@ class DisharmonyDetectorMetricsTest {
         assertEquals(Direction.ASCENDING, metrics.get(1).getDirection());
 
         assertEquals("WMC", metrics.get(2).getName());
-        assertEquals(Direction.ASCENDING, metrics.get(2).getDirection());
+        assertEquals(Direction.DESCENDING, metrics.get(2).getDirection());
     }
 
     // ── Brain Method ───────────────────────────────────────────────────────────
@@ -360,7 +360,7 @@ class DisharmonyDetectorMetricsTest {
         assertEquals("LAA", metrics.get(1).getName());
         assertEquals(Direction.DESCENDING, metrics.get(1).getDirection());
         assertEquals("FDP", metrics.get(2).getName());
-        assertEquals(Direction.ASCENDING, metrics.get(2).getDirection());
+        assertEquals(Direction.DESCENDING, metrics.get(2).getDirection());
     }
 
     // ── Long Method ────────────────────────────────────────────────────────────
@@ -392,7 +392,7 @@ class DisharmonyDetectorMetricsTest {
 
         assertFalse(result.isEmpty(), "should detect intensive coupling");
         List<DisharmonyMetric> metrics = result.get(0).getMetricValues();
-        assertEquals(2, metrics.size());
+        assertEquals(3, metrics.size());
 
         assertEquals("CINT", metrics.get(0).getName());
         assertEquals(Direction.ASCENDING, metrics.get(0).getDirection());
@@ -411,7 +411,7 @@ class DisharmonyDetectorMetricsTest {
 
         assertFalse(result.isEmpty(), "should detect dispersed coupling");
         List<DisharmonyMetric> metrics = result.get(0).getMetricValues();
-        assertEquals(2, metrics.size());
+        assertEquals(3, metrics.size());
 
         assertEquals("CINT", metrics.get(0).getName());
         assertEquals(Direction.ASCENDING, metrics.get(0).getDirection());
