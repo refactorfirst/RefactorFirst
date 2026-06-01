@@ -13,6 +13,7 @@ public final class DisharmonyTypes {
     public static final String SHOTGUN_SURGERY = "Shotgun Surgery";
     public static final String REFUSED_PARENT_BEQUEST = "Refused Parent Bequest";
     public static final String TRADITION_BREAKER = "Tradition Breaker";
+    public static final String SIGNIFICANT_DUPLICATION = "Significant Duplication";
 
     private DisharmonyTypes() {}
 }

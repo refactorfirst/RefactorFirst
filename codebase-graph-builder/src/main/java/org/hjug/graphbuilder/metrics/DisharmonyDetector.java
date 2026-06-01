@@ -1,7 +1,9 @@
 package org.hjug.graphbuilder.metrics;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import lombok.Data;
 import org.hjug.graphbuilder.metrics.DisharmonyMetric.Direction;
 
@@ -549,5 +551,190 @@ public class DisharmonyDetector {
             }
         }
         return count;
+    }
+
+    public List<ClassDisharmony> detectSignificantDuplication(List<ClassMetrics> allMetrics) {
+        List<MethodEntry> eligibleMethods = new ArrayList<>();
+        long totalLoc = 0;
+        int totalCount = 0;
+
+        for (ClassMetrics classMetrics : allMetrics) {
+            for (MethodMetrics method : classMetrics.getMethods().values()) {
+                if (!method.isConstructor()
+                        && !method.isAccessor()
+                        && method.getNormalizedBodyLines().size() >= FEW) {
+                    eligibleMethods.add(new MethodEntry(classMetrics, method));
+                    totalLoc += method.getLinesOfCode();
+                    totalCount++;
+                }
+            }
+        }
+
+        if (eligibleMethods.size() < 2) {
+            return new ArrayList<>();
+        }
+
+        double systemAvgMethodLoc = (double) totalLoc / totalCount;
+
+        Map<String, ClassMetrics> classMetricsMap = new HashMap<>();
+        for (ClassMetrics cm : allMetrics) {
+            classMetricsMap.put(cm.getFullyQualifiedName(), cm);
+        }
+
+        Map<String, int[]> flaggedClasses = new HashMap<>();
+
+        for (int i = 0; i < eligibleMethods.size(); i++) {
+            for (int j = i + 1; j < eligibleMethods.size(); j++) {
+                MethodEntry entryA = eligibleMethods.get(i);
+                MethodEntry entryB = eligibleMethods.get(j);
+
+                List<Clone> clones =
+                        findExactClones(entryA.method.getNormalizedBodyLines(), entryB.method.getNormalizedBodyLines());
+                if (clones.isEmpty()) {
+                    continue;
+                }
+
+                boolean significant = false;
+                int maxSEC = 0;
+                int maxSDC = 0;
+
+                for (Clone clone : clones) {
+                    if (clone.size > systemAvgMethodLoc) {
+                        significant = true;
+                        if (clone.size > maxSEC) maxSEC = clone.size;
+                    }
+                }
+
+                for (List<Clone> chain : buildChains(clones)) {
+                    int sdc = 0;
+                    int minSEC = Integer.MAX_VALUE;
+                    int maxLB = 0;
+                    int chainMaxSEC = 0;
+                    for (Clone clone : chain) {
+                        sdc += clone.size;
+                        if (clone.size < minSEC) minSEC = clone.size;
+                        if (clone.size > chainMaxSEC) chainMaxSEC = clone.size;
+                    }
+                    for (int k = 0; k < chain.size() - 1; k++) {
+                        Clone c1 = chain.get(k);
+                        Clone c2 = chain.get(k + 1);
+                        int lb = Math.min(c2.startA - (c1.startA + c1.size), c2.startB - (c1.startB + c1.size));
+                        sdc += lb;
+                        if (lb > maxLB) maxLB = lb;
+                    }
+                    if (sdc >= 2 * (FEW + 1) + 1 && minSEC > FEW && maxLB <= FEW) {
+                        significant = true;
+                        if (sdc > maxSDC) maxSDC = sdc;
+                        if (chainMaxSEC > maxSEC) maxSEC = chainMaxSEC;
+                    }
+                }
+
+                if (significant) {
+                    updateFlagged(flaggedClasses, entryA.classMetrics.getFullyQualifiedName(), maxSEC, maxSDC);
+                    if (!entryA.classMetrics
+                            .getFullyQualifiedName()
+                            .equals(entryB.classMetrics.getFullyQualifiedName())) {
+                        updateFlagged(flaggedClasses, entryB.classMetrics.getFullyQualifiedName(), maxSEC, maxSDC);
+                    }
+                }
+            }
+        }
+
+        List<ClassDisharmony> results = new ArrayList<>();
+        for (Map.Entry<String, int[]> entry : flaggedClasses.entrySet()) {
+            String fqn = entry.getKey();
+            int maxSEC = entry.getValue()[0];
+            int maxSDC = entry.getValue()[1];
+            ClassMetrics cm = classMetricsMap.get(fqn);
+            if (cm == null) continue;
+            String description = String.format("Significant Duplication: SEC=%d, SDC=%d", maxSEC, maxSDC);
+            List<DisharmonyMetric> metricValues = List.of(
+                    new DisharmonyMetric("SEC", maxSEC, Direction.ASCENDING),
+                    new DisharmonyMetric("SDC", maxSDC, Direction.ASCENDING));
+            results.add(
+                    new ClassDisharmony(fqn, DisharmonyTypes.SIGNIFICANT_DUPLICATION, description, cm, metricValues));
+        }
+        return results;
+    }
+
+    private List<Clone> findExactClones(List<String> linesA, List<String> linesB) {
+        List<Clone> clones = new ArrayList<>();
+        int m = linesA.size();
+        int n = linesB.size();
+        for (int i = 0; i < m; i++) {
+            for (int j = 0; j < n; j++) {
+                if (linesA.get(i).equals(linesB.get(j))) {
+                    if (i > 0 && j > 0 && linesA.get(i - 1).equals(linesB.get(j - 1))) {
+                        continue;
+                    }
+                    int size = 0;
+                    while (i + size < m && j + size < n && linesA.get(i + size).equals(linesB.get(j + size))) {
+                        size++;
+                    }
+                    clones.add(new Clone(i, j, size));
+                }
+            }
+        }
+        return clones;
+    }
+
+    private List<List<Clone>> buildChains(List<Clone> clones) {
+        List<List<Clone>> chains = new ArrayList<>();
+        if (clones.isEmpty()) return chains;
+
+        List<Clone> current = new ArrayList<>();
+        current.add(clones.get(0));
+
+        for (int i = 1; i < clones.size(); i++) {
+            Clone prev = clones.get(i - 1);
+            Clone curr = clones.get(i);
+            int gapA = curr.startA - (prev.startA + prev.size);
+            int gapB = curr.startB - (prev.startB + prev.size);
+            if (gapA >= 0 && gapB >= 0 && Math.min(gapA, gapB) <= FEW) {
+                current.add(curr);
+            } else {
+                if (current.size() > 1) {
+                    chains.add(new ArrayList<>(current));
+                }
+                current = new ArrayList<>();
+                current.add(curr);
+            }
+        }
+        if (current.size() > 1) {
+            chains.add(current);
+        }
+        return chains;
+    }
+
+    private void updateFlagged(Map<String, int[]> flaggedClasses, String fqn, int maxSEC, int maxSDC) {
+        int[] scores = flaggedClasses.get(fqn);
+        if (scores == null) {
+            flaggedClasses.put(fqn, new int[] {maxSEC, maxSDC});
+        } else {
+            if (maxSEC > scores[0]) scores[0] = maxSEC;
+            if (maxSDC > scores[1]) scores[1] = maxSDC;
+        }
+    }
+
+    private static final class MethodEntry {
+        final ClassMetrics classMetrics;
+        final MethodMetrics method;
+
+        MethodEntry(ClassMetrics classMetrics, MethodMetrics method) {
+            this.classMetrics = classMetrics;
+            this.method = method;
+        }
+    }
+
+    private static final class Clone {
+        final int startA;
+        final int startB;
+        final int size;
+
+        Clone(int startA, int startB, int size) {
+            this.startA = startA;
+            this.startB = startB;
+            this.size = size;
+        }
     }
 }

@@ -1,6 +1,8 @@
 package org.hjug.graphbuilder.metrics;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import lombok.Data;
 
@@ -27,6 +29,7 @@ public class MethodMetrics {
 
     private boolean isAccessor;
     private boolean isConstructor;
+    private List<String> normalizedBodyLines = new ArrayList<>();
 
     public MethodMetrics(String methodName, String signature) {
         this.methodName = methodName;

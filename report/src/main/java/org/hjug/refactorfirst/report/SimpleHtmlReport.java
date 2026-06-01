@@ -231,6 +231,8 @@ public class SimpleHtmlReport {
                 new DisharmonySpec(DisharmonyTypes.BRAIN_CLASS, "BRAIN_CLASS", "Brain Classes", false),
                 new DisharmonySpec(DisharmonyTypes.REFUSED_PARENT_BEQUEST, "RPB", "Refused Parent Bequest", false),
                 new DisharmonySpec(DisharmonyTypes.TRADITION_BREAKER, "TB", "Tradition Breakers", false),
+                new DisharmonySpec(
+                        DisharmonyTypes.SIGNIFICANT_DUPLICATION, "SIG_DUP", "Significant Duplication", false),
                 new DisharmonySpec(DisharmonyTypes.BRAIN_METHOD, "BRAIN_METHOD", "Brain Methods", true),
                 new DisharmonySpec(DisharmonyTypes.FEATURE_ENVY, "FEATURE_ENVY", "Feature Envy", true),
                 new DisharmonySpec(DisharmonyTypes.LONG_METHOD, "LONG_METHOD", "Long Methods", true),

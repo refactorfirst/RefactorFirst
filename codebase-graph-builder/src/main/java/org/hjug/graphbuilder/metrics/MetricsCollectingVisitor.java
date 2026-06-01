@@ -1,5 +1,7 @@
 package org.hjug.graphbuilder.metrics;
 
+import java.util.ArrayList;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.java.JavaIsoVisitor;
@@ -112,6 +114,22 @@ public class MetricsCollectingVisitor extends JavaIsoVisitor<ExecutionContext> {
 
         int loc = calculateLinesOfCode(method);
         currentMethodMetrics.setLinesOfCode(loc);
+
+        if (method.getBody() != null) {
+            String bodyText = method.getBody().printTrimmed();
+            List<String> bodyLines = new ArrayList<>();
+            for (String line : bodyText.split("\n")) {
+                String trimmed = line.trim();
+                if (!trimmed.isEmpty()
+                        && !trimmed.equals("{")
+                        && !trimmed.equals("}")
+                        && !trimmed.startsWith("//")
+                        && !trimmed.startsWith("*")) {
+                    bodyLines.add(trimmed);
+                }
+            }
+            currentMethodMetrics.setNormalizedBodyLines(bodyLines);
+        }
 
         boolean isAccessor = isAccessorMethod(method);
         currentMethodMetrics.setAccessor(isAccessor);

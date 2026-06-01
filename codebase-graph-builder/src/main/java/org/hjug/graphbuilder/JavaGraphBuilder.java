@@ -132,6 +132,7 @@ public class JavaGraphBuilder {
         classDisharmonies.addAll(detector.detectBrainClasses(List.copyOf(metrics)));
         classDisharmonies.addAll(detector.detectRefusedParentBequest(List.copyOf(metrics)));
         classDisharmonies.addAll(detector.detectTraditionBreaker(List.copyOf(metrics)));
+        classDisharmonies.addAll(detector.detectSignificantDuplication(List.copyOf(metrics)));
         return classDisharmonies;
     }
 
