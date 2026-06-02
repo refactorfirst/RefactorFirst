@@ -838,8 +838,15 @@ public class SimpleHtmlReport {
         return sb.toString();
     }
 
-    // methodName(java.lang.String,java.lang.String)
-    // should become methodName(String,String)
+    /*
+    methodName(java.lang.String,java.lang.String)
+    becomes methodName(String,String)
+    **Future enhancements:**
+    isAllSuitableNodesOffline(Generic{R extends hudson.model.AbstractBuild}, Generic{R}>})
+    should become isAllSuitableNodesOffline(R) -- R is a class type parameter
+    copy(Generic{T extends hudson.model.TopLevelItem},java.lang.String)
+    should become copy(T, String) -- T is a method type parameter
+    */
     String getSimpleMethodSignature(String sig) {
         if (sig == null) {
             return null;
@@ -854,6 +861,14 @@ public class SimpleHtmlReport {
 
         String methodName = sig.substring(0, openParenIdx).trim();
         String paramsSection = sig.substring(openParenIdx + 1, closeParenIdx).trim();
+
+        // Collapse malformed spoon generic type parameter strings
+        // e.g., "Generic{R extends hudson.model.AbstractBuild}, Generic{R}>}" -> "R"
+        paramsSection = paramsSection.replaceAll("Generic\\{([^} ]+)[^}]*\\},\\s*Generic\\{\\1\\}>?\\}?", "$1");
+
+        // Clean up remaining normal generic representations
+        // e.g., "Generic{T extends hudson.model.TopLevelItem}" -> "T"
+        paramsSection = paramsSection.replaceAll("Generic\\{([^} ]+)[^}]*\\}", "$1");
 
         // Empty parameter list
         if (paramsSection.isEmpty()) {

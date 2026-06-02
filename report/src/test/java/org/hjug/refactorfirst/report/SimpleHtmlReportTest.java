@@ -53,4 +53,18 @@ class SimpleHtmlReportTest {
                 "upWaitQueue(Transference) ↔ TransferenceManager.downWaitQueue(Transference)",
                 htmlReport.simplifyDuplicatePartners(duplicationPartners));
     }
+
+    @Test
+    void testSimpleMethodSignatureWithClassTypeParameter() {
+        HtmlReport htmlReport = new HtmlReport();
+        String sig = "isAllSuitableNodesOffline(Generic{R extends hudson.model.AbstractBuild}, Generic{R}>})";
+        Assertions.assertEquals("isAllSuitableNodesOffline(R)", htmlReport.getSimpleMethodSignature(sig));
+    }
+
+    @Test
+    void testSimpleMethodSignatureWithMethodTypeParameter() {
+        HtmlReport htmlReport = new HtmlReport();
+        String sig = "copy(Generic{T extends hudson.model.TopLevelItem},java.lang.String)";
+        Assertions.assertEquals("copy(T,String)", htmlReport.getSimpleMethodSignature(sig));
+    }
 }
