@@ -35,7 +35,7 @@ class DisharmonyRenderingTest {
         String html = simpleReport.renderDisharmonyInfo("BRAIN", "Brain Classes", false, false, ranked);
 
         assertTrue(html.contains("<table"), "HTML must contain a table");
-        assertTrue(html.contains("Description"), "Simple view must show the Description column");
+        assertFalse(html.contains("Description"), "Simple view must not show the Description column");
         assertFalse(html.contains("<th>BrainMethods</th>"), "Simple view must not show raw metric columns");
         assertFalse(html.contains("<th>WMC</th>"), "Simple view must not show raw metric columns");
     }
