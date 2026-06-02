@@ -758,6 +758,8 @@ public class SimpleHtmlReport {
         List<org.hjug.graphbuilder.metrics.DisharmonyMetric> sampleMetrics =
                 ranked.get(0).getRankedMetrics();
 
+        boolean showPartners = ranked.get(0).getDuplicationPartners() != null;
+
         sb.append("<thead><tr>");
         sb.append("<th>Class</th>\n");
         if (methodLevel) {
@@ -766,16 +768,16 @@ public class SimpleHtmlReport {
         sb.append("<th>Priority</th>\n");
         if (showDetails) {
             sb.append("<th>Raw Priority</th>\n");
+            sb.append("<th>Description</th>\n");
         }
         sb.append("<th>Change Proneness Rank</th>\n");
         sb.append("<th>Effort Rank</th>\n");
-        for (org.hjug.graphbuilder.metrics.DisharmonyMetric m : sampleMetrics) {
-            sb.append("<th>").append(m.getName()).append("</th>\n");
-            if (showDetails) {
+        if (showDetails) {
+            for (org.hjug.graphbuilder.metrics.DisharmonyMetric m : sampleMetrics) {
+                sb.append("<th>").append(m.getName()).append("</th>\n");
                 sb.append("<th>").append(m.getName()).append(" Rank</th>\n");
             }
         }
-        boolean showPartners = ranked.get(0).getDescription() != null;
         if (showPartners) {
             sb.append("<th>Duplicate Partners</th>\n");
         }
@@ -798,19 +800,20 @@ public class SimpleHtmlReport {
             sb.append(drawTableCell(rd.getPriority().toString()));
             if (showDetails) {
                 sb.append(drawTableCell(rd.getRawPriority().toString()));
+                sb.append(drawTableCell(rd.getDescription() != null ? rd.getDescription() : ""));
             }
             sb.append(drawTableCell(rd.getChangePronenessRank().toString()));
             sb.append(drawTableCell(rd.getEffortRank().toString()));
-            for (org.hjug.graphbuilder.metrics.DisharmonyMetric m : rd.getRankedMetrics()) {
-                double v = m.getValue();
-                String formatted = (v == Math.floor(v)) ? String.valueOf((long) v) : String.valueOf(v);
-                sb.append(drawTableCell(formatted));
-                if (showDetails) {
+            if (showDetails) {
+                for (org.hjug.graphbuilder.metrics.DisharmonyMetric m : rd.getRankedMetrics()) {
+                    double v = m.getValue();
+                    String formatted = (v == Math.floor(v)) ? String.valueOf((long) v) : String.valueOf(v);
+                    sb.append(drawTableCell(formatted));
                     sb.append(drawTableCell(m.getRank() != null ? m.getRank().toString() : ""));
                 }
             }
             if (showPartners) {
-                sb.append(drawTableCell(rd.getDescription() != null ? rd.getDescription() : ""));
+                sb.append(drawTableCell(rd.getDuplicationPartners() != null ? rd.getDuplicationPartners() : ""));
             }
             sb.append(drawTableCell(formatter.format(rd.getMostRecentCommitTime())));
             sb.append(drawTableCell(rd.getCommitCount().toString()));

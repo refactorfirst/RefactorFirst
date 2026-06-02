@@ -147,6 +147,7 @@ public class CostBenefitCalculator implements AutoCloseable {
                             null,
                             new java.util.ArrayList<>(d.getMetricValues()));
                     instance.setDescription(d.getDescription());
+                    instance.setDuplicationPartners(d.getDuplicationPartners());
                     return instance;
                 })
                 .collect(Collectors.toList());
@@ -169,13 +170,15 @@ public class CostBenefitCalculator implements AutoCloseable {
                     if (filePath == null) {
                         log.warn("No source file mapping found for method disharmony in class: {}", d.getClassName());
                     }
-                    return new DisharmonyInstance(
+                    DisharmonyInstance instance = new DisharmonyInstance(
                             disharmonyType,
                             d.getClassName(),
                             filePath,
                             "",
                             d.getMethodSignature(),
                             new java.util.ArrayList<>(d.getMetricValues()));
+                    instance.setDescription(d.getDescription());
+                    return instance;
                 })
                 .collect(Collectors.toList());
 

@@ -36,6 +36,7 @@ public class RankedDisharmony {
     private String disharmonyType;
     private String methodSignature;
     private String description;
+    private String duplicationPartners;
     private List<DisharmonyMetric> rankedMetrics;
 
     private DefaultWeightedEdge edge;
@@ -91,6 +92,7 @@ public class RankedDisharmony {
         disharmonyType = instance.getDisharmonyType();
         methodSignature = instance.getMethodSignature();
         description = instance.getDescription();
+        duplicationPartners = instance.getDuplicationPartners();
         rankedMetrics = instance.getMetrics();
 
         firstCommitTime = Instant.ofEpochSecond(scmLogInfo.getEarliestCommit());

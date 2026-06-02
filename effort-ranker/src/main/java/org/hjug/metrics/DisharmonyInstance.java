@@ -19,4 +19,5 @@ public class DisharmonyInstance implements Disharmony {
     private Integer sumOfRanks;
     private Integer overallRank;
     private String description;
+    private String duplicationPartners;
 }

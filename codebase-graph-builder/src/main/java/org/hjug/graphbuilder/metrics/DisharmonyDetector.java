@@ -56,6 +56,7 @@ public class DisharmonyDetector {
         private final String description;
         private final ClassMetrics metrics;
         private final List<DisharmonyMetric> metricValues;
+        private String duplicationPartners;
     }
 
     @Data
@@ -656,14 +657,14 @@ public class DisharmonyDetector {
             FlaggedClassData data = entry.getValue();
             ClassMetrics cm = classMetricsMap.get(fqn);
             if (cm == null) continue;
-            String description = String.format(
-                    "Significant Duplication: SEC=%d, SDC=%d | %s",
-                    data.maxSEC, data.maxSDC, String.join("; ", data.partnerDescriptions));
+            String description = String.format("Significant Duplication: SEC=%d, SDC=%d", data.maxSEC, data.maxSDC);
             List<DisharmonyMetric> metricValues = List.of(
                     new DisharmonyMetric("SEC", data.maxSEC, Direction.ASCENDING),
                     new DisharmonyMetric("SDC", data.maxSDC, Direction.ASCENDING));
-            results.add(
-                    new ClassDisharmony(fqn, DisharmonyTypes.SIGNIFICANT_DUPLICATION, description, cm, metricValues));
+            ClassDisharmony cd =
+                    new ClassDisharmony(fqn, DisharmonyTypes.SIGNIFICANT_DUPLICATION, description, cm, metricValues);
+            cd.setDuplicationPartners(String.join("; ", data.partnerDescriptions));
+            results.add(cd);
         }
         return results;
     }

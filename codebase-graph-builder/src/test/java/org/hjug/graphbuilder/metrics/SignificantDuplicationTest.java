@@ -156,34 +156,37 @@ class SignificantDuplicationTest {
     }
 
     @Test
-    void detectedDescriptionIncludesMethodNames() {
+    void detectedDuplicationPartnersIncludesMethodNames() {
         DisharmonyDetector.ClassDisharmony intraClass = detected.stream()
                 .filter(d -> d.getClassName().equals(INTRA_CLASS_FQN))
                 .findFirst()
                 .orElse(null);
         Assertions.assertNotNull(intraClass, "SignificantDuplicationIntraClass must be detected");
 
-        String desc = intraClass.getDescription();
-        System.out.println("IntraClass description: " + desc);
-        Assertions.assertTrue(desc.contains("methodA"), "Description should contain 'methodA', was: " + desc);
-        Assertions.assertTrue(desc.contains("methodB"), "Description should contain 'methodB', was: " + desc);
+        String partners = intraClass.getDuplicationPartners();
+        System.out.println("IntraClass duplicationPartners: " + partners);
+        Assertions.assertNotNull(partners, "duplicationPartners should not be null");
+        Assertions.assertTrue(partners.contains("methodA"), "Partners should contain 'methodA', was: " + partners);
+        Assertions.assertTrue(partners.contains("methodB"), "Partners should contain 'methodB', was: " + partners);
     }
 
     @Test
-    void detectedDescriptionIncludesPartnerClassForCrossClass() {
+    void detectedDuplicationPartnersIncludesPartnerClassForCrossClass() {
         DisharmonyDetector.ClassDisharmony crossA = detected.stream()
                 .filter(d -> d.getClassName().equals(CROSS_CLASS_A_FQN))
                 .findFirst()
                 .orElse(null);
         Assertions.assertNotNull(crossA, "SignificantDuplicationCrossClassA must be detected");
 
-        String desc = crossA.getDescription();
-        System.out.println("CrossClassA description: " + desc);
+        String partners = crossA.getDuplicationPartners();
+        System.out.println("CrossClassA duplicationPartners: " + partners);
+        Assertions.assertNotNull(partners, "duplicationPartners should not be null");
         Assertions.assertTrue(
-                desc.contains("CrossClassB"), "Description should contain partner class 'CrossClassB', was: " + desc);
+                partners.contains("CrossClassB"),
+                "Partners should contain partner class 'CrossClassB', was: " + partners);
         Assertions.assertTrue(
-                desc.contains("computeResult"),
-                "Description should contain partner method 'computeResult', was: " + desc);
+                partners.contains("computeResult"),
+                "Partners should contain partner method 'computeResult', was: " + partners);
     }
 
     @Test

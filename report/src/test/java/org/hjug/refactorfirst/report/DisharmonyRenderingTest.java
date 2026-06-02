@@ -28,17 +28,16 @@ class DisharmonyRenderingTest {
     }
 
     @Test
-    void renderDisharmonyInfoContainsMetricColumnsFromData() {
+    void simpleModeShowsDescriptionColumnNotMetricColumns() {
         List<RankedDisharmony> ranked = List.of(makeRankedDisharmony("BrainClass.java", null, 1, 57.0, 3.0, 0.3));
+        ranked.get(0).setDescription("Brain Class detected: Brain Methods=1, LOC=200, WMC=3, TCC=0.3");
 
         String html = simpleReport.renderDisharmonyInfo("BRAIN", "Brain Classes", false, false, ranked);
 
         assertTrue(html.contains("<table"), "HTML must contain a table");
-        // Column headers derived from metric names
-        assertTrue(html.contains("BrainMethods"), "Table must contain metric name as column header");
-        assertTrue(html.contains("LOC"), "Table must contain LOC column");
-        assertTrue(html.contains("WMC"), "Table must contain WMC column");
-        assertTrue(html.contains("TCC"), "Table must contain TCC column");
+        assertTrue(html.contains("Description"), "Simple view must show the Description column");
+        assertFalse(html.contains("<th>BrainMethods</th>"), "Simple view must not show raw metric columns");
+        assertFalse(html.contains("<th>WMC</th>"), "Simple view must not show raw metric columns");
     }
 
     @Test
@@ -48,9 +47,10 @@ class DisharmonyRenderingTest {
         String simple = simpleReport.renderDisharmonyInfo("BRAIN", "Brain Classes", false, false, ranked);
         String detailed = simpleReport.renderDisharmonyInfo("BRAIN", "Brain Classes", false, true, ranked);
 
-        // Detailed mode shows rank columns (e.g., "BrainMethods Rank")
         assertFalse(simple.contains("BrainMethods Rank"), "Simple mode should not show rank columns");
+        assertFalse(simple.contains("<th>BrainMethods</th>"), "Simple mode should not show metric value columns");
         assertTrue(detailed.contains("BrainMethods Rank"), "Detailed mode must show metric rank columns");
+        assertTrue(detailed.contains("<th>BrainMethods</th>"), "Detailed mode must show metric value columns");
         assertTrue(detailed.contains("Raw Priority"), "Detailed mode must show Raw Priority");
         assertTrue(detailed.contains("Full Path"), "Detailed mode must show Full Path");
     }
@@ -117,7 +117,7 @@ class DisharmonyRenderingTest {
     @Test
     void significantDuplicationTableShowsDuplicatePartnersColumn() {
         RankedDisharmony rd = makeRankedDisharmony("DupClass.java", null, 1, 7.0, 14.0, 0.0);
-        rd.setDescription("computeResult(int) ↔ CrossClassB.computeResult(int)");
+        rd.setDuplicationPartners("computeResult(int) ↔ CrossClassB.computeResult(int)");
 
         String html =
                 simpleReport.renderDisharmonyInfo("SIG_DUP", "Significant Duplication", false, false, List.of(rd));
