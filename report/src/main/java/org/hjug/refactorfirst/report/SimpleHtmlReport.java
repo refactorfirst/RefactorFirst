@@ -838,15 +838,6 @@ public class SimpleHtmlReport {
         return sb.toString();
     }
 
-    /*
-    methodName(java.lang.String,java.lang.String)
-    becomes methodName(String,String)
-    **Future enhancements:**
-    isAllSuitableNodesOffline(Generic{R extends hudson.model.AbstractBuild}, Generic{R}>})
-    should become isAllSuitableNodesOffline(R) -- R is a class type parameter
-    copy(Generic{T extends hudson.model.TopLevelItem},java.lang.String)
-    should become copy(T, String) -- T is a method type parameter
-    */
     String getSimpleMethodSignature(String sig) {
         if (sig == null) {
             return null;
