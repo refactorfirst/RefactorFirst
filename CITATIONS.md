@@ -27,3 +27,10 @@ https://doi.org/10.1007/978-3-031-22203-0_14
 **Year:** 2011  
 **Publication:** MTD '11: Proceedings of the 2nd Workshop on Managing Technical Debt  
 **Links:** https://dl.acm.org/doi/10.1145/1985362.1985372
+
+
+## Object Oriented Disharmonies
+**Title:** Object Oriented Metrics in Practice   
+**Authors:** Michele Lanza, Radu Marinescu  
+**Year:** 2006
+**Links:** https://doi.org/10.1007/3-540-39538-5
