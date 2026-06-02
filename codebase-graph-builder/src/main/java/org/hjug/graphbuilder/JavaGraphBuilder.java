@@ -9,8 +9,12 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
-import org.hjug.graphbuilder.visitor.JavaMethodDeclarationVisitor;
-import org.hjug.graphbuilder.visitor.JavaVariableTypeVisitor;
+import org.hjug.graphbuilder.metrics.ClassMetrics;
+import org.hjug.graphbuilder.metrics.DisharmonyDetector;
+import org.hjug.graphbuilder.metrics.DisharmonyDetector.ClassDisharmony;
+import org.hjug.graphbuilder.metrics.DisharmonyDetector.MethodDisharmony;
+import org.hjug.graphbuilder.metrics.GraphMetricsCollector;
+import org.hjug.graphbuilder.metrics.MetricsCollectingVisitor;
 import org.hjug.graphbuilder.visitor.JavaVisitor;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultDirectedWeightedGraph;
@@ -25,38 +29,39 @@ public class JavaGraphBuilder {
     /**
      * Given a java source directory, return a CodebaseGraphDTO using default configuration
      *
-     * @param srcDirectory The source directory to analyze
+     * @param repositoryPath The source directory to analyze
      * @param excludeTests Whether to exclude test files
      * @param testSourceDirectory The test source directory pattern to exclude
      * @return CodebaseGraphDTO
      * @throws IOException
      */
-    public CodebaseGraphDTO getCodebaseGraphDTO(String srcDirectory, boolean excludeTests, String testSourceDirectory)
+    public CodebaseGraphDTO getCodebaseGraphDTO(String repositoryPath, boolean excludeTests, String testSourceDirectory)
             throws IOException {
         GraphBuilderConfig config = GraphBuilderConfig.builder()
                 .excludeTests(excludeTests)
                 .testSourceDirectory(testSourceDirectory)
                 .build();
-        return getCodebaseGraphDTO(srcDirectory, config);
+        return getCodebaseGraphDTO(repositoryPath, config);
     }
 
     /**
      * Given a java source directory and configuration, return a CodebaseGraphDTO
      *
-     * @param srcDirectory The source directory to analyze
+     * @param repositoryPath The source directory to analyze
      * @param config The configuration for the graph builder
      * @return CodebaseGraphDTO
      * @throws IOException
      */
-    public CodebaseGraphDTO getCodebaseGraphDTO(String srcDirectory, GraphBuilderConfig config) throws IOException {
-        if (srcDirectory == null || srcDirectory.isEmpty()) {
+    private CodebaseGraphDTO getCodebaseGraphDTO(String repositoryPath, GraphBuilderConfig config) throws IOException {
+        if (repositoryPath == null || repositoryPath.isEmpty()) {
             throw new IllegalArgumentException("Source directory cannot be null or empty");
         }
-        return processWithOpenRewrite(srcDirectory, config);
+        return processWithOpenRewrite(repositoryPath, config);
     }
 
-    private CodebaseGraphDTO processWithOpenRewrite(String srcDir, GraphBuilderConfig config) throws IOException {
-        File srcDirectory = new File(srcDir);
+    private CodebaseGraphDTO processWithOpenRewrite(String repositoryPath, GraphBuilderConfig config)
+            throws IOException {
+        File srcDirectory = new File(repositoryPath);
 
         JavaParser javaParser = JavaParser.fromJavaVersion().build();
         ExecutionContext ctx = new InMemoryExecutionContext(Throwable::printStackTrace);
@@ -69,11 +74,11 @@ public class JavaGraphBuilder {
         final GraphDependencyCollector dependencyCollector =
                 new GraphDependencyCollector(classReferencesGraph, packageReferencesGraph);
 
-        final JavaVisitor<ExecutionContext> javaVisitor = new JavaVisitor<>(dependencyCollector);
-        final JavaVariableTypeVisitor<ExecutionContext> javaVariableTypeVisitor =
-                new JavaVariableTypeVisitor<>(dependencyCollector);
-        final JavaMethodDeclarationVisitor<ExecutionContext> javaMethodDeclarationVisitor =
-                new JavaMethodDeclarationVisitor<>(dependencyCollector);
+        final JavaVisitor<ExecutionContext> javaVisitor = new JavaVisitor<>(repositoryPath, dependencyCollector);
+
+        GraphMetricsCollector metricsCollector =
+                new GraphMetricsCollector(classReferencesGraph, packageReferencesGraph);
+        MetricsCollectingVisitor metricsVisitor = new MetricsCollectingVisitor(metricsCollector);
 
         try (Stream<Path> pathStream = Files.walk(Paths.get(srcDirectory.getAbsolutePath()))) {
             List<Path> list;
@@ -89,15 +94,46 @@ public class JavaGraphBuilder {
                     .parse(list, Paths.get(srcDirectory.getAbsolutePath()), ctx)
                     .forEach(cu -> {
                         javaVisitor.visit(cu, ctx);
-                        javaVariableTypeVisitor.visit(cu, ctx);
-                        javaMethodDeclarationVisitor.visit(cu, ctx);
+                        metricsVisitor.visit(cu, ctx);
                     });
         }
 
         removeClassesNotInCodebase(dependencyCollector.getPackagesInCodebase(), classReferencesGraph);
 
+        metricsCollector.finalizeMetrics();
+        DisharmonyDetector detector = new DisharmonyDetector();
+        Collection<ClassMetrics> metrics = metricsCollector.getAllClassMetrics().values();
+
         return new CodebaseGraphDTO(
-                classReferencesGraph, packageReferencesGraph, javaVisitor.getClassToSourceFilePathMapping());
+                classReferencesGraph,
+                packageReferencesGraph,
+                javaVisitor.getClassToSourceFilePathMapping(), // hudson.model.FilePath ->
+                // file:///C:/Code/RefactorFirst/cost-benefit-calculator/hudson/model/FilePath.java
+                getClassDisharmonies(detector, metrics),
+                getMethodDisharmonies(detector, metrics));
+    }
+
+    private static List<MethodDisharmony> getMethodDisharmonies(
+            DisharmonyDetector detector, Collection<ClassMetrics> metrics) {
+        List<MethodDisharmony> methodDisharmonies = new ArrayList<>();
+        methodDisharmonies.addAll(detector.detectBrainMethods(List.copyOf(metrics)));
+        methodDisharmonies.addAll(detector.detectFeatureEnvy(List.copyOf(metrics)));
+        methodDisharmonies.addAll(detector.detectIntensiveCoupling(List.copyOf(metrics)));
+        methodDisharmonies.addAll(detector.detectDispersedCoupling(List.copyOf(metrics)));
+        methodDisharmonies.addAll(detector.detectShotgunSurgery(List.copyOf(metrics)));
+        return methodDisharmonies;
+    }
+
+    private static List<ClassDisharmony> getClassDisharmonies(
+            DisharmonyDetector detector, Collection<ClassMetrics> metrics) {
+        List<ClassDisharmony> classDisharmonies = new ArrayList<>();
+        classDisharmonies.addAll(detector.detectGodClasses(List.copyOf(metrics)));
+        classDisharmonies.addAll(detector.detectDataClasses(List.copyOf(metrics)));
+        classDisharmonies.addAll(detector.detectBrainClasses(List.copyOf(metrics)));
+        classDisharmonies.addAll(detector.detectRefusedParentBequest(List.copyOf(metrics)));
+        classDisharmonies.addAll(detector.detectTraditionBreaker(List.copyOf(metrics)));
+        classDisharmonies.addAll(detector.detectSignificantDuplication(List.copyOf(metrics)));
+        return classDisharmonies;
     }
 
     // remove node if package not in codebase

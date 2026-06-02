@@ -1,5 +1,6 @@
 package org.hjug.graphbuilder;
 
+// TODO: Revisit - I don't think this is really needed
 public interface DependencyCollector {
 
     /**

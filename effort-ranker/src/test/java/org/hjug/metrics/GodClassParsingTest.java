@@ -24,7 +24,7 @@ public class GodClassParsingTest {
 
     @Test
     void test() {
-        String result = "Possible God Class (WMC=9200, ATFD=1,700, TCC=4.597%)";
+        String result = "God Class detected: ATFD=1700, WMC=9200, TCC=4.597";
         GodClass god = new GodClass("a", "a.txt", "org.hjug", result);
         assertEquals(Integer.valueOf(9200), god.getWmc());
         assertEquals(Integer.valueOf(1700), god.getAtfd());

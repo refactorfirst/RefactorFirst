@@ -10,14 +10,14 @@ import lombok.Data;
 public class CBOClass implements Disharmony {
 
     private String className;
-    private String fileName;
+    private String fileRepoPath;
     private String packageName;
 
     private Integer couplingCount;
 
-    public CBOClass(String className, String fileName, String packageName, String result) {
+    public CBOClass(String className, String fileRepoPath, String packageName, String result) {
         this.className = className;
-        this.fileName = fileName;
+        this.fileRepoPath = fileRepoPath.replace("\\", "/");
         this.packageName = packageName;
 
         try (Scanner scanner = new Scanner(result)) {

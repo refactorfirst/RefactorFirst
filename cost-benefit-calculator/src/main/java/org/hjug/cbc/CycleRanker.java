@@ -1,12 +1,8 @@
 package org.hjug.cbc;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +18,6 @@ import org.jgrapht.graph.DefaultWeightedEdge;
 public class CycleRanker {
 
     private final String repositoryPath;
-    private final JavaGraphBuilder javaGraphBuilder = new JavaGraphBuilder();
 
     @Getter
     private Graph<String, DefaultWeightedEdge> classReferencesGraph;
@@ -30,24 +25,13 @@ public class CycleRanker {
     @Getter
     private CodebaseGraphDTO codebaseGraphDTO;
 
-    @Getter
-    private Map<String, String> classNamesAndPaths = new HashMap<>();
-
-    @Getter
-    private Map<String, String> fqnsAndPaths = new HashMap<>();
-
     public void generateClassReferencesGraph(boolean excludeTests, String testSourceDirectory) {
         try {
+            JavaGraphBuilder javaGraphBuilder = new JavaGraphBuilder();
+
             codebaseGraphDTO = javaGraphBuilder.getCodebaseGraphDTO(repositoryPath, excludeTests, testSourceDirectory);
 
             classReferencesGraph = codebaseGraphDTO.getClassReferencesGraph();
-
-            loadClassNamesAndPaths();
-
-            /*for (Map.Entry<String, String> stringStringEntry : fqnsAndPaths.entrySet()) {
-                log.info(stringStringEntry.getKey() + " : " + stringStringEntry.getValue());
-            }*/
-
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -69,19 +53,13 @@ public class CycleRanker {
     }
 
     private void identifyRankedCycles(List<RankedCycle> rankedCycles) throws IOException {
-        CircularReferenceChecker circularReferenceChecker = new CircularReferenceChecker();
+        CircularReferenceChecker<String, DefaultWeightedEdge> circularReferenceChecker =
+                new CircularReferenceChecker<>();
         Map<String, AsSubgraph<String, DefaultWeightedEdge>> cycles =
                 circularReferenceChecker.getCycles(classReferencesGraph);
         cycles.forEach((vertex, subGraph) -> {
-            // TODO: Calculate min cuts for smaller graphs - has a runtime of O(V^4) for a graph
-            /*Set<DefaultWeightedEdge> minCutEdges;
-            GusfieldGomoryHuCutTree<String, DefaultWeightedEdge> gusfieldGomoryHuCutTree =
-                    new GusfieldGomoryHuCutTree<>(new AsUndirectedGraph<>(subGraph));
-            double minCut = gusfieldGomoryHuCutTree.calculateMinCut();
-            minCutEdges = gusfieldGomoryHuCutTree.getCutEdges();*/
-
             List<CycleNode> cycleNodes = subGraph.vertexSet().stream()
-                    .map(classInCycle -> new CycleNode(classInCycle, classNamesAndPaths.get(classInCycle)))
+                    .map(classInCycle -> new CycleNode(classInCycle, getClassRepoPath(classInCycle)))
                     //                        .peek(cycleNode -> log.info(cycleNode.toString()))
                     .collect(Collectors.toList());
 
@@ -90,7 +68,18 @@ public class CycleRanker {
     }
 
     public CycleNode classToCycleNode(String fqnClass) {
-        return new CycleNode(fqnClass, fqnsAndPaths.get(fqnClass));
+        return new CycleNode(fqnClass, getClassRepoPath(fqnClass));
+    }
+
+    private String getClassRepoPath(String classInCycle) {
+        String fileRepoPath;
+        Map<String, String> classToSourceFilePathMapping = codebaseGraphDTO.getClassToSourceFilePathMapping();
+        if (classInCycle.contains("$") && !classToSourceFilePathMapping.containsKey(classInCycle)) {
+            fileRepoPath = classToSourceFilePathMapping.get(classInCycle.substring(0, classInCycle.indexOf("$")));
+        } else {
+            fileRepoPath = classToSourceFilePathMapping.get(classInCycle);
+        }
+        return fileRepoPath;
     }
 
     private RankedCycle createRankedCycle(
@@ -121,52 +110,5 @@ public class CycleRanker {
         for (RankedCycle rankedCycle : rankedCycles) {
             rankedCycle.setPriority(priority++);
         }
-    }
-
-    void loadClassNamesAndPaths() throws IOException {
-        try (Stream<Path> walk = Files.walk(Paths.get(repositoryPath))) {
-            walk.forEach(path -> {
-                String filename = path.getFileName().toString();
-                if (filename.endsWith(".java")) {
-                    // extract package and class name
-                    String packageName = getPackageName(path);
-                    String uriString = path.toUri().toString();
-                    String className = getClassName(filename);
-                    String canonicalUri = canonicaliseURIStringForRepoLookup(uriString);
-                    fqnsAndPaths.put(packageName + "." + className, canonicalUri);
-                    classNamesAndPaths.put(className, canonicalUri);
-                }
-            });
-        }
-    }
-
-    private static String getPackageName(Path path) {
-        try {
-            return Files.readAllLines(path).stream()
-                    .filter(line -> line.startsWith("package"))
-                    .map(line -> line.replace("package", "").replace(";", "").trim())
-                    .findFirst()
-                    .orElse("");
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private String canonicaliseURIStringForRepoLookup(String uriString) {
-        if (repositoryPath.startsWith("/") || repositoryPath.startsWith("\\")) {
-            return uriString.replace("file://" + repositoryPath.replace("\\", "/") + "/", "");
-        }
-        return uriString.replace("file:///" + repositoryPath.replace("\\", "/") + "/", "");
-    }
-
-    /**
-     * Extract class name from java file name
-     * Example : MyJavaClass.java becomes MyJavaClass
-     *
-     * @param javaFileName
-     * @return
-     */
-    private String getClassName(String javaFileName) {
-        return javaFileName.substring(0, javaFileName.indexOf('.'));
     }
 }

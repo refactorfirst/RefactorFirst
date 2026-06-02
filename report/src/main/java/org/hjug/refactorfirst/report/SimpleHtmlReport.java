@@ -11,6 +11,8 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
 import org.hjug.cbc.*;
 import org.hjug.dsm.CircularReferenceChecker;
@@ -20,6 +22,9 @@ import org.hjug.feedback.vertex.kernelized.DirectedFeedbackVertexSetResult;
 import org.hjug.feedback.vertex.kernelized.DirectedFeedbackVertexSetSolver;
 import org.hjug.feedback.vertex.kernelized.EnhancedParameterComputer;
 import org.hjug.git.GitLogReader;
+import org.hjug.graphbuilder.CodebaseGraphDTO;
+import org.hjug.graphbuilder.metrics.DisharmonyTypes;
+import org.hjug.metrics.DisharmonyInstance;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.AsSubgraph;
 import org.jgrapht.graph.DefaultWeightedEdge;
@@ -35,34 +40,6 @@ public class SimpleHtmlReport {
             "<html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\">\n" + "\n";
 
     public static final String THE_END = "</div>\n" + "    </div>\n" + "  </body>\n" + "</html>\n";
-
-    public final String[] godClassSimpleTableHeadings = {
-        "Class",
-        "Priority",
-        "Change Proneness Rank",
-        "Effort Rank",
-        "Method Count",
-        "Most Recent Commit Date",
-        "Commit Count"
-    };
-
-    public final String[] godClassDetailedTableHeadings = {
-        "Class",
-        "Priority",
-        "Raw Priority",
-        "Change Proneness Rank",
-        "Effort Rank",
-        "WMC",
-        "WMC Rank",
-        "ATFD",
-        "ATFD Rank",
-        "TCC",
-        "TCC Rank",
-        "Date of First Commit",
-        "Most Recent Commit Date",
-        "Commit Count",
-        "Full Path"
-    };
 
     public final String[] cboTableHeadings = {
         "Class", "Priority", "Change Proneness Rank", "Coupling Count", "Most Recent Commit Date", "Commit Count"
@@ -246,18 +223,46 @@ public class SimpleHtmlReport {
             targetNodeInfos.put(defaultWeightedEdge, targetNode);
         }
 
-        List<RankedDisharmony> rankedGodClassDisharmonies = List.of();
         List<RankedDisharmony> rankedCBODisharmonies = List.of();
         List<RankedDisharmony> edgeDisharmonies = List.of();
+
+        // Ordered (type, anchorId, displayTitle, isMethodLevel) for all disharmonies
+        final List<DisharmonySpec> disharmonySpecs = List.of(
+                new DisharmonySpec(DisharmonyTypes.GOD_CLASS, "GOD", "God Classes", false),
+                new DisharmonySpec(DisharmonyTypes.DATA_CLASS, "DATA_CLASS", "Data Classes", false),
+                new DisharmonySpec(DisharmonyTypes.BRAIN_CLASS, "BRAIN_CLASS", "Brain Classes", false),
+                new DisharmonySpec(DisharmonyTypes.REFUSED_PARENT_BEQUEST, "RPB", "Refused Parent Bequest", false),
+                new DisharmonySpec(DisharmonyTypes.TRADITION_BREAKER, "TB", "Tradition Breakers", false),
+                new DisharmonySpec(
+                        DisharmonyTypes.SIGNIFICANT_DUPLICATION, "SIG_DUP", "Significant Duplication", false),
+                new DisharmonySpec(DisharmonyTypes.BRAIN_METHOD, "BRAIN_METHOD", "Brain Methods", true),
+                new DisharmonySpec(DisharmonyTypes.FEATURE_ENVY, "FEATURE_ENVY", "Feature Envy", true),
+                new DisharmonySpec(DisharmonyTypes.LONG_METHOD, "LONG_METHOD", "Long Methods", true),
+                new DisharmonySpec(
+                        DisharmonyTypes.INTENSIVE_COUPLING, "INTENSIVE_COUPLING", "Intensive Coupling", true),
+                new DisharmonySpec(
+                        DisharmonyTypes.DISPERSED_COUPLING, "DISPERSED_COUPLING", "Dispersed Coupling", true),
+                new DisharmonySpec(DisharmonyTypes.SHOTGUN_SURGERY, "SHOTGUN_SURGERY", "Shotgun Surgery", true));
+
+        Map<String, List<RankedDisharmony>> rankedDisharmoniesByAnchor = new LinkedHashMap<>();
+
         log.info("Identifying Object Oriented Disharmonies");
 
-        try (CostBenefitCalculator costBenefitCalculator = new CostBenefitCalculator(
-                projectBaseDir, cycleRanker.getCodebaseGraphDTO().getClassToSourceFilePathMapping())) {
-            costBenefitCalculator.runPmdAnalysis(excludeTests, testSourceDirectory);
-            rankedGodClassDisharmonies = costBenefitCalculator.calculateGodClassCostBenefitValues();
-            rankedCBODisharmonies = costBenefitCalculator.calculateCBOCostBenefitValues();
+        CodebaseGraphDTO codebaseGraphDTO = cycleRanker.getCodebaseGraphDTO();
+        try (CostBenefitCalculator costBenefitCalculator =
+                new CostBenefitCalculator(projectBaseDir, codebaseGraphDTO.getClassToSourceFilePathMapping())) {
             edgeDisharmonies = costBenefitCalculator.calculateSourceNodeCostBenefitValues(
-                    classGraph, sourceNodeInfos, targetNodeInfos, edgeToRemoveCycleCounts, vertexesToRemove);
+                    classGraph, edgeToRemoveCycleCounts, codebaseGraphDTO, vertexesToRemove);
+
+            for (DisharmonySpec spec : disharmonySpecs) {
+                List<DisharmonyInstance> instances = spec.methodLevel()
+                        ? costBenefitCalculator.getMethodDisharmonies(codebaseGraphDTO, spec.type())
+                        : costBenefitCalculator.getClassDisharmonies(codebaseGraphDTO, spec.type());
+                if (!instances.isEmpty()) {
+                    rankedDisharmoniesByAnchor.put(
+                            spec.anchorId(), costBenefitCalculator.calculateDisharmonyCostBenefitValues(instances));
+                }
+            }
 
         } catch (Exception e) {
             log.error("Error running analysis.");
@@ -270,10 +275,12 @@ public class SimpleHtmlReport {
         // - Edge weight
         // - Provide guidance on where to move the method if one is in the list to remove
 
-        if (edgesToRemove.isEmpty()
-                && rankedGodClassDisharmonies.isEmpty()
-                && rankedCBODisharmonies.isEmpty()
-                && rankedCycles.isEmpty()) {
+        boolean hasAnyDisharmony = !edgesToRemove.isEmpty()
+                || !rankedCBODisharmonies.isEmpty()
+                || !rankedCycles.isEmpty()
+                || !rankedDisharmoniesByAnchor.isEmpty();
+
+        if (!hasAnyDisharmony) {
             stringBuilder
                     .append("Congratulations!  ")
                     .append(projectName)
@@ -290,14 +297,21 @@ public class SimpleHtmlReport {
             stringBuilder.append("<br/>\n");
         }
 
-        if (!rankedGodClassDisharmonies.isEmpty()) {
-            stringBuilder.append("<a href=\"#GOD\">God Classes</a>\n");
-            stringBuilder.append("<br/>\n");
-        }
-
         if (!rankedCBODisharmonies.isEmpty()) {
             stringBuilder.append("<a href=\"#CBO\">Highly Coupled Classes</a>\n");
             stringBuilder.append("<br/>\n");
+        }
+
+        for (DisharmonySpec spec : disharmonySpecs) {
+            if (rankedDisharmoniesByAnchor.containsKey(spec.anchorId())) {
+                stringBuilder
+                        .append("<a href=\"#")
+                        .append(spec.anchorId())
+                        .append("\">")
+                        .append(spec.title())
+                        .append("</a>\n");
+                stringBuilder.append("<br/>\n");
+            }
         }
 
         if (!rankedCycles.isEmpty()) {
@@ -316,16 +330,18 @@ public class SimpleHtmlReport {
             stringBuilder.append("<br/>\n" + "<br/>\n" + "<br/>\n" + "<br/>\n" + "<hr/>\n" + "<br/>\n" + "<br/>\n");
         }
 
-        if (!rankedGodClassDisharmonies.isEmpty()) {
-            final String[] godClassTableHeadings =
-                    showDetails ? godClassDetailedTableHeadings : godClassSimpleTableHeadings;
-            stringBuilder.append(renderGodClassInfo(showDetails, rankedGodClassDisharmonies, godClassTableHeadings));
-            stringBuilder.append("<br/>\n" + "<br/>\n" + "<br/>\n" + "<br/>\n" + "<hr/>\n" + "<br/>\n" + "<br/>\n");
-        }
-
         if (!rankedCBODisharmonies.isEmpty()) {
             stringBuilder.append(renderHighlyCoupledClassInfo(rankedCBODisharmonies));
             stringBuilder.append("<br/>\n" + "<br/>\n" + "<br/>\n" + "<br/>\n" + "<hr/>\n" + "<br/>\n" + "<br/>\n");
+        }
+
+        for (DisharmonySpec spec : disharmonySpecs) {
+            List<RankedDisharmony> rankedForType = rankedDisharmoniesByAnchor.get(spec.anchorId());
+            if (rankedForType != null && !rankedForType.isEmpty()) {
+                stringBuilder.append(renderDisharmonyInfo(
+                        spec.anchorId(), spec.title(), spec.methodLevel(), showDetails, rankedForType));
+                stringBuilder.append("<br/>\n" + "<br/>\n" + "<br/>\n" + "<br/>\n" + "<hr/>\n" + "<br/>\n" + "<br/>\n");
+            }
         }
 
         if (!rankedCycles.isEmpty()) {
@@ -395,8 +411,8 @@ public class SimpleHtmlReport {
             "Priority",
             "In Cycles",
             "Edge<br>Weight",
-            "Source<br>Change Proneness Rank",
-            "Target<br>Change Proneness Rank",
+            "Source<br>Disharmony Count",
+            "Target<br>Disharmony Count",
         };
     }
 
@@ -581,76 +597,6 @@ public class SimpleHtmlReport {
         return ""; // empty on purpose
     }
 
-    private String renderGodClassInfo(
-            boolean showDetails, List<RankedDisharmony> rankedGodClassDisharmonies, String[] godClassTableHeadings) {
-        int maxGodClassPriority = rankedGodClassDisharmonies
-                .get(rankedGodClassDisharmonies.size() - 1)
-                .getPriority();
-
-        StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append("<div style=\"text-align: center;\"><a id=\"GOD\"><h1>God Classes</h1></a></div>\n");
-
-        stringBuilder.append(renderGodClassChart(rankedGodClassDisharmonies, maxGodClassPriority));
-
-        stringBuilder.append(
-                "<h2 align=\"center\">God classes by the numbers: (Refactor Starting with Priority 1)</h2>\n");
-        stringBuilder.append("<table align=\"center\" border=\"5px\">\n");
-
-        // Content
-        stringBuilder.append("<thead><tr>");
-        for (String heading : godClassTableHeadings) {
-            stringBuilder.append("<th>").append(heading).append("</th>\n");
-        }
-        stringBuilder.append("</tr>\n</thead>\n");
-
-        stringBuilder.append("<tbody>\n");
-        for (RankedDisharmony rankedGodClassDisharmony : rankedGodClassDisharmonies) {
-            stringBuilder.append("<tr>\n");
-
-            String[] simpleRankedGodClassDisharmonyData = {
-                rankedGodClassDisharmony.getFileName(),
-                rankedGodClassDisharmony.getPriority().toString(),
-                rankedGodClassDisharmony.getChangePronenessRank().toString(),
-                rankedGodClassDisharmony.getEffortRank().toString(),
-                rankedGodClassDisharmony.getWmc().toString(),
-                formatter.format(rankedGodClassDisharmony.getMostRecentCommitTime()),
-                rankedGodClassDisharmony.getCommitCount().toString()
-            };
-
-            String[] detailedRankedGodClassDisharmonyData = {
-                rankedGodClassDisharmony.getFileName(),
-                rankedGodClassDisharmony.getPriority().toString(),
-                rankedGodClassDisharmony.getRawPriority().toString(),
-                rankedGodClassDisharmony.getChangePronenessRank().toString(),
-                rankedGodClassDisharmony.getEffortRank().toString(),
-                rankedGodClassDisharmony.getWmc().toString(),
-                rankedGodClassDisharmony.getWmcRank().toString(),
-                rankedGodClassDisharmony.getAtfd().toString(),
-                rankedGodClassDisharmony.getAtfdRank().toString(),
-                rankedGodClassDisharmony.getTcc().toString(),
-                rankedGodClassDisharmony.getTccRank().toString(),
-                formatter.format(rankedGodClassDisharmony.getFirstCommitTime()),
-                formatter.format(rankedGodClassDisharmony.getMostRecentCommitTime()),
-                rankedGodClassDisharmony.getCommitCount().toString(),
-                rankedGodClassDisharmony.getPath()
-            };
-
-            final String[] rankedDisharmonyData =
-                    showDetails ? detailedRankedGodClassDisharmonyData : simpleRankedGodClassDisharmonyData;
-
-            for (String rowData : rankedDisharmonyData) {
-                stringBuilder.append(drawTableCell(rowData));
-            }
-
-            stringBuilder.append("</tr>\n");
-        }
-
-        stringBuilder.append("</tbody>\n");
-        stringBuilder.append("</table>\n");
-
-        return stringBuilder.toString();
-    }
-
     private String renderHighlyCoupledClassInfo(List<RankedDisharmony> rankedCBODisharmonies) {
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append(
@@ -775,15 +721,6 @@ public class SimpleHtmlReport {
         return "refactor-first-report";
     }
 
-    String renderGodClassChart(List<RankedDisharmony> rankedGodClassDisharmonies, int maxGodClassPriority) {
-        return ""; // empty on purpose
-    }
-
-    String writeGodClassGchartJs(List<RankedDisharmony> rankedDisharmonies, int maxPriority) {
-        // return empty string on purpose
-        return "";
-    }
-
     String writeGCBOGchartJs(List<RankedDisharmony> rankedDisharmonies, int maxPriority) {
         // return empty string on purpose
         return "";
@@ -791,6 +728,194 @@ public class SimpleHtmlReport {
 
     String renderCBOChart(List<RankedDisharmony> rankedCBODisharmonies, int maxCboPriority) {
         return ""; // empty on purpose
+    }
+
+    /**
+     * Renders a table section for any non-God-Class disharmony type.
+     * Column headers are derived from the ranked metrics carried on each RankedDisharmony.
+     */
+    public String renderDisharmonyInfo(
+            String anchorId, String title, boolean methodLevel, boolean showDetails, List<RankedDisharmony> ranked) {
+        if (ranked.isEmpty()) {
+            return "";
+        }
+
+        int maxPriority = ranked.get(ranked.size() - 1).getPriority();
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("<div style=\"text-align: center;\"><a id=\"")
+                .append(anchorId)
+                .append("\"><h1>")
+                .append(title)
+                .append("</h1></a></div>\n");
+
+        sb.append(renderDisharmonyChart(anchorId, title, ranked, maxPriority));
+
+        sb.append("<h2 align=\"center\">")
+                .append(title)
+                .append(" by the numbers: (Refactor Starting with Priority 1)</h2>\n");
+        sb.append("<table align=\"center\" border=\"5px\">\n");
+
+        // Build headers from the first item's ranked metrics
+        List<org.hjug.graphbuilder.metrics.DisharmonyMetric> sampleMetrics =
+                ranked.get(0).getRankedMetrics();
+
+        boolean showPartners = ranked.get(0).getDuplicationPartners() != null;
+
+        sb.append("<thead><tr>");
+        sb.append("<th>Class</th>\n");
+        if (methodLevel) {
+            sb.append("<th>Method</th>\n");
+        }
+        sb.append("<th>Priority</th>\n");
+        if (showDetails) {
+            sb.append("<th>Raw Priority</th>\n");
+            sb.append("<th>Description</th>\n");
+        }
+        sb.append("<th>Change Proneness Rank</th>\n");
+        sb.append("<th>Effort Rank</th>\n");
+        if (showDetails) {
+            for (org.hjug.graphbuilder.metrics.DisharmonyMetric m : sampleMetrics) {
+                sb.append("<th>").append(m.getName()).append("</th>\n");
+                sb.append("<th>").append(m.getName()).append(" Rank</th>\n");
+            }
+        }
+        if (showPartners) {
+            sb.append("<th>Duplicate Partners</th>\n");
+        }
+        sb.append("<th>Most Recent Commit Date</th>\n");
+        sb.append("<th>Commit Count</th>\n");
+        if (showDetails) {
+            sb.append("<th>Date of First Commit</th>\n");
+            sb.append("<th>Full Path</th>\n");
+        }
+        sb.append("</tr>\n</thead>\n");
+
+        sb.append("<tbody>\n");
+        for (RankedDisharmony rd : ranked) {
+            sb.append("<tr>\n");
+            sb.append(drawTableCell(rd.getFileName()));
+            if (methodLevel) {
+                String sig = rd.getMethodSignature();
+                if (!showDetails && sig != null) {
+                    // simplify the method signature to just the name and type
+                    sig = getSimpleMethodSignature(sig);
+                }
+                sb.append(drawTableCell(sig != null ? sig : ""));
+            }
+            sb.append(drawTableCell(rd.getPriority().toString()));
+            if (showDetails) {
+                sb.append(drawTableCell(rd.getRawPriority().toString()));
+                sb.append(drawTableCell(rd.getDescription() != null ? rd.getDescription() : ""));
+            }
+            sb.append(drawTableCell(rd.getChangePronenessRank().toString()));
+            sb.append(drawTableCell(rd.getEffortRank().toString()));
+            if (showDetails) {
+                for (org.hjug.graphbuilder.metrics.DisharmonyMetric m : rd.getRankedMetrics()) {
+                    double v = m.getValue();
+                    String formatted = (v == Math.floor(v)) ? String.valueOf((long) v) : String.valueOf(v);
+                    sb.append(drawTableCell(formatted));
+                    sb.append(drawTableCell(m.getRank() != null ? m.getRank().toString() : ""));
+                }
+            }
+            if (showPartners) {
+                String duplicationPartners = rd.getDuplicationPartners();
+                if (!showDetails && duplicationPartners != null) {
+                    duplicationPartners = simplifyDuplicatePartners(duplicationPartners);
+                }
+                sb.append(drawTableCell(rd.getDuplicationPartners() != null ? duplicationPartners : ""));
+            }
+            sb.append(drawTableCell(formatter.format(rd.getMostRecentCommitTime())));
+            sb.append(drawTableCell(rd.getCommitCount().toString()));
+            if (showDetails) {
+                sb.append(drawTableCell(formatter.format(rd.getFirstCommitTime())));
+                sb.append(drawTableCell(rd.getPath()));
+            }
+            sb.append("</tr>\n");
+        }
+        sb.append("</tbody>\n");
+        sb.append("</table>\n");
+        return sb.toString();
+    }
+
+    String getSimpleMethodSignature(String sig) {
+        if (sig == null) {
+            return null;
+        }
+
+        int openParenIdx = sig.indexOf('(');
+        int closeParenIdx = sig.lastIndexOf(')');
+        // If we can't find parentheses, just return the original string
+        if (openParenIdx == -1 || closeParenIdx == -1 || closeParenIdx < openParenIdx) {
+            return sig;
+        }
+
+        String methodName = sig.substring(0, openParenIdx).trim();
+        String paramsSection = sig.substring(openParenIdx + 1, closeParenIdx).trim();
+
+        // Collapse malformed spoon generic type parameter strings
+        // e.g., "Generic{R extends hudson.model.AbstractBuild}, Generic{R}>}" -> "R"
+        paramsSection = paramsSection.replaceAll("Generic\\{([^} ]+)[^}]*\\},\\s*Generic\\{\\1\\}>?\\}?", "$1");
+
+        // Clean up remaining normal generic representations
+        // e.g., "Generic{T extends hudson.model.TopLevelItem}" -> "T"
+        paramsSection = paramsSection.replaceAll("Generic\\{([^} ]+)[^}]*\\}", "$1");
+
+        // Empty parameter list
+        if (paramsSection.isEmpty()) {
+            return methodName + "()";
+        }
+
+        // Split on commas that are not inside generic brackets
+        // Simple approach: split on ',' then trim each part
+        String[] rawParams = paramsSection.split(",");
+        for (int i = 0; i < rawParams.length; i++) {
+            String param = rawParams[i].trim();
+
+            // Remove package qualifiers from the type name.
+            // This also works for generic types like java.util.List<java.lang.String>
+            // by repeatedly stripping fully‑qualified names.
+            // We replace any sequence of characters ending with a dot followed by an identifier
+            // with just the identifier.
+            param = param.replaceAll("([\\w]+\\.)+([\\w]+)", "$2");
+
+            rawParams[i] = param;
+        }
+
+        return methodName + "(" + String.join(",", rawParams) + ")";
+    }
+
+    // upWaitQueue(com.tonikelope.megabasterd.Transference) ↔
+    // TransferenceManager.downWaitQueue(com.tonikelope.megabasterd.Transference)
+    // should become upWaitQueue(Transference) ↔ TransferenceManager.downWaitQueue(Transference)
+    String simplifyDuplicatePartners(String duplicationPartners) {
+        if (duplicationPartners == null) {
+            return null;
+        }
+        // Split the string on the arrow symbol (↔) to handle each partner separately
+        String[] parts = duplicationPartners.split("↔");
+        List<String> simplifiedParts = new ArrayList<>();
+        // Pattern to capture methodName(params) where params may contain fully‑qualified class names
+        Pattern pattern = Pattern.compile("(\\w+)\\(([^)]*)\\)");
+        for (String part : parts) {
+            String trimmed = part.trim();
+            Matcher matcher = pattern.matcher(trimmed);
+            StringBuffer sb = new StringBuffer();
+            while (matcher.find()) {
+                String methodName = matcher.group(1);
+                String params = matcher.group(2);
+                // Replace fully‑qualified class names inside the parentheses with simple names
+                String simplifiedParams = params.replaceAll("([\\w]+\\.)+([\\w]+)", "$2");
+                matcher.appendReplacement(sb, methodName + "(" + simplifiedParams + ")");
+            }
+            matcher.appendTail(sb);
+            simplifiedParts.add(sb.toString().trim());
+        }
+        return String.join(" ↔ ", simplifiedParts);
+    }
+
+    String renderDisharmonyChart(String anchorId, String title, List<RankedDisharmony> ranked, int maxPriority) {
+        return ""; // empty on purpose; overridden in HtmlReport
     }
 
     String getClassName(String fqn) {
@@ -805,5 +930,35 @@ public class SimpleHtmlReport {
 
     static String[] extractVertexes(DefaultWeightedEdge edge) {
         return edge.toString().replace("(", "").replace(")", "").split(":");
+    }
+
+    static final class DisharmonySpec {
+        final String type;
+        final String anchorId;
+        final String title;
+        final boolean methodLevel;
+
+        DisharmonySpec(String type, String anchorId, String title, boolean methodLevel) {
+            this.type = type;
+            this.anchorId = anchorId;
+            this.title = title;
+            this.methodLevel = methodLevel;
+        }
+
+        String type() {
+            return type;
+        }
+
+        String anchorId() {
+            return anchorId;
+        }
+
+        String title() {
+            return title;
+        }
+
+        boolean methodLevel() {
+            return methodLevel;
+        }
     }
 }

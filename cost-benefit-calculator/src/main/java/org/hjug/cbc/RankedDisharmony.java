@@ -2,9 +2,12 @@ package org.hjug.cbc;
 
 import java.nio.file.Paths;
 import java.time.Instant;
+import java.util.List;
 import lombok.Data;
 import org.hjug.git.ScmLogInfo;
+import org.hjug.graphbuilder.metrics.DisharmonyMetric;
 import org.hjug.metrics.CBOClass;
+import org.hjug.metrics.DisharmonyInstance;
 import org.hjug.metrics.GodClass;
 import org.jgrapht.graph.DefaultWeightedEdge;
 
@@ -29,6 +32,12 @@ public class RankedDisharmony {
     private Integer atfdRank;
     private Float tcc;
     private Integer tccRank;
+
+    private String disharmonyType;
+    private String methodSignature;
+    private String description;
+    private String duplicationPartners;
+    private List<DisharmonyMetric> rankedMetrics;
 
     private DefaultWeightedEdge edge;
     private Integer cycleCount;
@@ -72,6 +81,25 @@ public class RankedDisharmony {
         commitCount = scmLogInfo.getCommitCount();
     }
 
+    public RankedDisharmony(DisharmonyInstance instance, ScmLogInfo scmLogInfo) {
+        path = scmLogInfo.getPath();
+        fileName = Paths.get(path).getFileName().toString();
+        className = instance.getClassName();
+        changePronenessRank = scmLogInfo.getChangePronenessRank();
+        effortRank = instance.getOverallRank();
+        rawPriority = changePronenessRank - effortRank;
+
+        disharmonyType = instance.getDisharmonyType();
+        methodSignature = instance.getMethodSignature();
+        description = instance.getDescription();
+        duplicationPartners = instance.getDuplicationPartners();
+        rankedMetrics = instance.getMetrics();
+
+        firstCommitTime = Instant.ofEpochSecond(scmLogInfo.getEarliestCommit());
+        mostRecentCommitTime = Instant.ofEpochSecond(scmLogInfo.getMostRecentCommit());
+        commitCount = scmLogInfo.getCommitCount();
+    }
+
     public RankedDisharmony(
             String edgeSource,
             DefaultWeightedEdge edge,
@@ -79,23 +107,14 @@ public class RankedDisharmony {
             int weight,
             boolean sourceNodeShouldBeRemoved,
             boolean targetNodeShouldBeRemoved,
-            ScmLogInfo sourceScmLogInfo,
-            ScmLogInfo targetScmLogInfo) {
-
-        if (null != sourceScmLogInfo) {
-            path = sourceScmLogInfo.getPath();
-            // from https://stackoverflow.com/questions/1011287/get-file-name-from-a-file-location-in-java
-            fileName = Paths.get(path).getFileName().toString();
-            firstCommitTime = Instant.ofEpochSecond(sourceScmLogInfo.getEarliestCommit());
-            mostRecentCommitTime = Instant.ofEpochSecond(sourceScmLogInfo.getMostRecentCommit());
-            commitCount = sourceScmLogInfo.getCommitCount();
-        }
+            long sourceDisharmonyCount,
+            long targetDisharmonyCount) {
 
         className = edgeSource;
         this.edge = edge;
         this.cycleCount = cycleCount;
-        changePronenessRank = null == sourceScmLogInfo ? 0 : sourceScmLogInfo.getChangePronenessRank();
-        edgeTargetChangePronenessRank = null == targetScmLogInfo ? 0 : targetScmLogInfo.getChangePronenessRank();
+        changePronenessRank = Math.toIntExact(sourceDisharmonyCount);
+        edgeTargetChangePronenessRank = Math.toIntExact(targetDisharmonyCount);
         effortRank = weight;
         this.sourceNodeShouldBeRemoved = sourceNodeShouldBeRemoved ? 1 : 0;
         this.targetNodeShouldBeRemoved = targetNodeShouldBeRemoved ? 1 : 0;

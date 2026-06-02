@@ -9,7 +9,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
@@ -19,7 +18,13 @@ import org.eclipse.jgit.api.errors.GitAPIException;
 import org.hjug.git.ChangePronenessRanker;
 import org.hjug.git.GitLogReader;
 import org.hjug.git.ScmLogInfo;
+import org.hjug.graphbuilder.CodebaseGraphDTO;
+import org.hjug.graphbuilder.metrics.DisharmonyDetector.ClassDisharmony;
+import org.hjug.graphbuilder.metrics.DisharmonyDetector.MethodDisharmony;
+import org.hjug.graphbuilder.metrics.DisharmonyTypes;
 import org.hjug.metrics.*;
+import org.hjug.metrics.DisharmonyInstance;
+import org.hjug.metrics.DisharmonyRanker;
 import org.hjug.metrics.rules.CBORule;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultWeightedEdge;
@@ -68,28 +73,6 @@ public class CostBenefitCalculator implements AutoCloseable {
         }
     }
 
-    public void runPmdAnalysis(boolean excludeTests, String testSourceDirectory) throws IOException {
-        PMDConfiguration configuration = new PMDConfiguration();
-
-        try (PmdAnalysis pmd = PmdAnalysis.create(configuration)) {
-            loadRules(pmd);
-
-            try (Stream<Path> files = Files.walk(Paths.get(repositoryPath))) {
-                Stream<Path> pathStream;
-                if (excludeTests) {
-                    pathStream = files.filter(Files::isRegularFile)
-                            .filter(file -> !file.toString().contains(testSourceDirectory));
-                } else {
-                    pathStream = files.filter(Files::isRegularFile);
-                }
-
-                pathStream.forEach(file -> pmd.files().addFile(file));
-            }
-
-            report = pmd.performAnalysisAndCollectReport();
-        }
-    }
-
     private void loadRules(PmdAnalysis pmd) {
         RuleSetLoader rulesetLoader = pmd.newRuleSetLoader();
         pmd.addRuleSets(rulesetLoader.loadRuleSetsWithoutException(List.of("category/java/design.xml")));
@@ -101,16 +84,14 @@ public class CostBenefitCalculator implements AutoCloseable {
         log.info("files to be scanned: " + Paths.get(repositoryPath));
     }
 
-    public List<RankedDisharmony> calculateGodClassCostBenefitValues() {
-        List<GodClass> godClasses = getGodClasses();
-
+    public List<RankedDisharmony> calculateGodClassCostBenefitValues(List<GodClass> godClasses) {
         List<ScmLogInfo> scmLogInfos = getRankedChangeProneness(godClasses);
 
         Map<String, ScmLogInfo> rankedLogInfosByPath = getRankedLogInfosByPath(scmLogInfos);
 
         List<RankedDisharmony> rankedDisharmonies = godClasses.stream()
-                .filter(godClass -> rankedLogInfosByPath.containsKey(godClass.getFileName()))
-                .map(godClass -> new RankedDisharmony(godClass, rankedLogInfosByPath.get(godClass.getFileName())))
+                .filter(godClass -> rankedLogInfosByPath.containsKey(godClass.getFileRepoPath()))
+                .map(godClass -> new RankedDisharmony(godClass, rankedLogInfosByPath.get(godClass.getFileRepoPath())))
                 .sorted(Comparator.comparing(RankedDisharmony::getRawPriority).reversed())
                 .collect(Collectors.toList());
 
@@ -122,16 +103,108 @@ public class CostBenefitCalculator implements AutoCloseable {
         return rankedDisharmonies;
     }
 
+    /**
+     *  Returns a map of ScmLogInfo objects keyed by the path of the file.
+     *  If there are multiple ScmLogInfo objects for a single path, the last one is returned.
+     *  TODO: this method should be revisited to make it more robust to allow it to handle nested classes
+     *
+     * @param scmLogInfos
+     * @return A map of ScmLogInfo objects keyed by the path of the file.  If there are multiple ScmLogInfo objects for a single path, the last one is returned.
+     */
     private static Map<String, ScmLogInfo> getRankedLogInfosByPath(List<ScmLogInfo> scmLogInfos) {
         return scmLogInfos.stream().collect(Collectors.toMap(ScmLogInfo::getPath, logInfo -> logInfo, (a, b) -> b));
     }
 
-    private static Map<String, ScmLogInfo> getRankedLogInfosByClass(List<ScmLogInfo> scmLogInfos) {
-        return scmLogInfos.stream()
-                .collect(Collectors.toMap(ScmLogInfo::getClassName, logInfo -> logInfo, (a, b) -> b));
+    public List<GodClass> getGodClasses(CodebaseGraphDTO codebaseGraphDTO) {
+        List<ClassDisharmony> raw = codebaseGraphDTO.getClassDisharmoniesOfType(DisharmonyTypes.GOD_CLASS);
+
+        List<GodClass> godClasses = raw.stream()
+                .map(classDisharmony -> new GodClass(
+                        classDisharmony.getMetrics().getClassName(),
+                        canonicaliseURIStringForRepoLookup(
+                                classDisharmony.getMetrics().getSourceFilePath()),
+                        classDisharmony.getMetrics().getPackageName(),
+                        classDisharmony.getDescription()))
+                .collect(Collectors.toList());
+
+        GodClassRanker godClassRanker = new GodClassRanker();
+        godClassRanker.rankGodClasses(godClasses);
+
+        return godClasses;
     }
 
-    private List<GodClass> getGodClasses() {
+    public List<DisharmonyInstance> getClassDisharmonies(CodebaseGraphDTO codebaseGraphDTO, String disharmonyType) {
+        List<ClassDisharmony> raw = codebaseGraphDTO.getClassDisharmoniesOfType(disharmonyType);
+
+        List<DisharmonyInstance> instances = raw.stream()
+                .map(d -> {
+                    DisharmonyInstance instance = new DisharmonyInstance(
+                            disharmonyType,
+                            d.getClassName(),
+                            canonicaliseURIStringForRepoLookup(
+                                    d.getMetrics().getSourceFilePath().replace("\\", "/")),
+                            d.getMetrics().getPackageName(),
+                            null,
+                            new java.util.ArrayList<>(d.getMetricValues()));
+                    instance.setDescription(d.getDescription());
+                    instance.setDuplicationPartners(d.getDuplicationPartners());
+                    return instance;
+                })
+                .collect(Collectors.toList());
+
+        new DisharmonyRanker().rank(instances);
+        return instances;
+    }
+
+    public List<DisharmonyInstance> getMethodDisharmonies(CodebaseGraphDTO codebaseGraphDTO, String disharmonyType) {
+        List<MethodDisharmony> raw = codebaseGraphDTO.getMethodDisharmoniesOfType(disharmonyType);
+
+        List<DisharmonyInstance> instances = raw.stream()
+                .map(d -> {
+                    String filePath = classToSourceFilePathMapping.get(d.getClassName());
+                    // Try outer class for inner/anonymous classes (e.g., "Outer$Inner" → "Outer")
+                    if (filePath == null && d.getClassName().contains("$")) {
+                        filePath = classToSourceFilePathMapping.get(
+                                d.getClassName().substring(0, d.getClassName().indexOf("$")));
+                    }
+                    if (filePath == null) {
+                        log.warn("No source file mapping found for method disharmony in class: {}", d.getClassName());
+                    }
+                    DisharmonyInstance instance = new DisharmonyInstance(
+                            disharmonyType,
+                            d.getClassName(),
+                            filePath,
+                            "",
+                            d.getMethodSignature(),
+                            new java.util.ArrayList<>(d.getMetricValues()));
+                    instance.setDescription(d.getDescription());
+                    return instance;
+                })
+                .collect(Collectors.toList());
+
+        new DisharmonyRanker().rank(instances);
+        return instances;
+    }
+
+    public List<RankedDisharmony> calculateDisharmonyCostBenefitValues(List<DisharmonyInstance> instances) {
+        List<ScmLogInfo> scmLogInfos = getRankedChangeProneness(instances);
+        Map<String, ScmLogInfo> rankedLogInfosByPath = getRankedLogInfosByPath(scmLogInfos);
+
+        List<RankedDisharmony> rankedDisharmonies = instances.stream()
+                .filter(i -> rankedLogInfosByPath.containsKey(i.getFileRepoPath()))
+                .map(i -> new RankedDisharmony(i, rankedLogInfosByPath.get(i.getFileRepoPath())))
+                .sorted(Comparator.comparing(RankedDisharmony::getRawPriority).reversed())
+                .collect(Collectors.toList());
+
+        int priority = 1;
+        for (RankedDisharmony rd : rankedDisharmonies) {
+            rd.setPriority(priority++);
+        }
+        return rankedDisharmonies;
+    }
+
+    // TODO: Go away
+    public List<GodClass> getGodClasses() {
         List<GodClass> godClasses = new ArrayList<>();
         for (RuleViolation violation : report.getViolations()) {
             if (violation.getRule().getName().contains("GodClass")) {
@@ -140,7 +213,7 @@ public class CostBenefitCalculator implements AutoCloseable {
                         getFileName(violation),
                         violation.getAdditionalInfo().get(PACKAGE_NAME),
                         violation.getDescription());
-                log.info("God Class identified: {}", godClass.getFileName());
+                log.info("God Class identified: {}", godClass.getFileRepoPath());
                 godClasses.add(godClass);
             }
         }
@@ -154,32 +227,26 @@ public class CostBenefitCalculator implements AutoCloseable {
     public <T extends Disharmony> List<ScmLogInfo> getRankedChangeProneness(List<T> disharmonies) {
         log.info("Calculating Change Proneness");
 
-        Map<String, String> innerClassPaths = new ConcurrentHashMap<>();
-        Map<String, ScmLogInfo> scmLogInfosByPath = new ConcurrentHashMap<>();
-
         List<Optional<ScmLogInfo>> scmLogInfos = disharmonies.parallelStream()
                 .map(disharmony -> {
                     String className = disharmony.getClassName();
                     String path = null;
                     ScmLogInfo scmLogInfo = null;
                     try {
-                        if (className.contains("$")
-                                && classToSourceFilePathMapping.containsKey(
-                                        className.substring(0, className.indexOf("$")))) {
-                            path = classToSourceFilePathMapping.get(className.substring(0, className.indexOf("$")));
-                            log.debug("Found source file {} for nested class: {}", path, className);
-                            innerClassPaths.put(className, path);
-                        } else {
-                            path = disharmony.getFileName();
-                            try {
-                                log.debug("Reading scmLogInfo for {}", path);
-                                scmLogInfo = gitLogReader.fileLog(path);
-                                scmLogInfo.setClassName(className);
-                                log.debug("Successfully fetched scmLogInfo for {}", scmLogInfo.getPath());
-                                scmLogInfosByPath.put(path, scmLogInfo);
-                            } catch (GitAPIException | IOException e) {
-                                log.error("Error reading Git repository contents.", e);
+                        path = disharmony.getFileRepoPath();
+                        try {
+                            if (className.contains("$") && !classToSourceFilePathMapping.containsKey(className)) {
+                                path = classToSourceFilePathMapping.get(className.substring(0, className.indexOf("$")));
+                                log.debug("Found source file {} for lambda: {}", path, className);
                             }
+
+                            log.debug("Reading scmLogInfo for {}", path);
+                            scmLogInfo = gitLogReader.fileLog(path);
+                            scmLogInfo.setClassName(className);
+                            log.debug("Successfully fetched scmLogInfo for {}", scmLogInfo.getPath());
+
+                        } catch (GitAPIException | IOException e) {
+                            log.error("Error reading Git repository contents.", e);
                         }
                     } catch (NullPointerException e) {
                         // Should not be reached
@@ -199,53 +266,10 @@ public class CostBenefitCalculator implements AutoCloseable {
                 })
                 .collect(Collectors.toList());
 
-        List<Optional<ScmLogInfo>> innerClassScmLogInfos = innerClassPaths.entrySet().parallelStream()
-                .map(innerClassPathEntry -> {
-                    ScmLogInfo scmLogInfo = scmLogInfosByPath.get(innerClassPathEntry.getValue());
-
-                    ScmLogInfo innerClassScmLogInfo = null;
-                    if (scmLogInfo == null) {
-                        String className = innerClassPathEntry.getKey();
-                        String path = classToSourceFilePathMapping.get(className.substring(0, className.indexOf("$")));
-                        log.debug("Reading scmLogInfo for inner class {}", canonicaliseURIStringForRepoLookup(path));
-                        try {
-                            innerClassScmLogInfo = gitLogReader.fileLog(canonicaliseURIStringForRepoLookup(path));
-                            innerClassScmLogInfo.setClassName(className);
-                            log.debug(
-                                    "Successfully fetched scmLogInfo for inner class {} at {}",
-                                    innerClassScmLogInfo.getClassName(),
-                                    innerClassScmLogInfo.getPath());
-                            scmLogInfosByPath.put(path, innerClassScmLogInfo);
-                        } catch (GitAPIException | IOException e) {
-                            log.error(
-                                    "Error reading Git repository contents for class {} with file path {}",
-                                    className,
-                                    path,
-                                    e);
-                        }
-                    } else {
-                        innerClassScmLogInfo = new ScmLogInfo(
-                                innerClassPathEntry.getValue(),
-                                innerClassPathEntry.getKey(),
-                                scmLogInfo.getEarliestCommit(),
-                                scmLogInfo.getMostRecentCommit(),
-                                scmLogInfo.getCommitCount());
-
-                        String className = innerClassPathEntry.getKey();
-                        innerClassScmLogInfo.setClassName(className);
-                        String path = classToSourceFilePathMapping.get(className.substring(0, className.indexOf("$")));
-                        scmLogInfosByPath.put(path, innerClassScmLogInfo);
-                    }
-                    return Optional.ofNullable(innerClassScmLogInfo);
-                })
-                .collect(Collectors.toList());
-
-        scmLogInfos.addAll(innerClassScmLogInfos);
-
-        List<ScmLogInfo> sortedScmInfos = new ArrayList<>(scmLogInfos.stream()
+        List<ScmLogInfo> sortedScmInfos = scmLogInfos.stream()
                 .filter(Optional::isPresent)
                 .map(Optional::get)
-                .collect(Collectors.toList()));
+                .collect(Collectors.toList());
 
         changePronenessRanker.rankChangeProneness(sortedScmInfos);
         return sortedScmInfos;
@@ -266,11 +290,12 @@ public class CostBenefitCalculator implements AutoCloseable {
 
         List<RankedDisharmony> rankedDisharmonies = new ArrayList<>();
         for (CBOClass cboClass : cboClasses) {
-            log.debug("CBO Class identified: {}", cboClass.getFileName());
+            log.debug("CBO Class identified: {}", cboClass.getFileRepoPath());
             log.debug(
                     "ScmLogInfo: {}",
-                    rankedLogInfosByPath.get(cboClass.getFileName()).getPath());
-            rankedDisharmonies.add(new RankedDisharmony(cboClass, rankedLogInfosByPath.get(cboClass.getFileName())));
+                    rankedLogInfosByPath.get(cboClass.getFileRepoPath()).getPath());
+            rankedDisharmonies.add(
+                    new RankedDisharmony(cboClass, rankedLogInfosByPath.get(cboClass.getFileRepoPath())));
         }
 
         rankedDisharmonies.sort(
@@ -294,7 +319,7 @@ public class CostBenefitCalculator implements AutoCloseable {
                         getFileName(violation),
                         violation.getAdditionalInfo().get(PACKAGE_NAME),
                         violation.getDescription());
-                log.debug("Highly Coupled class identified: {}", godClass.getFileName());
+                log.debug("Highly Coupled class identified: {}", godClass.getFileRepoPath());
                 cboClasses.add(godClass);
             }
         }
@@ -303,62 +328,30 @@ public class CostBenefitCalculator implements AutoCloseable {
 
     public List<RankedDisharmony> calculateSourceNodeCostBenefitValues(
             Graph<String, DefaultWeightedEdge> classGraph,
-            Map<DefaultWeightedEdge, CycleNode> edgeSourceNodeInfos,
-            Map<DefaultWeightedEdge, CycleNode> edgeTargetNodeInfos,
             Map<DefaultWeightedEdge, Integer> edgeToRemoveCycleCounts,
+            CodebaseGraphDTO dto,
             Set<String> vertexesToRemove) {
-        List<ScmLogInfo> sourceLogInfos = getRankedChangeProneness(new ArrayList<>(edgeSourceNodeInfos.values()));
-        List<ScmLogInfo> targetLogInfos = getRankedChangeProneness(new ArrayList<>(edgeTargetNodeInfos.values()));
-        List<ScmLogInfo> scmLogInfos = new ArrayList<>(sourceLogInfos.size() + targetLogInfos.size());
-        scmLogInfos.addAll(sourceLogInfos);
-        scmLogInfos.addAll(targetLogInfos);
-
-        Map<String, ScmLogInfo> sourceRankedLogInfosByPath = getRankedLogInfosByPath(scmLogInfos);
         List<RankedDisharmony> edgesThatNeedToBeRemoved = new ArrayList<>();
 
-        for (Map.Entry<DefaultWeightedEdge, CycleNode> entry : edgeSourceNodeInfos.entrySet()) {
-            String edgeSource = classGraph.getEdgeSource(entry.getKey());
+        for (DefaultWeightedEdge edge : classGraph.edgeSet()) {
+            // shouldn't have to check for null edges & counts :-(
+            if (null == edge || null == edgeToRemoveCycleCounts.get(edge)) continue;
 
-            String edgeSourcePath;
-            if (edgeSource.contains("$")) {
-                edgeSourcePath = classToSourceFilePathMapping.get(edgeSource.substring(0, edgeSource.indexOf("$")));
-            } else {
-                edgeSourcePath = classToSourceFilePathMapping.get(edgeSource);
-            }
-
-            String edgeTarget = classGraph.getEdgeTarget(entry.getKey());
-            String edgeTargetPath;
-            if (edgeTarget.contains("$")) {
-                edgeTargetPath = classToSourceFilePathMapping.get(edgeTarget.substring(0, edgeTarget.indexOf("$")));
-            } else {
-                edgeTargetPath = classToSourceFilePathMapping.get(edgeTarget);
-            }
-
-            String sourceNodeFileName = canonicaliseURIStringForRepoLookup(edgeSourcePath);
-            String targetNodeFileName = canonicaliseURIStringForRepoLookup(edgeTargetPath);
+            String edgeSource = classGraph.getEdgeSource(edge);
+            String edgeTarget = classGraph.getEdgeTarget(edge);
 
             boolean sourceNodeShouldBeRemoved = vertexesToRemove.contains(edgeSource);
             boolean targetNodeShouldBeRemoved = vertexesToRemove.contains(edgeTarget);
 
-            ScmLogInfo sourceScmLogInfo = null;
-            if (sourceRankedLogInfosByPath.containsKey(sourceNodeFileName)) {
-                sourceScmLogInfo = sourceRankedLogInfosByPath.get(sourceNodeFileName);
-            }
-
-            ScmLogInfo targetScmLogInfo = null;
-            if (sourceRankedLogInfosByPath.containsKey(sourceNodeFileName)) {
-                targetScmLogInfo = sourceRankedLogInfosByPath.get(targetNodeFileName);
-            }
-
             RankedDisharmony edgeThatNeedsToBeRemoved = new RankedDisharmony(
                     edgeSource,
-                    entry.getKey(),
-                    edgeToRemoveCycleCounts.get(entry.getKey()),
-                    (int) classGraph.getEdgeWeight(entry.getKey()),
+                    edge,
+                    edgeToRemoveCycleCounts.get(edge),
+                    (int) classGraph.getEdgeWeight(edge),
                     sourceNodeShouldBeRemoved,
                     targetNodeShouldBeRemoved,
-                    sourceScmLogInfo,
-                    targetScmLogInfo);
+                    dto.getClassDisharmonyCountForClass(edgeSource),
+                    dto.getClassDisharmonyCountForClass(edgeTarget));
             edgesThatNeedToBeRemoved.add(edgeThatNeedsToBeRemoved);
         }
 
@@ -389,9 +382,9 @@ public class CostBenefitCalculator implements AutoCloseable {
                 .reversed()
                 // then by weight, with lowest weight edges bubbling to the top
                 .thenComparingInt(RankedDisharmony::getEffortRank)
-                // then by change proneness
-                .thenComparingInt(rankedDisharmony -> -1 * rankedDisharmony.getChangePronenessRank())
-                .thenComparingInt(rankedDisharmony -> -1 * rankedDisharmony.getEdgeTargetChangePronenessRank())
+                // then by disharmony count
+                .thenComparingInt(RankedDisharmony::getChangePronenessRank)
+                .thenComparingInt(RankedDisharmony::getEdgeTargetChangePronenessRank)
                 // then if the source node is in the list of nodes to be removed
                 // multiplying by -1 reverses the sort order (reverse doesn't work in chained comparators)
                 .thenComparingInt(rankedDisharmony -> -1 * rankedDisharmony.getSourceNodeShouldBeRemoved())

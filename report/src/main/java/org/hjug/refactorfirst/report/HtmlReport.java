@@ -360,17 +360,6 @@ public class HtmlReport extends SimpleHtmlReport {
             + "    }\n"
             + "</script>";
 
-    private static final String GOD_CLASS_CHART_LEGEND =
-            "       <h2>God Class Chart Legend:</h2>" + "       <table border=\"5px\">\n"
-                    + "          <tbody>\n"
-                    + "            <tr><td><strong>X-Axis:</strong> Effort to refactor to a non-God class</td></tr>\n"
-                    + "            <tr><td><strong>Y-Axis:</strong> Relative churn</td></tr>\n"
-                    + "            <tr><td><strong>Color:</strong> Priority of what to fix first</td></tr>\n"
-                    + "            <tr><td><strong>Circle size:</strong> Priority (Visual) of what to fix first</td></tr>\n"
-                    + "          </tbody>\n"
-                    + "        </table>"
-                    + "        <br/>";
-
     private static final String COUPLING_BETWEEN_OBJECT_CHART_LEGEND =
             "       <h2>Coupling Between Objects Chart Legend:</h2>" + "       <table border=\"5px\">\n"
                     + "          <tbody>\n"
@@ -440,16 +429,6 @@ public class HtmlReport extends SimpleHtmlReport {
     }
 
     @Override
-    String writeGodClassGchartJs(List<RankedDisharmony> rankedDisharmonies, int maxPriority) {
-        GraphDataGenerator graphDataGenerator = new GraphDataGenerator();
-        String scriptStart = graphDataGenerator.getGodClassScriptStart();
-        String bubbleChartData = graphDataGenerator.generateGodClassBubbleChartData(rankedDisharmonies, maxPriority);
-        String scriptEnd = graphDataGenerator.getGodClassScriptEnd();
-
-        return scriptStart + bubbleChartData + scriptEnd;
-    }
-
-    @Override
     String writeGCBOGchartJs(List<RankedDisharmony> rankedDisharmonies, int maxPriority) {
         GraphDataGenerator graphDataGenerator = new GraphDataGenerator();
         String scriptStart = graphDataGenerator.getCBOScriptStart();
@@ -471,16 +450,27 @@ public class HtmlReport extends SimpleHtmlReport {
     }
 
     @Override
-    String renderGodClassChart(List<RankedDisharmony> rankedGodClassDisharmonies, int maxGodClassPriority) {
-        StringBuilder stringBuilder = new StringBuilder();
+    String renderDisharmonyChart(String anchorId, String title, List<RankedDisharmony> ranked, int maxPriority) {
+        String slug = anchorId.toLowerCase().replaceAll("[^a-z0-9]", "_");
+        String funcName = "draw_" + slug;
+        String dataVar = "data_" + slug;
+        String chartVar = "chart_" + slug;
+        String divId = "chart_div_" + slug;
 
-        String godClassChart = writeGodClassGchartJs(rankedGodClassDisharmonies, maxGodClassPriority - 1);
-        stringBuilder.append(
-                "<div id=\"series_chart_div\" align=\"center\"><script>" + godClassChart + "</script></div>\n");
-        stringBuilder.append(renderGithubButtons());
-        stringBuilder.append(GOD_CLASS_CHART_LEGEND);
+        GraphDataGenerator gen = new GraphDataGenerator();
+        String script = gen.getDisharmonyScriptStart(funcName, dataVar)
+                + gen.generateBubbleChartData(ranked, maxPriority - 1, "Effort")
+                + gen.getDisharmonyScriptEnd(
+                        funcName, chartVar, divId, dataVar, "Priority Ranking for Refactoring " + title, "Effort");
 
-        return stringBuilder.toString();
+        return "<div id=\"" + divId + "\" align=\"center\"><script>" + script + "</script></div>\n"
+                + "<h2>" + title + " Chart Legend:</h2>"
+                + "<table border=\"5px\"><tbody>"
+                + "<tr><td><strong>X-Axis:</strong> Effort to refactor</td></tr>"
+                + "<tr><td><strong>Y-Axis:</strong> Relative churn</td></tr>"
+                + "<tr><td><strong>Color:</strong> Priority of what to fix first</td></tr>"
+                + "<tr><td><strong>Circle size:</strong> Priority (Visual) of what to fix first</td></tr>"
+                + "</tbody></table><br/>";
     }
 
     @Override
@@ -586,7 +576,6 @@ public class HtmlReport extends SimpleHtmlReport {
             if (className.contains("$")
                     && className.split("\\$")[className.split("\\$").length - 1].matches("\\d+")
                     && classGraph.outDegreeOf(vertex) == 0) {
-                log.info("Skipping vertex: {}", className);
                 continue;
             }
 
@@ -608,9 +597,6 @@ public class HtmlReport extends SimpleHtmlReport {
         // render edge
         String[] vertexes = extractVertexes(edge);
 
-        //        String start = getClassName(vertexes[0].trim()).replace("$", "_");
-        //        String end = getClassName(vertexes[1].trim()).replace("$", "_");
-
         String startVertex = vertexes[0].trim();
         String start = getClassName(startVertex.trim()).replace("$", "_");
         String endVertex = vertexes[1].trim();
@@ -620,18 +606,18 @@ public class HtmlReport extends SimpleHtmlReport {
         if (start.contains("$")
                 && start.split("\\$")[startVertex.split("\\$").length - 1].matches("\\d+")
                 && classGraph.outDegreeOf(startVertex) == 0) {
-            log.info("Skipping edge: {} -> {}", startVertex, endVertex);
+            log.debug("Skipping edge: {} -> {}", startVertex, endVertex);
             return;
         }
 
         if (endVertex.contains("$")
                 && endVertex.split("\\$")[endVertex.split("\\$").length - 1].matches("\\d+")
                 && classGraph.outDegreeOf(endVertex) == 0) {
-            log.info("Skipping edge: {} -> {}", startVertex, endVertex);
+            log.debug("Skipping edge: {} -> {}", startVertex, endVertex);
             return;
         }
 
-        log.info("Rendering edge: {} -> {}", startVertex, endVertex);
+        log.debug("Rendering edge: {} -> {}", startVertex, endVertex);
         dot.append(start);
         dot.append(" -> ");
         dot.append(end);

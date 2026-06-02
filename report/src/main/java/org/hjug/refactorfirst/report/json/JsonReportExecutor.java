@@ -40,7 +40,8 @@ public class JsonReportExecutor {
             log.error("Error running PMD analysis.");
             throw new RuntimeException(e);
         }
-        final List<RankedDisharmony> rankedDisharmonies = costBenefitCalculator.calculateGodClassCostBenefitValues();
+        final List<RankedDisharmony> rankedDisharmonies =
+                costBenefitCalculator.calculateGodClassCostBenefitValues(costBenefitCalculator.getGodClasses());
         final List<JsonReportDisharmonyEntry> disharmonyEntries = rankedDisharmonies.stream()
                 .map(JsonReportDisharmonyEntry::fromRankedDisharmony)
                 .collect(Collectors.toList());
