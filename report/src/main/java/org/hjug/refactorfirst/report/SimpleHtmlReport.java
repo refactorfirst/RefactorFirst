@@ -11,6 +11,8 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
 import org.hjug.cbc.*;
 import org.hjug.dsm.CircularReferenceChecker;
@@ -795,6 +797,10 @@ public class SimpleHtmlReport {
             sb.append(drawTableCell(rd.getFileName()));
             if (methodLevel) {
                 String sig = rd.getMethodSignature();
+                if (!showDetails && sig != null) {
+                    // simplify the method signature to just the name and type
+                    sig = getSimpleMethodSignature(sig);
+                }
                 sb.append(drawTableCell(sig != null ? sig : ""));
             }
             sb.append(drawTableCell(rd.getPriority().toString()));
@@ -813,7 +819,11 @@ public class SimpleHtmlReport {
                 }
             }
             if (showPartners) {
-                sb.append(drawTableCell(rd.getDuplicationPartners() != null ? rd.getDuplicationPartners() : ""));
+                String duplicationPartners = rd.getDuplicationPartners();
+                if (!showDetails && duplicationPartners != null) {
+                    duplicationPartners = simplifyDuplicatePartners(duplicationPartners);
+                }
+                sb.append(drawTableCell(rd.getDuplicationPartners() != null ? duplicationPartners : ""));
             }
             sb.append(drawTableCell(formatter.format(rd.getMostRecentCommitTime())));
             sb.append(drawTableCell(rd.getCommitCount().toString()));
@@ -826,6 +836,76 @@ public class SimpleHtmlReport {
         sb.append("</tbody>\n");
         sb.append("</table>\n");
         return sb.toString();
+    }
+
+    // methodName(java.lang.String,java.lang.String)
+    // should become methodName(String,String)
+    String getSimpleMethodSignature(String sig) {
+        if (sig == null) {
+            return null;
+        }
+
+        int openParenIdx = sig.indexOf('(');
+        int closeParenIdx = sig.lastIndexOf(')');
+        // If we can't find parentheses, just return the original string
+        if (openParenIdx == -1 || closeParenIdx == -1 || closeParenIdx < openParenIdx) {
+            return sig;
+        }
+
+        String methodName = sig.substring(0, openParenIdx).trim();
+        String paramsSection = sig.substring(openParenIdx + 1, closeParenIdx).trim();
+
+        // Empty parameter list
+        if (paramsSection.isEmpty()) {
+            return methodName + "()";
+        }
+
+        // Split on commas that are not inside generic brackets
+        // Simple approach: split on ',' then trim each part
+        String[] rawParams = paramsSection.split(",");
+        for (int i = 0; i < rawParams.length; i++) {
+            String param = rawParams[i].trim();
+
+            // Remove package qualifiers from the type name.
+            // This also works for generic types like java.util.List<java.lang.String>
+            // by repeatedly stripping fully‑qualified names.
+            // We replace any sequence of characters ending with a dot followed by an identifier
+            // with just the identifier.
+            param = param.replaceAll("([\\w]+\\.)+([\\w]+)", "$2");
+
+            rawParams[i] = param;
+        }
+
+        return methodName + "(" + String.join(",", rawParams) + ")";
+    }
+
+    // upWaitQueue(com.tonikelope.megabasterd.Transference) ↔
+    // TransferenceManager.downWaitQueue(com.tonikelope.megabasterd.Transference)
+    // should become upWaitQueue(Transference) ↔ TransferenceManager.downWaitQueue(Transference)
+    String simplifyDuplicatePartners(String duplicationPartners) {
+        if (duplicationPartners == null) {
+            return null;
+        }
+        // Split the string on the arrow symbol (↔) to handle each partner separately
+        String[] parts = duplicationPartners.split("↔");
+        List<String> simplifiedParts = new ArrayList<>();
+        // Pattern to capture methodName(params) where params may contain fully‑qualified class names
+        Pattern pattern = Pattern.compile("(\\w+)\\(([^)]*)\\)");
+        for (String part : parts) {
+            String trimmed = part.trim();
+            Matcher matcher = pattern.matcher(trimmed);
+            StringBuffer sb = new StringBuffer();
+            while (matcher.find()) {
+                String methodName = matcher.group(1);
+                String params = matcher.group(2);
+                // Replace fully‑qualified class names inside the parentheses with simple names
+                String simplifiedParams = params.replaceAll("([\\w]+\\.)+([\\w]+)", "$2");
+                matcher.appendReplacement(sb, methodName + "(" + simplifiedParams + ")");
+            }
+            matcher.appendTail(sb);
+            simplifiedParts.add(sb.toString().trim());
+        }
+        return String.join(" ↔ ", simplifiedParts);
     }
 
     String renderDisharmonyChart(String anchorId, String title, List<RankedDisharmony> ranked, int maxPriority) {
