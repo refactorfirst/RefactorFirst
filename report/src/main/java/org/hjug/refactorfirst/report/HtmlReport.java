@@ -280,6 +280,27 @@ public class HtmlReport extends SimpleHtmlReport {
 
     // Created by generative AI and modified
     public static final String POPUP_STYLE = "<style>\n" + "        /* Popup container */\n"
+            + "    main {\n" + "        max-width: 100vw;/*3840px;*/\n"
+            + "        width: 100vw;   /* or 100vw for viewport width */\n"
+            + "        /*background-color: lightblue; *//* just for visibility */\n"
+            + "        padding: 0px 0px; /* 0px top & bottom, 40px left & right */\n"
+            + "    }\n"
+            + "\n"
+            + "    nav {\n"
+            + "        justify-content: center; /* Center horizontally */\n"
+            + "        padding: 0px 40px; /* 0px top & bottom, 40px left & right */\n"
+            + "        margin: 0px auto;\n"
+            + "    }\n"
+            + "\n"
+            + "    header {\n"
+            + "        padding: 0px 40px; /* 0px top & bottom, 40px left & right */\n"
+            + "    }\n"
+            + "\n"
+            + "    /* Scale the SVG to fill the screen */\n"
+            + "    .fullscreen-svg {\n"
+            + "        width: 100%;\n"
+            + "        height: 100%;\n"
+            + "    }"
             + "        .popup {\n"
             + "            position: fixed;\n"
             + "            display: none;\n"
@@ -395,7 +416,8 @@ public class HtmlReport extends SimpleHtmlReport {
                 // may only need graphlib-dot
                 + "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/graphlib/2.1.8/graphlib.min.js\"></script>\n"
                 + "<script src=\"https://cdn.jsdelivr.net/npm/graphlib-dot@0.6.4/dist/graphlib-dot.min.js\"></script>\n"
-                + "<script src=\"https://cdn.jsdelivr.net/npm/3d-force-graph\"></script>\n";
+                + "<script src=\"https://cdn.jsdelivr.net/npm/3d-force-graph\"></script>\n"
+                + "<link rel=\"stylesheet\" href=\"https://unpkg.com/mvp.css\">\n";
     }
 
     String printScripts() {
@@ -540,7 +562,7 @@ public class HtmlReport extends SimpleHtmlReport {
                 + "        // Set desired width and height\n"
                 + "\n"
                 + "        // Modify the SVG string to include width and height attributes\n"
-                + "        svg = svg.replace('<svg ', `<svg width=\"screen.width\" height=\"screen.height\"`);\n"
+                + "        svg = svg.replace('<svg ', `<svg class=\"fullscreen-svg\"`);\n"
                 + "\n"
                 + "        document.getElementById(\""
                 + graphName + "\").innerHTML = svg;\n" + "\n"

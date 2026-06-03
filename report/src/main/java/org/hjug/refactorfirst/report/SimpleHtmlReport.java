@@ -292,32 +292,40 @@ public class SimpleHtmlReport {
             return stringBuilder;
         }
 
+        stringBuilder.append("<header>\n" + "<nav>\n" + " <ul>\n");
+
         if (!edgesToRemove.isEmpty()) {
-            stringBuilder.append("<a href=\"#EDGES\">Edges To Remove</a>\n");
-            stringBuilder.append("<br/>\n");
+            stringBuilder.append("<li><a href=\"#EDGES\">Edges To Remove</a></li>\n");
         }
 
         if (!rankedCBODisharmonies.isEmpty()) {
             stringBuilder.append("<a href=\"#CBO\">Highly Coupled Classes</a>\n");
-            stringBuilder.append("<br/>\n");
+        }
+
+        if (!disharmonySpecs.isEmpty()) {
+            stringBuilder.append("<li><a href=\"#\">Disharmonies</a>\n" + "                <ul>");
         }
 
         for (DisharmonySpec spec : disharmonySpecs) {
             if (rankedDisharmoniesByAnchor.containsKey(spec.anchorId())) {
                 stringBuilder
-                        .append("<a href=\"#")
+                        .append("<li><a href=\"#")
                         .append(spec.anchorId())
                         .append("\">")
                         .append(spec.title())
-                        .append("</a>\n");
-                stringBuilder.append("<br/>\n");
+                        .append("</a></li>\n");
             }
         }
 
-        if (!rankedCycles.isEmpty()) {
-            stringBuilder.append("<a href=\"#CYCLES\">Class Cycles</a>\n");
+        if (!disharmonySpecs.isEmpty()) {
+            stringBuilder.append("</ul>\n" + "            </li>");
         }
 
+        if (!rankedCycles.isEmpty()) {
+            stringBuilder.append("<li><a href=\"#CYCLES\">Class Cycles</a></li>\n");
+        }
+
+        stringBuilder.append("</ul>\n" + "</nav>\n" + "</header>\n");
         log.info("Generating HTML Report");
 
         stringBuilder.append(renderClassGraphVisuals());
@@ -347,8 +355,6 @@ public class SimpleHtmlReport {
         if (!rankedCycles.isEmpty()) {
             stringBuilder.append(renderCycles(rankedCycles));
         }
-
-        stringBuilder.append("</section>\n");
 
         log.debug(stringBuilder.toString());
         return stringBuilder;
@@ -380,6 +386,7 @@ public class SimpleHtmlReport {
         stringBuilder.append("</div>\n");
 
         // Content
+        stringBuilder.append("<div align=\"center\">");
         stringBuilder.append("<table align=\"center\" border=\"5px\">\n");
         stringBuilder.append("<thead>\n<tr>\n");
         for (String heading : getEdgeDisharmonyTableHeadings()) {
@@ -401,6 +408,7 @@ public class SimpleHtmlReport {
 
         stringBuilder.append("</tbody>\n");
         stringBuilder.append("</table>\n");
+        stringBuilder.append("</div>\n");
 
         return stringBuilder.toString();
     }
@@ -437,6 +445,7 @@ public class SimpleHtmlReport {
         }*/
 
         stringBuilder.append("<h2 align=\"center\">Class Cycles by the numbers:</h2>\n");
+        stringBuilder.append("<div align=\"center\">");
         stringBuilder.append("<table align=\"center\" border=\"5px\">\n");
 
         // Content
@@ -472,7 +481,7 @@ public class SimpleHtmlReport {
 
         stringBuilder.append("</tbody>\n");
         stringBuilder.append("</table>\n");
-
+        stringBuilder.append("<div>");
         return stringBuilder.toString();
     }
 
@@ -541,6 +550,7 @@ public class SimpleHtmlReport {
                 + relationshipCount + "<br></div>");
         stringBuilder.append("</div>\n");
 
+        stringBuilder.append("<div align=\"center\">");
         stringBuilder.append("<table align=\"center\" border=\"5px\">\n");
 
         // Content
@@ -585,7 +595,7 @@ public class SimpleHtmlReport {
         stringBuilder.append("</tbody>\n");
 
         stringBuilder.append("</table>\n");
-
+        stringBuilder.append("</div>");
         return stringBuilder.toString();
     }
 
@@ -695,8 +705,8 @@ public class SimpleHtmlReport {
         return "</div>\n" + "      <div class=\"xright\">      </div>\n"
                 + "    </div>\n"
                 + "    <div id=\"bodyColumn\">\n"
-                + "      <div id=\"contentBox\">\n" + "<section>\n"
-                + "<h2><a href=\"https://github.com/refactorfirst/refactorfirst\" target=\"_blank\" "
+                + "      <div id=\"contentBox\">\n"
+                + "<h2 align=\"center\"><a href=\"https://github.com/refactorfirst/refactorfirst\" target=\"_blank\" "
                 + "title=\"Learn about RefactorFirst\" aria-label=\"RefactorFirst\">RefactorFirst</a> Report for "
                 + projectName
                 + " "
@@ -754,6 +764,7 @@ public class SimpleHtmlReport {
         sb.append("<h2 align=\"center\">")
                 .append(title)
                 .append(" by the numbers: (Refactor Starting with Priority 1)</h2>\n");
+        sb.append("<div align=\"center\">");
         sb.append("<table align=\"center\" border=\"5px\">\n");
 
         // Build headers from the first item's ranked metrics
@@ -835,6 +846,7 @@ public class SimpleHtmlReport {
         }
         sb.append("</tbody>\n");
         sb.append("</table>\n");
+        sb.append("</div");
         return sb.toString();
     }
 
