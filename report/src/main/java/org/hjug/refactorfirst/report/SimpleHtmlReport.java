@@ -918,7 +918,7 @@ public class SimpleHtmlReport {
                 String params = matcher.group(2);
                 // Replace fully‑qualified class names inside the parentheses with simple names
                 String simplifiedParams = params.replaceAll("([\\w]+\\.)+([\\w]+)", "$2");
-                matcher.appendReplacement(sb, methodName + "(" + simplifiedParams + ")");
+                matcher.appendReplacement(sb, Matcher.quoteReplacement(methodName + "(" + simplifiedParams + ")"));
             }
             matcher.appendTail(sb);
             simplifiedParts.add(sb.toString().trim());

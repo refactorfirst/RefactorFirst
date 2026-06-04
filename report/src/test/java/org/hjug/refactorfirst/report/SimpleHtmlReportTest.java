@@ -67,4 +67,13 @@ class SimpleHtmlReportTest {
         String sig = "copy(Generic{T extends hudson.model.TopLevelItem},java.lang.String)";
         Assertions.assertEquals("copy(T,String)", htmlReport.getSimpleMethodSignature(sig));
     }
+
+    @Test
+    void testSimplifyDuplicatePartnersWithDollarSign() {
+        HtmlReport htmlReport = new HtmlReport();
+        String duplicationPartners = "method(com.example.Outer$Inner) ↔ Other.method(com.example.Outer$Inner)";
+        Assertions.assertEquals(
+                "method(Outer$Inner) ↔ Other.method(Outer$Inner)",
+                htmlReport.simplifyDuplicatePartners(duplicationPartners));
+    }
 }
