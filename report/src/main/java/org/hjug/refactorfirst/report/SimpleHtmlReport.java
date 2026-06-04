@@ -846,7 +846,7 @@ public class SimpleHtmlReport {
         }
         sb.append("</tbody>\n");
         sb.append("</table>\n");
-        sb.append("</div");
+        sb.append("</div>");
         return sb.toString();
     }
 
