@@ -8,7 +8,7 @@ import org.hjug.git.ScmLogInfo;
 import org.hjug.metrics.GodClass;
 import org.junit.jupiter.api.Test;
 
-class GraphDataGeneratorDisharmonyTest {
+class GraphDataGeneratorTest {
 
     private final GraphDataGenerator gen = new GraphDataGenerator();
 
