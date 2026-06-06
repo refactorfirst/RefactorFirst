@@ -381,17 +381,6 @@ public class HtmlReport extends SimpleHtmlReport {
             + "    }\n"
             + "</script>";
 
-    private static final String COUPLING_BETWEEN_OBJECT_CHART_LEGEND =
-            "       <h2>Coupling Between Objects Chart Legend:</h2>" + "       <table border=\"5px\">\n"
-                    + "          <tbody>\n"
-                    + "            <tr><td><strong>X-Axis:</strong> Number of objects the class is coupled to</td></tr>\n"
-                    + "            <tr><td><strong>Y-Axis:</strong> Relative churn</td></tr>\n"
-                    + "            <tr><td><strong>Color:</strong> Priority of what to fix first</td></tr>\n"
-                    + "            <tr><td><strong>Circle size:</strong> Priority (Visual) of what to fix first</td></tr>\n"
-                    + "          </tbody>\n"
-                    + "        </table>"
-                    + "        <br/>";
-
     @Override
     public String printHead() {
         // !Remember to update RefactorFirstMavenReport if this is modified
@@ -450,16 +439,6 @@ public class HtmlReport extends SimpleHtmlReport {
                 + "</div>";
     }
 
-    @Override
-    String writeGCBOGchartJs(List<RankedDisharmony> rankedDisharmonies, int maxPriority) {
-        GraphDataGenerator graphDataGenerator = new GraphDataGenerator();
-        String scriptStart = graphDataGenerator.getCBOScriptStart();
-        String bubbleChartData = graphDataGenerator.generateCBOBubbleChartData(rankedDisharmonies, maxPriority);
-        String scriptEnd = graphDataGenerator.getCBOScriptEnd();
-
-        return scriptStart + bubbleChartData + scriptEnd;
-    }
-
     public String getName(Locale locale) {
         // Name of the report when listed in the project-reports.html page of a project
         return "Refactor First Report";
@@ -493,18 +472,6 @@ public class HtmlReport extends SimpleHtmlReport {
                 + "<tr><td><strong>Color:</strong> Priority of what to fix first</td></tr>"
                 + "<tr><td><strong>Circle size:</strong> Priority (Visual) of what to fix first</td></tr>"
                 + "</tbody></table><br/>";
-    }
-
-    @Override
-    String renderCBOChart(List<RankedDisharmony> rankedCBODisharmonies, int maxCboPriority) {
-        StringBuilder stringBuilder = new StringBuilder();
-
-        String cboChart = writeGCBOGchartJs(rankedCBODisharmonies, maxCboPriority - 1);
-        stringBuilder.append(
-                "<div id=\"series_chart_div_2\" align=\"center\"><script>" + cboChart + "</script></div>\n");
-        stringBuilder.append(renderGithubButtons());
-        stringBuilder.append(COUPLING_BETWEEN_OBJECT_CHART_LEGEND);
-        return stringBuilder.toString();
     }
 
     @Override

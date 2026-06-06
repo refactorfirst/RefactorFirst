@@ -223,7 +223,6 @@ public class SimpleHtmlReport {
             targetNodeInfos.put(defaultWeightedEdge, targetNode);
         }
 
-        List<RankedDisharmony> rankedCBODisharmonies = List.of();
         List<RankedDisharmony> edgeDisharmonies = List.of();
 
         // Ordered (type, anchorId, displayTitle, isMethodLevel) for all disharmonies
@@ -276,7 +275,6 @@ public class SimpleHtmlReport {
         // - Provide guidance on where to move the method if one is in the list to remove
 
         boolean hasAnyDisharmony = !edgesToRemove.isEmpty()
-                || !rankedCBODisharmonies.isEmpty()
                 || !rankedCycles.isEmpty()
                 || !rankedDisharmoniesByAnchor.isEmpty();
 
@@ -296,10 +294,6 @@ public class SimpleHtmlReport {
 
         if (!edgesToRemove.isEmpty()) {
             stringBuilder.append("<li><a href=\"#EDGES\">Edges To Remove</a></li>\n");
-        }
-
-        if (!rankedCBODisharmonies.isEmpty()) {
-            stringBuilder.append("<a href=\"#CBO\">Highly Coupled Classes</a>\n");
         }
 
         if (!disharmonySpecs.isEmpty()) {
@@ -335,11 +329,6 @@ public class SimpleHtmlReport {
         stringBuilder.append("<br/>\n");
         if (!edgeDisharmonies.isEmpty()) {
             stringBuilder.append(renderEdgeDisharmonies(edgeDisharmonies));
-            stringBuilder.append("<br/>\n" + "<br/>\n" + "<br/>\n" + "<br/>\n" + "<hr/>\n" + "<br/>\n" + "<br/>\n");
-        }
-
-        if (!rankedCBODisharmonies.isEmpty()) {
-            stringBuilder.append(renderHighlyCoupledClassInfo(rankedCBODisharmonies));
             stringBuilder.append("<br/>\n" + "<br/>\n" + "<br/>\n" + "<br/>\n" + "<hr/>\n" + "<br/>\n" + "<br/>\n");
         }
 
@@ -607,53 +596,6 @@ public class SimpleHtmlReport {
         return ""; // empty on purpose
     }
 
-    private String renderHighlyCoupledClassInfo(List<RankedDisharmony> rankedCBODisharmonies) {
-        StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append(
-                "<div style=\"text-align: center;\"><a id=\"CBO\"><h1>Highly Coupled Classes</h1></a></div>");
-
-        int maxCboPriority =
-                rankedCBODisharmonies.get(rankedCBODisharmonies.size() - 1).getPriority();
-
-        stringBuilder.append(renderCBOChart(rankedCBODisharmonies, maxCboPriority));
-
-        stringBuilder.append(
-                "<h2 align=\"center\">Highly Coupled classes by the numbers: (Refactor starting with Priority 1)</h2>");
-        stringBuilder.append("<table align=\"center\" border=\"5px\">");
-
-        // Content
-        stringBuilder.append("<thead><tr>");
-        for (String heading : cboTableHeadings) {
-            stringBuilder.append("<th>").append(heading).append("</th>");
-        }
-        stringBuilder.append("</tr></thead>");
-
-        stringBuilder.append("<tbody>");
-        for (RankedDisharmony rankedCboClassDisharmony : rankedCBODisharmonies) {
-            stringBuilder.append("<tr>");
-
-            String[] rankedCboClassDisharmonyData = {
-                rankedCboClassDisharmony.getFileName(),
-                rankedCboClassDisharmony.getPriority().toString(),
-                rankedCboClassDisharmony.getChangePronenessRank().toString(),
-                rankedCboClassDisharmony.getEffortRank().toString(),
-                formatter.format(rankedCboClassDisharmony.getMostRecentCommitTime()),
-                rankedCboClassDisharmony.getCommitCount().toString()
-            };
-
-            for (String rowData : rankedCboClassDisharmonyData) {
-                stringBuilder.append(drawTableCell(rowData));
-            }
-
-            stringBuilder.append("</tr>");
-        }
-
-        stringBuilder.append("</tbody>");
-        stringBuilder.append("</table>");
-
-        return stringBuilder.toString();
-    }
-
     String drawTableCell(String rowData) {
         if (isNumber(rowData) || isDateTime(rowData)) {
             return new StringBuilder()
@@ -729,15 +671,6 @@ public class SimpleHtmlReport {
     String getOutputName() {
         // This report will generate simple-report.html when invoked in a project with `mvn site`
         return "refactor-first-report";
-    }
-
-    String writeGCBOGchartJs(List<RankedDisharmony> rankedDisharmonies, int maxPriority) {
-        // return empty string on purpose
-        return "";
-    }
-
-    String renderCBOChart(List<RankedDisharmony> rankedCBODisharmonies, int maxCboPriority) {
-        return ""; // empty on purpose
     }
 
     /**

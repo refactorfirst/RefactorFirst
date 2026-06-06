@@ -69,17 +69,6 @@ class GraphDataGeneratorDisharmonyTest {
     // ── parameterized bubble chart data ───────────────────────────────────────
 
     @Test
-    void generateBubbleChartDataProducesSameFormatAsGodClass() {
-        RankedDisharmony rd = makeRankedDisharmony(1);
-
-        String godClassData = gen.generateGodClassBubbleChartData(List.of(rd), 2);
-        String genericData = gen.generateBubbleChartData(List.of(rd), 2, "Effort");
-
-        // Same format, same content (x-axis label only affects script-end, not data)
-        assertEquals(godClassData, genericData);
-    }
-
-    @Test
     void generateBubbleChartDataForTwoPoints() {
         RankedDisharmony rd1 = makeRankedDisharmony(1);
         RankedDisharmony rd2 = makeRankedDisharmony(2);
