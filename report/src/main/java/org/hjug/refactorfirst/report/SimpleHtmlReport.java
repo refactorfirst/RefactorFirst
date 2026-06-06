@@ -834,7 +834,8 @@ public class SimpleHtmlReport {
                 if (!showDetails && duplicationPartners != null) {
                     duplicationPartners = simplifyDuplicatePartners(duplicationPartners);
                 }
-                sb.append(drawTableCell(rd.getDuplicationPartners() != null ? duplicationPartners : ""));
+                sb.append(drawTableCell(
+                        rd.getDuplicationPartners() != null ? duplicationPartners.replace(";", "<br>") : ""));
             }
             sb.append(drawTableCell(formatter.format(rd.getMostRecentCommitTime())));
             sb.append(drawTableCell(rd.getCommitCount().toString()));
