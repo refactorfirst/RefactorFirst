@@ -274,9 +274,8 @@ public class SimpleHtmlReport {
         // - Edge weight
         // - Provide guidance on where to move the method if one is in the list to remove
 
-        boolean hasAnyDisharmony = !edgesToRemove.isEmpty()
-                || !rankedCycles.isEmpty()
-                || !rankedDisharmoniesByAnchor.isEmpty();
+        boolean hasAnyDisharmony =
+                !edgesToRemove.isEmpty() || !rankedCycles.isEmpty() || !rankedDisharmoniesByAnchor.isEmpty();
 
         if (!hasAnyDisharmony) {
             stringBuilder
