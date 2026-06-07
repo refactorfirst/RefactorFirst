@@ -14,7 +14,7 @@ import org.jgrapht.graph.DefaultWeightedEdge;
 @Slf4j
 public class HtmlReport extends SimpleHtmlReport {
 
-    int d3Threshold = 700;
+    int dotGraphThreshold = 4000;
 
     // use Files.readString(Path.of(file))
     // Created by generative AI and modified slightly
@@ -279,10 +279,9 @@ public class HtmlReport extends SimpleHtmlReport {
                     + "    </script>";
 
     // Created by generative AI and modified
-    public static final String POPUP_STYLE = "<style>\n" + "        /* Popup container */\n"
+    public static final String POPUP_STYLE = "<style>\n"
             + "    main {\n" + "        max-width: 100vw;/*3840px;*/\n"
             + "        width: 100vw;   /* or 100vw for viewport width */\n"
-            + "        /*background-color: lightblue; *//* just for visibility */\n"
             + "        padding: 0px 0px; /* 0px top & bottom, 40px left & right */\n"
             + "    }\n"
             + "\n"
@@ -301,6 +300,7 @@ public class HtmlReport extends SimpleHtmlReport {
             + "        width: 100%;\n"
             + "        height: 100%;\n"
             + "    }"
+            + "        /* Popup container */\n"
             + "        .popup {\n"
             + "            position: fixed;\n"
             + "            display: none;\n"
@@ -388,24 +388,14 @@ public class HtmlReport extends SimpleHtmlReport {
         "<script async defer src=\"https://buttons.github.io/buttons.js\"></script>\n"
                 // google chart import
                 + "<script type=\"text/javascript\" src=\"https://www.gstatic.com/charts/loader.js\"></script>\n"
-                // d3 dot graph imports
-                //                + "<script src=\"https://d3js.org/d3.v5.min.js\"></script>\n"
-                //                + "<script
-                // src=\"https://cdnjs.cloudflare.com/ajax/libs/d3-graphviz/3.0.5/d3-graphviz.min.js\"></script>\n"
-                //                + "<script
-                // src=\"https://unpkg.com/@hpcc-js/wasm@0.3.11/dist/index.min.js\"></script>\n"
-
-                //                + "<script
-                // src=\"https://cdn.jsdelivr.net/npm/@hpcc-js/wasm-graphviz@1.7.0/dist/index.min.js\"></script>\n"
+                // graphing imports - sigma, graphology, vizdom
                 + "<script src=\"https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js\"></script>"
-
-                // sigma graph imports - sigma, graphology, graphlib, and graphlib-dot
                 + "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/sigma.js/2.4.0/sigma.min.js\"></script>\n"
                 + "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/graphology/0.25.4/graphology.umd.min.js\"></script>\n"
-                // may only need graphlib-dot
-                + "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/graphlib/2.1.8/graphlib.min.js\"></script>\n"
                 + "<script src=\"https://cdn.jsdelivr.net/npm/graphlib-dot@0.6.4/dist/graphlib-dot.min.js\"></script>\n"
                 + "<script src=\"https://cdn.jsdelivr.net/npm/3d-force-graph\"></script>\n"
+                + "<script type=\"module\" src=\"https://cdn.jsdelivr.net/npm/@vizdom/vizdom-ts-web@0.1.19/vizdom_ts.min.js\"></script>\n"
+                // Make the output look decent.  Don't use in RefactorFirstMavenReport.
                 + "<link rel=\"stylesheet\" href=\"https://unpkg.com/mvp.css\">\n";
     }
 
@@ -489,7 +479,7 @@ public class HtmlReport extends SimpleHtmlReport {
         int relationshipCount = classGraph.edgeSet().size();
         stringBuilder.append("<div align=\"center\">Number of classes: " + classCount + "  Number of relationships: "
                 + relationshipCount + "<br></div>");
-        if (classCount + relationshipCount < d3Threshold) {
+        if (classCount + relationshipCount < dotGraphThreshold) {
             stringBuilder.append(generateDotImage(classGraphName));
         } else {
             // revisit and add DOT SVG popup button
@@ -519,15 +509,18 @@ public class HtmlReport extends SimpleHtmlReport {
     private static String generateDotImage(String graphName) {
         // revisit and add D3 popup button as well
         return "<div id=\"" + graphName
-                + "\" style=\"width: 95%; margin: auto; border: thin solid black\"></div>\n"
+                + "\" style=\"width: 95%; height: 70vh; margin: auto; border: thin solid black\"></div>\n"
                 + "<script type=\"module\">\n"
-                + "import { Graphviz } from \"https://cdn.jsdelivr.net/npm/@hpcc-js/wasm/dist/index.js\";\n"
-                + "    if (Graphviz) {\n"
-                + "        const graphviz = await Graphviz.load();\n"
-                + "        let svg = graphviz.layout("
-                + graphName + "_dot, \"svg\", \"dot\");\n"
-                + "        // Set desired width and height\n"
-                + "\n"
+                + "import init, { DotParser } from \"https://esm.run/@vizdom/vizdom-ts-web\";\n"
+                + "    if(DotParser) {\n"
+                + "        // Wait for the WASM binary to be compiled and the 'wasm' object to be populated\n"
+                + "        await init();\n"
+                + "        // Create a new Dot Parser\n"
+                + "        const parser = new DotParser();\n"
+                + "        const dotGraph = parser.parse("
+                + graphName + "_dot);\n" + "        const directedGraph = dotGraph.to_directed();\n"
+                + "        const positioned = directedGraph.layout();\n"
+                + "        let svg = positioned.to_svg().to_string();\n"
                 + "        // Modify the SVG string to include width and height attributes\n"
                 + "        svg = svg.replace('<svg ', `<svg class=\"fullscreen-svg\"`);\n"
                 + "\n"
@@ -637,7 +630,7 @@ public class HtmlReport extends SimpleHtmlReport {
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append(generateGraphButtons(cycleName, dot));
 
-        if (cycle.getCycleNodes().size() + cycle.getEdgeSet().size() < d3Threshold) {
+        if (cycle.getCycleNodes().size() + cycle.getEdgeSet().size() < dotGraphThreshold) {
             stringBuilder.append(generateDotImage(cycleName));
         } else {
             // revisit and add DOT SVG popup button

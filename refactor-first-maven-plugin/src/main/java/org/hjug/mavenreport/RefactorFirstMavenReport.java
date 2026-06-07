@@ -101,10 +101,8 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
         renderJsDeclaration(mainSink, "https://cdnjs.cloudflare.com/ajax/libs/sigma.js/2.4.0/sigma.min.js");
         renderJsDeclaration(mainSink, "https://cdnjs.cloudflare.com/ajax/libs/graphology/0.25.4/graphology.umd.min.js");
 
-        // may only need graphlib-dot
-        renderJsDeclaration(mainSink, "https://cdnjs.cloudflare.com/ajax/libs/graphlib/2.1.8/graphlib.min.js");
-        renderJsDeclaration(mainSink, "https://cdn.jsdelivr.net/npm/graphlib-dot@0.6.4/dist/graphlib-dot.min.js");
         renderJsDeclaration(mainSink, "https://cdn.jsdelivr.net/npm/3d-force-graph");
+        renderModuleDeclaration(mainSink, "https://cdn.jsdelivr.net/npm/@vizdom/vizdom-ts-web@0.1.19/vizdom_ts.min.js");
 
         mainSink.head_();
     }
@@ -115,6 +113,14 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
     private void renderJsDeclaration(Sink mainSink, String scriptUrl) {
         SinkEventAttributeSet githubButtonJS = new SinkEventAttributeSet();
         githubButtonJS.addAttribute(SinkEventAttributes.TYPE, "text/javascript");
+        githubButtonJS.addAttribute(SinkEventAttributes.SRC, scriptUrl);
+        mainSink.unknown("script", new Object[] {HtmlMarkup.TAG_TYPE_START}, githubButtonJS);
+        mainSink.unknown("script", new Object[] {HtmlMarkup.TAG_TYPE_END}, null);
+    }
+
+    private void renderModuleDeclaration(Sink mainSink, String scriptUrl) {
+        SinkEventAttributeSet githubButtonJS = new SinkEventAttributeSet();
+        githubButtonJS.addAttribute(SinkEventAttributes.TYPE, "module");
         githubButtonJS.addAttribute(SinkEventAttributes.SRC, scriptUrl);
         mainSink.unknown("script", new Object[] {HtmlMarkup.TAG_TYPE_START}, githubButtonJS);
         mainSink.unknown("script", new Object[] {HtmlMarkup.TAG_TYPE_END}, null);

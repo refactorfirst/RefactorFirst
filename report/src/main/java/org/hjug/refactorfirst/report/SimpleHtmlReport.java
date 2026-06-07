@@ -744,7 +744,7 @@ public class SimpleHtmlReport {
                     // simplify the method signature to just the name and type
                     sig = getSimpleMethodSignature(sig);
                 }
-                sb.append(drawTableCell(sig != null ? sig : ""));
+                sb.append(drawTableCell(sig != null ? sig.replace("<", "&lt;").replace(">", "&gt;") : ""));
             }
             sb.append(drawTableCell(rd.getPriority().toString()));
             if (showDetails) {
