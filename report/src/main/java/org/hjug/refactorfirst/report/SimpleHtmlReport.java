@@ -180,22 +180,30 @@ public class SimpleHtmlReport {
         classGraph = cycleRanker.getClassReferencesGraph();
         cycles = new CircularReferenceChecker<String, DefaultWeightedEdge>().getCycles(classGraph);
 
-        // Identify vertexes to remove
-        log.info("Identifying vertexes to remove");
-        EnhancedParameterComputer<String, DefaultWeightedEdge> enhancedParameterComputer =
-                new EnhancedParameterComputer<>(new SuperTypeToken<>() {});
-        EnhancedParameterComputer.EnhancedParameters<String> parameters =
-                enhancedParameterComputer.computeOptimalParameters(classGraph, 4);
-        DirectedFeedbackVertexSetSolver<String, DefaultWeightedEdge> vertexSolver =
-                new DirectedFeedbackVertexSetSolver<>(
-                        classGraph, parameters.getModulator(), null, parameters.getEta(), new SuperTypeToken<>() {});
-        DirectedFeedbackVertexSetResult<String> vertexSetResult = vertexSolver.solve(parameters.getK());
-        vertexesToRemove = vertexSetResult.getFeedbackVertices();
+        // Skip vertex and edge removal analysis if there are no cycles
+        if (!cycles.isEmpty()) {
+            // Identify vertexes to remove
+            log.info("Identifying vertexes to remove");
+            EnhancedParameterComputer<String, DefaultWeightedEdge> enhancedParameterComputer =
+                    new EnhancedParameterComputer<>(new SuperTypeToken<>() {});
+            EnhancedParameterComputer.EnhancedParameters<String> parameters =
+                    enhancedParameterComputer.computeOptimalParameters(classGraph, 4);
+            DirectedFeedbackVertexSetSolver<String, DefaultWeightedEdge> vertexSolver =
+                    new DirectedFeedbackVertexSetSolver<>(
+                            classGraph,
+                            parameters.getModulator(),
+                            null,
+                            parameters.getEta(),
+                            new SuperTypeToken<>() {});
+            DirectedFeedbackVertexSetResult<String> vertexSetResult = vertexSolver.solve(parameters.getK());
+            vertexesToRemove = vertexSetResult.getFeedbackVertices();
 
-        // Identify edges to remove
-        log.info("Identifying edges to remove");
-        PageRankFAS<String, DefaultWeightedEdge> pageRankFAS = new PageRankFAS<>(classGraph, new SuperTypeToken<>() {});
-        edgesToRemove = pageRankFAS.computeFeedbackArcSet();
+            // Identify edges to remove
+            log.info("Identifying edges to remove");
+            PageRankFAS<String, DefaultWeightedEdge> pageRankFAS =
+                    new PageRankFAS<>(classGraph, new SuperTypeToken<>() {});
+            edgesToRemove = pageRankFAS.computeFeedbackArcSet();
+        }
 
         // capture the number of cycles each edge to remove is in
         Map<DefaultWeightedEdge, Integer> edgeToRemoveCycleCounts = new HashMap<>();
@@ -279,11 +287,12 @@ public class SimpleHtmlReport {
 
         if (!hasAnyDisharmony) {
             stringBuilder
-                    .append("Congratulations!  ")
+                    .append("<div style=\"text-align: center;\">Congratulations!  ")
                     .append(projectName)
                     .append(" ")
                     .append(projectVersion)
-                    .append(" has no Back Edges, God classes, Highly Coupled Classes, or Cycles!");
+                    .append(" has no Cycles or Disharmonies!</div>");
+            stringBuilder.append(renderClassGraphVisuals());
             stringBuilder.append(renderGithubButtons());
             log.info("Done! No Disharmonies found!");
             return stringBuilder;
