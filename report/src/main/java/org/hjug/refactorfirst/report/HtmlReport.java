@@ -1,9 +1,6 @@
 package org.hjug.refactorfirst.report;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Set;
+import java.util.*;
 import lombok.extern.slf4j.Slf4j;
 import org.hjug.cbc.RankedCycle;
 import org.hjug.cbc.RankedDisharmony;
@@ -419,6 +416,17 @@ public class HtmlReport extends SimpleHtmlReport {
     }
 
     @Override
+    StringBuilder createMenu(
+            List<DisharmonySpec> disharmonySpecs,
+            Map<String, List<RankedDisharmony>> rankedDisharmoniesByAnchor,
+            List<RankedCycle> rankedCycles) {
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append("<li><a href=\"#CLASSMAP\">Class Map</a></li>\n");
+        stringBuilder.append(super.createMenu(disharmonySpecs, rankedDisharmoniesByAnchor, rankedCycles));
+        return stringBuilder;
+    }
+
+    @Override
     String renderGithubButtons() {
         return "<div align=\"center\">\n" + "Show RefactorFirst some &#10084;&#65039;\n"
                 + "<br/>\n"
@@ -492,7 +500,7 @@ public class HtmlReport extends SimpleHtmlReport {
 
     private StringBuilder generateGraphButtons(String graphName, String dot) {
         StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append("<h1 align=\"center\">Class Map</h1>");
+        stringBuilder.append("<h1 align=\"center\"><a id=\"CLASSMAP\">Class Map</a></h1>");
         stringBuilder.append("<script>\n");
         stringBuilder.append("const " + graphName + "_dot = " + dot + "\n");
         stringBuilder.append("</script>\n");

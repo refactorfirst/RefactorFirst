@@ -308,35 +308,9 @@ public class SimpleHtmlReport {
         }
 
         stringBuilder.append("<header>\n" + "<nav>\n" + " <ul>\n");
-
-        if (!edgesToRemove.isEmpty()) {
-            stringBuilder.append("<li><a href=\"#EDGES\">Edges To Remove</a></li>\n");
-        }
-
-        if (!disharmonySpecs.isEmpty()) {
-            stringBuilder.append("<li><a href=\"#\">Disharmonies</a>\n" + "                <ul>");
-        }
-
-        for (DisharmonySpec spec : disharmonySpecs) {
-            if (rankedDisharmoniesByAnchor.containsKey(spec.anchorId())) {
-                stringBuilder
-                        .append("<li><a href=\"#")
-                        .append(spec.anchorId())
-                        .append("\">")
-                        .append(spec.title())
-                        .append("</a></li>\n");
-            }
-        }
-
-        if (!disharmonySpecs.isEmpty()) {
-            stringBuilder.append("</ul>\n" + "            </li>");
-        }
-
-        if (!rankedCycles.isEmpty()) {
-            stringBuilder.append("<li><a href=\"#CYCLES\">Class Cycles</a></li>\n");
-        }
-
+        stringBuilder.append(createMenu(disharmonySpecs, rankedDisharmoniesByAnchor, rankedCycles));
         stringBuilder.append("</ul>\n" + "</nav>\n" + "</header>\n");
+
         log.info("Generating HTML Report");
 
         stringBuilder.append(renderClassGraphVisuals(repoUrl, codebaseGraphDTO));
@@ -364,6 +338,40 @@ public class SimpleHtmlReport {
 
         log.debug(stringBuilder.toString());
         return stringBuilder;
+    }
+
+    StringBuilder createMenu(
+            List<DisharmonySpec> disharmonySpecs,
+            Map<String, List<RankedDisharmony>> rankedDisharmoniesByAnchor,
+            List<RankedCycle> rankedCycles) {
+        StringBuilder menu = new StringBuilder();
+        if (!edgesToRemove.isEmpty()) {
+            menu.append("<li><a href=\"#EDGES\">Edges To Remove</a></li>\n");
+        }
+
+        if (!disharmonySpecs.isEmpty()) {
+            menu.append("<li><a href=\"#\">Disharmonies</a>\n" + "                <ul>");
+        }
+
+        for (DisharmonySpec spec : disharmonySpecs) {
+            if (rankedDisharmoniesByAnchor.containsKey(spec.anchorId())) {
+                menu.append("<li><a href=\"#")
+                        .append(spec.anchorId())
+                        .append("\">")
+                        .append(spec.title())
+                        .append("</a></li>\n");
+            }
+        }
+
+        if (!disharmonySpecs.isEmpty()) {
+            menu.append("</ul>\n" + "            </li>");
+        }
+
+        if (!rankedCycles.isEmpty()) {
+            menu.append("<li><a href=\"#CYCLES\">Class Cycles</a></li>\n");
+            menu.append("<li><a href=\"#CYCLEMAP\">Cycle Map</a></li>\n");
+        }
+        return menu;
     }
 
     private String renderCycles(List<RankedCycle> rankedCycles, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
@@ -579,8 +587,8 @@ public class SimpleHtmlReport {
         stringBuilder.append("<br/>\n");
         stringBuilder.append("<br/>\n");
 
-        stringBuilder.append(
-                "<h2 align=\"center\">Largest Class Cycle : " + getClassName(cycle.getCycleName()) + "</h2>\n");
+        stringBuilder.append("<a id=\"CYCLEMAP\"><h2 align=\"center\">Largest Class Cycle : "
+                + getClassName(cycle.getCycleName()) + "</h2></a>\n");
         stringBuilder.append(
                 "<h3 align=\"center\">Limiting number of cycles displayed to 1 to keep page load time fast</h3>\n");
         stringBuilder.append(renderCycleVisuals(cycle, repoUrl, codebaseGraphDTO));
