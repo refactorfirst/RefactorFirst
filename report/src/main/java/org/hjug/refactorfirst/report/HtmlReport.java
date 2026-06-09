@@ -98,10 +98,8 @@ public class HtmlReport extends SimpleHtmlReport {
             + "    graphlibGraph.nodes().forEach(node => {\n"
             + "        const attrs = graphlibGraph.node(node);\n"
             + "        graphologyGraph.addNode(node, {\n"
-            + "            label: node,\n"
+            + "            label: attrs.label || node,\n"
             + "            color: attrs.color,\n"
-            + "            // x: Math.random(),\n"
-            + "            // y: Math.random(),\n"
             + "            size: 5,\n"
             + "        });\n"
             + "    });\n"
@@ -563,6 +561,18 @@ public class HtmlReport extends SimpleHtmlReport {
         }
 
         // render vertices
+        renderVertices(classGraph, repoUrl, codebaseGraphDTO, vertexesToRender, dot);
+
+        dot.append("}`;");
+        return dot.toString();
+    }
+
+    private void renderVertices(
+            Graph<String, DefaultWeightedEdge> classGraph,
+            String repoUrl,
+            CodebaseGraphDTO codebaseGraphDTO,
+            Set<String> vertexesToRender,
+            StringBuilder dot) {
         for (String vertex : vertexesToRender) {
             String className = getClassName(vertex);
 
@@ -577,6 +587,9 @@ public class HtmlReport extends SimpleHtmlReport {
 
             dot.append(" [");
             dot.append(hyperlinkClassForDot(vertex, repoUrl, codebaseGraphDTO));
+            if (className.contains("$")) {
+                dot.append(" label=\"").append(className.replace("$", "\\$")).append("\"");
+            }
 
             if (vertexesToRemove.contains(vertex)) {
                 dot.append(" color=red style=filled");
@@ -584,9 +597,6 @@ public class HtmlReport extends SimpleHtmlReport {
 
             dot.append("];\n");
         }
-
-        dot.append("}`;");
-        return dot.toString();
     }
 
     String hyperlinkClassForDot(String fqClassName, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
@@ -677,27 +687,8 @@ public class HtmlReport extends SimpleHtmlReport {
         }
 
         // render vertices
-        for (String vertex : cycle.getVertexSet()) {
-            String className = getClassName(vertex);
-
-            // if the vertex is a nested class and has no outgoing edges, skip it
-            if (className.contains("$")
-                    && className.split("\\$")[className.split("\\$").length - 1].matches("\\d+")
-                    && classGraph.outDegreeOf(vertex) == 0) {
-                continue;
-            }
-
-            dot.append(className.replace("$", "_"));
-
-            dot.append(" [");
-            dot.append(hyperlinkClassForDot(vertex, repoUrl, codebaseGraphDTO));
-
-            if (vertexesToRemove.contains(vertex)) {
-                dot.append(" color=red style=filled");
-            }
-
-            dot.append("];\n");
-        }
+        Set<String> vertexSet = cycle.getVertexSet();
+        renderVertices(classGraph, repoUrl, codebaseGraphDTO, vertexSet, dot);
 
         dot.append("}`;");
         return dot.toString();
