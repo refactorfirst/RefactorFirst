@@ -1,13 +1,11 @@
 package org.hjug.refactorfirst.report;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Set;
+import java.util.*;
 import lombok.extern.slf4j.Slf4j;
 import org.hjug.cbc.RankedCycle;
 import org.hjug.cbc.RankedDisharmony;
 import org.hjug.gdg.GraphDataGenerator;
+import org.hjug.graphbuilder.CodebaseGraphDTO;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultWeightedEdge;
 
@@ -418,6 +416,17 @@ public class HtmlReport extends SimpleHtmlReport {
     }
 
     @Override
+    StringBuilder createMenu(
+            List<DisharmonySpec> disharmonySpecs,
+            Map<String, List<RankedDisharmony>> rankedDisharmoniesByAnchor,
+            List<RankedCycle> rankedCycles) {
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append("<li><a href=\"#CLASSMAP\">Class Map</a></li>\n");
+        stringBuilder.append(super.createMenu(disharmonySpecs, rankedDisharmoniesByAnchor, rankedCycles));
+        return stringBuilder;
+    }
+
+    @Override
     String renderGithubButtons() {
         return "<div align=\"center\">\n" + "Show RefactorFirst some &#10084;&#65039;\n"
                 + "<br/>\n"
@@ -465,8 +474,8 @@ public class HtmlReport extends SimpleHtmlReport {
     }
 
     @Override
-    public String renderClassGraphVisuals() {
-        String dot = buildClassGraphDot(classGraph);
+    public String renderClassGraphVisuals(String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
+        String dot = buildClassGraphDot(classGraph, repoUrl, codebaseGraphDTO);
         String classGraphName = "classGraph";
 
         StringBuilder stringBuilder = new StringBuilder();
@@ -491,7 +500,7 @@ public class HtmlReport extends SimpleHtmlReport {
 
     private StringBuilder generateGraphButtons(String graphName, String dot) {
         StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append("<h1 align=\"center\">Class Map</h1>");
+        stringBuilder.append("<h1 align=\"center\"><a id=\"CLASSMAP\">Class Map</a></h1>");
         stringBuilder.append("<script>\n");
         stringBuilder.append("const " + graphName + "_dot = " + dot + "\n");
         stringBuilder.append("</script>\n");
@@ -501,7 +510,9 @@ public class HtmlReport extends SimpleHtmlReport {
 
         stringBuilder.append("<div align=\"center\">\nRed lines represent relationships to remove.<br>\n");
         stringBuilder.append("Red nodes represent classes to remove.<br>\n");
-        stringBuilder.append("Zoom in / out with your mouse wheel and click/move to drag the image.\n");
+        stringBuilder.append("Zoom in / out with your mouse wheel and click/move to drag the image.<br>\n");
+        stringBuilder.append(
+                "Clicking on a node in the DOT graph (if present below) will open its source file in the repo.  It will not open a new browser window.\n");
         stringBuilder.append("</div>\n");
         return stringBuilder;
     }
@@ -511,7 +522,7 @@ public class HtmlReport extends SimpleHtmlReport {
         return "<div id=\"" + graphName
                 + "\" style=\"width: 95%; height: 70vh; margin: auto; border: thin solid black\"></div>\n"
                 + "<script type=\"module\">\n"
-                + "import init, { DotParser } from \"https://esm.run/@vizdom/vizdom-ts-web\";\n"
+                + "import init, { DotParser } from \"https://cdn.jsdelivr.net/npm/@vizdom/vizdom-ts-web@0.1.19/vizdom_ts.min.js\";\n"
                 + "    if(DotParser) {\n"
                 + "        // Wait for the WASM binary to be compiled and the 'wasm' object to be populated\n"
                 + "        await init();\n"
@@ -534,7 +545,8 @@ public class HtmlReport extends SimpleHtmlReport {
                 + "    }\n" + "</script>\n";
     }
 
-    String buildClassGraphDot(Graph<String, DefaultWeightedEdge> classGraph) {
+    String buildClassGraphDot(
+            Graph<String, DefaultWeightedEdge> classGraph, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
         StringBuilder dot = new StringBuilder();
         dot.append("`strict digraph G {\n");
 
@@ -563,15 +575,24 @@ public class HtmlReport extends SimpleHtmlReport {
 
             dot.append(className.replace("$", "_"));
 
+            dot.append(" [");
+            dot.append(hyperlinkClassForDot(vertex, repoUrl, codebaseGraphDTO));
+
             if (vertexesToRemove.contains(vertex)) {
-                dot.append(" [color=red style=filled]\n");
+                dot.append(" color=red style=filled");
             }
 
-            dot.append(";\n");
+            dot.append("];\n");
         }
 
         dot.append("}`;");
         return dot.toString();
+    }
+
+    String hyperlinkClassForDot(String fqClassName, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
+        StringBuilder sb = new StringBuilder();
+        String path = codebaseGraphDTO.getClassToSourceFilePathMapping().get(fqClassName);
+        return sb.append("URL=\"" + repoUrl + path + "\" target=\"_blank\"").toString();
     }
 
     private void renderEdge(
@@ -622,8 +643,8 @@ public class HtmlReport extends SimpleHtmlReport {
     }
 
     @Override
-    public String renderCycleVisuals(RankedCycle cycle) {
-        String dot = buildCycleDot(classGraph, cycle);
+    public String renderCycleVisuals(RankedCycle cycle, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
+        String dot = buildCycleDot(classGraph, cycle, repoUrl, codebaseGraphDTO);
 
         String cycleName = getClassName(cycle.getCycleName()).replace("$", "_");
 
@@ -643,7 +664,11 @@ public class HtmlReport extends SimpleHtmlReport {
         return stringBuilder.toString();
     }
 
-    String buildCycleDot(Graph<String, DefaultWeightedEdge> classGraph, RankedCycle cycle) {
+    String buildCycleDot(
+            Graph<String, DefaultWeightedEdge> classGraph,
+            RankedCycle cycle,
+            String repoUrl,
+            CodebaseGraphDTO codebaseGraphDTO) {
         StringBuilder dot = new StringBuilder();
         dot.append("`strict digraph G {\n");
 
@@ -653,18 +678,29 @@ public class HtmlReport extends SimpleHtmlReport {
 
         // render vertices
         for (String vertex : cycle.getVertexSet()) {
-            dot.append(getClassName(vertex).replace("$", "_"));
+            String className = getClassName(vertex);
 
-            if (vertexesToRemove.contains(vertex)) {
-                dot.append(" [color=red style=filled]\n");
+            // if the vertex is a nested class and has no outgoing edges, skip it
+            if (className.contains("$")
+                    && className.split("\\$")[className.split("\\$").length - 1].matches("\\d+")
+                    && classGraph.outDegreeOf(vertex) == 0) {
+                continue;
             }
 
-            dot.append(";\n");
+            dot.append(className.replace("$", "_"));
+
+            dot.append(" [");
+            dot.append(hyperlinkClassForDot(vertex, repoUrl, codebaseGraphDTO));
+
+            if (vertexesToRemove.contains(vertex)) {
+                dot.append(" color=red style=filled");
+            }
+
+            dot.append("];\n");
         }
 
         dot.append("}`;");
-
-        return dot.toString().replace("$", "_");
+        return dot.toString();
     }
 
     String generate2DPopup(String cycleName) {

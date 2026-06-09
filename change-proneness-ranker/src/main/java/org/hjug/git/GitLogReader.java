@@ -56,6 +56,29 @@ public class GitLogReader implements AutoCloseable {
         return repositoryBuilder.getGitDir();
     }
 
+    /**
+     * Returns the current commit hash at HEAD
+     *
+     * @return the commit hash as a String, or null if HEAD cannot be resolved
+     * @throws IOException if an I/O error occurs
+     */
+    public String getCurrentCommitHash() throws IOException {
+        ObjectId headCommit = gitRepository.resolve("HEAD");
+        if (headCommit == null) {
+            return null;
+        }
+        return headCommit.getName();
+    }
+
+    /**
+     * Returns the repository's origin URL
+     *
+     * @return the origin URL as a String, or null if not configured
+     */
+    public String getOriginUrl() {
+        return gitRepository.getConfig().getString("remote", "origin", "url");
+    }
+
     // log --follow implementation may be worth adopting in the future
     // https://github.com/spearce/jgit/blob/master/org.eclipse.jgit.pgm/src/org/eclipse/jgit/pgm/RevWalkTextBuiltin.java
 

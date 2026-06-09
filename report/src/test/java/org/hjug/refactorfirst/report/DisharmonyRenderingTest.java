@@ -21,7 +21,7 @@ class DisharmonyRenderingTest {
     void renderDisharmonyInfoContainsTitle() {
         List<RankedDisharmony> ranked = List.of(makeRankedDisharmony("BrainClass.java", null, 1, 57.0, 3.0, 0.3));
 
-        String html = simpleReport.renderDisharmonyInfo("BRAIN", "Brain Classes", false, false, ranked);
+        String html = simpleReport.renderDisharmonyInfo("", "BRAIN", "Brain Classes", false, false, ranked);
 
         assertTrue(html.contains("Brain Classes"), "HTML must contain the section title");
         assertTrue(html.contains("id=\"BRAIN\""), "HTML must contain the anchor id");
@@ -32,7 +32,7 @@ class DisharmonyRenderingTest {
         List<RankedDisharmony> ranked = List.of(makeRankedDisharmony("BrainClass.java", null, 1, 57.0, 3.0, 0.3));
         ranked.get(0).setDescription("Brain Class detected: Brain Methods=1, LOC=200, WMC=3, TCC=0.3");
 
-        String html = simpleReport.renderDisharmonyInfo("BRAIN", "Brain Classes", false, false, ranked);
+        String html = simpleReport.renderDisharmonyInfo("", "BRAIN", "Brain Classes", false, false, ranked);
 
         assertTrue(html.contains("<table"), "HTML must contain a table");
         assertFalse(html.contains("Description"), "Simple view must not show the Description column");
@@ -44,8 +44,8 @@ class DisharmonyRenderingTest {
     void renderDisharmonyInfoShowsDetailedColumnsWhenRequested() {
         List<RankedDisharmony> ranked = List.of(makeRankedDisharmony("BrainClass.java", null, 1, 57.0, 3.0, 0.3));
 
-        String simple = simpleReport.renderDisharmonyInfo("BRAIN", "Brain Classes", false, false, ranked);
-        String detailed = simpleReport.renderDisharmonyInfo("BRAIN", "Brain Classes", false, true, ranked);
+        String simple = simpleReport.renderDisharmonyInfo("", "BRAIN", "Brain Classes", false, false, ranked);
+        String detailed = simpleReport.renderDisharmonyInfo("", "BRAIN", "Brain Classes", false, true, ranked);
 
         assertFalse(simple.contains("BrainMethods Rank"), "Simple mode should not show rank columns");
         assertFalse(simple.contains("<th>BrainMethods</th>"), "Simple mode should not show metric value columns");
@@ -60,7 +60,7 @@ class DisharmonyRenderingTest {
         List<RankedDisharmony> ranked =
                 List.of(makeRankedDisharmony("BrainClass.java", "heavyMethod()", 1, 70.0, 5.0, 5.0));
 
-        String html = simpleReport.renderDisharmonyInfo("BRAIN_METHOD", "Brain Methods", true, false, ranked);
+        String html = simpleReport.renderDisharmonyInfo("", "BRAIN_METHOD", "Brain Methods", true, false, ranked);
 
         assertTrue(html.contains("Method"), "Method-level rendering must include a Method column header");
         assertTrue(html.contains("heavyMethod()"), "Method-level rendering must include the method signature");
@@ -70,7 +70,7 @@ class DisharmonyRenderingTest {
     void renderDisharmonyInfoForClassLevelDoesNotShowMethodColumn() {
         List<RankedDisharmony> ranked = List.of(makeRankedDisharmony("BrainClass.java", null, 1, 57.0, 3.0, 0.3));
 
-        String html = simpleReport.renderDisharmonyInfo("BRAIN", "Brain Classes", false, false, ranked);
+        String html = simpleReport.renderDisharmonyInfo("", "BRAIN", "Brain Classes", false, false, ranked);
 
         // Class-level should not have an empty method cell (null signature)
         assertFalse(html.contains("null"), "Class-level rendering must not have null method signature cells");
@@ -120,7 +120,7 @@ class DisharmonyRenderingTest {
         rd.setDuplicationPartners("computeResult(int) ↔ CrossClassB.computeResult(int)");
 
         String html =
-                simpleReport.renderDisharmonyInfo("SIG_DUP", "Significant Duplication", false, false, List.of(rd));
+                simpleReport.renderDisharmonyInfo("", "SIG_DUP", "Significant Duplication", false, false, List.of(rd));
 
         assertTrue(html.contains("Duplicate Partners"), "Table must show 'Duplicate Partners' column header");
         assertTrue(html.contains("CrossClassB"), "Table must show partner class name in the Duplicate Partners cell");
@@ -130,7 +130,7 @@ class DisharmonyRenderingTest {
     void otherDisharmonyTableOmitsDuplicatePartnersColumn() {
         RankedDisharmony rd = makeRankedDisharmony("BrainClass.java", null, 1, 57.0, 3.0, 0.3);
 
-        String html = simpleReport.renderDisharmonyInfo("BRAIN", "Brain Classes", false, false, List.of(rd));
+        String html = simpleReport.renderDisharmonyInfo("", "BRAIN", "Brain Classes", false, false, List.of(rd));
 
         assertFalse(html.contains("Duplicate Partners"), "Non-duplication table must not show 'Duplicate Partners'");
     }
