@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.hjug.cbc.RankedCycle;
 import org.hjug.cbc.RankedDisharmony;
 import org.hjug.gdg.GraphDataGenerator;
+import org.hjug.graphbuilder.CodebaseGraphDTO;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultWeightedEdge;
 
@@ -465,8 +466,8 @@ public class HtmlReport extends SimpleHtmlReport {
     }
 
     @Override
-    public String renderClassGraphVisuals() {
-        String dot = buildClassGraphDot(classGraph);
+    public String renderClassGraphVisuals(String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
+        String dot = buildClassGraphDot(classGraph, repoUrl, codebaseGraphDTO);
         String classGraphName = "classGraph";
 
         StringBuilder stringBuilder = new StringBuilder();
@@ -511,7 +512,7 @@ public class HtmlReport extends SimpleHtmlReport {
         return "<div id=\"" + graphName
                 + "\" style=\"width: 95%; height: 70vh; margin: auto; border: thin solid black\"></div>\n"
                 + "<script type=\"module\">\n"
-                + "import init, { DotParser } from \"https://esm.run/@vizdom/vizdom-ts-web\";\n"
+                + "import init, { DotParser } from \"https://cdn.jsdelivr.net/npm/@vizdom/vizdom-ts-web@0.1.19/vizdom_ts.min.js\";\n"
                 + "    if(DotParser) {\n"
                 + "        // Wait for the WASM binary to be compiled and the 'wasm' object to be populated\n"
                 + "        await init();\n"
@@ -534,7 +535,8 @@ public class HtmlReport extends SimpleHtmlReport {
                 + "    }\n" + "</script>\n";
     }
 
-    String buildClassGraphDot(Graph<String, DefaultWeightedEdge> classGraph) {
+    String buildClassGraphDot(
+            Graph<String, DefaultWeightedEdge> classGraph, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
         StringBuilder dot = new StringBuilder();
         dot.append("`strict digraph G {\n");
 
@@ -563,15 +565,24 @@ public class HtmlReport extends SimpleHtmlReport {
 
             dot.append(className.replace("$", "_"));
 
+            dot.append(" [");
+            dot.append(hyperlinkClassForDot(vertex, repoUrl, codebaseGraphDTO));
+
             if (vertexesToRemove.contains(vertex)) {
-                dot.append(" [color=red style=filled]\n");
+                dot.append(" color=red style=filled");
             }
 
-            dot.append(";\n");
+            dot.append("];\n");
         }
 
         dot.append("}`;");
         return dot.toString();
+    }
+
+    String hyperlinkClassForDot(String fqClassName, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
+        StringBuilder sb = new StringBuilder();
+        String path = codebaseGraphDTO.getClassToSourceFilePathMapping().get(fqClassName);
+        return sb.append("URL=\"" + repoUrl + path + "\" target=\"_blank\"").toString();
     }
 
     private void renderEdge(
@@ -622,8 +633,8 @@ public class HtmlReport extends SimpleHtmlReport {
     }
 
     @Override
-    public String renderCycleVisuals(RankedCycle cycle) {
-        String dot = buildCycleDot(classGraph, cycle);
+    public String renderCycleVisuals(RankedCycle cycle, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
+        String dot = buildCycleDot(classGraph, cycle, repoUrl, codebaseGraphDTO);
 
         String cycleName = getClassName(cycle.getCycleName()).replace("$", "_");
 
@@ -643,7 +654,11 @@ public class HtmlReport extends SimpleHtmlReport {
         return stringBuilder.toString();
     }
 
-    String buildCycleDot(Graph<String, DefaultWeightedEdge> classGraph, RankedCycle cycle) {
+    String buildCycleDot(
+            Graph<String, DefaultWeightedEdge> classGraph,
+            RankedCycle cycle,
+            String repoUrl,
+            CodebaseGraphDTO codebaseGraphDTO) {
         StringBuilder dot = new StringBuilder();
         dot.append("`strict digraph G {\n");
 
@@ -653,18 +668,29 @@ public class HtmlReport extends SimpleHtmlReport {
 
         // render vertices
         for (String vertex : cycle.getVertexSet()) {
-            dot.append(getClassName(vertex).replace("$", "_"));
+            String className = getClassName(vertex);
 
-            if (vertexesToRemove.contains(vertex)) {
-                dot.append(" [color=red style=filled]\n");
+            // if the vertex is a nested class and has no outgoing edges, skip it
+            if (className.contains("$")
+                    && className.split("\\$")[className.split("\\$").length - 1].matches("\\d+")
+                    && classGraph.outDegreeOf(vertex) == 0) {
+                continue;
             }
 
-            dot.append(";\n");
+            dot.append(className.replace("$", "_"));
+
+            dot.append(" [");
+            dot.append(hyperlinkClassForDot(vertex, repoUrl, codebaseGraphDTO));
+
+            if (vertexesToRemove.contains(vertex)) {
+                dot.append(" color=red style=filled");
+            }
+
+            dot.append("];\n");
         }
 
         dot.append("}`;");
-
-        return dot.toString().replace("$", "_");
+        return dot.toString();
     }
 
     String generate2DPopup(String cycleName) {

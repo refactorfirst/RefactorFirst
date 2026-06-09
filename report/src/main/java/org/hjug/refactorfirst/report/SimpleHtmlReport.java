@@ -13,6 +13,7 @@ import java.time.format.FormatStyle;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.hjug.cbc.*;
 import org.hjug.dsm.CircularReferenceChecker;
@@ -23,6 +24,7 @@ import org.hjug.feedback.vertex.kernelized.DirectedFeedbackVertexSetSolver;
 import org.hjug.feedback.vertex.kernelized.EnhancedParameterComputer;
 import org.hjug.git.GitLogReader;
 import org.hjug.graphbuilder.CodebaseGraphDTO;
+import org.hjug.graphbuilder.metrics.DisharmonyMetric;
 import org.hjug.graphbuilder.metrics.DisharmonyTypes;
 import org.hjug.metrics.DisharmonyInstance;
 import org.jgrapht.Graph;
@@ -63,6 +65,7 @@ public class SimpleHtmlReport {
             .setMinifyCss(true)
             .build();
 
+    @SneakyThrows
     public void execute(
             int edgeAnalysisCount,
             boolean analyzeCycles,
@@ -116,7 +119,8 @@ public class SimpleHtmlReport {
             String testSourceDirectory,
             String projectName,
             String projectVersion,
-            File baseDir) {
+            File baseDir)
+            throws Exception {
 
         if (testSourceDirectory == null || testSourceDirectory.isEmpty()) {
             testSourceDirectory = "src" + File.separator + "test";
@@ -285,6 +289,11 @@ public class SimpleHtmlReport {
         boolean hasAnyDisharmony =
                 !edgesToRemove.isEmpty() || !rankedCycles.isEmpty() || !rankedDisharmoniesByAnchor.isEmpty();
 
+        String repoUrl;
+        try (GitLogReader glr = new GitLogReader(new File(projectBaseDir))) {
+            repoUrl = glr.getOriginUrl().replace(".git", "") + "/blob/" + glr.getCurrentCommitHash() + "/";
+        }
+
         if (!hasAnyDisharmony) {
             stringBuilder
                     .append("<div style=\"text-align: center;\">Congratulations!  ")
@@ -292,7 +301,7 @@ public class SimpleHtmlReport {
                     .append(" ")
                     .append(projectVersion)
                     .append(" has no Cycles or Disharmonies!</div>");
-            stringBuilder.append(renderClassGraphVisuals());
+            stringBuilder.append(renderClassGraphVisuals(repoUrl, codebaseGraphDTO));
             stringBuilder.append(renderGithubButtons());
             log.info("Done! No Disharmonies found!");
             return stringBuilder;
@@ -330,13 +339,13 @@ public class SimpleHtmlReport {
         stringBuilder.append("</ul>\n" + "</nav>\n" + "</header>\n");
         log.info("Generating HTML Report");
 
-        stringBuilder.append(renderClassGraphVisuals());
+        stringBuilder.append(renderClassGraphVisuals(repoUrl, codebaseGraphDTO));
         stringBuilder.append("<br/>\n");
         stringBuilder.append(renderGithubButtons());
 
         stringBuilder.append("<br/>\n");
         if (!edgeDisharmonies.isEmpty()) {
-            stringBuilder.append(renderEdgeDisharmonies(edgeDisharmonies));
+            stringBuilder.append(renderEdgeDisharmonies(edgeDisharmonies, repoUrl, codebaseGraphDTO));
             stringBuilder.append("<br/>\n" + "<br/>\n" + "<br/>\n" + "<br/>\n" + "<hr/>\n" + "<br/>\n" + "<br/>\n");
         }
 
@@ -344,29 +353,33 @@ public class SimpleHtmlReport {
             List<RankedDisharmony> rankedForType = rankedDisharmoniesByAnchor.get(spec.anchorId());
             if (rankedForType != null && !rankedForType.isEmpty()) {
                 stringBuilder.append(renderDisharmonyInfo(
-                        spec.anchorId(), spec.title(), spec.methodLevel(), showDetails, rankedForType));
+                        repoUrl, spec.anchorId(), spec.title(), spec.methodLevel(), showDetails, rankedForType));
                 stringBuilder.append("<br/>\n" + "<br/>\n" + "<br/>\n" + "<br/>\n" + "<hr/>\n" + "<br/>\n" + "<br/>\n");
             }
         }
 
         if (!rankedCycles.isEmpty()) {
-            stringBuilder.append(renderCycles(rankedCycles));
+            stringBuilder.append(renderCycles(rankedCycles, repoUrl, codebaseGraphDTO));
         }
 
         log.debug(stringBuilder.toString());
         return stringBuilder;
     }
 
-    private String renderCycles(List<RankedCycle> rankedCycles) {
+    private String renderCycles(List<RankedCycle> rankedCycles, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append(renderClassCycleSummary(rankedCycles));
 
-        rankedCycles.stream().limit(1).map(this::renderSingleCycle).forEach(stringBuilder::append);
+        rankedCycles.stream()
+                .limit(1)
+                .map((RankedCycle cycle) -> renderSingleCycle(cycle, repoUrl, codebaseGraphDTO))
+                .forEach(stringBuilder::append);
 
         return stringBuilder.toString();
     }
 
-    private String renderEdgeDisharmonies(List<RankedDisharmony> edgeDisharmonies) {
+    private String renderEdgeDisharmonies(
+            List<RankedDisharmony> edgeDisharmonies, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
         StringBuilder stringBuilder = new StringBuilder();
 
         stringBuilder.append(
@@ -379,7 +392,9 @@ public class SimpleHtmlReport {
                 .append("Number of Relationships to Remove: ")
                 .append(edgesToRemove.size())
                 .append("<br>\n");
-        stringBuilder.append("Classes in bold should be broken apart").append("<br>\n");
+        stringBuilder
+                .append("Classes with <strong>*</strong> should be broken apart")
+                .append("<br>\n");
         stringBuilder.append("</div>\n");
 
         // Content
@@ -396,7 +411,7 @@ public class SimpleHtmlReport {
         for (RankedDisharmony edge : edgeDisharmonies) {
             stringBuilder.append("<tr>\n");
 
-            for (String rowData : getEdgeDisharmony(edge)) {
+            for (String rowData : getEdgeDisharmony(edge, repoUrl, codebaseGraphDTO)) {
                 stringBuilder.append(drawTableCell(rowData));
             }
 
@@ -421,9 +436,9 @@ public class SimpleHtmlReport {
         };
     }
 
-    private String[] getEdgeDisharmony(RankedDisharmony edgeInfo) {
+    private String[] getEdgeDisharmony(RankedDisharmony edgeInfo, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
         return new String[] {
-            renderEdge(edgeInfo.getEdge()),
+            renderEdge(edgeInfo.getEdge(), repoUrl, codebaseGraphDTO),
             String.valueOf(edgeInfo.getPriority()),
             String.valueOf(edgeInfo.getCycleCount()),
             String.valueOf(edgeInfo.getEffortRank()),
@@ -508,6 +523,39 @@ public class SimpleHtmlReport {
                 .toString();
     }
 
+    private String renderEdge(DefaultWeightedEdge edge, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
+        StringBuilder edgesToCut = new StringBuilder();
+        String[] vertexes = extractVertexes(edge);
+
+        String startVertex = vertexes[0].trim();
+        String start;
+        if (vertexesToRemove.contains(startVertex)) {
+            start = hyperlinkClass(startVertex, repoUrl, codebaseGraphDTO) + "<strong>*</strong>";
+        } else {
+            start = hyperlinkClass(startVertex, repoUrl, codebaseGraphDTO);
+        }
+
+        String endVertex = vertexes[1].trim();
+        String end;
+        if (vertexesToRemove.contains(endVertex)) {
+            end = hyperlinkClass(endVertex, repoUrl, codebaseGraphDTO) + "<strong>*</strong>";
+        } else {
+            end = hyperlinkClass(endVertex, repoUrl, codebaseGraphDTO);
+        }
+
+        // &#8594; is HTML "Right Arrow" code
+        return edgesToCut
+                .append(start + " &#8594; " + end + " : " + (int) classGraph.getEdgeWeight(edge))
+                .toString();
+    }
+
+    String hyperlinkClass(String className, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
+        StringBuilder sb = new StringBuilder();
+        String path = codebaseGraphDTO.getClassToSourceFilePathMapping().get(className);
+        return sb.append("<a href=" + repoUrl + path + " target=\"_blank\">" + getClassName(className) + "</a>")
+                .toString();
+    }
+
     private String[] getCycleSummaryTableHeadings() {
         return new String[] {"Cycle Name", "Priority", "Class Count", "Relationship Count" /*, "Minimum Cuts"*/};
     }
@@ -522,7 +570,7 @@ public class SimpleHtmlReport {
         };
     }
 
-    private String renderSingleCycle(RankedCycle cycle) {
+    private String renderSingleCycle(RankedCycle cycle, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
         StringBuilder stringBuilder = new StringBuilder();
 
         stringBuilder.append("<br/>\n");
@@ -535,11 +583,12 @@ public class SimpleHtmlReport {
                 "<h2 align=\"center\">Largest Class Cycle : " + getClassName(cycle.getCycleName()) + "</h2>\n");
         stringBuilder.append(
                 "<h3 align=\"center\">Limiting number of cycles displayed to 1 to keep page load time fast</h3>\n");
-        stringBuilder.append(renderCycleVisuals(cycle));
+        stringBuilder.append(renderCycleVisuals(cycle, repoUrl, codebaseGraphDTO));
 
         stringBuilder.append("<div align=\"center\">");
         stringBuilder.append("<strong>");
-        stringBuilder.append("Bold text indicates class or relationship to remove to decompose cycle");
+        stringBuilder.append(
+                "* indicates class to remove, bold text indicates relationships to remove to decompose cycle");
         stringBuilder.append("</strong>");
         int classCount = cycle.getCycleNodes().size();
         int relationshipCount = cycle.getEdgeSet().size();
@@ -561,9 +610,11 @@ public class SimpleHtmlReport {
 
         for (String vertex : cycle.getVertexSet()) {
             stringBuilder.append("<tr>");
-            String className = getClassName(vertex);
+            String className;
             if (vertexesToRemove.contains(vertex)) {
-                className = "<strong>" + className + "</strong>";
+                className = hyperlinkClass(vertex, repoUrl, codebaseGraphDTO) + "<strong>*</strong>";
+            } else {
+                className = hyperlinkClass(vertex, repoUrl, codebaseGraphDTO);
             }
 
             stringBuilder.append(drawTableCell(className));
@@ -574,9 +625,6 @@ public class SimpleHtmlReport {
                     if (edgesToRemove.contains(edge)) {
                         edges.append("<strong>");
                         edges.append(renderEdge(edge));
-                        if (cycle.getMinCutEdges().contains(edge)) {
-                            edges.append("*");
-                        }
                         edges.append("</strong>");
                     } else {
                         edges.append(renderEdge(edge));
@@ -596,11 +644,11 @@ public class SimpleHtmlReport {
         return stringBuilder.toString();
     }
 
-    public String renderClassGraphVisuals() {
+    public String renderClassGraphVisuals(String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
         return ""; // empty on purpose
     }
 
-    public String renderCycleVisuals(RankedCycle cycle) {
+    public String renderCycleVisuals(RankedCycle cycle, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
         return ""; // empty on purpose
     }
 
@@ -682,11 +730,16 @@ public class SimpleHtmlReport {
     }
 
     /**
-     * Renders a table section for any non-God-Class disharmony type.
+     * Renders a table section for any disharmony type.
      * Column headers are derived from the ranked metrics carried on each RankedDisharmony.
      */
     public String renderDisharmonyInfo(
-            String anchorId, String title, boolean methodLevel, boolean showDetails, List<RankedDisharmony> ranked) {
+            String repoUrl,
+            String anchorId,
+            String title,
+            boolean methodLevel,
+            boolean showDetails,
+            List<RankedDisharmony> ranked) {
         if (ranked.isEmpty()) {
             return "";
         }
@@ -709,8 +762,7 @@ public class SimpleHtmlReport {
         sb.append("<table align=\"center\" border=\"5px\">\n");
 
         // Build headers from the first item's ranked metrics
-        List<org.hjug.graphbuilder.metrics.DisharmonyMetric> sampleMetrics =
-                ranked.get(0).getRankedMetrics();
+        List<DisharmonyMetric> sampleMetrics = ranked.get(0).getRankedMetrics();
 
         boolean showPartners = ranked.get(0).getDuplicationPartners() != null;
 
@@ -727,7 +779,7 @@ public class SimpleHtmlReport {
         sb.append("<th>Change Proneness Rank</th>\n");
         sb.append("<th>Effort Rank</th>\n");
         if (showDetails) {
-            for (org.hjug.graphbuilder.metrics.DisharmonyMetric m : sampleMetrics) {
+            for (DisharmonyMetric m : sampleMetrics) {
                 sb.append("<th>").append(m.getName()).append("</th>\n");
                 sb.append("<th>").append(m.getName()).append(" Rank</th>\n");
             }
@@ -746,7 +798,8 @@ public class SimpleHtmlReport {
         sb.append("<tbody>\n");
         for (RankedDisharmony rd : ranked) {
             sb.append("<tr>\n");
-            sb.append(drawTableCell(rd.getFileName()));
+            sb.append(drawTableCell(
+                    "<a href=" + repoUrl + rd.getPath() + " target=\"_blank\">" + rd.getFileName() + "</a>"));
             if (methodLevel) {
                 String sig = rd.getMethodSignature();
                 if (!showDetails && sig != null) {
@@ -763,7 +816,7 @@ public class SimpleHtmlReport {
             sb.append(drawTableCell(rd.getChangePronenessRank().toString()));
             sb.append(drawTableCell(rd.getEffortRank().toString()));
             if (showDetails) {
-                for (org.hjug.graphbuilder.metrics.DisharmonyMetric m : rd.getRankedMetrics()) {
+                for (DisharmonyMetric m : rd.getRankedMetrics()) {
                     double v = m.getValue();
                     String formatted = (v == Math.floor(v)) ? String.valueOf((long) v) : String.valueOf(v);
                     sb.append(drawTableCell(formatted));

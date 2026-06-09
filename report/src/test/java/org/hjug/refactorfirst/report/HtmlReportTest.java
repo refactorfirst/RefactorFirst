@@ -1,10 +1,13 @@
 package org.hjug.refactorfirst.report;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.util.*;
 import org.hjug.cbc.CycleNode;
 import org.hjug.cbc.RankedCycle;
+import org.hjug.graphbuilder.CodebaseGraphDTO;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultDirectedWeightedGraph;
 import org.jgrapht.graph.DefaultWeightedEdge;
@@ -52,15 +55,21 @@ class HtmlReportTest {
                 new RankedCycle(cycleName, 0, classGraph.vertexSet(), classGraph.edgeSet(), 0, null, cycleNodes);
 
         HtmlReport htmlReport = new HtmlReport();
-        String dot = htmlReport.buildCycleDot(classGraph, rankedCycle);
-
+        CodebaseGraphDTO dto = mock(CodebaseGraphDTO.class);
+        HashMap<String, String> map = new HashMap<>();
+        map.put("A", "/src/main/java/org/hjug/refactorfirst/A.java");
+        map.put("B", "/src/main/java/org/hjug/refactorfirst/B.java");
+        map.put("C", "/src/main/java/org/hjug/refactorfirst/C.java");
+        when(dto.getClassToSourceFilePathMapping()).thenReturn(map);
+        String repoUrl = "https://github.com/refactorfirst/RefactorFirst/blob";
+        String dot = htmlReport.buildCycleDot(classGraph, rankedCycle, repoUrl, dto);
         String expectedDot = "`strict digraph G {\n"
                 + "A -> B [ label = \"2\" weight = \"2\" ];\n"
                 + "B -> C [ label = \"1\" weight = \"1\" ];\n"
                 + "C -> A [ label = \"1\" weight = \"1\" ];\n"
-                + "A;\n"
-                + "B;\n"
-                + "C;\n"
+                + "A [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/src/main/java/org/hjug/refactorfirst/A.java\" target=\"_blank\"];\n"
+                + "B [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/src/main/java/org/hjug/refactorfirst/B.java\" target=\"_blank\"];\n"
+                + "C [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/src/main/java/org/hjug/refactorfirst/C.java\" target=\"_blank\"];\n"
                 + "}`;";
 
         assertEquals(expectedDot, dot);
