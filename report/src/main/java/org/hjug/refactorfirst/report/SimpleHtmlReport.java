@@ -132,16 +132,16 @@ public class SimpleHtmlReport {
         stringBuilder.append(printBreadcrumbs());
         stringBuilder.append(printProjectHeader(projectName, projectVersion));
 
+        GitLogReader gitLogReader = new GitLogReader();
         String projectBaseDir;
         Optional<File> optionalGitDir;
-        try (GitLogReader gitLogReader = new GitLogReader()) {
-            if (baseDir != null) {
-                projectBaseDir = baseDir.getPath();
-                optionalGitDir = Optional.ofNullable(gitLogReader.getGitDir(baseDir));
-            } else {
-                projectBaseDir = Paths.get("").toAbsolutePath().toString();
-                optionalGitDir = Optional.ofNullable(gitLogReader.getGitDir(new File(projectBaseDir)));
-            }
+
+        if (baseDir != null) {
+            projectBaseDir = baseDir.getPath();
+            optionalGitDir = Optional.ofNullable(gitLogReader.getGitDir(baseDir));
+        } else {
+            projectBaseDir = Paths.get("").toAbsolutePath().toString();
+            optionalGitDir = Optional.ofNullable(gitLogReader.getGitDir(new File(projectBaseDir)));
         }
 
         File gitDir;
