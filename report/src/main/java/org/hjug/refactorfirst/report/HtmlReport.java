@@ -613,7 +613,6 @@ public class HtmlReport extends SimpleHtmlReport {
                     samePackageEdges.put(startPackage, new ArrayList<>());
                     String parentNamespace = getParentNamespace(startPackage);
                     parentPackageMap.put(startPackage, parentNamespace);
-                    //                    log.warn("Adding parent package {} to child package map", parentNamespace);
 
                     if (!childPackageMap.containsKey(parentNamespace)) {
                         childPackageMap.put(parentNamespace, new ArrayList<>());
@@ -632,9 +631,8 @@ public class HtmlReport extends SimpleHtmlReport {
         // find root packages
         List<String> rootPackages = new ArrayList<>();
         for (Map.Entry<String, String> pkgEntry : parentPackageMap.entrySet()) {
-            log.warn("Parent package key: {} value: {}", pkgEntry.getKey(), pkgEntry.getValue());
-            if (pkgEntry.getValue().isEmpty()) {
-                rootPackages.add(pkgEntry.getKey());
+            if (null == parentPackageMap.get(pkgEntry.getValue()) && !rootPackages.contains(pkgEntry.getValue())) {
+                rootPackages.add(pkgEntry.getValue());
             }
         }
 
@@ -695,14 +693,19 @@ public class HtmlReport extends SimpleHtmlReport {
             StringBuilder dot,
             Map<String, List<DefaultWeightedEdge>> samePackageEdges,
             Map<String, List<String>> childPackageMap) {
+
+        if (null == packages || packages.isEmpty()) {
+            return;
+        }
+
         for (String aPackage : packages) {
             dot.append("subgraph cluster_" + aPackage.replace(".", "_") + " {\n");
             dot.append("label = \"" + aPackage + "\";\n");
-            //            dot.append("style = \"filled\";\n");
-            //            dot.append("shape = \"box\"\n");
 
-            for (DefaultWeightedEdge samePackageEdge : samePackageEdges.get(aPackage)) {
-                renderEdge(classGraph, samePackageEdge, dot);
+            if (samePackageEdges.containsKey(aPackage)) {
+                for (DefaultWeightedEdge samePackageEdge : samePackageEdges.get(aPackage)) {
+                    renderEdge(classGraph, samePackageEdge, dot);
+                }
             }
 
             renderPackages(childPackageMap.get(aPackage), dot, samePackageEdges, childPackageMap);
