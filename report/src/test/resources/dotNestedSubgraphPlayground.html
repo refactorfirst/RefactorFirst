@@ -32,33 +32,41 @@
 <!-- DOT input -->
 <textarea id="dotInput">
 digraph G {
-    compound=true;
-    rankdir=LR;
+    // Outer cluster
+    subgraph cluster_outer {
+        label = "Outer Cluster";
+        style = filled;
+        color = lightgrey;
 
-    subgraph cluster0 {
-        a -> b;
-        a -> c;
-        b -> d;
-        c -> d [color=red];
-        label = "Cluster A";
-        color=blue;
-        fillcolor="#ffb6c1";
+        // First inner cluster
+        subgraph cluster_inner1 {
+            label = "Inner Cluster 1";
+            style = filled;
+            color = lightblue;
+
+            A1 -> A2;
+            A2 -> A3;
+        }
+
+        // Second inner cluster
+        subgraph cluster_inner2 {
+            label = "Inner Cluster 2";
+            style = filled;
+            color = lightpink;
+
+            B1 -> B2;
+            B2 -> B3;
+        }
+
+        // Connect nodes across inner clusters
+        A3 -> B1;
     }
 
-    subgraph cluster1 {
-        e -> g;
-        e -> f;
-        label = "Cluster B";
-        color=blue;
-    }
-
-    // Connect cluster0 to cluster1
-    b -> f [lhead=cluster1];
-    d -> e;
-    c -> g [ltail=cluster0, lhead=cluster1];
-    c -> e [ltail=cluster0];
-    d -> h;
+    // Node outside clusters
+    X [shape=box, style=filled, color=yellow];
+    B3 -> X;
 }
+
     </textarea>
 <br>
 <button onclick="renderGraph()">Render Graph</button>

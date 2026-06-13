@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Sigma.js Zone Child Nodes</title>
+    <style>
+        #sigma-container {
+            width: 800px;
+            height: 600px;
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+<div id="sigma-container"></div>
+
+<script src="https://unpkg.com/graphology"></script>
+<script src="https://unpkg.com/sigma"></script>
+<script>
+    // Create a Graphology graph
+    const Graph = graphology;
+    const graph = new Graph();
+
+    // Example nodes
+    graph.addNode("zone1", { label: "Zone 1", color: "#ff0000", size: 10 });
+    graph.addNode("child1", { label: "Child 1", color: "#999", size: 8 });
+    graph.addNode("child2", { label: "Child 2", color: "#999", size: 8 });
+    graph.addNode("other", { label: "Other Node", color: "#999", size: 8 });
+
+    // Example edges
+    graph.addEdge("zone1", "child1");
+    graph.addEdge("zone1", "child2");
+    graph.addEdge("child2", "other");
+
+    // Create Sigma instance
+    const container = document.getElementById("sigma-container");
+    const renderer = new sigma.Sigma(graph, container);
+
+    // Function to get "child" nodes of a given node
+    function getChildNodes(nodeId) {
+        const children = [];
+        graph.forEachNeighbor(nodeId, (neighbor) => {
+            children.push(neighbor);
+        });
+        return children;
+    }
+
+    // Highlight children of "zone1"
+    const zoneId = "zone1";
+    const childNodes = getChildNodes(zoneId);
+
+    // Update colors for highlighting
+    graph.updateNodeAttribute(zoneId, "color", () => "#ff0000"); // Zone stays red
+    childNodes.forEach((childId) => {
+        graph.updateNodeAttribute(childId, "color", () => "#00ff00"); // Highlight children green
+    });
+
+    renderer.refresh();
+</script>
+</body>
+</html>

@@ -252,7 +252,7 @@ class DisharmonyChurnRankingTest {
         return new CodebaseGraphDTO(
                 new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class),
                 new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class),
-                dtoFileMap,
+                Set.of(), dtoFileMap,
                 List.of(),
                 List.of(d));
     }

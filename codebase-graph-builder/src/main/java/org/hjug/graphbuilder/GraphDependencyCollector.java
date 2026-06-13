@@ -39,6 +39,8 @@ public class GraphDependencyCollector implements DependencyCollector {
             DefaultWeightedEdge edge = classReferencesGraph.getEdge(fromClassFqn, toClassFqn);
             classReferencesGraph.setEdgeWeight(edge, classReferencesGraph.getEdgeWeight(edge) + 1);
         }
+
+        addPackageDependency(fromClassFqn, toClassFqn);
     }
 
     @Override

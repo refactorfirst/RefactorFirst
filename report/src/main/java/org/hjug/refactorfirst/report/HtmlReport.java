@@ -473,11 +473,15 @@ public class HtmlReport extends SimpleHtmlReport {
 
     @Override
     public String renderClassGraphVisuals(String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
-        String dot = buildClassGraphDot(classGraph, repoUrl, codebaseGraphDTO);
+        String classGraphDot = buildClassGraphDot(classGraph, repoUrl, codebaseGraphDTO);
         String classGraphName = "classGraph";
 
+        String packageAndClassGraphDot = buildPackageAndClassGraphDot(classGraph, repoUrl, codebaseGraphDTO);
+        String packageAndClassGraphName = "packageAndClassGraph";
+
         StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append(generateGraphButtons(classGraphName, dot));
+        stringBuilder.append(generateGraphButtons(classGraphName, classGraphDot));
+        stringBuilder.append(generatePackageAndClassGraph(packageAndClassGraphName, packageAndClassGraphDot));
 
         stringBuilder.append(
                 "<div align=\"center\">Excludes classes that have no incoming and outgoing edges<br></div>");
@@ -487,7 +491,7 @@ public class HtmlReport extends SimpleHtmlReport {
         stringBuilder.append("<div align=\"center\">Number of classes: " + classCount + "  Number of relationships: "
                 + relationshipCount + "<br></div>");
         if (classCount + relationshipCount < dotGraphThreshold) {
-            stringBuilder.append(generateDotImage(classGraphName));
+            stringBuilder.append(generateDotImage(packageAndClassGraphName));
         } else {
             // revisit and add DOT SVG popup button
             stringBuilder.append("<div align=\"center\">\nSVG is too big to render quickly</div>\n");
@@ -505,6 +509,22 @@ public class HtmlReport extends SimpleHtmlReport {
         stringBuilder.append(generateForce3DPopup(graphName));
         stringBuilder.append(generate2DPopup(graphName));
         stringBuilder.append(generateHidePopup(graphName));
+
+        stringBuilder.append("<div align=\"center\">\nRed lines represent relationships to remove.<br>\n");
+        stringBuilder.append("Red nodes represent classes to remove.<br>\n");
+        stringBuilder.append("Zoom in / out with your mouse wheel and click/move to drag the image.<br>\n");
+        stringBuilder.append(
+                "Clicking on a node in the DOT graph (if present below) will open its source file in the repo.  It will not open a new browser window.\n");
+        stringBuilder.append("</div>\n");
+        return stringBuilder;
+    }
+
+    private StringBuilder generatePackageAndClassGraph(String graphName, String dot) {
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append("<h1 align=\"center\"><a id=\"PACKAGEANDCLASSMAP\">Package and Class Map</a></h1>");
+        stringBuilder.append("<script>\n");
+        stringBuilder.append("const " + graphName + "_dot = " + dot + "\n");
+        stringBuilder.append("</script>\n");
 
         stringBuilder.append("<div align=\"center\">\nRed lines represent relationships to remove.<br>\n");
         stringBuilder.append("Red nodes represent classes to remove.<br>\n");
@@ -567,6 +587,147 @@ public class HtmlReport extends SimpleHtmlReport {
         return dot.toString();
     }
 
+    String buildPackageAndClassGraphDot(
+            Graph<String, DefaultWeightedEdge> classGraph, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
+        StringBuilder dot = new StringBuilder();
+        dot.append("`strict digraph G {\n");
+
+        // label, edge
+        Map<String, DefaultWeightedEdge> crossPackageEdges = new HashMap<>();
+        Map<String, String> parentPackageMap = new HashMap<>();
+        Map<String, List<String>> childPackageMap = new HashMap<>();
+        Map<String, List<DefaultWeightedEdge>> samePackageEdges = new HashMap<>();
+
+        // collect relationships
+        for (DefaultWeightedEdge edge : classGraph.edgeSet()) {
+            String[] vertexes = extractVertexes(edge);
+            String startVertex = vertexes[0].trim();
+            String startPackage = getParentNamespace(startVertex.trim());
+            String endVertex = vertexes[1].trim();
+            String endPackage = getParentNamespace(endVertex.trim());
+
+            // TODO: need to handle case where there are skipped levels between packages?
+            // e.g. com.co --> com.co.pkg.subpkg
+            if (startPackage.equals(endPackage)) {
+                if (!samePackageEdges.containsKey(startPackage)) {
+                    samePackageEdges.put(startPackage, new ArrayList<>());
+                    String parentNamespace = getParentNamespace(startPackage);
+                    parentPackageMap.put(startPackage, parentNamespace);
+                    //                    log.warn("Adding parent package {} to child package map", parentNamespace);
+
+                    if (!childPackageMap.containsKey(parentNamespace)) {
+                        childPackageMap.put(parentNamespace, new ArrayList<>());
+                    }
+                    childPackageMap.get(parentNamespace).add(startPackage);
+                }
+                // add class to package
+                samePackageEdges.get(startPackage).add(edge);
+            } else {
+                if (!crossPackageEdges.containsKey(startPackage + "->" + endPackage)) {
+                    crossPackageEdges.put(startPackage + "->" + endPackage, edge);
+                }
+            }
+        }
+
+        // find root packages
+        List<String> rootPackages = new ArrayList<>();
+        for (Map.Entry<String, String> pkgEntry : parentPackageMap.entrySet()) {
+            log.warn("Parent package key: {} value: {}", pkgEntry.getKey(), pkgEntry.getValue());
+            if (pkgEntry.getValue().isEmpty()) {
+                rootPackages.add(pkgEntry.getKey());
+            }
+        }
+
+        renderPackages(rootPackages, dot, samePackageEdges, childPackageMap);
+
+        // render cross-package edges
+        for (Map.Entry<String, DefaultWeightedEdge> edgeEntry : crossPackageEdges.entrySet()) {
+            String[] vertexes = extractVertexes(edgeEntry.getValue());
+
+            String startVertex = vertexes[0].trim();
+            String endVertex = vertexes[1].trim();
+
+            log.debug("Rendering edge: {} -> {}", startVertex, endVertex);
+            dot.append(startVertex.replace("$", "_").replace(".", "_"));
+            dot.append(" -> ");
+            dot.append(endVertex.replace("$", "_").replace(".", "_"));
+
+            // render edge attributes
+            int edgeWeight = (int) classGraph.getEdgeWeight(edgeEntry.getValue()); // TODO: use package weight
+            dot.append(" [ ");
+            dot.append("label = \"");
+            dot.append(edgeWeight);
+            dot.append("\" ");
+            dot.append("weight = \"");
+            dot.append(edgeWeight);
+            dot.append("\" ");
+            dot.append("ltail = \"");
+            dot.append(getParentNamespace(startVertex).replace(".", "_"));
+            dot.append("\" ");
+            dot.append("lhead = \"");
+            dot.append(getParentNamespace(endVertex).replace(".", "_"));
+            dot.append("\"");
+            // TODO: revisit
+            //            if (packageEdgesToRemove.contains(edge)) {
+            //                dot.append(" color = \"red\"");
+            //            }
+
+            dot.append(" ];\n");
+        }
+
+        // capture only classes that have a relationship with one or more other classes
+        Set<String> vertexesToRender = new HashSet<>();
+        for (DefaultWeightedEdge edge : classGraph.edgeSet()) {
+            String[] vertexes = extractVertexes(edge);
+            vertexesToRender.add(vertexes[0].trim());
+            vertexesToRender.add(vertexes[1].trim());
+        }
+
+        // render vertices
+        renderVertices(classGraph, repoUrl, codebaseGraphDTO, vertexesToRender, dot);
+
+        dot.append("}`;");
+        return dot.toString();
+    }
+
+    void renderPackages(
+            List<String> packages,
+            StringBuilder dot,
+            Map<String, List<DefaultWeightedEdge>> samePackageEdges,
+            Map<String, List<String>> childPackageMap) {
+        for (String aPackage : packages) {
+            dot.append("subgraph cluster_" + aPackage.replace(".", "_") + " {\n");
+            dot.append("label = \"" + aPackage + "\";\n");
+            //            dot.append("style = \"filled\";\n");
+            //            dot.append("shape = \"box\"\n");
+
+            for (DefaultWeightedEdge samePackageEdge : samePackageEdges.get(aPackage)) {
+                renderEdge(classGraph, samePackageEdge, dot);
+            }
+
+            renderPackages(childPackageMap.get(aPackage), dot, samePackageEdges, childPackageMap);
+
+            dot.append("}");
+        }
+    }
+
+    /*
+    when: com.parentPackage.package
+    then: com.parentPackage
+
+    when: com.package.ClassA
+    then: com.package
+    */
+    String getParentNamespace(String fqn) {
+        // handle no package
+        if (!fqn.contains(".")) {
+            return "";
+        }
+
+        int lastIndex = fqn.lastIndexOf(".");
+        return fqn.substring(0, lastIndex);
+    }
+
     private void renderVertices(
             Graph<String, DefaultWeightedEdge> classGraph,
             String repoUrl,
@@ -583,12 +744,14 @@ public class HtmlReport extends SimpleHtmlReport {
                 continue;
             }
 
-            dot.append(className.replace("$", "_"));
+            dot.append(vertex.replace("$", "_").replace(".", "_"));
 
             dot.append(" [");
             dot.append(hyperlinkClassForDot(vertex, repoUrl, codebaseGraphDTO));
             if (className.contains("$")) {
                 dot.append(" label=\"").append(className.replace("$", "\\$")).append("\"");
+            } else {
+                dot.append(" label=\"").append(className).append("\"");
             }
 
             if (vertexesToRemove.contains(vertex)) {
@@ -611,13 +774,11 @@ public class HtmlReport extends SimpleHtmlReport {
         String[] vertexes = extractVertexes(edge);
 
         String startVertex = vertexes[0].trim();
-        String start = getClassName(startVertex.trim()).replace("$", "_");
         String endVertex = vertexes[1].trim();
-        String end = getClassName(endVertex.trim()).replace("$", "_");
 
         // if the vertex is a nested class and has no outgoing edges, skip it
-        if (start.contains("$")
-                && start.split("\\$")[startVertex.split("\\$").length - 1].matches("\\d+")
+        if (startVertex.contains("$")
+                && startVertex.split("\\$")[startVertex.split("\\$").length - 1].matches("\\d+")
                 && classGraph.outDegreeOf(startVertex) == 0) {
             log.debug("Skipping edge: {} -> {}", startVertex, endVertex);
             return;
@@ -631,9 +792,9 @@ public class HtmlReport extends SimpleHtmlReport {
         }
 
         log.debug("Rendering edge: {} -> {}", startVertex, endVertex);
-        dot.append(start);
+        dot.append(startVertex.replace("$", "_").replace(".", "_"));
         dot.append(" -> ");
-        dot.append(end);
+        dot.append(endVertex.replace("$", "_").replace(".", "_"));
 
         // render edge attributes
         int edgeWeight = (int) classGraph.getEdgeWeight(edge);
