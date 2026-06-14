@@ -20,29 +20,24 @@ public class CycleRanker {
     private final String repositoryPath;
 
     @Getter
-    private Graph<String, DefaultWeightedEdge> classReferencesGraph;
-
-    @Getter
     private CodebaseGraphDTO codebaseGraphDTO;
 
-    public void generateClassReferencesGraph(boolean excludeTests, String testSourceDirectory) {
+    public CodebaseGraphDTO generateClassReferencesGraph(boolean excludeTests, String testSourceDirectory) {
         try {
             JavaGraphBuilder javaGraphBuilder = new JavaGraphBuilder();
-
             codebaseGraphDTO = javaGraphBuilder.getCodebaseGraphDTO(repositoryPath, excludeTests, testSourceDirectory);
-
-            classReferencesGraph = codebaseGraphDTO.getClassReferencesGraph();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+
+        return codebaseGraphDTO;
     }
 
-    public List<RankedCycle> performCycleAnalysis(boolean excludeTests, String testSourceDirectory) {
-        List<RankedCycle> rankedCycles = new ArrayList<>();
+    public List<RankedCycle> performCycleAnalysis(Graph<String, DefaultWeightedEdge> graph) {
+        List<RankedCycle> rankedCycles;
         try {
             boolean calculateCycleChurn = false;
-            generateClassReferencesGraph(excludeTests, testSourceDirectory);
-            identifyRankedCycles(rankedCycles);
+            rankedCycles = new ArrayList<>(identifyRankedCycles(graph));
             sortRankedCycles(rankedCycles, calculateCycleChurn);
             setPriorities(rankedCycles);
         } catch (IOException e) {
@@ -52,7 +47,9 @@ public class CycleRanker {
         return rankedCycles;
     }
 
-    private void identifyRankedCycles(List<RankedCycle> rankedCycles) throws IOException {
+    private List<RankedCycle> identifyRankedCycles(Graph<String, DefaultWeightedEdge> classReferencesGraph)
+            throws IOException {
+        List<RankedCycle> rankedCycles = new ArrayList<>();
         CircularReferenceChecker<String, DefaultWeightedEdge> circularReferenceChecker =
                 new CircularReferenceChecker<>();
         Map<String, AsSubgraph<String, DefaultWeightedEdge>> cycles =
@@ -65,6 +62,8 @@ public class CycleRanker {
 
             rankedCycles.add(createRankedCycle(vertex, subGraph, cycleNodes, 0.0, new HashSet<>()));
         });
+
+        return rankedCycles;
     }
 
     public CycleNode classToCycleNode(String fqnClass) {

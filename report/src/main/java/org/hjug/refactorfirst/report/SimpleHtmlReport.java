@@ -50,7 +50,7 @@ public class SimpleHtmlReport {
     public final String[] classCycleTableHeadings = {"Classes", "Relationships"};
 
     Graph<String, DefaultWeightedEdge> classGraph;
-    Map<String, AsSubgraph<String, DefaultWeightedEdge>> cycles;
+    Map<String, AsSubgraph<String, DefaultWeightedEdge>> classCycles;
     Set<String> vertexesToRemove = Set.of(); // initialize for unit tests
     Set<DefaultWeightedEdge> edgesToRemove = Set.of();
 
@@ -173,19 +173,23 @@ public class SimpleHtmlReport {
         }
 
         CycleRanker cycleRanker = new CycleRanker(projectBaseDir);
-        List<RankedCycle> rankedCycles = List.of();
+        List<RankedCycle> rankedClassCycles = List.of();
+        CodebaseGraphDTO codebaseGraphDTO;
         if (analyzeCycles) {
             log.info("Analyzing Cycles");
-            rankedCycles = cycleRanker.performCycleAnalysis(excludeTests, testSourceDirectory);
-        } else {
             cycleRanker.generateClassReferencesGraph(excludeTests, testSourceDirectory);
+            codebaseGraphDTO = cycleRanker.getCodebaseGraphDTO();
+            rankedClassCycles = cycleRanker.performCycleAnalysis(codebaseGraphDTO.getClassReferencesGraph());
+        } else {
+            codebaseGraphDTO = cycleRanker.generateClassReferencesGraph(excludeTests, testSourceDirectory);
         }
 
-        classGraph = cycleRanker.getClassReferencesGraph();
-        cycles = new CircularReferenceChecker<String, DefaultWeightedEdge>().getCycles(classGraph);
+        classGraph = codebaseGraphDTO.getClassReferencesGraph();
+        classCycles = new CircularReferenceChecker<String, DefaultWeightedEdge>().getCycles(classGraph);
+        Map<DefaultWeightedEdge, Integer> edgeCycleCounts = new HashMap<>();
 
         // Skip vertex and edge removal analysis if there are no cycles
-        if (!cycles.isEmpty()) {
+        if (!classCycles.isEmpty()) {
             // Identify vertexes to remove
             log.info("Identifying vertexes to remove");
             EnhancedParameterComputer<String, DefaultWeightedEdge> enhancedParameterComputer =
@@ -207,35 +211,18 @@ public class SimpleHtmlReport {
             PageRankFAS<String, DefaultWeightedEdge> pageRankFAS =
                     new PageRankFAS<>(classGraph, new SuperTypeToken<>() {});
             edgesToRemove = pageRankFAS.computeFeedbackArcSet();
-        }
 
-        // capture the number of cycles each edge to remove is in
-        Map<DefaultWeightedEdge, Integer> edgeToRemoveCycleCounts = new HashMap<>();
-        for (DefaultWeightedEdge edgeToRemove : edgesToRemove) {
-            int cycleCount = 0;
-            for (AsSubgraph<String, DefaultWeightedEdge> cycle : cycles.values()) {
-                if (cycle.containsEdge(edgeToRemove)) {
-                    cycleCount++;
+            // capture the number of cycles each edge to remove is in
+            for (DefaultWeightedEdge edgeToRemove : edgesToRemove) {
+                int cycleCount = 0;
+                for (AsSubgraph<String, DefaultWeightedEdge> cycle : classCycles.values()) {
+                    if (cycle.containsEdge(edgeToRemove)) {
+                        cycleCount++;
+                    }
                 }
+                edgeCycleCounts.put(edgeToRemove, cycleCount);
             }
-            edgeToRemoveCycleCounts.put(edgeToRemove, cycleCount);
         }
-
-        // int edgeWeight = (int) classGraph.getEdgeWeight(defaultWeightedEdge);
-        // map sources to CycleNodes to get paths and get churn in try/finally block below
-        Map<DefaultWeightedEdge, CycleNode> sourceNodeInfos = new HashMap<>();
-        Map<DefaultWeightedEdge, CycleNode> targetNodeInfos = new HashMap<>();
-        for (DefaultWeightedEdge defaultWeightedEdge : edgesToRemove) {
-            String edgeSource = classGraph.getEdgeSource(defaultWeightedEdge);
-            CycleNode sourceNode = cycleRanker.classToCycleNode(edgeSource);
-            sourceNodeInfos.put(defaultWeightedEdge, sourceNode);
-
-            String edgeTarget = classGraph.getEdgeTarget(defaultWeightedEdge);
-            CycleNode targetNode = cycleRanker.classToCycleNode(edgeTarget);
-            targetNodeInfos.put(defaultWeightedEdge, targetNode);
-        }
-
-        List<RankedDisharmony> edgeDisharmonies = List.of();
 
         // Ordered (type, anchorId, displayTitle, isMethodLevel) for all disharmonies
         final List<DisharmonySpec> disharmonySpecs = List.of(
@@ -259,11 +246,11 @@ public class SimpleHtmlReport {
 
         log.info("Identifying Object Oriented Disharmonies");
 
-        CodebaseGraphDTO codebaseGraphDTO = cycleRanker.getCodebaseGraphDTO();
+        List<RankedDisharmony> edgeDisharmonies = List.of();
         try (CostBenefitCalculator costBenefitCalculator =
                 new CostBenefitCalculator(projectBaseDir, codebaseGraphDTO.getClassToSourceFilePathMapping())) {
             edgeDisharmonies = costBenefitCalculator.calculateSourceNodeCostBenefitValues(
-                    classGraph, edgeToRemoveCycleCounts, codebaseGraphDTO, vertexesToRemove);
+                    classGraph, edgeCycleCounts, codebaseGraphDTO, vertexesToRemove);
 
             for (DisharmonySpec spec : disharmonySpecs) {
                 List<DisharmonyInstance> instances = spec.methodLevel()
@@ -287,7 +274,7 @@ public class SimpleHtmlReport {
         // - Provide guidance on where to move the method if one is in the list to remove
 
         boolean hasAnyDisharmony =
-                !edgesToRemove.isEmpty() || !rankedCycles.isEmpty() || !rankedDisharmoniesByAnchor.isEmpty();
+                !edgesToRemove.isEmpty() || !rankedClassCycles.isEmpty() || !rankedDisharmoniesByAnchor.isEmpty();
 
         String repoUrl;
         try (GitLogReader glr = new GitLogReader(new File(projectBaseDir))) {
@@ -308,7 +295,7 @@ public class SimpleHtmlReport {
         }
 
         stringBuilder.append("<header>\n" + "<nav>\n" + " <ul>\n");
-        stringBuilder.append(createMenu(disharmonySpecs, rankedDisharmoniesByAnchor, rankedCycles));
+        stringBuilder.append(createMenu(disharmonySpecs, rankedDisharmoniesByAnchor, rankedClassCycles));
         stringBuilder.append("</ul>\n" + "</nav>\n" + "</header>\n");
 
         log.info("Generating HTML Report");
@@ -332,8 +319,8 @@ public class SimpleHtmlReport {
             }
         }
 
-        if (!rankedCycles.isEmpty()) {
-            stringBuilder.append(renderCycles(rankedCycles, repoUrl, codebaseGraphDTO));
+        if (!rankedClassCycles.isEmpty()) {
+            stringBuilder.append(renderCycles(rankedClassCycles, repoUrl, codebaseGraphDTO));
         }
 
         log.debug(stringBuilder.toString());
@@ -394,7 +381,7 @@ public class SimpleHtmlReport {
                 "<div style=\"text-align: center;\"><a id=\"EDGES\"><h1>Relationship Removal Priority</h1></a></div>\n");
         stringBuilder.append("<h2 align=\"center\">Refactor Starting with Priority 1</h2>\n");
         stringBuilder.append("<div style=\"text-align: center;\">\n");
-        stringBuilder.append("Current Cycle Count: ").append(cycles.size()).append("<br>\n");
+        stringBuilder.append("Current Cycle Count: ").append(classCycles.size()).append("<br>\n");
 
         stringBuilder
                 .append("Number of Relationships to Remove: ")
