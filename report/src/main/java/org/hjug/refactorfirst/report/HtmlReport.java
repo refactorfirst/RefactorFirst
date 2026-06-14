@@ -591,11 +591,12 @@ public class HtmlReport extends SimpleHtmlReport {
             Graph<String, DefaultWeightedEdge> classGraph, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
         StringBuilder dot = new StringBuilder();
         dot.append("`strict digraph G {\n");
+        dot.append("`compound=true;\n"); //!does not work :-(
 
         // label, edge
         Map<String, DefaultWeightedEdge> crossPackageEdges = new HashMap<>();
         Map<String, String> parentPackageMap = new HashMap<>();
-        Map<String, List<String>> childPackageMap = new HashMap<>();
+        Map<String, Set<String>> childPackageMap = new HashMap<>();
         Map<String, List<DefaultWeightedEdge>> samePackageEdges = new HashMap<>();
 
         // collect relationships
@@ -615,7 +616,7 @@ public class HtmlReport extends SimpleHtmlReport {
                     parentPackageMap.put(startPackage, parentNamespace);
 
                     if (!childPackageMap.containsKey(parentNamespace)) {
-                        childPackageMap.put(parentNamespace, new ArrayList<>());
+                        childPackageMap.put(parentNamespace, new HashSet<>());
                     }
                     childPackageMap.get(parentNamespace).add(startPackage);
                 }
@@ -625,17 +626,35 @@ public class HtmlReport extends SimpleHtmlReport {
                 if (!crossPackageEdges.containsKey(startPackage + "->" + endPackage)) {
                     crossPackageEdges.put(startPackage + "->" + endPackage, edge);
                 }
+
+                String startParentNamespace = getParentNamespace(startPackage);
+                parentPackageMap.putIfAbsent(startPackage, startParentNamespace);
+
+                if (!childPackageMap.containsKey(startParentNamespace)) {
+                    childPackageMap.put(startParentNamespace, new HashSet<>());
+                }
+                childPackageMap.get(startParentNamespace).add(startPackage);
+
+                String endParentNamespace = getParentNamespace(endPackage);
+                parentPackageMap.putIfAbsent(endPackage, endParentNamespace);
+
+                if (!childPackageMap.containsKey(endParentNamespace)) {
+                    childPackageMap.put(endParentNamespace, new HashSet<>());
+                }
+                childPackageMap.get(endParentNamespace).add(endPackage);
             }
         }
 
         // find root packages
-        List<String> rootPackages = new ArrayList<>();
+        Set<String> rootPackages = new HashSet<>();
         for (Map.Entry<String, String> pkgEntry : parentPackageMap.entrySet()) {
-            if (null == parentPackageMap.get(pkgEntry.getValue()) && !rootPackages.contains(pkgEntry.getValue())) {
+            if (null == parentPackageMap.get(pkgEntry.getValue())) {
                 rootPackages.add(pkgEntry.getValue());
             }
         }
 
+        // TODO: Reimplement renderPackages() to have it walk the source tree
+        // Add a source to class Map<String, Set<String>> or something in the JavaParser
         renderPackages(rootPackages, dot, samePackageEdges, childPackageMap);
 
         // render cross-package edges
@@ -664,6 +683,9 @@ public class HtmlReport extends SimpleHtmlReport {
             dot.append("\" ");
             dot.append("lhead = \"");
             dot.append(getParentNamespace(endVertex).replace(".", "_"));
+            dot.append("\" ");
+            dot.append("color = \"");
+            dot.append("blue");
             dot.append("\"");
             // TODO: revisit
             //            if (packageEdgesToRemove.contains(edge)) {
@@ -689,10 +711,10 @@ public class HtmlReport extends SimpleHtmlReport {
     }
 
     void renderPackages(
-            List<String> packages,
+            Set<String> packages,
             StringBuilder dot,
             Map<String, List<DefaultWeightedEdge>> samePackageEdges,
-            Map<String, List<String>> childPackageMap) {
+            Map<String, Set<String>> childPackageMap) {
 
         if (null == packages || packages.isEmpty()) {
             return;
