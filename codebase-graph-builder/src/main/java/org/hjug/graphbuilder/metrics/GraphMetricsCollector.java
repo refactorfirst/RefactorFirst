@@ -50,7 +50,7 @@ public class GraphMetricsCollector implements MetricsCollector {
     }
 
     @Override
-    public void addPackageDependency(String fromPackage, String toPackage) {
+    public DefaultWeightedEdge addPackageDependency(String fromPackage, String toPackage) {
         if (!packageGraph.containsVertex(fromPackage)) {
             packageGraph.addVertex(fromPackage);
         }
@@ -68,6 +68,8 @@ public class GraphMetricsCollector implements MetricsCollector {
             double weight = packageGraph.getEdgeWeight(edge);
             packageGraph.setEdgeWeight(edge, weight + 1.0);
         }
+
+        return edge;
     }
 
     @Override

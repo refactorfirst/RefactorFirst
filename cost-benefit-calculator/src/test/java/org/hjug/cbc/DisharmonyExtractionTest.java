@@ -172,6 +172,7 @@ class DisharmonyExtractionTest {
         return new CodebaseGraphDTO(
                 new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class),
                 new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class),
+                new HashMap<>(),
                 fileMap,
                 List.of(d),
                 List.of());
@@ -210,6 +211,7 @@ class DisharmonyExtractionTest {
         return new CodebaseGraphDTO(
                 new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class),
                 new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class),
+                new HashMap<>(),
                 fileMap,
                 List.of(),
                 List.of(d));

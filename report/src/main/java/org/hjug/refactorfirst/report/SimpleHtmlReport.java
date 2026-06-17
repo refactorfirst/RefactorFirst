@@ -383,7 +383,7 @@ public class SimpleHtmlReport {
                 .append("<br>\n");
 
         stringBuilder
-                .append("Number of Relationships to Remove: ")
+                .append("Number of Class Relationships to Remove: ")
                 .append(classRelationshipsToRemove.size())
                 .append("<br>\n");
         stringBuilder
@@ -433,7 +433,7 @@ public class SimpleHtmlReport {
                 .append("<br>\n");
 
         stringBuilder
-                .append("Number of Relationships to Remove: ")
+                .append("Number of Package Relationships to Remove: ")
                 .append(packageRelationshipsToRemove.size())
                 .append("<br>\n");
         stringBuilder
@@ -469,23 +469,6 @@ public class SimpleHtmlReport {
         return stringBuilder.toString();
     }
 
-    /*
-    when: com.parentPackage.package
-    then: com.parentPackage
-
-    when: com.package.ClassA
-    then: com.package
-    */
-    String getParentNamespace(String fqn) {
-        // handle no package
-        if (!fqn.contains(".")) {
-            return "";
-        }
-
-        int lastIndex = fqn.lastIndexOf(".");
-        return fqn.substring(0, lastIndex);
-    }
-
     private String[] getClassRelationshipDisharmonyTableHeadings() {
         return new String[] {
             "Relationship",
@@ -499,7 +482,7 @@ public class SimpleHtmlReport {
 
     private String[] getPackageRelationshipDisharmonyTableHeadings() {
         return new String[] {
-            "Relationship", "Priority", "In Cycles", "Edge<br>Weight",
+            "Package Relationship", "Priority", "In Cycles", "Edge<br>Weight", "Class Relationships",
         };
     }
 
@@ -517,11 +500,20 @@ public class SimpleHtmlReport {
 
     private String[] getPackageRelationshipDisharmony(
             RankedDisharmony edgeInfo, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
+
+        Set<DefaultWeightedEdge> classRelationshipsInPackageRelationship =
+                codebaseGraphDTO.getClassRelationshipsInPackageRelationship().get(edgeInfo.getEdge());
+        Set<String> classEdges = new HashSet<>();
+        for (DefaultWeightedEdge defaultWeightedEdge : classRelationshipsInPackageRelationship) {
+            classEdges.add(renderClassEdge(defaultWeightedEdge, repoUrl, codebaseGraphDTO));
+        }
+
         return new String[] {
             renderPackageEdge(edgeInfo.getEdge(), repoUrl, codebaseGraphDTO),
             String.valueOf(edgeInfo.getPriority()),
             String.valueOf(edgeInfo.getCycleCount()),
             String.valueOf(edgeInfo.getEffortRank()),
+            String.join("<br>", classEdges),
         };
     }
 

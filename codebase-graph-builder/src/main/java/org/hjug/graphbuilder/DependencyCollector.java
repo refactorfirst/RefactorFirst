@@ -1,5 +1,7 @@
 package org.hjug.graphbuilder;
 
+import org.jgrapht.graph.DefaultWeightedEdge;
+
 // TODO: Revisit - I don't think this is really needed
 public interface DependencyCollector {
 
@@ -17,7 +19,7 @@ public interface DependencyCollector {
      * @param fromPackageName The package that depends on another
      * @param toPackageName The package being depended upon
      */
-    void addPackageDependency(String fromPackageName, String toPackageName);
+    DefaultWeightedEdge addPackageDependency(String fromPackageName, String toPackageName);
 
     /**
      * Records the source file location for a class
