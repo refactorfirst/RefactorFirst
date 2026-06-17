@@ -51,7 +51,7 @@ public class GitLogReader implements AutoCloseable {
         git.close();
     }
 
-    public File getGitDir(File basedir) {
+    public static File getGitDir(File basedir) {
         FileRepositoryBuilder repositoryBuilder = new FileRepositoryBuilder().findGitDir(basedir);
         return repositoryBuilder.getGitDir();
     }

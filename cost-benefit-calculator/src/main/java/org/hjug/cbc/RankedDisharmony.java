@@ -22,7 +22,7 @@ public class RankedDisharmony {
     private String fileName;
     private final String className;
     private final Integer effortRank;
-    private final Integer changePronenessRank;
+    private Integer changePronenessRank;
     private Integer rawPriority;
     private Integer priority = 0;
 
@@ -44,7 +44,8 @@ public class RankedDisharmony {
     private int sourceNodeShouldBeRemoved;
     private int targetNodeShouldBeRemoved;
     private String edgeTargetClass;
-    private Integer edgeTargetChangePronenessRank;
+    private Integer edgeSourceDisharmonyCount;
+    private Integer edgeTargetDisharmonyCount;
 
     public RankedDisharmony(GodClass godClass, ScmLogInfo scmLogInfo) {
         path = scmLogInfo.getPath();
@@ -100,6 +101,7 @@ public class RankedDisharmony {
         commitCount = scmLogInfo.getCommitCount();
     }
 
+    // TODO: Move to a separate class?
     public RankedDisharmony(
             String edgeSource,
             DefaultWeightedEdge edge,
@@ -113,8 +115,8 @@ public class RankedDisharmony {
         className = edgeSource;
         this.edge = edge;
         this.cycleCount = cycleCount;
-        changePronenessRank = Math.toIntExact(sourceDisharmonyCount);
-        edgeTargetChangePronenessRank = Math.toIntExact(targetDisharmonyCount);
+        edgeSourceDisharmonyCount = Math.toIntExact(sourceDisharmonyCount);
+        edgeTargetDisharmonyCount = Math.toIntExact(targetDisharmonyCount);
         effortRank = weight;
         this.sourceNodeShouldBeRemoved = sourceNodeShouldBeRemoved ? 1 : 0;
         this.targetNodeShouldBeRemoved = targetNodeShouldBeRemoved ? 1 : 0;

@@ -561,13 +561,13 @@ public class HtmlReport extends SimpleHtmlReport {
         }
 
         // render vertices
-        renderVertices(classGraph, repoUrl, codebaseGraphDTO, vertexesToRender, dot);
+        renderClassVertices(classGraph, repoUrl, codebaseGraphDTO, vertexesToRender, dot);
 
         dot.append("}`;");
         return dot.toString();
     }
 
-    private void renderVertices(
+    private void renderClassVertices(
             Graph<String, DefaultWeightedEdge> classGraph,
             String repoUrl,
             CodebaseGraphDTO codebaseGraphDTO,
@@ -591,7 +591,7 @@ public class HtmlReport extends SimpleHtmlReport {
                 dot.append(" label=\"").append(className.replace("$", "\\$")).append("\"");
             }
 
-            if (vertexesToRemove.contains(vertex)) {
+            if (classesToRemove.contains(vertex)) {
                 dot.append(" color=red style=filled");
             }
 
@@ -645,7 +645,7 @@ public class HtmlReport extends SimpleHtmlReport {
         dot.append(edgeWeight);
         dot.append("\"");
 
-        if (edgesToRemove.contains(edge)) {
+        if (classRelationshipsToRemove.contains(edge)) {
             dot.append(" color = \"red\"");
         }
 
@@ -688,7 +688,7 @@ public class HtmlReport extends SimpleHtmlReport {
 
         // render vertices
         Set<String> vertexSet = cycle.getVertexSet();
-        renderVertices(classGraph, repoUrl, codebaseGraphDTO, vertexSet, dot);
+        renderClassVertices(classGraph, repoUrl, codebaseGraphDTO, vertexSet, dot);
 
         dot.append("}`;");
         return dot.toString();

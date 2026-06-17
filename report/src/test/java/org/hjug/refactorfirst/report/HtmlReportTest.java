@@ -51,8 +51,7 @@ class HtmlReportTest {
 
         String cycleName = "Test";
         List<CycleNode> cycleNodes = new ArrayList<>();
-        RankedCycle rankedCycle =
-                new RankedCycle(cycleName, 0, classGraph.vertexSet(), classGraph.edgeSet(), 0, null, cycleNodes);
+        RankedCycle rankedCycle = new RankedCycle(cycleName, classGraph.vertexSet(), classGraph.edgeSet(), cycleNodes);
 
         HtmlReport htmlReport = new HtmlReport();
         CodebaseGraphDTO dto = mock(CodebaseGraphDTO.class);

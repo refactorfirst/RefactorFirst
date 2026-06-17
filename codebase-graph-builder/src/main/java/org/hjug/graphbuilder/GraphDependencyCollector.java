@@ -39,6 +39,8 @@ public class GraphDependencyCollector implements DependencyCollector {
             DefaultWeightedEdge edge = classReferencesGraph.getEdge(fromClassFqn, toClassFqn);
             classReferencesGraph.setEdgeWeight(edge, classReferencesGraph.getEdgeWeight(edge) + 1);
         }
+
+        addPackageDependency(getPackageFromFqn(fromClassFqn), getPackageFromFqn(toClassFqn));
     }
 
     @Override
@@ -56,6 +58,14 @@ public class GraphDependencyCollector implements DependencyCollector {
             DefaultWeightedEdge edge = packageReferencesGraph.getEdge(fromPackageName, toPackageName);
             packageReferencesGraph.setEdgeWeight(edge, packageReferencesGraph.getEdgeWeight(edge) + 1);
         }
+    }
+
+    protected String getPackageFromFqn(String fqn) {
+        if (!fqn.contains(".")) {
+            return "";
+        }
+        int lastIndex = fqn.lastIndexOf(".");
+        return fqn.substring(0, lastIndex);
     }
 
     @Override

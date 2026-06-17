@@ -22,6 +22,7 @@ public class CycleRanker {
     @Getter
     private CodebaseGraphDTO codebaseGraphDTO;
 
+    // TODO: should this method belong in this class?
     public CodebaseGraphDTO generateClassReferencesGraph(boolean excludeTests, String testSourceDirectory) {
         try {
             JavaGraphBuilder javaGraphBuilder = new JavaGraphBuilder();
@@ -33,12 +34,10 @@ public class CycleRanker {
         return codebaseGraphDTO;
     }
 
-    public List<RankedCycle> performCycleAnalysis(Graph<String, DefaultWeightedEdge> graph) {
+    public List<RankedCycle> rankCycles(Graph<String, DefaultWeightedEdge> graph) {
         List<RankedCycle> rankedCycles;
         try {
-            boolean calculateCycleChurn = false;
             rankedCycles = new ArrayList<>(identifyRankedCycles(graph));
-            sortRankedCycles(rankedCycles, calculateCycleChurn);
             setPriorities(rankedCycles);
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -60,7 +59,7 @@ public class CycleRanker {
                     //                        .peek(cycleNode -> log.info(cycleNode.toString()))
                     .collect(Collectors.toList());
 
-            rankedCycles.add(createRankedCycle(vertex, subGraph, cycleNodes, 0.0, new HashSet<>()));
+            rankedCycles.add(new RankedCycle(vertex, subGraph.vertexSet(), subGraph.edgeSet(), cycleNodes));
         });
 
         return rankedCycles;
@@ -81,30 +80,8 @@ public class CycleRanker {
         return fileRepoPath;
     }
 
-    private RankedCycle createRankedCycle(
-            String vertex,
-            AsSubgraph<String, DefaultWeightedEdge> subGraph,
-            List<CycleNode> cycleNodes,
-            double minCut,
-            Set<DefaultWeightedEdge> minCutEdges) {
-
-        return new RankedCycle(vertex, subGraph.vertexSet(), subGraph.edgeSet(), minCut, minCutEdges, cycleNodes);
-    }
-
-    private static void sortRankedCycles(List<RankedCycle> rankedCycles, boolean calculateChurnForCycles) {
-        if (calculateChurnForCycles) {
-            rankedCycles.sort(Comparator.comparing(RankedCycle::getAverageChangeProneness));
-
-            int cpr = 1;
-            for (RankedCycle rankedCycle : rankedCycles) {
-                rankedCycle.setChangePronenessRank(cpr++);
-            }
-        } else {
-            rankedCycles.sort(Comparator.comparing(RankedCycle::getRawPriority).reversed());
-        }
-    }
-
     private static void setPriorities(List<RankedCycle> rankedCycles) {
+        rankedCycles.sort(Comparator.comparing(RankedCycle::getRawPriority).reversed());
         int priority = 1;
         for (RankedCycle rankedCycle : rankedCycles) {
             rankedCycle.setPriority(priority++);
