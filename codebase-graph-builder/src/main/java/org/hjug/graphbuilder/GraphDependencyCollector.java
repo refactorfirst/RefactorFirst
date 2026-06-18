@@ -83,8 +83,6 @@ public class GraphDependencyCollector implements DependencyCollector {
             packageReferencesGraph.setEdgeWeight(packageEdge, packageReferencesGraph.getEdgeWeight(packageEdge) + 1);
         }
 
-        log.warn("Package dependency: {} -> {}", fromClassFqn, toClassFqn);
-
         return packageEdge;
     }
 

@@ -420,6 +420,7 @@ public class HtmlReport extends SimpleHtmlReport {
             List<RankedCycle> rankedCycles) {
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append("<li><a href=\"#CLASSMAP\">Class Map</a></li>\n");
+        stringBuilder.append("<li><a href=\"#PACKAGEMAP\">Package Map</a></li>\n");
         stringBuilder.append(super.createMenu(disharmonySpecs, rankedDisharmoniesByAnchor, rankedCycles));
         return stringBuilder;
     }
@@ -477,6 +478,7 @@ public class HtmlReport extends SimpleHtmlReport {
         String classGraphName = "classGraph";
 
         StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append("<h1 align=\"center\"><a id=\"CLASSMAP\">Class Map</a></h1>");
         stringBuilder.append(generateGraphButtons(classGraphName, dot));
 
         stringBuilder.append(
@@ -498,7 +500,6 @@ public class HtmlReport extends SimpleHtmlReport {
 
     private StringBuilder generateGraphButtons(String graphName, String dot) {
         StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append("<h1 align=\"center\"><a id=\"CLASSMAP\">Class Map</a></h1>");
         stringBuilder.append("<script>\n");
         stringBuilder.append("const " + graphName + "_dot = " + dot + "\n");
         stringBuilder.append("</script>\n");
@@ -549,7 +550,7 @@ public class HtmlReport extends SimpleHtmlReport {
         dot.append("`strict digraph G {\n");
 
         for (DefaultWeightedEdge edge : classGraph.edgeSet()) {
-            renderEdge(classGraph, edge, dot);
+            renderClassGraphEdge(classGraph, edge, dot);
         }
 
         // capture only classes that have a relationship with one or more other classes
@@ -605,7 +606,7 @@ public class HtmlReport extends SimpleHtmlReport {
         return sb.append("URL=\"" + repoUrl + path + "\" target=\"_blank\"").toString();
     }
 
-    private void renderEdge(
+    private void renderClassGraphEdge(
             Graph<String, DefaultWeightedEdge> classGraph, DefaultWeightedEdge edge, StringBuilder dot) {
         // render edge
         String[] vertexes = extractVertexes(edge);
@@ -653,12 +654,13 @@ public class HtmlReport extends SimpleHtmlReport {
     }
 
     @Override
-    public String renderCycleVisuals(RankedCycle cycle, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
-        String dot = buildCycleDot(classGraph, cycle, repoUrl, codebaseGraphDTO);
+    public String renderClassCycleVisuals(RankedCycle cycle, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
+        String dot = buildClassCycleDot(classGraph, cycle, repoUrl, codebaseGraphDTO);
 
         String cycleName = getClassName(cycle.getCycleName()).replace("$", "_");
 
         StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append("<h1 align=\"center\">Cycle Map</h1>");
         stringBuilder.append(generateGraphButtons(cycleName, dot));
 
         if (cycle.getCycleNodes().size() + cycle.getEdgeSet().size() < dotGraphThreshold) {
@@ -674,7 +676,7 @@ public class HtmlReport extends SimpleHtmlReport {
         return stringBuilder.toString();
     }
 
-    String buildCycleDot(
+    String buildClassCycleDot(
             Graph<String, DefaultWeightedEdge> classGraph,
             RankedCycle cycle,
             String repoUrl,
@@ -683,7 +685,128 @@ public class HtmlReport extends SimpleHtmlReport {
         dot.append("`strict digraph G {\n");
 
         for (DefaultWeightedEdge edge : cycle.getEdgeSet()) {
-            renderEdge(classGraph, edge, dot);
+            renderClassGraphEdge(classGraph, edge, dot);
+        }
+
+        // render vertices
+        Set<String> vertexSet = cycle.getVertexSet();
+        renderClassVertices(classGraph, repoUrl, codebaseGraphDTO, vertexSet, dot);
+
+        dot.append("}`;");
+        return dot.toString();
+    }
+
+    @Override
+    public String renderPackageGraphVisuals(String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
+        String dot = buildPackageGraphDot(packageGraph, repoUrl, codebaseGraphDTO);
+        String packageGraphName = "packageGraph";
+
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append("<h1 align=\"center\"><a id=\"PACKAGEMAP\">Package Map</a></h1>");
+        stringBuilder.append(generateGraphButtons(packageGraphName, dot));
+
+        stringBuilder.append(
+                "<div align=\"center\">Excludes packages that have no incoming and outgoing edges<br></div>");
+
+        int packageCount = packageGraph.vertexSet().size();
+        int relationshipCount = packageGraph.edgeSet().size();
+        stringBuilder.append("<div align=\"center\">Number of packages: " + packageCount + "  Number of relationships: "
+                + relationshipCount + "<br></div>");
+        if (packageCount + relationshipCount < dotGraphThreshold) {
+            stringBuilder.append(generateDotImage(packageGraphName));
+        } else {
+            // revisit and add DOT SVG popup button
+            stringBuilder.append("<div align=\"center\">\nSVG is too big to render quickly</div>\n");
+        }
+
+        return stringBuilder.toString();
+    }
+
+    String buildPackageGraphDot(
+            Graph<String, DefaultWeightedEdge> packageGraph, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
+        StringBuilder dot = new StringBuilder();
+        dot.append("`strict digraph G {\n");
+
+        for (DefaultWeightedEdge edge : packageGraph.edgeSet()) {
+            renderPackageGraphEdge(packageGraph, edge, dot);
+        }
+
+        // capture only classes that have a relationship with one or more other classes
+        Set<String> vertexesToRender = new HashSet<>();
+        for (DefaultWeightedEdge edge : packageGraph.edgeSet()) {
+            String[] vertexes = extractVertexes(edge);
+            vertexesToRender.add(vertexes[0].trim());
+            vertexesToRender.add(vertexes[1].trim());
+        }
+
+        // render vertices
+        renderPackageVertices(packageGraph, repoUrl, codebaseGraphDTO, vertexesToRender, dot);
+
+        dot.append("}`;");
+        return dot.toString();
+    }
+
+    private void renderPackageGraphEdge(
+            Graph<String, DefaultWeightedEdge> packageGraph, DefaultWeightedEdge edge, StringBuilder dot) {
+        // render edge
+        String[] vertexes = extractVertexes(edge);
+
+        String start = vertexes[0].trim().replace(".", "_");
+        String end = vertexes[1].trim().replace(".", "_");
+
+        log.debug("Rendering edge: {} -> {}", start, end);
+        dot.append(start);
+        dot.append(" -> ");
+        dot.append(end);
+
+        // render edge attributes
+        int edgeWeight = (int) packageGraph.getEdgeWeight(edge);
+        dot.append(" [ ");
+        dot.append("label = \"");
+        dot.append(edgeWeight);
+        dot.append("\" ");
+        dot.append("weight = \"");
+        dot.append(edgeWeight);
+        dot.append("\"");
+
+        if (packageRelationshipsToRemove.contains(edge)) {
+            dot.append(" color = \"red\"");
+        }
+
+        dot.append(" ];\n");
+    }
+
+    private void renderPackageVertices(
+            Graph<String, DefaultWeightedEdge> classGraph,
+            String repoUrl,
+            CodebaseGraphDTO codebaseGraphDTO,
+            Set<String> vertexesToRender,
+            StringBuilder dot) {
+        for (String packageName : vertexesToRender) {
+            dot.append(packageName.replace(".", "_"));
+
+            dot.append(" [label=\"");
+            dot.append(packageName);
+            dot.append("\"");
+
+            if (packagesToRemove.contains(packageName)) {
+                dot.append(" color=red style=filled");
+            }
+
+            dot.append("];\n");
+        }
+    }
+
+    String buildPackageDot(
+            Graph<String, DefaultWeightedEdge> classGraph,
+            RankedCycle cycle,
+            String repoUrl,
+            CodebaseGraphDTO codebaseGraphDTO) {
+        StringBuilder dot = new StringBuilder();
+        dot.append("`strict digraph G {\n");
+
+        for (DefaultWeightedEdge edge : cycle.getEdgeSet()) {
+            renderClassGraphEdge(classGraph, edge, dot);
         }
 
         // render vertices

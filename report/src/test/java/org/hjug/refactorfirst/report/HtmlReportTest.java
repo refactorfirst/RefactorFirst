@@ -39,7 +39,7 @@ class HtmlReportTest {
     }
 
     @Test
-    void buildCycleDot() {
+    void buildClassCycleDot() {
         Graph<String, DefaultWeightedEdge> classGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
         classGraph.addVertex("A");
         classGraph.addVertex("B");
@@ -61,7 +61,7 @@ class HtmlReportTest {
         map.put("C", "/src/main/java/org/hjug/refactorfirst/C.java");
         when(dto.getClassToSourceFilePathMapping()).thenReturn(map);
         String repoUrl = "https://github.com/refactorfirst/RefactorFirst/blob";
-        String dot = htmlReport.buildCycleDot(classGraph, rankedCycle, repoUrl, dto);
+        String dot = htmlReport.buildClassCycleDot(classGraph, rankedCycle, repoUrl, dto);
         String expectedDot = "`strict digraph G {\n"
                 + "A -> B [ label = \"2\" weight = \"2\" ];\n"
                 + "B -> C [ label = \"1\" weight = \"1\" ];\n"

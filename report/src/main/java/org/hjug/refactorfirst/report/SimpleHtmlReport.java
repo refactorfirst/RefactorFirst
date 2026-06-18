@@ -298,6 +298,10 @@ public class SimpleHtmlReport {
             stringBuilder.append("<br/>\n" + "<br/>\n" + "<br/>\n" + "<br/>\n" + "<hr/>\n" + "<br/>\n" + "<br/>\n");
         }
 
+        stringBuilder.append(renderPackageGraphVisuals(repoUrl, codebaseGraphDTO));
+        stringBuilder.append("<br/>\n");
+        stringBuilder.append(renderGithubButtons());
+
         if (!packageRelationshipDisharmonies.isEmpty()) {
             stringBuilder.append(
                     renderPackageEdgeDisharmonies(packageRelationshipDisharmonies, repoUrl, codebaseGraphDTO));
@@ -675,7 +679,7 @@ public class SimpleHtmlReport {
                 + getClassName(cycle.getCycleName()) + "</h2></a>\n");
         stringBuilder.append(
                 "<h3 align=\"center\">Limiting number of cycles displayed to 1 to keep page load time fast</h3>\n");
-        stringBuilder.append(renderCycleVisuals(cycle, repoUrl, codebaseGraphDTO));
+        stringBuilder.append(renderClassCycleVisuals(cycle, repoUrl, codebaseGraphDTO));
 
         stringBuilder.append("<div align=\"center\">");
         stringBuilder.append("<strong>");
@@ -740,7 +744,11 @@ public class SimpleHtmlReport {
         return ""; // empty on purpose
     }
 
-    public String renderCycleVisuals(RankedCycle cycle, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
+    public String renderPackageGraphVisuals(String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
+        return ""; // empty on purpose
+    }
+
+    public String renderClassCycleVisuals(RankedCycle cycle, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
         return ""; // empty on purpose
     }
 
