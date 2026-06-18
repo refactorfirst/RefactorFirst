@@ -797,26 +797,6 @@ public class HtmlReport extends SimpleHtmlReport {
         }
     }
 
-    String buildPackageDot(
-            Graph<String, DefaultWeightedEdge> classGraph,
-            RankedCycle cycle,
-            String repoUrl,
-            CodebaseGraphDTO codebaseGraphDTO) {
-        StringBuilder dot = new StringBuilder();
-        dot.append("`strict digraph G {\n");
-
-        for (DefaultWeightedEdge edge : cycle.getEdgeSet()) {
-            renderClassGraphEdge(classGraph, edge, dot);
-        }
-
-        // render vertices
-        Set<String> vertexSet = cycle.getVertexSet();
-        renderClassVertices(classGraph, repoUrl, codebaseGraphDTO, vertexSet, dot);
-
-        dot.append("}`;");
-        return dot.toString();
-    }
-
     String generate2DPopup(String cycleName) {
         // Created by generative AI and modified
         return "<button style=\"display: block; margin: 0 auto;\" onclick=\"showPopup('popup-" + cycleName
