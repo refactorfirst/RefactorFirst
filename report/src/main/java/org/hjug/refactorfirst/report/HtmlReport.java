@@ -482,7 +482,7 @@ public class HtmlReport extends SimpleHtmlReport {
         stringBuilder.append(generateGraphButtons(classGraphName, dot));
 
         stringBuilder.append(
-                "<div align=\"center\">Excludes classes that have no incoming and outgoing edges<br></div>");
+                "<div align=\"center\">Clicking on a node in the DOT graph (if present below) will open its source file in the repo.  Right/Alt click to open in a new browser tab.<br>Excludes classes that have no incoming and outgoing edges<br></div>");
 
         int classCount = classGraph.vertexSet().size();
         int relationshipCount = classGraph.edgeSet().size();
@@ -510,8 +510,6 @@ public class HtmlReport extends SimpleHtmlReport {
         stringBuilder.append("<div align=\"center\">\nRed lines represent relationships to remove.<br>\n");
         stringBuilder.append("Red nodes represent classes to remove.<br>\n");
         stringBuilder.append("Zoom in / out with your mouse wheel and click/move to drag the image.<br>\n");
-        stringBuilder.append(
-                "Clicking on a node in the DOT graph (if present below) will open its source file in the repo.  It will not open a new browser window.\n");
         stringBuilder.append("</div>\n");
         return stringBuilder;
     }
@@ -662,6 +660,9 @@ public class HtmlReport extends SimpleHtmlReport {
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append("<h1 align=\"center\">Cycle Map</h1>");
         stringBuilder.append(generateGraphButtons(cycleName, dot));
+
+        stringBuilder.append(
+                "<div align=\"center\">Clicking on a node in the DOT graph (if present below) will open its source file in the repo.  Right/Alt click to open in a new browser tab.<br></div>");
 
         if (cycle.getCycleNodes().size() + cycle.getEdgeSet().size() < dotGraphThreshold) {
             stringBuilder.append(generateDotImage(cycleName));
