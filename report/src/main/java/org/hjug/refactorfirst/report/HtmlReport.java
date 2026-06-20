@@ -413,16 +413,12 @@ public class HtmlReport extends SimpleHtmlReport {
         return "<title>Refactor First Report for " + projectName + " " + projectVersion + " </title>\n";
     }
 
-    @Override
-    StringBuilder createMenu(
-            List<DisharmonySpec> disharmonySpecs,
-            Map<String, List<RankedDisharmony>> rankedDisharmoniesByAnchor,
-            List<RankedCycle> rankedCycles) {
-        StringBuilder stringBuilder = new StringBuilder();
+    void renderClassMapMenu(StringBuilder stringBuilder) {
         stringBuilder.append("<li><a href=\"#CLASSMAP\">Class Map</a></li>\n");
+    }
+
+    void renderPackageMapMenu(StringBuilder stringBuilder) {
         stringBuilder.append("<li><a href=\"#PACKAGEMAP\">Package Map</a></li>\n");
-        stringBuilder.append(super.createMenu(disharmonySpecs, rankedDisharmoniesByAnchor, rankedCycles));
-        return stringBuilder;
     }
 
     @Override

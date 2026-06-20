@@ -337,16 +337,27 @@ public class SimpleHtmlReport {
             Map<String, List<RankedDisharmony>> rankedDisharmoniesByAnchor,
             List<RankedCycle> rankedCycles) {
         StringBuilder menu = new StringBuilder();
+
         if (!classRelationshipsToRemove.isEmpty()) {
+            menu.append("<li><a href=\"#\">Classes</a>\n" + "<ul>");
+            renderClassMapMenu(menu);
             menu.append("<li><a href=\"#CLASSEDGES\">Class Relationships To Remove</a></li>\n");
+            menu.append("</ul>\n" + "</li>");
+        } else {
+            renderClassMapMenu(menu);
         }
 
         if (!packageRelationshipsToRemove.isEmpty()) {
+            menu.append("<li><a href=\"#\">Packages</a>\n" + "<ul>");
+            renderPackageMapMenu(menu);
             menu.append("<li><a href=\"#PACKAGEEDGES\">Package Relationships To Remove</a></li>\n");
+            menu.append("</ul>\n" + "</li>");
+        } else {
+            renderClassMapMenu(menu);
         }
 
         if (!disharmonySpecs.isEmpty()) {
-            menu.append("<li><a href=\"#\">Disharmonies</a>\n" + "                <ul>");
+            menu.append("<li><a href=\"#\">Disharmonies</a>\n" + "<ul>");
         }
 
         for (DisharmonySpec spec : disharmonySpecs) {
@@ -360,15 +371,21 @@ public class SimpleHtmlReport {
         }
 
         if (!disharmonySpecs.isEmpty()) {
-            menu.append("</ul>\n" + "            </li>");
+            menu.append("</ul>\n" + "</li>");
         }
 
         if (!rankedCycles.isEmpty()) {
+            menu.append("<li><a href=\"#\">Cycles</a>\n" + "<ul>");
             menu.append("<li><a href=\"#CYCLES\">Class Cycles</a></li>\n");
             menu.append("<li><a href=\"#CYCLEMAP\">Cycle Map</a></li>\n");
+            menu.append("</ul>\n" + "</li>");
         }
         return menu;
     }
+
+    void renderClassMapMenu(StringBuilder stringBuilder) {}
+
+    void renderPackageMapMenu(StringBuilder stringBuilder) {}
 
     private String renderCycles(List<RankedCycle> rankedCycles, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
         StringBuilder stringBuilder = new StringBuilder();
