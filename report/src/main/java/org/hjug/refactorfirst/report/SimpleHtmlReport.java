@@ -126,12 +126,6 @@ public class SimpleHtmlReport {
             testSourceDirectory = "src" + File.separator + "test";
         }
 
-        StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append(printOpenBodyTag());
-        stringBuilder.append(printScripts());
-        stringBuilder.append(printBreadcrumbs());
-        stringBuilder.append(printProjectHeader(projectName, projectVersion));
-
         String projectBaseDir;
         Optional<File> optionalGitDir;
         if (baseDir != null) {
@@ -141,6 +135,12 @@ public class SimpleHtmlReport {
             projectBaseDir = Paths.get("").toAbsolutePath().toString();
             optionalGitDir = Optional.ofNullable(GitLogReader.getGitDir(new File(projectBaseDir)));
         }
+
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append(printOpenBodyTag());
+        stringBuilder.append(printScripts());
+        stringBuilder.append(printBreadcrumbs());
+        stringBuilder.append(printProjectHeader(projectName, projectVersion, projectBaseDir));
 
         File gitDir;
         if (optionalGitDir.isPresent()) {
@@ -264,10 +264,7 @@ public class SimpleHtmlReport {
                 || !rankedClassCycles.isEmpty()
                 || !rankedDisharmoniesByAnchor.isEmpty();
 
-        String repoUrl;
-        try (GitLogReader glr = new GitLogReader(new File(projectBaseDir))) {
-            repoUrl = glr.getOriginUrl().replace(".git", "") + "/blob/" + glr.getCurrentCommitHash() + "/";
-        }
+        String repoUrl = getRepoUrl(projectBaseDir);
 
         if (!hasAnyDisharmony) {
             stringBuilder
@@ -327,13 +324,25 @@ public class SimpleHtmlReport {
         return stringBuilder;
     }
 
+    private static String getRepoUrl(String projectBaseDir) throws Exception {
+        String repoUrl;
+        try (GitLogReader glr = new GitLogReader(new File(projectBaseDir))) {
+            repoUrl = glr.getOriginUrl().replace(".git", "") + "/blob/" + glr.getCurrentCommitHash() + "/";
+        }
+        return repoUrl;
+    }
+
     StringBuilder createMenu(
             List<DisharmonySpec> disharmonySpecs,
             Map<String, List<RankedDisharmony>> rankedDisharmoniesByAnchor,
             List<RankedCycle> rankedCycles) {
         StringBuilder menu = new StringBuilder();
         if (!classRelationshipsToRemove.isEmpty()) {
-            menu.append("<li><a href=\"#EDGES\">Edges To Remove</a></li>\n");
+            menu.append("<li><a href=\"#CLASSEDGES\">Class Relationships To Remove</a></li>\n");
+        }
+
+        if (!packageRelationshipsToRemove.isEmpty()) {
+            menu.append("<li><a href=\"#PACKAGEEDGES\">Package Relationships To Remove</a></li>\n");
         }
 
         if (!disharmonySpecs.isEmpty()) {
@@ -378,7 +387,7 @@ public class SimpleHtmlReport {
         StringBuilder stringBuilder = new StringBuilder();
 
         stringBuilder.append(
-                "<div style=\"text-align: center;\"><a id=\"EDGES\"><h1>Class Relationship Removal Priority</h1></a></div>\n");
+                "<div style=\"text-align: center;\"><a id=\"CLASSEDGES\"><h1>Class Relationship Removal Priority</h1></a></div>\n");
         stringBuilder.append("<h2 align=\"center\">Refactor Starting with Priority 1</h2>\n");
         stringBuilder.append("<div style=\"text-align: center;\">\n");
         stringBuilder
@@ -428,7 +437,7 @@ public class SimpleHtmlReport {
         StringBuilder stringBuilder = new StringBuilder();
 
         stringBuilder.append(
-                "<div style=\"text-align: center;\"><a id=\"EDGES\"><h1>Package Relationship Removal Priority</h1></a></div>\n");
+                "<div style=\"text-align: center;\"><a id=\"PACKAGEEDGES\"><h1>Package Relationship Removal Priority</h1></a></div>\n");
         stringBuilder.append("<h2 align=\"center\">Refactor Starting with Priority 1</h2>\n");
         stringBuilder.append("<div style=\"text-align: center;\">\n");
         stringBuilder
@@ -799,17 +808,18 @@ public class SimpleHtmlReport {
                 + "      <div class=\"xleft\">\n";
     }
 
-    public String printProjectHeader(String projectName, String projectVersion) {
+    public String printProjectHeader(String projectName, String projectVersion, String projectBaseDir)
+            throws Exception {
+        String repoUrl = getRepoUrl(projectBaseDir);
+
         return "</div>\n" + "      <div class=\"xright\">      </div>\n"
                 + "    </div>\n"
                 + "    <div id=\"bodyColumn\">\n"
                 + "      <div id=\"contentBox\">\n"
                 + "<h2 align=\"center\"><a href=\"https://github.com/refactorfirst/refactorfirst\" target=\"_blank\" "
                 + "title=\"Learn about RefactorFirst\" aria-label=\"RefactorFirst\">RefactorFirst</a> Report for "
-                + projectName
-                + " "
-                + projectVersion
-                + "</h2>\n";
+                + "<a href=" + repoUrl + " target=\"_blank\">" + projectName + " "
+                + projectVersion + "</a></h2>\n";
     }
 
     public String printProjectFooter() {
