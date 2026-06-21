@@ -5,7 +5,9 @@ import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.java.JavadocVisitor;
 import org.openrewrite.java.tree.*;
+import org.openrewrite.java.tree.Javadoc;
 
 @Slf4j
 public class MetricsCollectingVisitor extends JavaIsoVisitor<ExecutionContext> {
@@ -20,6 +22,21 @@ public class MetricsCollectingVisitor extends JavaIsoVisitor<ExecutionContext> {
 
     public MetricsCollectingVisitor(MetricsCollector metricsCollector) {
         this.metricsCollector = metricsCollector;
+    }
+
+    /**
+     * Returns a JavadocVisitor that does nothing.  This is done to prevent the visitor from including references in
+     * Javadocs as metric counts
+     * @return JavadocVisitor that does nothing.
+     */
+    @Override
+    protected JavadocVisitor<ExecutionContext> getJavadocVisitor() {
+        return new JavadocVisitor<>(this) {
+            @Override
+            public Javadoc visitDocComment(Javadoc.DocComment docComment, ExecutionContext ctx) {
+                return docComment;
+            }
+        };
     }
 
     @Override

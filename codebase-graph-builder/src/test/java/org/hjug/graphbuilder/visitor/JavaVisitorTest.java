@@ -33,6 +33,7 @@ class JavaVisitorTest {
     private static final String INITIALIZERS = TESTCLASSES + "/initializers";
     private static final String VARIABLE_INITIALIZERS = TESTCLASSES + "/variableInitializers";
     private static final String TRY_CATCH = TESTCLASSES + "/tryCatch";
+    private static final String JAVADOC_TESTCLASSES = TESTCLASSES + "/javadoc";
 
     private static String repoFrom(String pathString) {
         return new File(pathString).toURI().toString().replace("/" + pathString, "");
@@ -84,7 +85,7 @@ class JavaVisitorTest {
         javaParser
                 .parse(list, Paths.get(srcDirectory.getAbsolutePath()), ctx)
                 .forEach(cu -> javaVisitor.visit(cu, ctx));
-        assertEquals(7, dependencyCollector.getPackagesInCodebase().size());
+        assertEquals(8, dependencyCollector.getPackagesInCodebase().size());
     }
 
     @Test
@@ -359,6 +360,16 @@ class JavaVisitorTest {
                         "org.hjug.graphbuilder.visitor.testclasses.tryCatch.TryCatchOwner",
                         "org.hjug.graphbuilder.visitor.testclasses.tryCatch.CaughtDependency"),
                 "catch clause exception type is double-processed by visitTry manual loop after super already handled it");
+    }
+
+    @Test
+    void javadocReferencedClassDoesNotCreateSpuriousDependencyEdge() throws IOException {
+        Graph<String, DefaultWeightedEdge> graph = buildAndVisit(JAVADOC_TESTCLASSES);
+        assertFalse(
+                graph.containsEdge(
+                        "org.hjug.graphbuilder.visitor.testclasses.javadoc.JavaDocOwner",
+                        "org.hjug.graphbuilder.visitor.testclasses.javadoc.JavaDocSibling"),
+                "JavaDocSibling is referenced only in Javadoc {@link} and must not create a dependency edge from JavaDocOwner");
     }
 
     private static double getEdgeWeight(
