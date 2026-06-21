@@ -65,12 +65,4 @@ public abstract class BaseTypeProcessor {
             processAnnotation(ownerFqn, annotation, cursor);
         }
     }
-
-    protected String getPackageFromFqn(String fqn) {
-        if (!fqn.contains(".")) {
-            return "";
-        }
-        int lastIndex = fqn.lastIndexOf(".");
-        return fqn.substring(0, lastIndex);
-    }
 }

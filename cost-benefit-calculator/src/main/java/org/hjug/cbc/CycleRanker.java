@@ -20,30 +20,24 @@ public class CycleRanker {
     private final String repositoryPath;
 
     @Getter
-    private Graph<String, DefaultWeightedEdge> classReferencesGraph;
-
-    @Getter
     private CodebaseGraphDTO codebaseGraphDTO;
 
-    public void generateClassReferencesGraph(boolean excludeTests, String testSourceDirectory) {
+    // TODO: should this method belong in this class?
+    public CodebaseGraphDTO generateClassReferencesGraph(boolean excludeTests, String testSourceDirectory) {
         try {
             JavaGraphBuilder javaGraphBuilder = new JavaGraphBuilder();
-
             codebaseGraphDTO = javaGraphBuilder.getCodebaseGraphDTO(repositoryPath, excludeTests, testSourceDirectory);
-
-            classReferencesGraph = codebaseGraphDTO.getClassReferencesGraph();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+
+        return codebaseGraphDTO;
     }
 
-    public List<RankedCycle> performCycleAnalysis(boolean excludeTests, String testSourceDirectory) {
-        List<RankedCycle> rankedCycles = new ArrayList<>();
+    public List<RankedCycle> rankCycles(Graph<String, DefaultWeightedEdge> graph) {
+        List<RankedCycle> rankedCycles;
         try {
-            boolean calculateCycleChurn = false;
-            generateClassReferencesGraph(excludeTests, testSourceDirectory);
-            identifyRankedCycles(rankedCycles);
-            sortRankedCycles(rankedCycles, calculateCycleChurn);
+            rankedCycles = new ArrayList<>(identifyRankedCycles(graph));
             setPriorities(rankedCycles);
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -52,7 +46,9 @@ public class CycleRanker {
         return rankedCycles;
     }
 
-    private void identifyRankedCycles(List<RankedCycle> rankedCycles) throws IOException {
+    private List<RankedCycle> identifyRankedCycles(Graph<String, DefaultWeightedEdge> classReferencesGraph)
+            throws IOException {
+        List<RankedCycle> rankedCycles = new ArrayList<>();
         CircularReferenceChecker<String, DefaultWeightedEdge> circularReferenceChecker =
                 new CircularReferenceChecker<>();
         Map<String, AsSubgraph<String, DefaultWeightedEdge>> cycles =
@@ -63,8 +59,10 @@ public class CycleRanker {
                     //                        .peek(cycleNode -> log.info(cycleNode.toString()))
                     .collect(Collectors.toList());
 
-            rankedCycles.add(createRankedCycle(vertex, subGraph, cycleNodes, 0.0, new HashSet<>()));
+            rankedCycles.add(new RankedCycle(vertex, subGraph.vertexSet(), subGraph.edgeSet(), cycleNodes));
         });
+
+        return rankedCycles;
     }
 
     public CycleNode classToCycleNode(String fqnClass) {
@@ -82,30 +80,8 @@ public class CycleRanker {
         return fileRepoPath;
     }
 
-    private RankedCycle createRankedCycle(
-            String vertex,
-            AsSubgraph<String, DefaultWeightedEdge> subGraph,
-            List<CycleNode> cycleNodes,
-            double minCut,
-            Set<DefaultWeightedEdge> minCutEdges) {
-
-        return new RankedCycle(vertex, subGraph.vertexSet(), subGraph.edgeSet(), minCut, minCutEdges, cycleNodes);
-    }
-
-    private static void sortRankedCycles(List<RankedCycle> rankedCycles, boolean calculateChurnForCycles) {
-        if (calculateChurnForCycles) {
-            rankedCycles.sort(Comparator.comparing(RankedCycle::getAverageChangeProneness));
-
-            int cpr = 1;
-            for (RankedCycle rankedCycle : rankedCycles) {
-                rankedCycle.setChangePronenessRank(cpr++);
-            }
-        } else {
-            rankedCycles.sort(Comparator.comparing(RankedCycle::getRawPriority).reversed());
-        }
-    }
-
     private static void setPriorities(List<RankedCycle> rankedCycles) {
+        rankedCycles.sort(Comparator.comparing(RankedCycle::getRawPriority).reversed());
         int priority = 1;
         for (RankedCycle rankedCycle : rankedCycles) {
             rankedCycle.setPriority(priority++);

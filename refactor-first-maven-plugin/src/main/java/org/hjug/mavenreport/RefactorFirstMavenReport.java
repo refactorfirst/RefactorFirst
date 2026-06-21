@@ -1,7 +1,6 @@
 package org.hjug.mavenreport;
 
 import java.util.*;
-
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.maven.doxia.markup.HtmlMarkup;

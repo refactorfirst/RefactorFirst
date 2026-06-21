@@ -99,6 +99,12 @@ public class JavaGraphBuilder {
         }
 
         removeClassesNotInCodebase(dependencyCollector.getPackagesInCodebase(), classReferencesGraph);
+        removePackagesNotInCodebase(dependencyCollector.getPackagesInCodebase(), packageReferencesGraph);
+        // remove class relationships that are not in the codebase that are in the package -> class relationship mapping
+        dependencyCollector
+                .getClassRelationshipsInPackageRelationship()
+                .keySet()
+                .retainAll(packageReferencesGraph.edgeSet());
 
         metricsCollector.finalizeMetrics();
         DisharmonyDetector detector = new DisharmonyDetector();
@@ -107,6 +113,7 @@ public class JavaGraphBuilder {
         return new CodebaseGraphDTO(
                 classReferencesGraph,
                 packageReferencesGraph,
+                dependencyCollector.getClassRelationshipsInPackageRelationship(),
                 javaVisitor.getClassToSourceFilePathMapping(), // hudson.model.FilePath ->
                 // file:///C:/Code/RefactorFirst/cost-benefit-calculator/hudson/model/FilePath.java
                 getClassDisharmonies(detector, metrics),
@@ -149,6 +156,20 @@ public class JavaGraphBuilder {
         }
 
         classReferencesGraph.removeAllVertices(classesToRemove);
+    }
+
+    void removePackagesNotInCodebase(
+            Set<String> packagesInCodebase, Graph<String, DefaultWeightedEdge> packageReferencesGraph) {
+
+        // collect nodes to remove
+        Set<String> packagesToRemove = new HashSet<>();
+        for (String aPackage : packageReferencesGraph.vertexSet()) {
+            if (!packagesInCodebase.contains(aPackage)) {
+                packagesToRemove.add(aPackage);
+            }
+        }
+
+        packageReferencesGraph.removeAllVertices(packagesToRemove);
     }
 
     String getPackage(String fqn) {

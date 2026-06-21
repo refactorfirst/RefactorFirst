@@ -326,7 +326,7 @@ public class CostBenefitCalculator implements AutoCloseable {
         return cboClasses;
     }
 
-    public List<RankedDisharmony> calculateSourceNodeCostBenefitValues(
+    public List<RankedDisharmony> calculateRelationshipCostBenefitValues(
             Graph<String, DefaultWeightedEdge> classGraph,
             Map<DefaultWeightedEdge, Integer> edgeToRemoveCycleCounts,
             CodebaseGraphDTO dto,
@@ -352,6 +352,7 @@ public class CostBenefitCalculator implements AutoCloseable {
                     targetNodeShouldBeRemoved,
                     dto.getClassDisharmonyCountForClass(edgeSource),
                     dto.getClassDisharmonyCountForClass(edgeTarget));
+
             edgesThatNeedToBeRemoved.add(edgeThatNeedsToBeRemoved);
         }
 
@@ -383,8 +384,8 @@ public class CostBenefitCalculator implements AutoCloseable {
                 // then by weight, with lowest weight edges bubbling to the top
                 .thenComparingInt(RankedDisharmony::getEffortRank)
                 // then by disharmony count
-                .thenComparingInt(RankedDisharmony::getChangePronenessRank)
-                .thenComparingInt(RankedDisharmony::getEdgeTargetChangePronenessRank)
+                .thenComparingInt(RankedDisharmony::getEdgeSourceDisharmonyCount)
+                .thenComparingInt(RankedDisharmony::getEdgeTargetDisharmonyCount)
                 // then if the source node is in the list of nodes to be removed
                 // multiplying by -1 reverses the sort order (reverse doesn't work in chained comparators)
                 .thenComparingInt(rankedDisharmony -> -1 * rankedDisharmony.getSourceNodeShouldBeRemoved())

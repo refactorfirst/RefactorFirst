@@ -16,12 +16,8 @@ import java.util.regex.Pattern;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.hjug.cbc.*;
-import org.hjug.dsm.CircularReferenceChecker;
-import org.hjug.feedback.SuperTypeToken;
-import org.hjug.feedback.arc.pageRank.PageRankFAS;
-import org.hjug.feedback.vertex.kernelized.DirectedFeedbackVertexSetResult;
-import org.hjug.feedback.vertex.kernelized.DirectedFeedbackVertexSetSolver;
-import org.hjug.feedback.vertex.kernelized.EnhancedParameterComputer;
+import org.hjug.feedback.CycleRemovalComputer;
+import org.hjug.feedback.CycleRemovalResult;
 import org.hjug.git.GitLogReader;
 import org.hjug.graphbuilder.CodebaseGraphDTO;
 import org.hjug.graphbuilder.metrics.DisharmonyMetric;
@@ -50,9 +46,13 @@ public class SimpleHtmlReport {
     public final String[] classCycleTableHeadings = {"Classes", "Relationships"};
 
     Graph<String, DefaultWeightedEdge> classGraph;
-    Map<String, AsSubgraph<String, DefaultWeightedEdge>> cycles;
-    Set<String> vertexesToRemove = Set.of(); // initialize for unit tests
-    Set<DefaultWeightedEdge> edgesToRemove = Set.of();
+    Graph<String, DefaultWeightedEdge> packageGraph;
+    Map<String, AsSubgraph<String, DefaultWeightedEdge>> classCycles;
+    Map<String, AsSubgraph<String, DefaultWeightedEdge>> packageCycles;
+    Set<String> classesToRemove = Set.of(); // initialize for unit tests
+    Set<String> packagesToRemove = Set.of(); // initialize for unit tests
+    Set<DefaultWeightedEdge> classRelationshipsToRemove = Set.of();
+    Set<DefaultWeightedEdge> packageRelationshipsToRemove = Set.of();
 
     DateTimeFormatter formatter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT)
             .withLocale(Locale.getDefault())
@@ -126,23 +126,21 @@ public class SimpleHtmlReport {
             testSourceDirectory = "src" + File.separator + "test";
         }
 
+        String projectBaseDir;
+        Optional<File> optionalGitDir;
+        if (baseDir != null) {
+            projectBaseDir = baseDir.getPath();
+            optionalGitDir = Optional.ofNullable(GitLogReader.getGitDir(baseDir));
+        } else {
+            projectBaseDir = Paths.get("").toAbsolutePath().toString();
+            optionalGitDir = Optional.ofNullable(GitLogReader.getGitDir(new File(projectBaseDir)));
+        }
+
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append(printOpenBodyTag());
         stringBuilder.append(printScripts());
         stringBuilder.append(printBreadcrumbs());
-        stringBuilder.append(printProjectHeader(projectName, projectVersion));
-
-        GitLogReader gitLogReader = new GitLogReader();
-        String projectBaseDir;
-        Optional<File> optionalGitDir;
-
-        if (baseDir != null) {
-            projectBaseDir = baseDir.getPath();
-            optionalGitDir = Optional.ofNullable(gitLogReader.getGitDir(baseDir));
-        } else {
-            projectBaseDir = Paths.get("").toAbsolutePath().toString();
-            optionalGitDir = Optional.ofNullable(gitLogReader.getGitDir(new File(projectBaseDir)));
-        }
+        stringBuilder.append(printProjectHeader(projectName, projectVersion, projectBaseDir));
 
         File gitDir;
         if (optionalGitDir.isPresent()) {
@@ -173,69 +171,41 @@ public class SimpleHtmlReport {
         }
 
         CycleRanker cycleRanker = new CycleRanker(projectBaseDir);
-        List<RankedCycle> rankedCycles = List.of();
+        List<RankedCycle> rankedClassCycles = List.of();
+        //        List<RankedCycle> rankedPackageCycles = List.of();
+        CodebaseGraphDTO codebaseGraphDTO;
         if (analyzeCycles) {
             log.info("Analyzing Cycles");
-            rankedCycles = cycleRanker.performCycleAnalysis(excludeTests, testSourceDirectory);
-        } else {
             cycleRanker.generateClassReferencesGraph(excludeTests, testSourceDirectory);
+            codebaseGraphDTO = cycleRanker.getCodebaseGraphDTO();
+            rankedClassCycles = cycleRanker.rankCycles(codebaseGraphDTO.getClassReferencesGraph());
+            //            rankedPackageCycles = cycleRanker.rankCycles(codebaseGraphDTO.getPackageReferencesGraph());
+        } else {
+            codebaseGraphDTO = cycleRanker.generateClassReferencesGraph(excludeTests, testSourceDirectory);
         }
 
-        classGraph = cycleRanker.getClassReferencesGraph();
-        cycles = new CircularReferenceChecker<String, DefaultWeightedEdge>().getCycles(classGraph);
+        classGraph = codebaseGraphDTO.getClassReferencesGraph();
 
-        // Skip vertex and edge removal analysis if there are no cycles
-        if (!cycles.isEmpty()) {
-            // Identify vertexes to remove
-            log.info("Identifying vertexes to remove");
-            EnhancedParameterComputer<String, DefaultWeightedEdge> enhancedParameterComputer =
-                    new EnhancedParameterComputer<>(new SuperTypeToken<>() {});
-            EnhancedParameterComputer.EnhancedParameters<String> parameters =
-                    enhancedParameterComputer.computeOptimalParameters(classGraph, 4);
-            DirectedFeedbackVertexSetSolver<String, DefaultWeightedEdge> vertexSolver =
-                    new DirectedFeedbackVertexSetSolver<>(
-                            classGraph,
-                            parameters.getModulator(),
-                            null,
-                            parameters.getEta(),
-                            new SuperTypeToken<>() {});
-            DirectedFeedbackVertexSetResult<String> vertexSetResult = vertexSolver.solve(parameters.getK());
-            vertexesToRemove = vertexSetResult.getFeedbackVertices();
+        CycleRemovalComputer cycleRemovalComputer = new CycleRemovalComputer();
 
-            // Identify edges to remove
-            log.info("Identifying edges to remove");
-            PageRankFAS<String, DefaultWeightedEdge> pageRankFAS =
-                    new PageRankFAS<>(classGraph, new SuperTypeToken<>() {});
-            edgesToRemove = pageRankFAS.computeFeedbackArcSet();
+        CycleRemovalResult classCycleRemovalResult = cycleRemovalComputer.computeCycleRemovalInformation(classGraph);
+        Map<DefaultWeightedEdge, Integer> classEdgeCycleCounts = classCycleRemovalResult.getEdgeCycleCounts();
+        classRelationshipsToRemove = classCycleRemovalResult.getEdgesToRemove();
+        classesToRemove = classCycleRemovalResult.getVertexesToRemove();
+        classCycles = classCycleRemovalResult.getCycles();
+
+        packageGraph = codebaseGraphDTO.getPackageReferencesGraph();
+
+        for (DefaultWeightedEdge defaultWeightedEdge : packageGraph.edgeSet()) {
+            log.warn(defaultWeightedEdge.toString() + ": " + packageGraph.getEdgeWeight(defaultWeightedEdge));
         }
 
-        // capture the number of cycles each edge to remove is in
-        Map<DefaultWeightedEdge, Integer> edgeToRemoveCycleCounts = new HashMap<>();
-        for (DefaultWeightedEdge edgeToRemove : edgesToRemove) {
-            int cycleCount = 0;
-            for (AsSubgraph<String, DefaultWeightedEdge> cycle : cycles.values()) {
-                if (cycle.containsEdge(edgeToRemove)) {
-                    cycleCount++;
-                }
-            }
-            edgeToRemoveCycleCounts.put(edgeToRemove, cycleCount);
-        }
-
-        // int edgeWeight = (int) classGraph.getEdgeWeight(defaultWeightedEdge);
-        // map sources to CycleNodes to get paths and get churn in try/finally block below
-        Map<DefaultWeightedEdge, CycleNode> sourceNodeInfos = new HashMap<>();
-        Map<DefaultWeightedEdge, CycleNode> targetNodeInfos = new HashMap<>();
-        for (DefaultWeightedEdge defaultWeightedEdge : edgesToRemove) {
-            String edgeSource = classGraph.getEdgeSource(defaultWeightedEdge);
-            CycleNode sourceNode = cycleRanker.classToCycleNode(edgeSource);
-            sourceNodeInfos.put(defaultWeightedEdge, sourceNode);
-
-            String edgeTarget = classGraph.getEdgeTarget(defaultWeightedEdge);
-            CycleNode targetNode = cycleRanker.classToCycleNode(edgeTarget);
-            targetNodeInfos.put(defaultWeightedEdge, targetNode);
-        }
-
-        List<RankedDisharmony> edgeDisharmonies = List.of();
+        CycleRemovalResult packageCycleRemovalResult =
+                cycleRemovalComputer.computeCycleRemovalInformation(packageGraph);
+        Map<DefaultWeightedEdge, Integer> packageEdgeCycleCounts = packageCycleRemovalResult.getEdgeCycleCounts();
+        packageRelationshipsToRemove = packageCycleRemovalResult.getEdgesToRemove();
+        packagesToRemove = packageCycleRemovalResult.getVertexesToRemove();
+        packageCycles = packageCycleRemovalResult.getCycles();
 
         // Ordered (type, anchorId, displayTitle, isMethodLevel) for all disharmonies
         final List<DisharmonySpec> disharmonySpecs = List.of(
@@ -259,11 +229,14 @@ public class SimpleHtmlReport {
 
         log.info("Identifying Object Oriented Disharmonies");
 
-        CodebaseGraphDTO codebaseGraphDTO = cycleRanker.getCodebaseGraphDTO();
+        List<RankedDisharmony> classRelationshipDisharmonies = List.of();
+        List<RankedDisharmony> packageRelationshipDisharmonies = List.of();
         try (CostBenefitCalculator costBenefitCalculator =
                 new CostBenefitCalculator(projectBaseDir, codebaseGraphDTO.getClassToSourceFilePathMapping())) {
-            edgeDisharmonies = costBenefitCalculator.calculateSourceNodeCostBenefitValues(
-                    classGraph, edgeToRemoveCycleCounts, codebaseGraphDTO, vertexesToRemove);
+            classRelationshipDisharmonies = costBenefitCalculator.calculateRelationshipCostBenefitValues(
+                    classGraph, classEdgeCycleCounts, codebaseGraphDTO, classesToRemove);
+            packageRelationshipDisharmonies = costBenefitCalculator.calculateRelationshipCostBenefitValues(
+                    packageGraph, packageEdgeCycleCounts, codebaseGraphDTO, packagesToRemove);
 
             for (DisharmonySpec spec : disharmonySpecs) {
                 List<DisharmonyInstance> instances = spec.methodLevel()
@@ -286,13 +259,12 @@ public class SimpleHtmlReport {
         // - Edge weight
         // - Provide guidance on where to move the method if one is in the list to remove
 
-        boolean hasAnyDisharmony =
-                !edgesToRemove.isEmpty() || !rankedCycles.isEmpty() || !rankedDisharmoniesByAnchor.isEmpty();
+        boolean hasAnyDisharmony = !classRelationshipsToRemove.isEmpty()
+                || !packageRelationshipsToRemove.isEmpty()
+                || !rankedClassCycles.isEmpty()
+                || !rankedDisharmoniesByAnchor.isEmpty();
 
-        String repoUrl;
-        try (GitLogReader glr = new GitLogReader(new File(projectBaseDir))) {
-            repoUrl = glr.getOriginUrl().replace(".git", "") + "/blob/" + glr.getCurrentCommitHash() + "/";
-        }
+        String repoUrl = getRepoUrl(projectBaseDir);
 
         if (!hasAnyDisharmony) {
             stringBuilder
@@ -308,7 +280,7 @@ public class SimpleHtmlReport {
         }
 
         stringBuilder.append("<header>\n" + "<nav>\n" + " <ul>\n");
-        stringBuilder.append(createMenu(disharmonySpecs, rankedDisharmoniesByAnchor, rankedCycles));
+        stringBuilder.append(createMenu(disharmonySpecs, rankedDisharmoniesByAnchor, rankedClassCycles));
         stringBuilder.append("</ul>\n" + "</nav>\n" + "</header>\n");
 
         log.info("Generating HTML Report");
@@ -318,9 +290,21 @@ public class SimpleHtmlReport {
         stringBuilder.append(renderGithubButtons());
 
         stringBuilder.append("<br/>\n");
-        if (!edgeDisharmonies.isEmpty()) {
-            stringBuilder.append(renderEdgeDisharmonies(edgeDisharmonies, repoUrl, codebaseGraphDTO));
+        if (!classRelationshipDisharmonies.isEmpty()) {
+            stringBuilder.append(renderClassEdgeDisharmonies(classRelationshipDisharmonies, repoUrl, codebaseGraphDTO));
             stringBuilder.append("<br/>\n" + "<br/>\n" + "<br/>\n" + "<br/>\n" + "<hr/>\n" + "<br/>\n" + "<br/>\n");
+        }
+
+        stringBuilder.append(renderPackageGraphVisuals(repoUrl, codebaseGraphDTO));
+        stringBuilder.append("<br/>\n");
+        stringBuilder.append(renderGithubButtons());
+
+        if (!packageRelationshipDisharmonies.isEmpty()) {
+            stringBuilder.append(
+                    renderPackageEdgeDisharmonies(packageRelationshipDisharmonies, repoUrl, codebaseGraphDTO));
+            stringBuilder.append("<br/>\n" + "<br/>\n" + "<br/>\n" + "<br/>\n" + "<hr/>\n" + "<br/>\n" + "<br/>\n");
+        } else {
+            log.info("No Package Relationship Disharmonies found");
         }
 
         for (DisharmonySpec spec : disharmonySpecs) {
@@ -332,12 +316,20 @@ public class SimpleHtmlReport {
             }
         }
 
-        if (!rankedCycles.isEmpty()) {
-            stringBuilder.append(renderCycles(rankedCycles, repoUrl, codebaseGraphDTO));
+        if (!rankedClassCycles.isEmpty()) {
+            stringBuilder.append(renderCycles(rankedClassCycles, repoUrl, codebaseGraphDTO));
         }
 
         log.debug(stringBuilder.toString());
         return stringBuilder;
+    }
+
+    private static String getRepoUrl(String projectBaseDir) throws Exception {
+        String repoUrl;
+        try (GitLogReader glr = new GitLogReader(new File(projectBaseDir))) {
+            repoUrl = glr.getOriginUrl().replace(".git", "") + "/blob/" + glr.getCurrentCommitHash() + "/";
+        }
+        return repoUrl;
     }
 
     StringBuilder createMenu(
@@ -345,12 +337,29 @@ public class SimpleHtmlReport {
             Map<String, List<RankedDisharmony>> rankedDisharmoniesByAnchor,
             List<RankedCycle> rankedCycles) {
         StringBuilder menu = new StringBuilder();
-        if (!edgesToRemove.isEmpty()) {
-            menu.append("<li><a href=\"#EDGES\">Edges To Remove</a></li>\n");
+
+        if (!classRelationshipsToRemove.isEmpty()) {
+            menu.append("<li><a href=\"#\">Classes</a>\n" + "<ul>");
+            renderClassMapMenu(menu);
+            menu.append("<li><a href=\"#CLASSEDGES\">Class Relationships To Remove</a></li>\n");
+            menu.append("</ul>\n" + "</li>");
+        } else {
+            renderClassMapMenu(menu);
+        }
+
+        if (!packageRelationshipsToRemove.isEmpty()) {
+            menu.append("<li><a href=\"#\">Packages</a>\n" + "<ul>");
+            if (!packageGraph.edgeSet().isEmpty()) {
+                renderPackageMapMenu(menu);
+            }
+            menu.append("<li><a href=\"#PACKAGEEDGES\">Package Relationships To Remove</a></li>\n");
+            menu.append("</ul>\n" + "</li>");
+        } else if (!packageGraph.edgeSet().isEmpty()) {
+            renderPackageMapMenu(menu);
         }
 
         if (!disharmonySpecs.isEmpty()) {
-            menu.append("<li><a href=\"#\">Disharmonies</a>\n" + "                <ul>");
+            menu.append("<li><a href=\"#\">Disharmonies</a>\n" + "<ul>");
         }
 
         for (DisharmonySpec spec : disharmonySpecs) {
@@ -364,15 +373,21 @@ public class SimpleHtmlReport {
         }
 
         if (!disharmonySpecs.isEmpty()) {
-            menu.append("</ul>\n" + "            </li>");
+            menu.append("</ul>\n" + "</li>");
         }
 
         if (!rankedCycles.isEmpty()) {
+            menu.append("<li><a href=\"#\">Cycles</a>\n" + "<ul>");
             menu.append("<li><a href=\"#CYCLES\">Class Cycles</a></li>\n");
             menu.append("<li><a href=\"#CYCLEMAP\">Cycle Map</a></li>\n");
+            menu.append("</ul>\n" + "</li>");
         }
         return menu;
     }
+
+    void renderClassMapMenu(StringBuilder stringBuilder) {}
+
+    void renderPackageMapMenu(StringBuilder stringBuilder) {}
 
     private String renderCycles(List<RankedCycle> rankedCycles, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
         StringBuilder stringBuilder = new StringBuilder();
@@ -386,19 +401,22 @@ public class SimpleHtmlReport {
         return stringBuilder.toString();
     }
 
-    private String renderEdgeDisharmonies(
+    private String renderClassEdgeDisharmonies(
             List<RankedDisharmony> edgeDisharmonies, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
         StringBuilder stringBuilder = new StringBuilder();
 
         stringBuilder.append(
-                "<div style=\"text-align: center;\"><a id=\"EDGES\"><h1>Relationship Removal Priority</h1></a></div>\n");
+                "<div style=\"text-align: center;\"><a id=\"CLASSEDGES\"><h1>Class Relationship Removal Priority</h1></a></div>\n");
         stringBuilder.append("<h2 align=\"center\">Refactor Starting with Priority 1</h2>\n");
         stringBuilder.append("<div style=\"text-align: center;\">\n");
-        stringBuilder.append("Current Cycle Count: ").append(cycles.size()).append("<br>\n");
+        stringBuilder
+                .append("Current Class Cycle Count: ")
+                .append(classCycles.size())
+                .append("<br>\n");
 
         stringBuilder
-                .append("Number of Relationships to Remove: ")
-                .append(edgesToRemove.size())
+                .append("Number of Class Relationships to Remove: ")
+                .append(classRelationshipsToRemove.size())
                 .append("<br>\n");
         stringBuilder
                 .append("Classes with <strong>*</strong> should be broken apart")
@@ -409,7 +427,7 @@ public class SimpleHtmlReport {
         stringBuilder.append("<div align=\"center\">");
         stringBuilder.append("<table align=\"center\" border=\"5px\">\n");
         stringBuilder.append("<thead>\n<tr>\n");
-        for (String heading : getEdgeDisharmonyTableHeadings()) {
+        for (String heading : getClassRelationshipDisharmonyTableHeadings()) {
             stringBuilder.append("<th>").append(heading).append("</th>\n");
         }
         stringBuilder.append("</thead>\n");
@@ -419,7 +437,7 @@ public class SimpleHtmlReport {
         for (RankedDisharmony edge : edgeDisharmonies) {
             stringBuilder.append("<tr>\n");
 
-            for (String rowData : getEdgeDisharmony(edge, repoUrl, codebaseGraphDTO)) {
+            for (String rowData : getClassRelationshipDisharmony(edge, repoUrl, codebaseGraphDTO)) {
                 stringBuilder.append(drawTableCell(rowData));
             }
 
@@ -433,7 +451,57 @@ public class SimpleHtmlReport {
         return stringBuilder.toString();
     }
 
-    private String[] getEdgeDisharmonyTableHeadings() {
+    private String renderPackageEdgeDisharmonies(
+            List<RankedDisharmony> edgeDisharmonies, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
+        StringBuilder stringBuilder = new StringBuilder();
+
+        stringBuilder.append(
+                "<div style=\"text-align: center;\"><a id=\"PACKAGEEDGES\"><h1>Package Relationship Removal Priority</h1></a></div>\n");
+        stringBuilder.append("<h2 align=\"center\">Refactor Starting with Priority 1</h2>\n");
+        stringBuilder.append("<div style=\"text-align: center;\">\n");
+        stringBuilder
+                .append("Current Package Cycle Count: ")
+                .append(packageCycles.size())
+                .append("<br>\n");
+
+        stringBuilder
+                .append("Number of Package Relationships to Remove: ")
+                .append(packageRelationshipsToRemove.size())
+                .append("<br>\n");
+        stringBuilder
+                .append("Packages with <strong>*</strong> should be broken apart")
+                .append("<br>\n");
+        stringBuilder.append("</div>\n");
+
+        // Content
+        stringBuilder.append("<div align=\"center\">");
+        stringBuilder.append("<table align=\"center\" border=\"5px\">\n");
+        stringBuilder.append("<thead>\n<tr>\n");
+        for (String heading : getPackageRelationshipDisharmonyTableHeadings()) {
+            stringBuilder.append("<th>").append(heading).append("</th>\n");
+        }
+        stringBuilder.append("</thead>\n");
+
+        stringBuilder.append("<tbody>\n");
+
+        for (RankedDisharmony edge : edgeDisharmonies) {
+            stringBuilder.append("<tr>\n");
+
+            for (String rowData : getPackageRelationshipDisharmony(edge, repoUrl, codebaseGraphDTO)) {
+                stringBuilder.append(drawTableCell(rowData));
+            }
+
+            stringBuilder.append("</tr>\n");
+        }
+
+        stringBuilder.append("</tbody>\n");
+        stringBuilder.append("</table>\n");
+        stringBuilder.append("</div>\n");
+
+        return stringBuilder.toString();
+    }
+
+    private String[] getClassRelationshipDisharmonyTableHeadings() {
         return new String[] {
             "Relationship",
             "Priority",
@@ -444,14 +512,40 @@ public class SimpleHtmlReport {
         };
     }
 
-    private String[] getEdgeDisharmony(RankedDisharmony edgeInfo, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
+    private String[] getPackageRelationshipDisharmonyTableHeadings() {
         return new String[] {
-            renderEdge(edgeInfo.getEdge(), repoUrl, codebaseGraphDTO),
+            "Package Relationship", "Priority", "In Cycles", "Edge<br>Weight", "Class Relationships",
+        };
+    }
+
+    private String[] getClassRelationshipDisharmony(
+            RankedDisharmony edgeInfo, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
+        return new String[] {
+            renderClassEdge(edgeInfo.getEdge(), repoUrl, codebaseGraphDTO),
             String.valueOf(edgeInfo.getPriority()),
             String.valueOf(edgeInfo.getCycleCount()),
             String.valueOf(edgeInfo.getEffortRank()),
-            String.valueOf(edgeInfo.getChangePronenessRank()),
-            String.valueOf(edgeInfo.getEdgeTargetChangePronenessRank()),
+            String.valueOf(edgeInfo.getEdgeSourceDisharmonyCount()),
+            String.valueOf(edgeInfo.getEdgeTargetDisharmonyCount()),
+        };
+    }
+
+    private String[] getPackageRelationshipDisharmony(
+            RankedDisharmony edgeInfo, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
+
+        Set<DefaultWeightedEdge> classRelationshipsInPackageRelationship =
+                codebaseGraphDTO.getClassRelationshipsInPackageRelationship().get(edgeInfo.getEdge());
+        Set<String> classEdges = new HashSet<>();
+        for (DefaultWeightedEdge defaultWeightedEdge : classRelationshipsInPackageRelationship) {
+            classEdges.add(renderClassEdge(defaultWeightedEdge, repoUrl, codebaseGraphDTO));
+        }
+
+        return new String[] {
+            renderPackageEdge(edgeInfo.getEdge(), repoUrl, codebaseGraphDTO),
+            String.valueOf(edgeInfo.getPriority()),
+            String.valueOf(edgeInfo.getCycleCount()),
+            String.valueOf(edgeInfo.getEffortRank()),
+            String.join("<br>", classEdges),
         };
     }
 
@@ -459,10 +553,6 @@ public class SimpleHtmlReport {
         StringBuilder stringBuilder = new StringBuilder();
 
         stringBuilder.append("<div style=\"text-align: center;\"><a id=\"CYCLES\"><h1>Class Cycles</h1></a></div>\n");
-        /*if (rankedCycles.size() > 10) {
-            stringBuilder.append(
-                    "<div style=\"text-align: center;\">10 largest cycles are shown in the sections below</div>\n");
-        }*/
 
         stringBuilder.append("<h2 align=\"center\">Class Cycles by the numbers:</h2>\n");
         stringBuilder.append("<div align=\"center\">");
@@ -470,7 +560,7 @@ public class SimpleHtmlReport {
 
         // Content
         stringBuilder.append("<thead>\n<tr>\n");
-        for (String heading : getCycleSummaryTableHeadings()) {
+        for (String heading : getClassCycleSummaryTableHeadings()) {
             stringBuilder.append("<th>").append(heading).append("</th>\n");
         }
         stringBuilder.append("</thead>\n");
@@ -480,19 +570,19 @@ public class SimpleHtmlReport {
             stringBuilder.append("<tr>\n");
 
             StringBuilder edges = new StringBuilder();
-            for (DefaultWeightedEdge edge : cycle.getMinCutEdges()) {
+            for (DefaultWeightedEdge edge : cycle.getEdgeSet()) {
 
-                if (edgesToRemove.contains(edge)) {
+                if (classRelationshipsToRemove.contains(edge)) {
                     stringBuilder.append("<strong>");
-                    edges.append(renderEdge(edge));
+                    edges.append(renderClassEdge(edge));
                     stringBuilder.append("</strong>");
                 } else {
-                    edges.append(renderEdge(edge));
+                    edges.append(renderClassEdge(edge));
                 }
                 edges.append("</br>\n");
             }
 
-            for (String rowData : getRankedCycleSummaryData(cycle, edges)) {
+            for (String rowData : getRankedCycleSummaryData(cycle)) {
                 stringBuilder.append(drawTableCell(rowData));
             }
 
@@ -505,13 +595,13 @@ public class SimpleHtmlReport {
         return stringBuilder.toString();
     }
 
-    private String renderEdge(DefaultWeightedEdge edge) {
+    private String renderClassEdge(DefaultWeightedEdge edge) {
         StringBuilder edgesToCut = new StringBuilder();
         String[] vertexes = extractVertexes(edge);
 
         String startVertex = vertexes[0].trim();
         String start;
-        if (vertexesToRemove.contains(startVertex)) {
+        if (classesToRemove.contains(startVertex)) {
             start = "<strong>" + getClassName(startVertex) + "</strong>";
         } else {
             start = getClassName(startVertex);
@@ -519,7 +609,7 @@ public class SimpleHtmlReport {
 
         String endVertex = vertexes[1].trim();
         String end;
-        if (vertexesToRemove.contains(endVertex)) {
+        if (classesToRemove.contains(endVertex)) {
             end = "<strong>" + getClassName(endVertex) + "</strong>";
         } else {
             end = getClassName(endVertex);
@@ -531,13 +621,13 @@ public class SimpleHtmlReport {
                 .toString();
     }
 
-    private String renderEdge(DefaultWeightedEdge edge, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
+    private String renderClassEdge(DefaultWeightedEdge edge, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
         StringBuilder edgesToCut = new StringBuilder();
         String[] vertexes = extractVertexes(edge);
 
         String startVertex = vertexes[0].trim();
         String start;
-        if (vertexesToRemove.contains(startVertex)) {
+        if (classesToRemove.contains(startVertex)) {
             start = hyperlinkClass(startVertex, repoUrl, codebaseGraphDTO) + "<strong>*</strong>";
         } else {
             start = hyperlinkClass(startVertex, repoUrl, codebaseGraphDTO);
@@ -545,7 +635,7 @@ public class SimpleHtmlReport {
 
         String endVertex = vertexes[1].trim();
         String end;
-        if (vertexesToRemove.contains(endVertex)) {
+        if (classesToRemove.contains(endVertex)) {
             end = hyperlinkClass(endVertex, repoUrl, codebaseGraphDTO) + "<strong>*</strong>";
         } else {
             end = hyperlinkClass(endVertex, repoUrl, codebaseGraphDTO);
@@ -557,6 +647,32 @@ public class SimpleHtmlReport {
                 .toString();
     }
 
+    private String renderPackageEdge(DefaultWeightedEdge edge, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
+        StringBuilder edgesToCut = new StringBuilder();
+        String[] vertexes = extractVertexes(edge);
+
+        String startVertex = vertexes[0].trim();
+        String start;
+        if (packagesToRemove.contains(startVertex)) {
+            start = startVertex + "<strong>*</strong>";
+        } else {
+            start = startVertex;
+        }
+
+        String endVertex = vertexes[1].trim();
+        String end;
+        if (packagesToRemove.contains(endVertex)) {
+            end = endVertex + "<strong>*</strong>";
+        } else {
+            end = endVertex;
+        }
+
+        // &#8594; is HTML "Right Arrow" code
+        return edgesToCut
+                .append(start + " &#8594; " + end + " : " + (int) packageGraph.getEdgeWeight(edge))
+                .toString();
+    }
+
     String hyperlinkClass(String className, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
         StringBuilder sb = new StringBuilder();
         String path = codebaseGraphDTO.getClassToSourceFilePathMapping().get(className);
@@ -564,13 +680,13 @@ public class SimpleHtmlReport {
                 .toString();
     }
 
-    private String[] getCycleSummaryTableHeadings() {
-        return new String[] {"Cycle Name", "Priority", "Class Count", "Relationship Count" /*, "Minimum Cuts"*/};
+    private String[] getClassCycleSummaryTableHeadings() {
+        return new String[] {"Cycle Name", "Priority", "Class Count", "Relationship Count"};
     }
 
-    private String[] getRankedCycleSummaryData(RankedCycle rankedCycle, StringBuilder edgesToCut) {
+    private String[] getRankedCycleSummaryData(RankedCycle rankedCycle) {
         return new String[] {
-            // "Cycle Name", "Priority", "Class Count", "Relationship Count", "Min Cuts"
+            // "Cycle Name", "Priority", "Class Count", "Relationship Count"
             getClassName(rankedCycle.getCycleName()),
             rankedCycle.getPriority().toString(),
             String.valueOf(rankedCycle.getCycleNodes().size()),
@@ -591,7 +707,7 @@ public class SimpleHtmlReport {
                 + getClassName(cycle.getCycleName()) + "</h2></a>\n");
         stringBuilder.append(
                 "<h3 align=\"center\">Limiting number of cycles displayed to 1 to keep page load time fast</h3>\n");
-        stringBuilder.append(renderCycleVisuals(cycle, repoUrl, codebaseGraphDTO));
+        stringBuilder.append(renderClassCycleVisuals(cycle, repoUrl, codebaseGraphDTO));
 
         stringBuilder.append("<div align=\"center\">");
         stringBuilder.append("<strong>");
@@ -619,7 +735,7 @@ public class SimpleHtmlReport {
         for (String vertex : cycle.getVertexSet()) {
             stringBuilder.append("<tr>");
             String className;
-            if (vertexesToRemove.contains(vertex)) {
+            if (classesToRemove.contains(vertex)) {
                 className = hyperlinkClass(vertex, repoUrl, codebaseGraphDTO) + "<strong>*</strong>";
             } else {
                 className = hyperlinkClass(vertex, repoUrl, codebaseGraphDTO);
@@ -630,12 +746,12 @@ public class SimpleHtmlReport {
             for (DefaultWeightedEdge edge : cycle.getEdgeSet()) {
                 if (edge.toString().startsWith("(" + vertex + " :")) {
 
-                    if (edgesToRemove.contains(edge)) {
+                    if (classRelationshipsToRemove.contains(edge)) {
                         edges.append("<strong>");
-                        edges.append(renderEdge(edge));
+                        edges.append(renderClassEdge(edge));
                         edges.append("</strong>");
                     } else {
-                        edges.append(renderEdge(edge));
+                        edges.append(renderClassEdge(edge));
                     }
 
                     edges.append("<br/>\n");
@@ -656,7 +772,11 @@ public class SimpleHtmlReport {
         return ""; // empty on purpose
     }
 
-    public String renderCycleVisuals(RankedCycle cycle, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
+    public String renderPackageGraphVisuals(String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
+        return ""; // empty on purpose
+    }
+
+    public String renderClassCycleVisuals(RankedCycle cycle, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
         return ""; // empty on purpose
     }
 
@@ -707,17 +827,18 @@ public class SimpleHtmlReport {
                 + "      <div class=\"xleft\">\n";
     }
 
-    public String printProjectHeader(String projectName, String projectVersion) {
+    public String printProjectHeader(String projectName, String projectVersion, String projectBaseDir)
+            throws Exception {
+        String repoUrl = getRepoUrl(projectBaseDir);
+
         return "</div>\n" + "      <div class=\"xright\">      </div>\n"
                 + "    </div>\n"
                 + "    <div id=\"bodyColumn\">\n"
                 + "      <div id=\"contentBox\">\n"
                 + "<h2 align=\"center\"><a href=\"https://github.com/refactorfirst/refactorfirst\" target=\"_blank\" "
                 + "title=\"Learn about RefactorFirst\" aria-label=\"RefactorFirst\">RefactorFirst</a> Report for "
-                + projectName
-                + " "
-                + projectVersion
-                + "</h2>\n";
+                + "<a href=" + repoUrl + " target=\"_blank\">" + projectName + " "
+                + projectVersion + "</a></h2>\n";
     }
 
     public String printProjectFooter() {
@@ -729,7 +850,14 @@ public class SimpleHtmlReport {
     }
 
     String renderGithubButtons() {
-        return ""; // empty on purpose
+        return "<div align=\"center\">\n" + "Show RefactorFirst some &#10084;&#65039;\n"
+                + "<br/>\n"
+                + "<a href=\"https://github.com/refactorfirst/refactorfirst\" aria-label=\"Star refactorfirst/refactorfirst on GitHub\">Star</a>\n"
+                + "<a href=\"https://github.com/refactorfirst/refactorfirst/fork\" aria-label=\"Fork refactorfirst/refactorfirst on GitHub\">Fork</a>\n"
+                + "<a href=\"https://github.com/refactorfirst/refactorfirst/subscription\" aria-label=\"Watch refactorfirst/refactorfirst on GitHub\">Watch</a>\n"
+                + "<a href=\"https://github.com/refactorfirst/refactorfirst/issues\" aria-label=\"Issue refactorfirst/refactorfirst on GitHub\">Issue</a>\n"
+                + "<a href=\"https://github.com/sponsors/jimbethancourt\" aria-label=\"Sponsor @jimbethancourt on GitHub\">Sponsor</a>\n"
+                + "</div>";
     }
 
     String getOutputName() {
