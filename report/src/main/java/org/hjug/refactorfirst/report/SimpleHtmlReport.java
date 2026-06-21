@@ -349,11 +349,13 @@ public class SimpleHtmlReport {
 
         if (!packageRelationshipsToRemove.isEmpty()) {
             menu.append("<li><a href=\"#\">Packages</a>\n" + "<ul>");
-            renderPackageMapMenu(menu);
+            if (!packageGraph.edgeSet().isEmpty()) {
+                renderPackageMapMenu(menu);
+            }
             menu.append("<li><a href=\"#PACKAGEEDGES\">Package Relationships To Remove</a></li>\n");
             menu.append("</ul>\n" + "</li>");
-        } else {
-            renderClassMapMenu(menu);
+        } else if (!packageGraph.edgeSet().isEmpty()) {
+            renderPackageMapMenu(menu);
         }
 
         if (!disharmonySpecs.isEmpty()) {

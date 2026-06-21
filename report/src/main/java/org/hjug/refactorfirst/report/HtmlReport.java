@@ -695,6 +695,10 @@ public class HtmlReport extends SimpleHtmlReport {
 
     @Override
     public String renderPackageGraphVisuals(String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
+        if (packageGraph.edgeSet().isEmpty()) {
+            return "";
+        }
+
         String dot = buildPackageGraphDot(packageGraph, repoUrl, codebaseGraphDTO);
         String packageGraphName = "packageGraph";
 
