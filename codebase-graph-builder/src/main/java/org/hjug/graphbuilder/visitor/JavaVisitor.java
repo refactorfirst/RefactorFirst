@@ -5,7 +5,9 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.hjug.graphbuilder.DependencyCollector;
 import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.java.JavadocVisitor;
 import org.openrewrite.java.tree.*;
+import org.openrewrite.java.tree.Javadoc;
 
 /**
  * BUG: Static method calls and definitions are not being captured, but were previously being captured.
@@ -34,6 +36,21 @@ public class JavaVisitor<P> extends JavaIsoVisitor<P> {
             @Override
             protected DependencyCollector getDependencyCollector() {
                 return dependencyCollector;
+            }
+        };
+    }
+
+    /**
+     * Returns a JavadocVisitor that does nothing.  This is done to prevent the visitor from including references in
+     * Javadocs as members of cycles
+     * @return JavadocVisitor that does nothing.
+     */
+    @Override
+    protected JavadocVisitor<P> getJavadocVisitor() {
+        return new JavadocVisitor<>(this) {
+            @Override
+            public Javadoc visitDocComment(Javadoc.DocComment docComment, P p) {
+                return docComment;
             }
         };
     }
