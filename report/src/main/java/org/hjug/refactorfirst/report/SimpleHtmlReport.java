@@ -562,19 +562,6 @@ public class SimpleHtmlReport {
         for (RankedCycle cycle : rankedCycles) {
             stringBuilder.append("<tr>\n");
 
-            StringBuilder edges = new StringBuilder();
-            for (DefaultWeightedEdge edge : cycle.getEdgeSet()) {
-
-                if (classRelationshipsToRemove.contains(edge)) {
-                    stringBuilder.append("<strong>");
-                    edges.append(renderClassEdge(edge));
-                    stringBuilder.append("</strong>");
-                } else {
-                    edges.append(renderClassEdge(edge));
-                }
-                edges.append("</br>\n");
-            }
-
             for (String rowData : getRankedCycleSummaryData(cycle)) {
                 stringBuilder.append(drawTableCell(rowData));
             }
@@ -584,7 +571,7 @@ public class SimpleHtmlReport {
 
         stringBuilder.append("</tbody>\n");
         stringBuilder.append("</table>\n");
-        stringBuilder.append("<div>");
+        stringBuilder.append("</div>");
         return stringBuilder.toString();
     }
 
