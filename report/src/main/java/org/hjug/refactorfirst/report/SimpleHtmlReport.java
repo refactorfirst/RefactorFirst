@@ -196,10 +196,6 @@ public class SimpleHtmlReport {
 
         packageGraph = codebaseGraphDTO.getPackageReferencesGraph();
 
-        for (DefaultWeightedEdge defaultWeightedEdge : packageGraph.edgeSet()) {
-            log.warn(defaultWeightedEdge.toString() + ": " + packageGraph.getEdgeWeight(defaultWeightedEdge));
-        }
-
         CycleRemovalResult packageCycleRemovalResult =
                 cycleRemovalComputer.computeCycleRemovalInformation(packageGraph);
         Map<DefaultWeightedEdge, Integer> packageEdgeCycleCounts = packageCycleRemovalResult.getEdgeCycleCounts();
@@ -274,11 +270,11 @@ public class SimpleHtmlReport {
                     .append(projectVersion)
                     .append(" has no Cycles or Disharmonies!</div>");
             stringBuilder.append(renderClassGraphVisuals(repoUrl, codebaseGraphDTO));
-            stringBuilder.append(renderGithubButtons());
             log.info("Done! No Disharmonies found!");
             return stringBuilder;
         }
 
+        stringBuilder.append(renderGithubButtons());
         stringBuilder.append("<header>\n" + "<nav>\n" + " <ul>\n");
         stringBuilder.append(createMenu(disharmonySpecs, rankedDisharmoniesByAnchor, rankedClassCycles));
         stringBuilder.append("</ul>\n" + "</nav>\n" + "</header>\n");
@@ -286,8 +282,6 @@ public class SimpleHtmlReport {
         log.info("Generating HTML Report");
 
         stringBuilder.append(renderClassGraphVisuals(repoUrl, codebaseGraphDTO));
-        stringBuilder.append("<br/>\n");
-        stringBuilder.append(renderGithubButtons());
 
         stringBuilder.append("<br/>\n");
         if (!classRelationshipDisharmonies.isEmpty()) {
@@ -297,7 +291,6 @@ public class SimpleHtmlReport {
 
         stringBuilder.append(renderPackageGraphVisuals(repoUrl, codebaseGraphDTO));
         stringBuilder.append("<br/>\n");
-        stringBuilder.append(renderGithubButtons());
 
         if (!packageRelationshipDisharmonies.isEmpty()) {
             stringBuilder.append(
@@ -835,10 +828,10 @@ public class SimpleHtmlReport {
                 + "    </div>\n"
                 + "    <div id=\"bodyColumn\">\n"
                 + "      <div id=\"contentBox\">\n"
-                + "<h2 align=\"center\"><a href=\"https://github.com/refactorfirst/refactorfirst\" target=\"_blank\" "
+                + "<h1 align=\"center\"><a href=\"https://github.com/refactorfirst/refactorfirst\" target=\"_blank\" "
                 + "title=\"Learn about RefactorFirst\" aria-label=\"RefactorFirst\">RefactorFirst</a> Report for "
                 + "<a href=" + repoUrl + " target=\"_blank\">" + projectName + " "
-                + projectVersion + "</a></h2>\n";
+                + projectVersion + "</a></h1>\n";
     }
 
     public String printProjectFooter() {
@@ -850,8 +843,7 @@ public class SimpleHtmlReport {
     }
 
     String renderGithubButtons() {
-        return "<div align=\"center\">\n" + "Show RefactorFirst some &#10084;&#65039;\n"
-                + "<br/>\n"
+        return "<div align=\"center\">\n" + "<h2>Show RefactorFirst some &#10084;&#65039;</h2>\n"
                 + "<a href=\"https://github.com/refactorfirst/refactorfirst\" aria-label=\"Star refactorfirst/refactorfirst on GitHub\">Star</a>\n"
                 + "<a href=\"https://github.com/refactorfirst/refactorfirst/fork\" aria-label=\"Fork refactorfirst/refactorfirst on GitHub\">Fork</a>\n"
                 + "<a href=\"https://github.com/refactorfirst/refactorfirst/subscription\" aria-label=\"Watch refactorfirst/refactorfirst on GitHub\">Watch</a>\n"

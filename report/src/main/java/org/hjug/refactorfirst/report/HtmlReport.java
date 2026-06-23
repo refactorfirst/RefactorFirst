@@ -423,8 +423,7 @@ public class HtmlReport extends SimpleHtmlReport {
 
     @Override
     String renderGithubButtons() {
-        return "<div align=\"center\">\n" + "Show RefactorFirst some &#10084;&#65039;\n"
-                + "<br/>\n"
+        return "<div align=\"center\">\n" + "<h2>Show RefactorFirst some &#10084;&#65039;</h2>\n"
                 + "<a class=\"github-button\" href=\"https://github.com/refactorfirst/refactorfirst\" data-icon=\"octicon-star\" data-size=\"large\" data-show-count=\"true\" aria-label=\"Star refactorfirst/refactorfirst on GitHub\">Star</a>\n"
                 + "<a class=\"github-button\" href=\"https://github.com/refactorfirst/refactorfirst/fork\" data-icon=\"octicon-repo-forked\" data-size=\"large\" data-show-count=\"true\" aria-label=\"Fork refactorfirst/refactorfirst on GitHub\">Fork</a>\n"
                 + "<a class=\"github-button\" href=\"https://github.com/refactorfirst/refactorfirst/subscription\" data-icon=\"octicon-eye\" data-size=\"large\" data-show-count=\"true\" aria-label=\"Watch refactorfirst/refactorfirst on GitHub\">Watch</a>\n"
