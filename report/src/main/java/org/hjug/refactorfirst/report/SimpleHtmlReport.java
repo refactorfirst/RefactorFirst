@@ -205,21 +205,94 @@ public class SimpleHtmlReport {
 
         // Ordered (type, anchorId, displayTitle, isMethodLevel) for all disharmonies
         final List<DisharmonySpec> disharmonySpecs = List.of(
-                new DisharmonySpec(DisharmonyTypes.GOD_CLASS, "GOD", "God Classes", false),
-                new DisharmonySpec(DisharmonyTypes.DATA_CLASS, "DATA_CLASS", "Data Classes", false),
-                new DisharmonySpec(DisharmonyTypes.BRAIN_CLASS, "BRAIN_CLASS", "Brain Classes", false),
-                new DisharmonySpec(DisharmonyTypes.REFUSED_PARENT_BEQUEST, "RPB", "Refused Parent Bequest", false),
-                new DisharmonySpec(DisharmonyTypes.TRADITION_BREAKER, "TB", "Tradition Breakers", false),
                 new DisharmonySpec(
-                        DisharmonyTypes.SIGNIFICANT_DUPLICATION, "SIG_DUP", "Significant Duplication", false),
-                new DisharmonySpec(DisharmonyTypes.BRAIN_METHOD, "BRAIN_METHOD", "Brain Methods", true),
-                new DisharmonySpec(DisharmonyTypes.FEATURE_ENVY, "FEATURE_ENVY", "Feature Envy", true),
-                new DisharmonySpec(DisharmonyTypes.LONG_METHOD, "LONG_METHOD", "Long Methods", true),
+                        DisharmonyTypes.GOD_CLASS,
+                        "GOD",
+                        "God Classes",
+                        false,
+                        "God Classes take on too much responsibility,",
+                        "Extract related islands of functionality into separate classes.  Leave God classes that don't change often alone."),
                 new DisharmonySpec(
-                        DisharmonyTypes.INTENSIVE_COUPLING, "INTENSIVE_COUPLING", "Intensive Coupling", true),
+                        DisharmonyTypes.DATA_CLASS,
+                        "DATA_CLASS",
+                        "Data Classes",
+                        false,
+                        "Data Classes are dumb data holders that other classes rely on.",
+                        "Move the data/variable(s) to the same class as the operation."),
                 new DisharmonySpec(
-                        DisharmonyTypes.DISPERSED_COUPLING, "DISPERSED_COUPLING", "Dispersed Coupling", true),
-                new DisharmonySpec(DisharmonyTypes.SHOTGUN_SURGERY, "SHOTGUN_SURGERY", "Shotgun Surgery", true));
+                        DisharmonyTypes.BRAIN_CLASS,
+                        "BRAIN_CLASS",
+                        "Brain Classes",
+                        false,
+                        "Brain Classes are complex, lack cohesion, and have at least one Brain Method.",
+                        "Decompose Brain Methods into smaller methods."),
+                new DisharmonySpec(
+                        DisharmonyTypes.REFUSED_PARENT_BEQUEST,
+                        "RPB",
+                        "Refused Parent Bequest",
+                        false,
+                        "Child class is large and often complex, but doesn't override or use many of the parent class's methods",
+                        "Do one or more of the following:<br>"
+                                + "- Extract the child class into a separate class.  Move the methods that are used from the parent class into the child class.<br>"
+                                + "- Make unused protected members private in the parent class.<br>"
+                                + "- If a parent class has multiple children, move methods not used by all descendants to another class."),
+                new DisharmonySpec(
+                        DisharmonyTypes.TRADITION_BREAKER,
+                        "TB",
+                        "Tradition Breakers",
+                        false,
+                        "Child class adds many new public methods, but doesn't override or use many of the parent class's methods",
+                        "Do one or more of the following:<br>"
+                                + "- Make public child methods unused outside of the class non-public.<br>"
+                                + "- Pull duplicated methods in child classes into the parent class.<br>"
+                                + "- Move methods in the child class that are unrelated to the parent class to another class.<br>"
+                                + "- Remove the child class from the hierarchy."),
+                new DisharmonySpec(
+                        DisharmonyTypes.SIGNIFICANT_DUPLICATION,
+                        "SIG_DUP",
+                        "Significant Duplication",
+                        false,
+                        "Nearly identical code is found in multiple classes, leading to increased maintenance costs.",
+                        "- Move duplicated code in the same class into a new method.<br>"
+                                + "- Move duplicated code into a separate or parent class.<br>"
+                                + "- Move duplicated code in two child classes or in parent/child classes into the parent class."),
+                new DisharmonySpec(
+                        DisharmonyTypes.BRAIN_METHOD,
+                        "BRAIN_METHOD",
+                        "Brain Methods",
+                        true,
+                        "Method is long, complicated, and uses many variables.",
+                        "- Decompose the method into two or more smaller methods.<br>"
+                                + "- If part of the method relies heavily on an outside class, extract that functionality out of the calling method and move it to the called class."),
+                new DisharmonySpec(
+                        DisharmonyTypes.FEATURE_ENVY,
+                        "FEATURE_ENVY",
+                        "Feature Envy",
+                        true,
+                        "Method is more interested in data in other classes than its own class.",
+                        "Move the method (or part of the method) to the class where it uses the most data."),
+                new DisharmonySpec(
+                        DisharmonyTypes.INTENSIVE_COUPLING,
+                        "INTENSIVE_COUPLING",
+                        "Intensive Coupling",
+                        true,
+                        "Method calls too many methods from a few unrelated classes (often in a separate package).",
+                        "Move the calling method to a class more closely related to the other classes that the original method can call."),
+                new DisharmonySpec(
+                        DisharmonyTypes.DISPERSED_COUPLING,
+                        "DISPERSED_COUPLING",
+                        "Dispersed Coupling",
+                        true,
+                        "Method calls a few methods in many classes",
+                        "Reduce the size of the calling method.  Extract methods from the calling method into the target classes."),
+                new DisharmonySpec(
+                        DisharmonyTypes.SHOTGUN_SURGERY,
+                        "SHOTGUN_SURGERY",
+                        "Shotgun Surgery",
+                        true,
+                        "Method is called by many methods in many classes",
+                        "- Move the method closer to the calling classes (move the behavior closer to the data) if it is small.<br>"
+                                + "- If it is a large method, treat is as a Brain Method and decompose it into two or more smaller methods."));
 
         Map<String, List<RankedDisharmony>> rankedDisharmoniesByAnchor = new LinkedHashMap<>();
 
@@ -303,8 +376,7 @@ public class SimpleHtmlReport {
         for (DisharmonySpec spec : disharmonySpecs) {
             List<RankedDisharmony> rankedForType = rankedDisharmoniesByAnchor.get(spec.anchorId());
             if (rankedForType != null && !rankedForType.isEmpty()) {
-                stringBuilder.append(renderDisharmonyInfo(
-                        repoUrl, spec.anchorId(), spec.title(), spec.methodLevel(), showDetails, rankedForType));
+                stringBuilder.append(renderDisharmonyInfo(repoUrl, spec, showDetails, rankedForType));
                 stringBuilder.append("<br/>\n" + "<br/>\n" + "<br/>\n" + "<br/>\n" + "<hr/>\n" + "<br/>\n" + "<br/>\n");
             }
         }
@@ -317,7 +389,7 @@ public class SimpleHtmlReport {
         return stringBuilder;
     }
 
-    private static String getRepoUrl(String projectBaseDir) throws Exception {
+    static String getRepoUrl(String projectBaseDir) throws Exception {
         String repoUrl;
         try (GitLogReader glr = new GitLogReader(new File(projectBaseDir))) {
             repoUrl = glr.getOriginUrl().replace(".git", "") + "/blob/" + glr.getCurrentCommitHash() + "/";
@@ -578,26 +650,13 @@ public class SimpleHtmlReport {
     private String renderClassEdge(DefaultWeightedEdge edge) {
         StringBuilder edgesToCut = new StringBuilder();
         String[] vertexes = extractVertexes(edge);
-
         String startVertex = vertexes[0].trim();
-        String start;
-        if (classesToRemove.contains(startVertex)) {
-            start = "<strong>" + getClassName(startVertex) + "</strong>";
-        } else {
-            start = getClassName(startVertex);
-        }
-
         String endVertex = vertexes[1].trim();
-        String end;
-        if (classesToRemove.contains(endVertex)) {
-            end = "<strong>" + getClassName(endVertex) + "</strong>";
-        } else {
-            end = getClassName(endVertex);
-        }
 
         // &#8594; is HTML "Right Arrow" code
         return edgesToCut
-                .append(start + " &#8594; " + end + " : " + (int) classGraph.getEdgeWeight(edge))
+                .append(getClassName(startVertex) + " &#8594; " + getClassName(endVertex) + " : "
+                        + (int) classGraph.getEdgeWeight(edge))
                 .toString();
     }
 
@@ -683,8 +742,8 @@ public class SimpleHtmlReport {
         stringBuilder.append("<br/>\n");
         stringBuilder.append("<br/>\n");
 
-        stringBuilder.append("<a id=\"CYCLEMAP\"><h2 align=\"center\">Largest Class Cycle : "
-                + getClassName(cycle.getCycleName()) + "</h2></a>\n");
+        stringBuilder.append("<h2 align=\"center\"><a id=\"CYCLEMAP\">Largest Class Cycle : "
+                + getClassName(cycle.getCycleName()) + "</a></h2>\n");
         stringBuilder.append(
                 "<h3 align=\"center\">Limiting number of cycles displayed to 1 to keep page load time fast</h3>\n");
         stringBuilder.append(renderClassCycleVisuals(cycle, repoUrl, codebaseGraphDTO));
@@ -728,7 +787,7 @@ public class SimpleHtmlReport {
 
                     if (classRelationshipsToRemove.contains(edge)) {
                         edges.append("<strong>");
-                        edges.append(renderClassEdge(edge));
+                        edges.append(renderClassEdge(edge) + "<strong>*</strong>");
                         edges.append("</strong>");
                     } else {
                         edges.append(renderClassEdge(edge));
@@ -849,12 +908,12 @@ public class SimpleHtmlReport {
      * Column headers are derived from the ranked metrics carried on each RankedDisharmony.
      */
     public String renderDisharmonyInfo(
-            String repoUrl,
-            String anchorId,
-            String title,
-            boolean methodLevel,
-            boolean showDetails,
-            List<RankedDisharmony> ranked) {
+            String repoUrl, DisharmonySpec spec, boolean showDetails, List<RankedDisharmony> ranked) {
+
+        String anchorId = spec.anchorId();
+        String title = spec.title();
+        boolean methodLevel = spec.methodLevel();
+
         if (ranked.isEmpty()) {
             return "";
         }
@@ -867,6 +926,19 @@ public class SimpleHtmlReport {
                 .append("\"><h1>")
                 .append(title)
                 .append("</h1></a></div>\n");
+
+        sb.append("<div align=\"center\">");
+        sb.append("<table border=\"5px\">\n");
+        sb.append("<tr>\n");
+        sb.append("<td><strong>Problem:</strong></td>");
+        sb.append("<td>").append(spec.problem()).append("</td>\n");
+        sb.append("</tr>\n");
+        sb.append("<tr>\n");
+        sb.append("<td><strong>Solution:</strong></td>");
+        sb.append("<td>").append(spec.solution()).append("</td>\n");
+        sb.append("</tr>\n");
+        sb.append("</table>\n");
+        sb.append("</div>\n");
 
         sb.append(renderDisharmonyChart(anchorId, title, ranked, maxPriority));
 
@@ -1059,12 +1131,17 @@ public class SimpleHtmlReport {
         final String anchorId;
         final String title;
         final boolean methodLevel;
+        final String problem;
+        final String solution;
 
-        DisharmonySpec(String type, String anchorId, String title, boolean methodLevel) {
+        DisharmonySpec(
+                String type, String anchorId, String title, boolean methodLevel, String problem, String solution) {
             this.type = type;
             this.anchorId = anchorId;
             this.title = title;
             this.methodLevel = methodLevel;
+            this.problem = problem;
+            this.solution = solution;
         }
 
         String type() {
@@ -1081,6 +1158,14 @@ public class SimpleHtmlReport {
 
         boolean methodLevel() {
             return methodLevel;
+        }
+
+        String problem() {
+            return problem;
+        }
+
+        String solution() {
+            return solution;
         }
     }
 }

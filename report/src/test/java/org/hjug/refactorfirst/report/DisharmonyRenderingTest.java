@@ -7,6 +7,7 @@ import org.hjug.cbc.RankedDisharmony;
 import org.hjug.git.ScmLogInfo;
 import org.hjug.graphbuilder.metrics.DisharmonyMetric;
 import org.hjug.graphbuilder.metrics.DisharmonyMetric.Direction;
+import org.hjug.graphbuilder.metrics.DisharmonyTypes;
 import org.hjug.metrics.DisharmonyInstance;
 import org.junit.jupiter.api.Test;
 
@@ -21,10 +22,17 @@ class DisharmonyRenderingTest {
     void renderDisharmonyInfoContainsTitle() {
         List<RankedDisharmony> ranked = List.of(makeRankedDisharmony("BrainClass.java", null, 1, 57.0, 3.0, 0.3));
 
-        String html = simpleReport.renderDisharmonyInfo("", "BRAIN", "Brain Classes", false, false, ranked);
+        SimpleHtmlReport.DisharmonySpec spec = new SimpleHtmlReport.DisharmonySpec(
+                DisharmonyTypes.BRAIN_CLASS,
+                "BRAIN_CLASS",
+                "Brain Classes",
+                false,
+                "Brain Classes are complex, lack cohesion, and have at least one Brain Method.",
+                "Decompose Brain Methods into smaller methods.");
+        String html = simpleReport.renderDisharmonyInfo("", spec, false, ranked);
 
         assertTrue(html.contains("Brain Classes"), "HTML must contain the section title");
-        assertTrue(html.contains("id=\"BRAIN\""), "HTML must contain the anchor id");
+        assertTrue(html.contains("id=\"BRAIN_CLASS\""), "HTML must contain the anchor id");
     }
 
     @Test
@@ -32,7 +40,14 @@ class DisharmonyRenderingTest {
         List<RankedDisharmony> ranked = List.of(makeRankedDisharmony("BrainClass.java", null, 1, 57.0, 3.0, 0.3));
         ranked.get(0).setDescription("Brain Class detected: Brain Methods=1, LOC=200, WMC=3, TCC=0.3");
 
-        String html = simpleReport.renderDisharmonyInfo("", "BRAIN", "Brain Classes", false, false, ranked);
+        SimpleHtmlReport.DisharmonySpec spec = new SimpleHtmlReport.DisharmonySpec(
+                DisharmonyTypes.BRAIN_CLASS,
+                "BRAIN_CLASS",
+                "Brain Classes",
+                false,
+                "Brain Classes are complex, lack cohesion, and have at least one Brain Method.",
+                "Decompose Brain Methods into smaller methods.");
+        String html = simpleReport.renderDisharmonyInfo("", spec, false, ranked);
 
         assertTrue(html.contains("<table"), "HTML must contain a table");
         assertFalse(html.contains("Description"), "Simple view must not show the Description column");
@@ -44,8 +59,15 @@ class DisharmonyRenderingTest {
     void renderDisharmonyInfoShowsDetailedColumnsWhenRequested() {
         List<RankedDisharmony> ranked = List.of(makeRankedDisharmony("BrainClass.java", null, 1, 57.0, 3.0, 0.3));
 
-        String simple = simpleReport.renderDisharmonyInfo("", "BRAIN", "Brain Classes", false, false, ranked);
-        String detailed = simpleReport.renderDisharmonyInfo("", "BRAIN", "Brain Classes", false, true, ranked);
+        SimpleHtmlReport.DisharmonySpec spec = new SimpleHtmlReport.DisharmonySpec(
+                DisharmonyTypes.BRAIN_CLASS,
+                "BRAIN_CLASS",
+                "Brain Classes",
+                false,
+                "Brain Classes are complex, lack cohesion, and have at least one Brain Method.",
+                "Decompose Brain Methods into smaller methods.");
+        String simple = simpleReport.renderDisharmonyInfo("", spec, false, ranked);
+        String detailed = simpleReport.renderDisharmonyInfo("", spec, true, ranked);
 
         assertFalse(simple.contains("BrainMethods Rank"), "Simple mode should not show rank columns");
         assertFalse(simple.contains("<th>BrainMethods</th>"), "Simple mode should not show metric value columns");
@@ -60,7 +82,15 @@ class DisharmonyRenderingTest {
         List<RankedDisharmony> ranked =
                 List.of(makeRankedDisharmony("BrainClass.java", "heavyMethod()", 1, 70.0, 5.0, 5.0));
 
-        String html = simpleReport.renderDisharmonyInfo("", "BRAIN_METHOD", "Brain Methods", true, false, ranked);
+        SimpleHtmlReport.DisharmonySpec spec = new SimpleHtmlReport.DisharmonySpec(
+                DisharmonyTypes.BRAIN_METHOD,
+                "BRAIN_METHOD",
+                "Brain Method",
+                true,
+                "Method is long, complicated, and uses many variables.",
+                "- Decompose the method into two or more smaller methods.<br>"
+                        + "- If part of the method relies heavily on an outside class, extract that functionality out of the calling method and move it to the called class.");
+        String html = simpleReport.renderDisharmonyInfo("", spec, false, ranked);
 
         assertTrue(html.contains("Method"), "Method-level rendering must include a Method column header");
         assertTrue(html.contains("heavyMethod()"), "Method-level rendering must include the method signature");
@@ -70,7 +100,14 @@ class DisharmonyRenderingTest {
     void renderDisharmonyInfoForClassLevelDoesNotShowMethodColumn() {
         List<RankedDisharmony> ranked = List.of(makeRankedDisharmony("BrainClass.java", null, 1, 57.0, 3.0, 0.3));
 
-        String html = simpleReport.renderDisharmonyInfo("", "BRAIN", "Brain Classes", false, false, ranked);
+        SimpleHtmlReport.DisharmonySpec spec = new SimpleHtmlReport.DisharmonySpec(
+                DisharmonyTypes.BRAIN_CLASS,
+                "BRAIN_CLASS",
+                "Brain Classes",
+                false,
+                "Brain Classes are complex, lack cohesion, and have at least one Brain Method.",
+                "Decompose Brain Methods into smaller methods.");
+        String html = simpleReport.renderDisharmonyInfo("", spec, false, ranked);
 
         // Class-level should not have an empty method cell (null signature)
         assertFalse(html.contains("null"), "Class-level rendering must not have null method signature cells");
@@ -119,8 +156,16 @@ class DisharmonyRenderingTest {
         RankedDisharmony rd = makeRankedDisharmony("DupClass.java", null, 1, 7.0, 14.0, 0.0);
         rd.setDuplicationPartners("computeResult(int) ↔ CrossClassB.computeResult(int)");
 
-        String html =
-                simpleReport.renderDisharmonyInfo("", "SIG_DUP", "Significant Duplication", false, false, List.of(rd));
+        SimpleHtmlReport.DisharmonySpec spec = new SimpleHtmlReport.DisharmonySpec(
+                DisharmonyTypes.BRAIN_CLASS,
+                "SIG_DUP",
+                "Significant Duplication",
+                false,
+                "Nearly identical code is found in multiple classes, leading to increased maintenance costs.",
+                "- Move duplicated code in the same class into a new method.<br>"
+                        + "- Move duplicated code into a separate or parent class.<br>"
+                        + "- Move duplicated code in two child classes or in parent/child classes into the parent class.");
+        String html = simpleReport.renderDisharmonyInfo("", spec, false, List.of(rd));
 
         assertTrue(html.contains("Duplicate Partners"), "Table must show 'Duplicate Partners' column header");
         assertTrue(html.contains("CrossClassB"), "Table must show partner class name in the Duplicate Partners cell");
@@ -130,7 +175,14 @@ class DisharmonyRenderingTest {
     void otherDisharmonyTableOmitsDuplicatePartnersColumn() {
         RankedDisharmony rd = makeRankedDisharmony("BrainClass.java", null, 1, 57.0, 3.0, 0.3);
 
-        String html = simpleReport.renderDisharmonyInfo("", "BRAIN", "Brain Classes", false, false, List.of(rd));
+        SimpleHtmlReport.DisharmonySpec spec = new SimpleHtmlReport.DisharmonySpec(
+                DisharmonyTypes.BRAIN_CLASS,
+                "BRAIN_CLASS",
+                "Brain Classes",
+                false,
+                "Brain Classes are complex, lack cohesion, and have at least one Brain Method.",
+                "Decompose Brain Methods into smaller methods.");
+        String html = simpleReport.renderDisharmonyInfo("", spec, false, List.of(rd));
 
         assertFalse(html.contains("Duplicate Partners"), "Non-duplication table must not show 'Duplicate Partners'");
     }

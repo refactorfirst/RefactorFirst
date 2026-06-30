@@ -202,28 +202,6 @@ public class DisharmonyDetector {
         return featureEnvyMethods;
     }
 
-    // !Not used in production code for metric capture
-    public List<MethodDisharmony> detectLongMethods(List<ClassMetrics> allMetrics) {
-        List<MethodDisharmony> longMethods = new ArrayList<>();
-        for (ClassMetrics classMetrics : allMetrics) {
-            for (MethodMetrics methodMetrics : classMetrics.getMethods().values()) {
-                if (isLongMethod(methodMetrics)) {
-                    String description = String.format("Long Method detected: LOC=%d", methodMetrics.getLinesOfCode());
-                    List<DisharmonyMetric> metricValues =
-                            List.of(new DisharmonyMetric("LOC", methodMetrics.getLinesOfCode(), Direction.ASCENDING));
-                    longMethods.add(new MethodDisharmony(
-                            classMetrics.getFullyQualifiedName(),
-                            methodMetrics.getSignature(),
-                            DisharmonyTypes.LONG_METHOD,
-                            description,
-                            methodMetrics,
-                            metricValues));
-                }
-            }
-        }
-        return longMethods;
-    }
-
     public List<MethodDisharmony> detectIntensiveCoupling(List<ClassMetrics> allMetrics) {
         List<MethodDisharmony> intensivelyCoupledMethods = new ArrayList<>();
         for (ClassMetrics classMetrics : allMetrics) {

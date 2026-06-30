@@ -363,24 +363,6 @@ class DisharmonyDetectorMetricsTest {
         assertEquals(Direction.DESCENDING, metrics.get(2).getDirection());
     }
 
-    // ── Long Method ────────────────────────────────────────────────────────────
-
-    @Test
-    void longMethodDisharmonyEmitsStructuredMetrics() {
-        ClassMetrics classMetrics = longMethodClassMetrics();
-        allMetrics.add(classMetrics);
-
-        List<MethodDisharmony> result = detector.detectLongMethods(allMetrics);
-
-        assertFalse(result.isEmpty(), "should detect long method");
-        List<DisharmonyMetric> metrics = result.get(0).getMetricValues();
-        assertEquals(1, metrics.size());
-
-        assertEquals("LOC", metrics.get(0).getName());
-        assertEquals(Direction.ASCENDING, metrics.get(0).getDirection());
-        assertEquals(70.0, metrics.get(0).getValue());
-    }
-
     // ── Intensive Coupling ─────────────────────────────────────────────────────
 
     @Test
