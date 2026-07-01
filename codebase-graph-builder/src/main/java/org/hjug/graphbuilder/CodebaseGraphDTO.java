@@ -1,6 +1,5 @@
 package org.hjug.graphbuilder;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -26,7 +25,6 @@ public class CodebaseGraphDTO {
 
     private final List<ClassDisharmony> classDisharmonies;
     private final List<MethodDisharmony> methodDisharmonies;
-    private final Map<String, Long> disharmonyCountByClass;
 
     public CodebaseGraphDTO(
             Graph<String, DefaultWeightedEdge> classReferencesGraph,
@@ -41,15 +39,6 @@ public class CodebaseGraphDTO {
         this.classToSourceFilePathMapping = classToSourceFilePathMapping;
         this.classDisharmonies = classDisharmonies;
         this.methodDisharmonies = methodDisharmonies;
-        this.disharmonyCountByClass = buildDisharmonyIndex(classDisharmonies, methodDisharmonies);
-    }
-
-    private static Map<String, Long> buildDisharmonyIndex(
-            List<ClassDisharmony> classDisharmonies, List<MethodDisharmony> methodDisharmonies) {
-        Map<String, Long> counts = new HashMap<>();
-        classDisharmonies.forEach(d -> counts.merge(d.getMetrics().getClassName(), 1L, Long::sum));
-        methodDisharmonies.forEach(m -> counts.merge(m.getClassName(), 1L, Long::sum));
-        return counts;
     }
 
     public List<ClassDisharmony> getClassDisharmoniesOfType(String disharmonyType) {
@@ -62,9 +51,5 @@ public class CodebaseGraphDTO {
         return methodDisharmonies.stream()
                 .filter(d -> disharmonyType.equals(d.getDisharmonyType()))
                 .collect(Collectors.toList());
-    }
-
-    public long getClassDisharmonyCountForClass(String classFqn) {
-        return disharmonyCountByClass.getOrDefault(classFqn, 0L);
     }
 }

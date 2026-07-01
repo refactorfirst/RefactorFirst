@@ -44,8 +44,8 @@ public class RankedDisharmony {
     private int sourceNodeShouldBeRemoved;
     private int targetNodeShouldBeRemoved;
     private String edgeTargetClass;
-    private Integer edgeSourceDisharmonyCount;
-    private Integer edgeTargetDisharmonyCount;
+    private Integer packageCycleCount;
+    private boolean packageRelationshipShouldBeRemoved;
 
     public RankedDisharmony(GodClass godClass, ScmLogInfo scmLogInfo) {
         path = scmLogInfo.getPath();
@@ -109,14 +109,14 @@ public class RankedDisharmony {
             int weight,
             boolean sourceNodeShouldBeRemoved,
             boolean targetNodeShouldBeRemoved,
-            long sourceDisharmonyCount,
-            long targetDisharmonyCount) {
+            int packageCycleCount,
+            boolean packageRelationshipShouldBeRemoved) {
 
         className = edgeSource;
         this.edge = edge;
         this.cycleCount = cycleCount;
-        edgeSourceDisharmonyCount = Math.toIntExact(sourceDisharmonyCount);
-        edgeTargetDisharmonyCount = Math.toIntExact(targetDisharmonyCount);
+        this.packageCycleCount = packageCycleCount;
+        this.packageRelationshipShouldBeRemoved = packageRelationshipShouldBeRemoved;
         effortRank = weight;
         this.sourceNodeShouldBeRemoved = sourceNodeShouldBeRemoved ? 1 : 0;
         this.targetNodeShouldBeRemoved = targetNodeShouldBeRemoved ? 1 : 0;
