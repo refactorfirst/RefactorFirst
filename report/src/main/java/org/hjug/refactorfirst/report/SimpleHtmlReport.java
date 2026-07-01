@@ -493,7 +493,8 @@ public class SimpleHtmlReport {
                 .append("<br>\n");
         stringBuilder
                 .append("Classes with <strong>*</strong> should be broken apart")
-                .append("<br>\n");
+                .append("<br>\n")
+                .append("Removing class relationships below will eliminate class cycles");
         stringBuilder.append("</div>\n");
 
         // Content
@@ -542,8 +543,9 @@ public class SimpleHtmlReport {
                 .append(packageRelationshipsToRemove.size())
                 .append("<br>\n");
         stringBuilder
-                .append("Packages with <strong>*</strong> should be broken apart")
-                .append("<br>\n");
+                .append("Packages and classes with <strong>*</strong> should be broken apart")
+                .append("<br>\n")
+                .append("Removing package relationships below will eliminate package cycles");
         stringBuilder.append("</div>\n");
 
         // Content
@@ -576,18 +578,22 @@ public class SimpleHtmlReport {
 
     private String[] getClassRelationshipDisharmonyTableHeadings() {
         return new String[] {
-            "Relationship",
+            "Class Relationship",
             "Priority",
             "In Class<br>Cycles",
             "Relationship<br>Strength",
-            "Also Remove<br>Package Relationship",
+            "Also Removes Pkg<br>Cycle Relationship",
             "In Package<br>Cycles",
         };
     }
 
     private String[] getPackageRelationshipDisharmonyTableHeadings() {
         return new String[] {
-            "Package Relationship", "Priority", "In Cycles", "Edge<br>Weight", "Class Relationships",
+            "Package Relationship",
+            "Priority",
+            "In Pkg<br>Cycles",
+            "Relationship<br>Strength",
+            "Class Relationships to Remove<br>To Break Package Relationship",
         };
     }
 
