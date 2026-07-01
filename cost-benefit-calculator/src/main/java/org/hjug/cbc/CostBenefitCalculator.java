@@ -27,6 +27,7 @@ import org.hjug.metrics.DisharmonyInstance;
 import org.hjug.metrics.DisharmonyRanker;
 import org.hjug.metrics.rules.CBORule;
 import org.jgrapht.Graph;
+import org.jgrapht.graph.AsSubgraph;
 import org.jgrapht.graph.DefaultWeightedEdge;
 
 @Slf4j
@@ -330,7 +331,8 @@ public class CostBenefitCalculator implements AutoCloseable {
             Graph<String, DefaultWeightedEdge> classGraph,
             Map<DefaultWeightedEdge, Integer> edgeToRemoveCycleCounts,
             CodebaseGraphDTO dto,
-            Set<String> vertexesToRemove) {
+            Set<String> vertexesToRemove,
+            Map<String, AsSubgraph<String, DefaultWeightedEdge>> packageCycles) {
         List<RankedDisharmony> edgesThatNeedToBeRemoved = new ArrayList<>();
 
         for (DefaultWeightedEdge edge : classGraph.edgeSet()) {
@@ -350,8 +352,7 @@ public class CostBenefitCalculator implements AutoCloseable {
                     (int) classGraph.getEdgeWeight(edge),
                     sourceNodeShouldBeRemoved,
                     targetNodeShouldBeRemoved,
-                    dto.getClassDisharmonyCountForClass(edgeSource),
-                    dto.getClassDisharmonyCountForClass(edgeTarget));
+                    getPackageCycleCount(edgeSource, edgeTarget, dto, packageCycles));
 
             edgesThatNeedToBeRemoved.add(edgeThatNeedsToBeRemoved);
         }
@@ -376,6 +377,42 @@ public class CostBenefitCalculator implements AutoCloseable {
         return edgesThatNeedToBeRemoved;
     }
 
+    /**
+     * Counts how many package cycles contain the package-level relationship corresponding to the given class (or
+     * package) edge - i.e. cycles where the edge between the source's and target's packages is itself part of the
+     * cycle, not merely cycles that happen to contain one of the endpoints.
+     */
+    private static int getPackageCycleCount(
+            String edgeSource,
+            String edgeTarget,
+            CodebaseGraphDTO dto,
+            Map<String, AsSubgraph<String, DefaultWeightedEdge>> packageCycles) {
+        String sourcePackage = toPackageName(edgeSource, dto);
+        String targetPackage = toPackageName(edgeTarget, dto);
+
+        int packageCycleCount = 0;
+        for (AsSubgraph<String, DefaultWeightedEdge> packageCycle : packageCycles.values()) {
+            if (packageCycle.containsEdge(sourcePackage, targetPackage)) {
+                packageCycleCount++;
+            }
+        }
+        return packageCycleCount;
+    }
+
+    /**
+     * The vertex may already be a package name (when classGraph is actually a package graph) or a fully-qualified
+     * class name, in which case the containing package is derived from it.
+     */
+    private static String toPackageName(String vertex, CodebaseGraphDTO dto) {
+        if (dto.getPackageReferencesGraph().containsVertex(vertex)) {
+            return vertex;
+        } else if (vertex.contains(".")) {
+            return vertex.substring(0, vertex.lastIndexOf('.'));
+        } else {
+            return "";
+        }
+    }
+
     static void sortEdgesThatNeedToBeRemoved(List<RankedDisharmony> rankedDisharmonies) {
         // Sort by impact value
         // Order by cycle count reversed (highest count bubbles to the top)
@@ -383,11 +420,10 @@ public class CostBenefitCalculator implements AutoCloseable {
                 .reversed()
                 // then by weight, with lowest weight edges bubbling to the top
                 .thenComparingInt(RankedDisharmony::getEffortRank)
-                // then by disharmony count
-                .thenComparingInt(RankedDisharmony::getEdgeSourceDisharmonyCount)
-                .thenComparingInt(RankedDisharmony::getEdgeTargetDisharmonyCount)
-                // then if the source node is in the list of nodes to be removed
+                // then by package cycle count, with classes in more package cycles bubbling to the top
                 // multiplying by -1 reverses the sort order (reverse doesn't work in chained comparators)
+                .thenComparingInt(rankedDisharmony -> -1 * rankedDisharmony.getPackageCycleCount())
+                // then if the source node is in the list of nodes to be removed
                 .thenComparingInt(rankedDisharmony -> -1 * rankedDisharmony.getSourceNodeShouldBeRemoved())
                 // then if the target node is in the list of nodes to be removed
                 .thenComparingInt(rankedDisharmony -> -1 * rankedDisharmony.getTargetNodeShouldBeRemoved()));

@@ -302,10 +302,10 @@ public class SimpleHtmlReport {
         List<RankedDisharmony> packageRelationshipDisharmonies = List.of();
         try (CostBenefitCalculator costBenefitCalculator =
                 new CostBenefitCalculator(projectBaseDir, codebaseGraphDTO.getClassToSourceFilePathMapping())) {
-            classRelationshipDisharmonies = costBenefitCalculator.calculateRelationshipCostBenefitValues(
-                    classGraph, classEdgeCycleCounts, codebaseGraphDTO, classesToRemove);
             packageRelationshipDisharmonies = costBenefitCalculator.calculateRelationshipCostBenefitValues(
-                    packageGraph, packageEdgeCycleCounts, codebaseGraphDTO, packagesToRemove);
+                    packageGraph, packageEdgeCycleCounts, codebaseGraphDTO, packagesToRemove, packageCycles);
+            classRelationshipDisharmonies = costBenefitCalculator.calculateRelationshipCostBenefitValues(
+                    classGraph, classEdgeCycleCounts, codebaseGraphDTO, classesToRemove, packageCycles);
 
             for (DisharmonySpec spec : disharmonySpecs) {
                 List<DisharmonyInstance> instances = spec.methodLevel()
@@ -316,7 +316,6 @@ public class SimpleHtmlReport {
                             spec.anchorId(), costBenefitCalculator.calculateDisharmonyCostBenefitValues(instances));
                 }
             }
-
         } catch (Exception e) {
             log.error("Error running analysis.");
             throw new RuntimeException(e);
@@ -358,7 +357,8 @@ public class SimpleHtmlReport {
 
         stringBuilder.append("<br/>\n");
         if (!classRelationshipDisharmonies.isEmpty()) {
-            stringBuilder.append(renderClassEdgeDisharmonies(classRelationshipDisharmonies, repoUrl, codebaseGraphDTO));
+            stringBuilder.append(renderClassEdgeDisharmonies(
+                    classRelationshipDisharmonies, packageRelationshipDisharmonies, repoUrl, codebaseGraphDTO));
             stringBuilder.append("<br/>\n" + "<br/>\n" + "<br/>\n" + "<br/>\n" + "<hr/>\n" + "<br/>\n" + "<br/>\n");
         }
 
@@ -467,7 +467,10 @@ public class SimpleHtmlReport {
     }
 
     private String renderClassEdgeDisharmonies(
-            List<RankedDisharmony> edgeDisharmonies, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
+            List<RankedDisharmony> classRelationshipDisharmonies,
+            List<RankedDisharmony> packageRelationshipDisharmonies,
+            String repoUrl,
+            CodebaseGraphDTO codebaseGraphDTO) {
         StringBuilder stringBuilder = new StringBuilder();
 
         stringBuilder.append(
@@ -499,7 +502,7 @@ public class SimpleHtmlReport {
 
         stringBuilder.append("<tbody>\n");
 
-        for (RankedDisharmony edge : edgeDisharmonies) {
+        for (RankedDisharmony edge : classRelationshipDisharmonies) {
             stringBuilder.append("<tr>\n");
 
             for (String rowData : getClassRelationshipDisharmony(edge, repoUrl, codebaseGraphDTO)) {
@@ -568,12 +571,7 @@ public class SimpleHtmlReport {
 
     private String[] getClassRelationshipDisharmonyTableHeadings() {
         return new String[] {
-            "Relationship",
-            "Priority",
-            "In Cycles",
-            "Edge<br>Weight",
-            "Source<br>Disharmony Count",
-            "Target<br>Disharmony Count",
+            "Relationship", "Priority", "In Class<br>Cycles", "Relationship<br>Strength", "In Package<br>Cycles",
         };
     }
 
@@ -590,8 +588,7 @@ public class SimpleHtmlReport {
             String.valueOf(edgeInfo.getPriority()),
             String.valueOf(edgeInfo.getCycleCount()),
             String.valueOf(edgeInfo.getEffortRank()),
-            String.valueOf(edgeInfo.getEdgeSourceDisharmonyCount()),
-            String.valueOf(edgeInfo.getEdgeTargetDisharmonyCount()),
+            String.valueOf(edgeInfo.getPackageCycleCount()),
         };
     }
 
