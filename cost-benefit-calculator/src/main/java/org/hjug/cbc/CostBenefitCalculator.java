@@ -332,8 +332,13 @@ public class CostBenefitCalculator implements AutoCloseable {
             Map<DefaultWeightedEdge, Integer> edgeToRemoveCycleCounts,
             CodebaseGraphDTO dto,
             Set<String> vertexesToRemove,
-            Map<String, AsSubgraph<String, DefaultWeightedEdge>> packageCycles) {
+            Map<String, AsSubgraph<String, DefaultWeightedEdge>> packageCycles,
+            List<RankedDisharmony> packageRelationshipDisharmonies) {
         List<RankedDisharmony> edgesThatNeedToBeRemoved = new ArrayList<>();
+
+        Set<DefaultWeightedEdge> packageEdgesToRemove = packageRelationshipDisharmonies.stream()
+                .map(RankedDisharmony::getEdge)
+                .collect(Collectors.toSet());
 
         for (DefaultWeightedEdge edge : classGraph.edgeSet()) {
             // shouldn't have to check for null edges & counts :-(
@@ -352,7 +357,8 @@ public class CostBenefitCalculator implements AutoCloseable {
                     (int) classGraph.getEdgeWeight(edge),
                     sourceNodeShouldBeRemoved,
                     targetNodeShouldBeRemoved,
-                    getPackageCycleCount(edgeSource, edgeTarget, dto, packageCycles));
+                    getPackageCycleCount(edgeSource, edgeTarget, dto, packageCycles),
+                    packageRelationshipShouldBeRemoved(edgeSource, edgeTarget, dto, packageEdgesToRemove));
 
             edgesThatNeedToBeRemoved.add(edgeThatNeedsToBeRemoved);
         }
@@ -400,6 +406,19 @@ public class CostBenefitCalculator implements AutoCloseable {
     }
 
     /**
+     * Determines whether the package-level relationship corresponding to the given class (or package) edge is
+     * itself one of the package edges selected for removal, based on membership in the already-computed package
+     * relationship disharmonies.
+     */
+    private static boolean packageRelationshipShouldBeRemoved(
+            String edgeSource, String edgeTarget, CodebaseGraphDTO dto, Set<DefaultWeightedEdge> packageEdgesToRemove) {
+        String sourcePackage = toPackageName(edgeSource, dto);
+        String targetPackage = toPackageName(edgeTarget, dto);
+        DefaultWeightedEdge packageEdge = dto.getPackageReferencesGraph().getEdge(sourcePackage, targetPackage);
+        return packageEdge != null && packageEdgesToRemove.contains(packageEdge);
+    }
+
+    /**
      * The vertex may already be a package name (when classGraph is actually a package graph) or a fully-qualified
      * class name, in which case the containing package is derived from it.
      */
@@ -420,8 +439,11 @@ public class CostBenefitCalculator implements AutoCloseable {
                 .reversed()
                 // then by weight, with lowest weight edges bubbling to the top
                 .thenComparingInt(RankedDisharmony::getEffortRank)
-                // then by package cycle count, with classes in more package cycles bubbling to the top
+                // then by whether the underlying package relationship should also be removed, true before false
                 // multiplying by -1 reverses the sort order (reverse doesn't work in chained comparators)
+                .thenComparingInt(
+                        rankedDisharmony -> -1 * (rankedDisharmony.isPackageRelationshipShouldBeRemoved() ? 1 : 0))
+                // then by package cycle count, with classes in more package cycles bubbling to the top
                 .thenComparingInt(rankedDisharmony -> -1 * rankedDisharmony.getPackageCycleCount())
                 // then if the source node is in the list of nodes to be removed
                 .thenComparingInt(rankedDisharmony -> -1 * rankedDisharmony.getSourceNodeShouldBeRemoved())

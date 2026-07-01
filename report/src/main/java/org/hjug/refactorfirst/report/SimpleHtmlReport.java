@@ -303,9 +303,14 @@ public class SimpleHtmlReport {
         try (CostBenefitCalculator costBenefitCalculator =
                 new CostBenefitCalculator(projectBaseDir, codebaseGraphDTO.getClassToSourceFilePathMapping())) {
             packageRelationshipDisharmonies = costBenefitCalculator.calculateRelationshipCostBenefitValues(
-                    packageGraph, packageEdgeCycleCounts, codebaseGraphDTO, packagesToRemove, packageCycles);
+                    packageGraph, packageEdgeCycleCounts, codebaseGraphDTO, packagesToRemove, packageCycles, List.of());
             classRelationshipDisharmonies = costBenefitCalculator.calculateRelationshipCostBenefitValues(
-                    classGraph, classEdgeCycleCounts, codebaseGraphDTO, classesToRemove, packageCycles);
+                    classGraph,
+                    classEdgeCycleCounts,
+                    codebaseGraphDTO,
+                    classesToRemove,
+                    packageCycles,
+                    packageRelationshipDisharmonies);
 
             for (DisharmonySpec spec : disharmonySpecs) {
                 List<DisharmonyInstance> instances = spec.methodLevel()
@@ -571,7 +576,12 @@ public class SimpleHtmlReport {
 
     private String[] getClassRelationshipDisharmonyTableHeadings() {
         return new String[] {
-            "Relationship", "Priority", "In Class<br>Cycles", "Relationship<br>Strength", "In Package<br>Cycles",
+            "Relationship",
+            "Priority",
+            "In Class<br>Cycles",
+            "Relationship<br>Strength",
+            "Also Remove<br>Package Relationship",
+            "In Package<br>Cycles",
         };
     }
 
@@ -583,11 +593,13 @@ public class SimpleHtmlReport {
 
     private String[] getClassRelationshipDisharmony(
             RankedDisharmony edgeInfo, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
+        boolean removePkgRel = edgeInfo.isPackageRelationshipShouldBeRemoved();
         return new String[] {
             renderClassEdge(edgeInfo.getEdge(), repoUrl, codebaseGraphDTO),
             String.valueOf(edgeInfo.getPriority()),
             String.valueOf(edgeInfo.getCycleCount()),
             String.valueOf(edgeInfo.getEffortRank()),
+            removePkgRel ? "<strong>true</strong>" : String.valueOf(false),
             String.valueOf(edgeInfo.getPackageCycleCount()),
         };
     }

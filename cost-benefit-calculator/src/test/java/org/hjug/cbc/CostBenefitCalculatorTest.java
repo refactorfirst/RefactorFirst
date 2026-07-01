@@ -158,7 +158,7 @@ class CostBenefitCalculatorTest {
                     .thenReturn(new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class));
 
             List<RankedDisharmony> disharmonies = costBenefitCalculator.calculateRelationshipCostBenefitValues(
-                    classGraph, edgeToRemoveCycleCounts, dto, vertexesToRemove, Collections.emptyMap());
+                    classGraph, edgeToRemoveCycleCounts, dto, vertexesToRemove, Collections.emptyMap(), List.of());
 
             Assertions.assertEquals(2, disharmonies.size());
 
@@ -231,7 +231,7 @@ class CostBenefitCalculatorTest {
                     .thenReturn(new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class));
 
             List<RankedDisharmony> disharmonies = costBenefitCalculator.calculateRelationshipCostBenefitValues(
-                    classGraph, edgeToRemoveCycleCounts, dto, vertexesToRemove, Collections.emptyMap());
+                    classGraph, edgeToRemoveCycleCounts, dto, vertexesToRemove, Collections.emptyMap(), List.of());
 
             Assertions.assertEquals(2, disharmonies.size());
             Assertions.assertEquals(0, disharmonies.get(0).getPackageCycleCount());
@@ -289,7 +289,7 @@ class CostBenefitCalculatorTest {
                 new CostBenefitCalculator(git.getRepository().getDirectory().getParent(), new HashMap<>())) {
 
             List<RankedDisharmony> disharmonies = costBenefitCalculator.calculateRelationshipCostBenefitValues(
-                    classGraph, edgeToRemoveCycleCounts, dto, Collections.emptySet(), packageCycles);
+                    classGraph, edgeToRemoveCycleCounts, dto, Collections.emptySet(), packageCycles, List.of());
 
             Map<DefaultWeightedEdge, RankedDisharmony> disharmoniesByEdge = new HashMap<>();
             disharmonies.forEach(d -> disharmoniesByEdge.put(d.getEdge(), d));
@@ -301,6 +301,68 @@ class CostBenefitCalculatorTest {
             Assertions.assertEquals(0, disharmoniesByEdge.get(fooToQux).getPackageCycleCount());
         } catch (Exception e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    @Test
+    void calculateRelationshipCostBenefitValues_flagsClassEdgesWhosePackageRelationshipIsAlsoBeingRemoved()
+            throws Exception {
+
+        writeFile(hudsonPath + "Placeholder.java", "public class Placeholder {}");
+        git.add().addFilepattern(".").call();
+        git.commit().setMessage("initial commit").call();
+
+        SimpleDirectedWeightedGraph<String, DefaultWeightedEdge> packageGraph =
+                new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        packageGraph.addVertex("pkga");
+        packageGraph.addVertex("pkgb");
+        packageGraph.addVertex("pkgc");
+        DefaultWeightedEdge pkgaToPkgb = packageGraph.addEdge("pkga", "pkgb");
+        packageGraph.addEdge("pkgb", "pkgc");
+
+        // Only pkga -> pkgb is flagged as a package relationship that needs to be removed
+        RankedDisharmony packageEdgeToRemove = new RankedDisharmony("pkga", pkgaToPkgb, 1, 1, false, false, 0, false);
+        List<RankedDisharmony> packageRelationshipDisharmonies = List.of(packageEdgeToRemove);
+
+        SimpleDirectedWeightedGraph<String, DefaultWeightedEdge> classGraph =
+                new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        classGraph.addVertex("pkga.Foo");
+        classGraph.addVertex("pkgb.Bar");
+        classGraph.addVertex("pkgc.Baz");
+        classGraph.addVertex("pkga.Other");
+
+        // matches the removed package relationship pkga -> pkgb
+        DefaultWeightedEdge fooToBar = classGraph.addEdge("pkga.Foo", "pkgb.Bar");
+        // corresponds to pkgb -> pkgc, which is not in packageRelationshipDisharmonies
+        DefaultWeightedEdge barToBaz = classGraph.addEdge("pkgb.Bar", "pkgc.Baz");
+        // same-package relationship: no package edge exists at all
+        DefaultWeightedEdge fooToOther = classGraph.addEdge("pkga.Foo", "pkga.Other");
+
+        Map<DefaultWeightedEdge, Integer> edgeToRemoveCycleCounts = new HashMap<>();
+        edgeToRemoveCycleCounts.put(fooToBar, 1);
+        edgeToRemoveCycleCounts.put(barToBaz, 1);
+        edgeToRemoveCycleCounts.put(fooToOther, 1);
+
+        CodebaseGraphDTO dto = mock(CodebaseGraphDTO.class);
+        when(dto.getPackageReferencesGraph()).thenReturn(packageGraph);
+
+        try (CostBenefitCalculator costBenefitCalculator =
+                new CostBenefitCalculator(git.getRepository().getDirectory().getParent(), new HashMap<>())) {
+
+            List<RankedDisharmony> disharmonies = costBenefitCalculator.calculateRelationshipCostBenefitValues(
+                    classGraph,
+                    edgeToRemoveCycleCounts,
+                    dto,
+                    Collections.emptySet(),
+                    Collections.emptyMap(),
+                    packageRelationshipDisharmonies);
+
+            Map<DefaultWeightedEdge, RankedDisharmony> disharmoniesByEdge = new HashMap<>();
+            disharmonies.forEach(d -> disharmoniesByEdge.put(d.getEdge(), d));
+
+            Assertions.assertTrue(disharmoniesByEdge.get(fooToBar).isPackageRelationshipShouldBeRemoved());
+            Assertions.assertFalse(disharmoniesByEdge.get(barToBaz).isPackageRelationshipShouldBeRemoved());
+            Assertions.assertFalse(disharmoniesByEdge.get(fooToOther).isPackageRelationshipShouldBeRemoved());
         }
     }
 
@@ -323,27 +385,30 @@ class CostBenefitCalculatorTest {
         logInfo5.setChangePronenessRank(5);
 
         // Create RankedDisharmony objects with different combinations
-        // Expected order after sorting: cycleCount desc, then effortRank asc, then packageCycleCount desc,
+        // Expected order after sorting: cycleCount desc, then effortRank asc,
+        // then packageRelationshipShouldBeRemoved desc (true before false), then packageCycleCount desc,
         // then sourceRemoved desc, then targetRemoved desc
-        // cycle=5, source=0, target=0, packageCycleCount=6
-        RankedDisharmony disharmony1 =
-                new RankedDisharmony("Class1", new org.jgrapht.graph.DefaultWeightedEdge(), 5, 1, false, false, 6);
+        // cycle=5, source=0, target=0, packageCycleCount=6, packageRelationshipShouldBeRemoved=false
+        RankedDisharmony disharmony1 = new RankedDisharmony(
+                "Class1", new org.jgrapht.graph.DefaultWeightedEdge(), 5, 1, false, false, 6, false);
 
-        // cycle=5, source=1, target=0, packageCycleCount=1
-        RankedDisharmony disharmony2 =
-                new RankedDisharmony("Class2", new org.jgrapht.graph.DefaultWeightedEdge(), 5, 1, true, false, 1);
+        // cycle=5, source=1, target=0, packageCycleCount=1, packageRelationshipShouldBeRemoved=false
+        RankedDisharmony disharmony2 = new RankedDisharmony(
+                "Class2", new org.jgrapht.graph.DefaultWeightedEdge(), 5, 1, true, false, 1, false);
 
-        // cycle=3, source=0, target=1, packageCycleCount=5
-        RankedDisharmony disharmony3 =
-                new RankedDisharmony("Class3", new org.jgrapht.graph.DefaultWeightedEdge(), 3, 1, false, true, 5);
+        // cycle=3, source=0, target=1, packageCycleCount=5, packageRelationshipShouldBeRemoved=false
+        RankedDisharmony disharmony3 = new RankedDisharmony(
+                "Class3", new org.jgrapht.graph.DefaultWeightedEdge(), 3, 1, false, true, 5, false);
 
-        // cycle=3, source=0, target=0, packageCycleCount=0
-        RankedDisharmony disharmony4 =
-                new RankedDisharmony("Class4", new org.jgrapht.graph.DefaultWeightedEdge(), 3, 1, false, false, 0);
+        // cycle=3, source=0, target=0, packageCycleCount=0, packageRelationshipShouldBeRemoved=false
+        RankedDisharmony disharmony4 = new RankedDisharmony(
+                "Class4", new org.jgrapht.graph.DefaultWeightedEdge(), 3, 1, false, false, 0, false);
 
-        // cycle=3, source=0, target=0, packageCycleCount=2
-        RankedDisharmony disharmony5 =
-                new RankedDisharmony("Class5", new org.jgrapht.graph.DefaultWeightedEdge(), 3, 1, false, false, 2);
+        // cycle=3, source=0, target=0, packageCycleCount=2, packageRelationshipShouldBeRemoved=true
+        // lower packageCycleCount than disharmony3, but packageRelationshipShouldBeRemoved=true must still
+        // bubble it ahead of disharmony3, proving the new sort clause is applied before packageCycleCount
+        RankedDisharmony disharmony5 = new RankedDisharmony(
+                "Class5", new org.jgrapht.graph.DefaultWeightedEdge(), 3, 1, false, false, 2, true);
 
         List<RankedDisharmony> disharmonies =
                 Arrays.asList(disharmony4, disharmony2, disharmony1, disharmony3, disharmony5);
@@ -381,21 +446,23 @@ class CostBenefitCalculatorTest {
         Assertions.assertEquals(0, orderedDisharmony1.getTargetNodeShouldBeRemoved());
         Assertions.assertEquals(1, orderedDisharmony1.getPackageCycleCount());
 
+        // Class5 has a lower packageCycleCount than Class3, but packageRelationshipShouldBeRemoved=true
+        // outranks packageCycleCount, so it bubbles ahead
         RankedDisharmony orderedDisharmony2 = disharmonies.get(2);
-        Assertions.assertEquals("Class3", orderedDisharmony2.getClassName());
+        Assertions.assertEquals("Class5", orderedDisharmony2.getClassName());
         Assertions.assertEquals(3, orderedDisharmony2.getCycleCount().intValue());
         Assertions.assertEquals(1, orderedDisharmony2.getEffortRank().intValue());
-        Assertions.assertEquals(0, orderedDisharmony2.getSourceNodeShouldBeRemoved());
-        Assertions.assertEquals(1, orderedDisharmony2.getTargetNodeShouldBeRemoved());
-        Assertions.assertEquals(5, orderedDisharmony2.getPackageCycleCount());
+        Assertions.assertTrue(orderedDisharmony2.isPackageRelationshipShouldBeRemoved());
+        Assertions.assertEquals(2, orderedDisharmony2.getPackageCycleCount());
 
         RankedDisharmony orderedDisharmony3 = disharmonies.get(3);
-        Assertions.assertEquals("Class5", orderedDisharmony3.getClassName());
+        Assertions.assertEquals("Class3", orderedDisharmony3.getClassName());
         Assertions.assertEquals(3, orderedDisharmony3.getCycleCount().intValue());
         Assertions.assertEquals(1, orderedDisharmony3.getEffortRank().intValue());
         Assertions.assertEquals(0, orderedDisharmony3.getSourceNodeShouldBeRemoved());
-        Assertions.assertEquals(0, orderedDisharmony3.getTargetNodeShouldBeRemoved());
-        Assertions.assertEquals(2, orderedDisharmony3.getPackageCycleCount());
+        Assertions.assertEquals(1, orderedDisharmony3.getTargetNodeShouldBeRemoved());
+        Assertions.assertFalse(orderedDisharmony3.isPackageRelationshipShouldBeRemoved());
+        Assertions.assertEquals(5, orderedDisharmony3.getPackageCycleCount());
 
         RankedDisharmony orderedDisharmony4 = disharmonies.get(4);
         Assertions.assertEquals("Class4", orderedDisharmony4.getClassName());
