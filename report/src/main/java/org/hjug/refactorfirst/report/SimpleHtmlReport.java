@@ -395,11 +395,9 @@ public class SimpleHtmlReport {
     }
 
     static String getRepoUrl(String projectBaseDir) throws Exception {
-        String repoUrl;
         try (GitLogReader glr = new GitLogReader(new File(projectBaseDir))) {
-            repoUrl = glr.getOriginUrl().replace(".git", "") + "/blob/" + glr.getCurrentCommitHash() + "/";
+            return glr.getRepoUrl();
         }
-        return repoUrl;
     }
 
     StringBuilder createMenu(
