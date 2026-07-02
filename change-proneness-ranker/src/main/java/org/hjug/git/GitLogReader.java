@@ -75,8 +75,36 @@ public class GitLogReader implements AutoCloseable {
      *
      * @return the origin URL as a String, or null if not configured
      */
+    /**
+     * Returns the repository's origin URL
+     *
+     * @return the origin URL as a String, or null if not configured
+     */
     public String getOriginUrl() {
         return gitRepository.getConfig().getString("remote", "origin", "url");
+    }
+
+    public String getRepoUrl() throws IOException {
+        String repoUrl;
+        String originUrl = getOriginUrl();
+        if (originUrl != null && originUrl.startsWith("git@")) {
+            originUrl = originUrl.replace(":", "/").replace("git@", "https://");
+        }
+
+        if (originUrl == null) {
+            return "";
+        }
+
+        repoUrl = originUrl.replace(".git", "");
+
+        if (repoUrl.contains("gitlab")) {
+            repoUrl = repoUrl + "/-/blob/" + getCurrentCommitHash() + "/";
+        } else if (repoUrl.contains("bitbucket")) {
+            repoUrl = repoUrl + "/src/" + getCurrentCommitHash() + "/";
+        } else {
+            repoUrl = repoUrl + "/blob/" + getCurrentCommitHash() + "/";
+        }
+        return repoUrl;
     }
 
     // log --follow implementation may be worth adopting in the future
