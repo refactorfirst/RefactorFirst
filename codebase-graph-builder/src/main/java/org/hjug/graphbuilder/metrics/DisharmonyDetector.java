@@ -371,7 +371,7 @@ public class DisharmonyDetector {
 
     /**
      * Feature Envy (Fig. 5.4): method accesses more foreign data than local data.
-     * ATFD > FEW AND LAA < ONE_THIRD AND FDP <= FEW
+     * ATFD &gt; FEW AND LAA &lt; ONE_THIRD AND FDP &lt;= FEW
      */
     public boolean hasFeatureEnvy(MethodMetrics metrics) {
         return metrics.getAccessToForeignData() > FEW
@@ -414,9 +414,9 @@ public class DisharmonyDetector {
 
     /**
      * Intensive Coupling (Fig. 6.3/6.4): method calls many methods concentrated in few classes.
-     * Branch 1: CINT > SHORT_MEMORY_CAP AND CDISP < HALF
-     * Branch 2: CINT > FEW AND CDISP < ONE_QUARTER
-     * Both branches require MAXNESTING > SHALLOW.
+     * Branch 1: CINT &gt; SHORT_MEMORY_CAP AND CDISP &lt; HALF
+     * Branch 2: CINT &gt; FEW AND CDISP &lt; ONE_QUARTER
+     * Both branches require MAXNESTING &gt; SHALLOW.
      */
     public boolean hasIntensiveCoupling(MethodMetrics metrics) {
         int cint = metrics.getCouplingIntensity();
@@ -427,7 +427,7 @@ public class DisharmonyDetector {
 
     /**
      * Dispersed Coupling (Fig. 6.9/6.10): method calls many methods spread across many classes.
-     * CINT > SHORT_MEMORY_CAP AND CDISP >= HALF AND MAXNESTING > SHALLOW
+     * CINT &gt; SHORT_MEMORY_CAP AND CDISP &gt;= HALF AND MAXNESTING &gt; SHALLOW
      */
     public boolean hasDispersedCoupling(MethodMetrics metrics) {
         int cint = metrics.getCouplingIntensity();
@@ -437,7 +437,7 @@ public class DisharmonyDetector {
 
     /**
      * Shotgun Surgery (Fig. 6.14): method is called by too many methods from too many classes.
-     * CM > SHORT_MEMORY_CAP(7) AND CC > MANY(7)
+     * CM &gt; SHORT_MEMORY_CAP(7) AND CC &gt; MANY(7)
      * Only foreign callers (outside the method's own class) are counted.
      */
     public boolean hasShotgunSurgery(MethodMetrics metrics) {
