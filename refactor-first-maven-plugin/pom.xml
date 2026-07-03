@@ -26,11 +26,6 @@
         </dependency>
 
         <!-- Maven Reporting -->
-        <!-- Needed to suppress CVE-2023-2976 in maven-core-->
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-        </dependency>
         <!-- Needed to suppress CVE-2024-36124 in maven-core-->
         <dependency>
             <groupId>org.iq80.snappy</groupId>
@@ -42,6 +37,21 @@
             <artifactId>maven-core</artifactId>
         </dependency>
 
+        <!-- commons-beanutils needed to suppress CVE-2025-48734
+         introduced through maven-reporting-impl 4.0.0-->
+        <dependency>
+            <groupId>commons-beanutils</groupId>
+            <artifactId>commons-beanutils</artifactId>
+            <version>1.11.0</version>
+        </dependency>
+
+        <!-- commons-lang3 needed to suppress CVE-2025-48924
+        introduced through maven-reporting-impl 4.0.0-->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>3.18.0</version>
+        </dependency>
         <dependency>
             <groupId>org.apache.maven.reporting</groupId>
             <artifactId>maven-reporting-impl</artifactId>

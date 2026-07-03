@@ -189,12 +189,10 @@
                 <version>2.18.8</version>
             </dependency>
 
-            <!-- Needed to suppress CVE-2023-2976-->
-            <!-- Guava 33.2.1-jre is used by maven-core -->
             <dependency>
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
-                <version>33.4.0-jre</version>
+                <version>33.6.0-jre</version>
             </dependency>
 
             <dependency>
@@ -449,7 +447,7 @@
                     <plugin>
                         <groupId>org.owasp</groupId>
                         <artifactId>dependency-check-maven</artifactId>
-                        <version>12.1.0</version>
+                        <version>12.2.2</version>
                         <configuration>
                             <failBuildOnCVSS>8.0</failBuildOnCVSS>
                         </configuration>
