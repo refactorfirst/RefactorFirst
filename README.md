@@ -1,35 +1,41 @@
 # RefactorFirst
 
 This tool for Java codebases will help you identify what you should refactor first:
-- God Classes
-- Highly Coupled classes
-- Class Cycles (with cycle images!)
+- Class and Package Cycles (with cycle images!)
+- Object Oriented Disharmonies (a.k.a anti-patterns) identified in [Object Oriented Metrics in Practice](https://link.springer.com/book/10.1007/3-540-39538-5)
 
-It scans your Git repository generates a single page application by runing:
+It scans your Git repository and generates a single page application by running:
 - Cycle analysis on your source code using the [OpenRewrite](https://github.com/openrewrite/rewrite) Java parser and [JGraphT](https://jgrapht.org/)
 - What-if analysis to identify the most optimal relationships in a class cycle to remove
-- PMD's God Class Rule
-- PMD's Coupling Between Objects
 
-Code map viewers are powered by [3D Force Graph](https://vasturiano.github.io/3d-force-graph), [sigma.js](https://www.sigmajs.org/), and [GraphViz DOT](https://graphviz.org/docs/layouts/dot/)
-<br>If there are more than 4000 classes + relationships, a simplified 3D viewer will be used to avoid slowdowns.  Features will be toggleable in the 3D UI in a future release.
+Code map viewers are powered by [3D Force Graph](https://vasturiano.github.io/3d-force-graph), [sigma.js](https://www.sigmajs.org/), and [GraphViz DOT](https://graphviz.org/docs/layouts/dot/) using [Vizdom](https://github.com/vizdom-dev/vizdom) to render the DOT graph.
+<br>If there are more than 4000 classes + relationships, a simplified 3D viewer will be available to avoid page load slowdowns.  Features will be toggleable in the 3D UI in a future release.
+
+## How to Use RefactorFirst Quickly
+Run the command below in your Java project's top-level directory.  You'll need Git, Java 11 (or newer) and Maven 3 installed.  This command will analyze Maven and non-Maven projects:
+```bash
+mvn org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.9.0:htmlReport
+```
+View the report at ```target/site/refactor-first-report.html``` in your project.
+Full instructions for various usage scenarios are below.
+Great effort has been taken to make both the analysis and page rendering times as fast as possible.
 
 ## Decomposing and Removing Cycles
 Cycle analysis is performed with cutting-edge [Directed Feedback Vertex Set](https://dl.acm.org/doi/10.1145/3711669) and [Directed Feedback Arc Set](https://arxiv.org/abs/2208.09234) 
 algorithms to identify the optimal classes and relationships between classes for removal to get rid of cycles in your codebase.  
-These algorithms are powerful and will push your CPU to its limits for large codebases, though it does play nice and shouldn't slow your computer down.  
-These graph algorithms can be used outside RefactorFirst.  
+These algorithms are powerful and will push your CPU to its limits for large codebases, though they do play nice and shouldn't slow your computer down.  
+These graph algorithms can be used outside of RefactorFirst.  
 See [DIAGRAM.md](./graph-algorithms/src/main/java/org/hjug/feedback/vertex/kernelized/DIAGRAM.md) for the flow of the vertex kernelized algorithm.    
 See [DIAGRAM.md](./graph-algorithms/src/main/java/org/hjug/feedback/arc/pageRank/DIAGRAM.md) for more details on the arc kernelized algorithm.
 
 
 ### How to understand the Relationship Removal Priority table
 
-The Relationship Removal Priority table shows the most optimal relationships to remove from your codebase to remove all cycles.  
+The Relationship Removal Priority tables shows the most optimal relationships to remove from your codebase to remove all cycles.  
 The table is sorted by the number of cycles that a relationship exists in and then the change proneness of the classes in the relationship.
-- Classes that should be broken apart / removed from the codebase are bold.  
-- If only one class is bold, the shared functionality should be moved to the non-bold class.  
-- If neither class or both classes are bold, examine both classes and reassess the responsibilities of the classes and refactor to remove the relationship.
+- Classes that should be broken apart / removed from the codebase have a *.  
+- If only one class is bold, the shared functionality should be moved to the non-bold class or classes.  
+- If neither class or both classes are bold: examine both classes carefully, reassess the responsibilities of the classes and then refactor to remove the relationship.  If one or both classes are identified as a disharmony, follow the guidance provided for the disharmony.
 
 Take a look at the [Spring Petclinic REST project sample report](https://rawcdn.githack.com/refactorfirst/RefactorFirst/c46d26211a91ffbe08d4089e04a85ff31eb093c0/spring-petclinic-rest-report.html)!
 
@@ -37,27 +43,25 @@ The graphs generated in the report will look similar to this one:
 ![image info](./RefactorFirst_Sample_Report.png)
 
 ## Please Note: Java 11 (or newer) required to run RefactorFirst
-**Java 21 codebase analysis is supported!**
-The change to require Java 11 is needed to address vulnerability CVE-2023-4759 in JGit 
+**Java 25 codebase analysis is supported!**
 Please use a recent JDK release of the Java version you are using.  
 If you use an old JDK release of your chosen Java version, you may encounter issues during analysis.
 
 
-## There are several ways to run the analysis on your codebase:
-
+## How to use RefactorFirst:
 ### From The Command Line As an HTML Report
 Run the following command from the root of your project (the source code does not need to be built):
 
 ```bash
-mvn org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.8.0:htmlReport
+mvn org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.9.0:htmlReport
 ```
-View the report at ```target/site/refactor-first-report.html```
+View the report at `target/site/refactor-first-report.html`
 
 ### [As Part of GitHub Actions Output](https://github.blog/news-insights/product-news/supercharging-github-actions-with-job-summaries/)
 This will generate a simplified HTML report (no graphs or images) as the output of a GitHub Action step
 ```bash
 mvn -B clean test \
-org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.8.0:simpleHtmlReport \
+org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.9.0:simpleHtmlReport \
 && echo "$(cat target/site/refactor-first-report.html)" >> $GITHUB_STEP_SUMMARY
 ```
 
@@ -70,7 +74,7 @@ Add the following to your project in the build section.  **showDetails** will sh
         <plugin>
             <groupId>org.hjug.refactorfirst.plugin</groupId>
             <artifactId>refactor-first-maven-plugin</artifactId>
-            <version>0.8.0</version>       
+            <version>0.9.0</version>       
             <!-- optional -->
             <configuration>
                 <showDetails>false</showDetails>
@@ -91,7 +95,7 @@ A RefactorFirst report will show up in the site report when you run ```mvn site`
         <plugin>
             <groupId>org.hjug.refactorfirst.plugin</groupId>
             <artifactId>refactor-first-maven-plugin</artifactId>
-            <version>0.8.0</version>       
+            <version>0.9.0</version>       
         </plugin>
         ...
     </plugins>
@@ -109,11 +113,30 @@ Specify with -D if running on the command line.  e.g. ```-DbackEdgeAnalysisCount
 |analyzeCycles|Analyzes the 10 largest cycles (will be configurable in the future)| true                                                      |
 |minifyHtml|Minifies the generated HTML report.  Only available on ```htmlReport``` and ```simpleHtmlReport``` goals.  May cause issues with large reports.| false                                                     |
 |excludeTests|Exclude test classes from analysis| true                                                      |
-|testSrcDirectory|Excludes classes containing this pattern from analysis| ```src/test``` and ```src\test```                         |
+|testSrcDirectory|Excludes classes containing this pattern from analysis| ```src/test```                         |
 |projectName|The name of your project to be displayed on the report| Your Maven project name                                   |
 |projectVersion|The version of your project to be displayed on the report| Your Maven project version                                |
 |outputDirectory|The location the project report will be written| ```${projectDir}/target/site/refactor-first-report.html``` 
 
+
+## But I'm using Gradle / my project layout isn't typical!
+I plan to create a Gradle plugin and (possibly) support non-conventional project structures in the future, but in the meantime you can create a dummy POM file in the same directory as your .git directory to show your project's name in the report:
+
+```xml
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+ 
+  <groupId>com.mycompany.app</groupId>
+  <artifactId>my-app</artifactId>
+  <version>1.0-SNAPSHOT</version>
+</project>
+```
+and then (assuming Maven is installed) run
+
+```bash
+mvn org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.9.0:htmlReport
+```
 
 ### Seeing Errors?
 
@@ -139,26 +162,6 @@ you will need to add the following to your pom.xml:
   </build>
 ```
 
-
-## But I'm using Gradle / my project layout isn't typical!
-I would like to create a Gradle plugin and (possibly) support non-conventional projects in the future, but in the meantime you can create a dummy POM file in the same directory as your .git directory:
-
-```xml
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
- 
-  <groupId>com.mycompany.app</groupId>
-  <artifactId>my-app</artifactId>
-  <version>1.0-SNAPSHOT</version>
-</project>
-```
-and then (assuming Maven is installed) run
-
-```bash
-mvn org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.8.0:htmlReport
-```
-
 ## Viewing the Report
 View the report at ```target/site/refactor-first-report.html```   
 Once the plugin finishes executing (it may take a while for a large / old codebase), open the file **target/site/refactor-first-report.html** in the root of the project.  It will contain a graph similar to the one above, and a table that lists God classes in the recommended order that they should be refactored.  The classes in the top left of the graph are the easiest to refactor while also having the biggest positive impact to team productivity.  
@@ -182,13 +185,11 @@ There is still much to be done.  Your feedback and collaboration would be greatl
 If you find this plugin useful, please star this repository and share with your friends & colleagues and on social media.
 
 ## Future Plans
-* Improve class cycle analysis
 * Add a Gradle plugin.
 * Incorporate Unit Test coverage metrics to quickly identify the safety of refactoring classes.
-* Incorporate bug counts per class to the Impact (Y-Axis) calculation.
-* Incorporate more disharmonies from Object Oriented Metrics In Practice (Lanza and Marinescu, 2004).
+* Incorporate additional meaningful metrics.
 
 ## Note:
-If you are a user of Version 0.1.0 or 0.1.1, you may notice that the list of God classes found by the plugin has changed.  This is due to changes in PMD.
+If you are a user of Version 0.8.0 or older, you may notice that the list of God classes found by the plugin has changed starting in version 0.9.0.  This is due to the fact that the God class metric used starting with version 0.9.0 is faithful to the metric parameters defined in Object Oriented Metrics in Practice.
 
 # Thank You!  Enjoy!
