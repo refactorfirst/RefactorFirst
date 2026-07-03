@@ -19,6 +19,13 @@
             <artifactId>codebase-graph-builder</artifactId>
         </dependency>
 
+        <!-- commons-lang3 needed to address CVE-2025-48924
+         introduced through pmd-java 7.0.0-rc4-->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>3.18.0</version>
+        </dependency>
         <dependency>
             <groupId>net.sourceforge.pmd</groupId>
             <artifactId>pmd-java</artifactId>
