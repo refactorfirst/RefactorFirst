@@ -20,6 +20,8 @@ View the report at ```target/site/refactor-first-report.html``` in your project.
 Full instructions for various usage scenarios are below.
 Great effort has been taken to make both the analysis and page rendering times as fast as possible.
 
+Take a look at the [JUnit 4 sample report](https://rawcdn.githack.com/refactorfirst/RefactorFirst/10b56c18463b5aab4487de750a72ea4e09188457/junit4-report.html)!
+
 ## Decomposing and Removing Cycles
 Cycle analysis is performed with cutting-edge [Directed Feedback Vertex Set](https://dl.acm.org/doi/10.1145/3711669) and [Directed Feedback Arc Set](https://arxiv.org/abs/2208.09234) 
 algorithms to identify the optimal classes and relationships between classes for removal to get rid of cycles in your codebase.  
@@ -36,8 +38,6 @@ The table is sorted by the number of cycles that a relationship exists in and th
 - Classes that should be broken apart / removed from the codebase have a *.  
 - If only one class is bold, the shared functionality should be moved to the non-bold class or classes.  
 - If neither class or both classes are bold: examine both classes carefully, reassess the responsibilities of the classes and then refactor to remove the relationship.  If one or both classes are identified as a disharmony, follow the guidance provided for the disharmony.
-
-Take a look at the [Spring Petclinic REST project sample report](https://rawcdn.githack.com/refactorfirst/RefactorFirst/c46d26211a91ffbe08d4089e04a85ff31eb093c0/spring-petclinic-rest-report.html)!
 
 The graphs generated in the report will look similar to this one:
 ![image info](./RefactorFirst_Sample_Report.png)
