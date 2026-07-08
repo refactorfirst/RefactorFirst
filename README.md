@@ -102,7 +102,7 @@ A RefactorFirst report will show up in the site report when you run ```mvn site`
 </reporting>
 ```
 
-## Configuraiton Options
+## Configuration Options
 Care has been taken to use sensible defaults, though if you wish to override these defaults you can specify the following parameters.
 Specify with -D if running on the command line.  e.g. ```-DbackEdgeAnalysisCount=0 `DanalyzeCycles=false``` or in the configuration section (as in the above examples) if including in a Maven build.
 
