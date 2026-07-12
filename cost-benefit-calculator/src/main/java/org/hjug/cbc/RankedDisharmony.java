@@ -1,6 +1,6 @@
 package org.hjug.cbc;
 
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
 import lombok.Data;
@@ -50,7 +50,7 @@ public class RankedDisharmony {
     public RankedDisharmony(GodClass godClass, ScmLogInfo scmLogInfo) {
         path = scmLogInfo.getPath();
         // from https://stackoverflow.com/questions/1011287/get-file-name-from-a-file-location-in-java
-        fileName = Paths.get(path).getFileName().toString();
+        fileName = Path.of(path).getFileName().toString();
         className = godClass.getClassName();
         changePronenessRank = scmLogInfo.getChangePronenessRank();
         effortRank = godClass.getOverallRank();
@@ -71,7 +71,7 @@ public class RankedDisharmony {
     public RankedDisharmony(CBOClass cboClass, ScmLogInfo scmLogInfo) {
         path = scmLogInfo.getPath();
         // from https://stackoverflow.com/questions/1011287/get-file-name-from-a-file-location-in-java
-        fileName = Paths.get(path).getFileName().toString();
+        fileName = Path.of(path).getFileName().toString();
         className = cboClass.getClassName();
         changePronenessRank = scmLogInfo.getChangePronenessRank();
         effortRank = cboClass.getCouplingCount();
@@ -84,7 +84,7 @@ public class RankedDisharmony {
 
     public RankedDisharmony(DisharmonyInstance instance, ScmLogInfo scmLogInfo) {
         path = scmLogInfo.getPath();
-        fileName = Paths.get(path).getFileName().toString();
+        fileName = Path.of(path).getFileName().toString();
         className = instance.getClassName();
         changePronenessRank = scmLogInfo.getChangePronenessRank();
         effortRank = instance.getOverallRank();

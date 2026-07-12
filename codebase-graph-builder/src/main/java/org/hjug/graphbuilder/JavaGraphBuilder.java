@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -80,7 +79,7 @@ public class JavaGraphBuilder {
                 new GraphMetricsCollector(classReferencesGraph, packageReferencesGraph);
         MetricsCollectingVisitor metricsVisitor = new MetricsCollectingVisitor(metricsCollector);
 
-        try (Stream<Path> pathStream = Files.walk(Paths.get(srcDirectory.getAbsolutePath()))) {
+        try (Stream<Path> pathStream = Files.walk(Path.of(srcDirectory.getAbsolutePath()))) {
             List<Path> list;
             if (config.isExcludeTests()) {
                 list = pathStream
@@ -90,12 +89,10 @@ public class JavaGraphBuilder {
                 list = pathStream.collect(Collectors.toList());
             }
 
-            javaParser
-                    .parse(list, Paths.get(srcDirectory.getAbsolutePath()), ctx)
-                    .forEach(cu -> {
-                        javaVisitor.visit(cu, ctx);
-                        metricsVisitor.visit(cu, ctx);
-                    });
+            javaParser.parse(list, Path.of(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> {
+                javaVisitor.visit(cu, ctx);
+                metricsVisitor.visit(cu, ctx);
+            });
         }
 
         removeClassesNotInCodebase(dependencyCollector.getPackagesInCodebase(), classReferencesGraph);

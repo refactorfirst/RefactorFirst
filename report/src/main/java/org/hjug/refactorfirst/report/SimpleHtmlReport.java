@@ -5,7 +5,7 @@ import static org.hjug.refactorfirst.report.ReportWriter.writeReportToDisk;
 import in.wilsonl.minifyhtml.Configuration;
 import in.wilsonl.minifyhtml.MinifyHtml;
 import java.io.File;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -35,7 +35,10 @@ import org.jgrapht.graph.DefaultWeightedEdge;
 public class SimpleHtmlReport {
 
     public static final String THE_BEGINNING =
-            "<html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\">\n" + "\n";
+            """
+            <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+            """;
 
     public static final String THE_END = "</div>\n" + "    </div>\n" + "  </body>\n" + "</html>\n";
 
@@ -132,7 +135,7 @@ public class SimpleHtmlReport {
             projectBaseDir = baseDir.getPath();
             optionalGitDir = Optional.ofNullable(GitLogReader.getGitDir(baseDir));
         } else {
-            projectBaseDir = Paths.get("").toAbsolutePath().toString();
+            projectBaseDir = Path.of("").toAbsolutePath().toString();
             optionalGitDir = Optional.ofNullable(GitLogReader.getGitDir(new File(projectBaseDir)));
         }
 
@@ -873,10 +876,12 @@ public class SimpleHtmlReport {
     }
 
     public String printBreadcrumbs() {
-        return "    <div id=\"banner\">\n"
-                + "    </div>\n"
-                + "    <div id=\"breadcrumbs\">\n"
-                + "      <div class=\"xleft\">\n";
+        return """
+                    <div id="banner">
+                    </div>
+                    <div id="breadcrumbs">
+                      <div class="xleft">
+                """;
     }
 
     public String printProjectHeader(String projectName, String projectVersion, String projectBaseDir)
@@ -902,13 +907,15 @@ public class SimpleHtmlReport {
     }
 
     String renderGithubButtons() {
-        return "<div align=\"center\">\n" + "<h2>Show RefactorFirst some &#10084;&#65039;</h2>\n"
-                + "<a href=\"https://github.com/refactorfirst/refactorfirst\" aria-label=\"Star refactorfirst/refactorfirst on GitHub\">Star</a>\n"
-                + "<a href=\"https://github.com/refactorfirst/refactorfirst/fork\" aria-label=\"Fork refactorfirst/refactorfirst on GitHub\">Fork</a>\n"
-                + "<a href=\"https://github.com/refactorfirst/refactorfirst/subscription\" aria-label=\"Watch refactorfirst/refactorfirst on GitHub\">Watch</a>\n"
-                + "<a href=\"https://github.com/refactorfirst/refactorfirst/issues\" aria-label=\"Issue refactorfirst/refactorfirst on GitHub\">Issue</a>\n"
-                + "<a href=\"https://github.com/sponsors/jimbethancourt\" aria-label=\"Sponsor @jimbethancourt on GitHub\">Sponsor</a>\n"
-                + "</div>";
+        return """
+                <div align="center">
+                <h2>Show RefactorFirst some &#10084;&#65039;</h2>
+                <a href="https://github.com/refactorfirst/refactorfirst" aria-label="Star refactorfirst/refactorfirst on GitHub">Star</a>
+                <a href="https://github.com/refactorfirst/refactorfirst/fork" aria-label="Fork refactorfirst/refactorfirst on GitHub">Fork</a>
+                <a href="https://github.com/refactorfirst/refactorfirst/subscription" aria-label="Watch refactorfirst/refactorfirst on GitHub">Watch</a>
+                <a href="https://github.com/refactorfirst/refactorfirst/issues" aria-label="Issue refactorfirst/refactorfirst on GitHub">Issue</a>
+                <a href="https://github.com/sponsors/jimbethancourt" aria-label="Sponsor @jimbethancourt on GitHub">Sponsor</a>
+                </div>""";
     }
 
     String getOutputName() {

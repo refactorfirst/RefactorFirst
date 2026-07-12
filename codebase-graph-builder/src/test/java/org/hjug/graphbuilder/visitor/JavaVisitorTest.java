@@ -10,7 +10,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.hjug.graphbuilder.DependencyCollector;
@@ -43,8 +42,8 @@ class JavaVisitorTest {
         File srcDirectory = new File(pathString);
         JavaParser javaParser = JavaParser.fromJavaVersion().build();
         ExecutionContext ctx = new InMemoryExecutionContext(Throwable::printStackTrace);
-        List<Path> list = Files.walk(Paths.get(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
-        javaParser.parse(list, Paths.get(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> visitor.visit(cu, ctx));
+        List<Path> list = Files.walk(Path.of(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
+        javaParser.parse(list, Path.of(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> visitor.visit(cu, ctx));
     }
 
     private static Graph<String, DefaultWeightedEdge> buildAndVisit(String pathString) throws IOException {
@@ -81,10 +80,8 @@ class JavaVisitorTest {
                 new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class),
                 new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class));
         JavaVisitor<ExecutionContext> javaVisitor = new JavaVisitor<>(repoFrom(TESTCLASSES), dependencyCollector);
-        List<Path> list = Files.walk(Paths.get(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
-        javaParser
-                .parse(list, Paths.get(srcDirectory.getAbsolutePath()), ctx)
-                .forEach(cu -> javaVisitor.visit(cu, ctx));
+        List<Path> list = Files.walk(Path.of(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
+        javaParser.parse(list, Path.of(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> javaVisitor.visit(cu, ctx));
         assertEquals(8, dependencyCollector.getPackagesInCodebase().size());
     }
 

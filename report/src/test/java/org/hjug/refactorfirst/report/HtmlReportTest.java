@@ -62,14 +62,17 @@ class HtmlReportTest {
         when(dto.getClassToSourceFilePathMapping()).thenReturn(map);
         String repoUrl = "https://github.com/refactorfirst/RefactorFirst/blob";
         String dot = htmlReport.buildClassCycleDot(classGraph, rankedCycle, repoUrl, dto);
-        String expectedDot = "`strict digraph G {\n"
-                + "A -> B [ label = \"2\" weight = \"2\" ];\n"
-                + "B -> C [ label = \"1\" weight = \"1\" ];\n"
-                + "C -> A [ label = \"1\" weight = \"1\" ];\n"
-                + "A [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/src/main/java/org/hjug/refactorfirst/A.java\" target=\"_blank\"];\n"
-                + "B [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/src/main/java/org/hjug/refactorfirst/B.java\" target=\"_blank\"];\n"
-                + "C [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/src/main/java/org/hjug/refactorfirst/C.java\" target=\"_blank\"];\n"
-                + "}`;";
+        String expectedDot =
+                """
+                `strict digraph G {
+                A -> B [ label = "2" weight = "2" ];
+                B -> C [ label = "1" weight = "1" ];
+                C -> A [ label = "1" weight = "1" ];
+                A [URL="https://github.com/refactorfirst/RefactorFirst/blob/src/main/java/org/hjug/refactorfirst/A.java" target="_blank"];
+                B [URL="https://github.com/refactorfirst/RefactorFirst/blob/src/main/java/org/hjug/refactorfirst/B.java" target="_blank"];
+                C [URL="https://github.com/refactorfirst/RefactorFirst/blob/src/main/java/org/hjug/refactorfirst/C.java" target="_blank"];
+                }`;\
+                """;
 
         assertEquals(expectedDot, dot);
     }

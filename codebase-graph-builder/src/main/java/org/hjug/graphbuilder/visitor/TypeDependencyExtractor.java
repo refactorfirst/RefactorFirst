@@ -25,14 +25,14 @@ public class TypeDependencyExtractor {
     }
 
     private void extractDependenciesRecursive(JavaType javaType, Set<String> dependencies) {
-        if (javaType instanceof JavaType.Class) {
-            extractFromClass((JavaType.Class) javaType, dependencies);
-        } else if (javaType instanceof JavaType.Parameterized) {
-            extractFromParameterized((JavaType.Parameterized) javaType, dependencies);
-        } else if (javaType instanceof JavaType.GenericTypeVariable) {
-            extractFromGenericTypeVariable((JavaType.GenericTypeVariable) javaType, dependencies);
-        } else if (javaType instanceof JavaType.Array) {
-            extractFromArray((JavaType.Array) javaType, dependencies);
+        if (javaType instanceof JavaType.Class clazz) {
+            extractFromClass(clazz, dependencies);
+        } else if (javaType instanceof JavaType.Parameterized parameterized) {
+            extractFromParameterized(parameterized, dependencies);
+        } else if (javaType instanceof JavaType.GenericTypeVariable variable) {
+            extractFromGenericTypeVariable(variable, dependencies);
+        } else if (javaType instanceof JavaType.Array array) {
+            extractFromArray(array, dependencies);
         }
     }
 
@@ -62,10 +62,10 @@ public class TypeDependencyExtractor {
         log.debug("Type parameter type name: {}", typeVariable.getName());
 
         for (JavaType bound : typeVariable.getBounds()) {
-            if (bound instanceof JavaType.Class) {
-                dependencies.add(((JavaType.Class) bound).getFullyQualifiedName());
-            } else if (bound instanceof JavaType.Parameterized) {
-                dependencies.add(((JavaType.Parameterized) bound).getFullyQualifiedName());
+            if (bound instanceof JavaType.Class clazz) {
+                dependencies.add(clazz.getFullyQualifiedName());
+            } else if (bound instanceof JavaType.Parameterized parameterized) {
+                dependencies.add(parameterized.getFullyQualifiedName());
             } else {
                 log.debug("Unknown type bound: {}", bound);
             }

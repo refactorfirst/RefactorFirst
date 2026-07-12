@@ -215,7 +215,7 @@ public class TreewidthComputer<V, E> {
                                 .min(Map.Entry.comparingByValue()))
                         .get();
 
-                if (!bestVertexEntry.isPresent()) {
+                if (bestVertexEntry.isEmpty()) {
                     // Fallback: choose any remaining vertex
                     V fallbackVertex = remainingVertices.keys().nextElement();
                     eliminateVertexParallel(fallbackVertex, adjacencyMap, remainingVertices, maxCliqueSize);

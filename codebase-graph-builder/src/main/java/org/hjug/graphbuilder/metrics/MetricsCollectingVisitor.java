@@ -60,8 +60,7 @@ public class MetricsCollectingVisitor extends JavaIsoVisitor<ExecutionContext> {
         currentPackageName = type.getPackageName();
 
         // Get or create metrics - this ensures it's stored in the collector
-        if (metricsCollector instanceof GraphMetricsCollector) {
-            GraphMetricsCollector gmc = (GraphMetricsCollector) metricsCollector;
+        if (metricsCollector instanceof GraphMetricsCollector gmc) {
             currentClassMetrics = gmc.getAllClassMetrics().computeIfAbsent(currentClassName, ClassMetrics::new);
         } else {
             currentClassMetrics = metricsCollector.getClassMetrics(currentClassName);
@@ -88,13 +87,11 @@ public class MetricsCollectingVisitor extends JavaIsoVisitor<ExecutionContext> {
         // Count protected members
         int protectedMembers = 0;
         for (Statement statement : classDecl.getBody().getStatements()) {
-            if (statement instanceof J.VariableDeclarations) {
-                J.VariableDeclarations varDecl = (J.VariableDeclarations) statement;
+            if (statement instanceof J.VariableDeclarations varDecl) {
                 if (varDecl.getModifiers().stream().anyMatch(mod -> mod.getType() == J.Modifier.Type.Protected)) {
                     protectedMembers++;
                 }
-            } else if (statement instanceof J.MethodDeclaration) {
-                J.MethodDeclaration methodDecl = (J.MethodDeclaration) statement;
+            } else if (statement instanceof J.MethodDeclaration methodDecl) {
                 if (methodDecl.getModifiers().stream().anyMatch(mod -> mod.getType() == J.Modifier.Type.Protected)) {
                     protectedMembers++;
                 }
@@ -238,8 +235,8 @@ public class MetricsCollectingVisitor extends JavaIsoVisitor<ExecutionContext> {
             JavaType.Method methodType = method.getMethodType();
             if (methodType != null && !methodType.isConstructor()) {
                 JavaType declaringType = methodType.getDeclaringType();
-                if (declaringType instanceof JavaType.FullyQualified) {
-                    String declaringFqn = ((JavaType.FullyQualified) declaringType).getFullyQualifiedName();
+                if (declaringType instanceof JavaType.FullyQualified qualified) {
+                    String declaringFqn = qualified.getFullyQualifiedName();
                     if (!declaringFqn.equals(currentClassName)) {
                         StringBuilder sig = new StringBuilder();
                         sig.append(declaringFqn)
@@ -271,8 +268,7 @@ public class MetricsCollectingVisitor extends JavaIsoVisitor<ExecutionContext> {
     public J.FieldAccess visitFieldAccess(J.FieldAccess fieldAccess, ExecutionContext ctx) {
         if (currentMethodMetrics != null && fieldAccess.getType() != null) {
             JavaType type = fieldAccess.getType();
-            if (type instanceof JavaType.Variable) {
-                JavaType.Variable varType = (JavaType.Variable) type;
+            if (type instanceof JavaType.Variable varType) {
                 if (varType.getOwner() instanceof JavaType.FullyQualified) {
                     JavaType.FullyQualified owner = (JavaType.FullyQualified) varType.getOwner();
                     String ownerFqn = owner.getFullyQualifiedName();
@@ -311,8 +307,7 @@ public class MetricsCollectingVisitor extends JavaIsoVisitor<ExecutionContext> {
         sig.append(method.getSimpleName()).append("(");
         boolean first = true;
         for (org.openrewrite.java.tree.Statement param : method.getParameters()) {
-            if (param instanceof J.VariableDeclarations) {
-                J.VariableDeclarations varDecl = (J.VariableDeclarations) param;
+            if (param instanceof J.VariableDeclarations varDecl) {
                 if (!first) {
                     sig.append(",");
                 }

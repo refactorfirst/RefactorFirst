@@ -66,7 +66,7 @@ public class FeedbackVertexSetSolver<V, E> {
                     .filter(v -> cycleCounts.getOrDefault(v, 0L) > 0)
                     .min(Comparator.comparingDouble(v -> vertexWeights.get(v) / cycleCounts.get(v)));
 
-            if (!minVertex.isPresent()) break;
+            if (minVertex.isEmpty()) break;
 
             V vertex = minVertex.get();
             double increment = vertexWeights.get(vertex) / cycleCounts.get(vertex);

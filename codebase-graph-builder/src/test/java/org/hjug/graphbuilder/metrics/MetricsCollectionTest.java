@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.jgrapht.graph.DefaultDirectedWeightedGraph;
@@ -33,8 +32,8 @@ class MetricsCollectionTest {
 
         MetricsCollectingVisitor metricsVisitor = new MetricsCollectingVisitor(metricsCollector);
 
-        List<Path> list = Files.walk(Paths.get(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
-        javaParser.parse(list, Paths.get(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> {
+        List<Path> list = Files.walk(Path.of(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
+        javaParser.parse(list, Path.of(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> {
             metricsVisitor.visit(cu, ctx);
         });
 
@@ -80,8 +79,8 @@ class MetricsCollectionTest {
 
         MetricsCollectingVisitor metricsVisitor = new MetricsCollectingVisitor(metricsCollector);
 
-        List<Path> list = Files.walk(Paths.get(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
-        javaParser.parse(list, Paths.get(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> {
+        List<Path> list = Files.walk(Path.of(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
+        javaParser.parse(list, Path.of(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> {
             metricsVisitor.visit(cu, ctx);
         });
 
@@ -127,8 +126,8 @@ class MetricsCollectionTest {
 
         MetricsCollectingVisitor metricsVisitor = new MetricsCollectingVisitor(metricsCollector);
 
-        List<Path> list = Files.walk(Paths.get(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
-        javaParser.parse(list, Paths.get(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> {
+        List<Path> list = Files.walk(Path.of(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
+        javaParser.parse(list, Path.of(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> {
             metricsVisitor.visit(cu, ctx);
         });
 
@@ -187,8 +186,8 @@ class MetricsCollectionTest {
 
         MetricsCollectingVisitor metricsVisitor = new MetricsCollectingVisitor(metricsCollector);
 
-        List<Path> list = Files.walk(Paths.get(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
-        javaParser.parse(list, Paths.get(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> {
+        List<Path> list = Files.walk(Path.of(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
+        javaParser.parse(list, Path.of(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> {
             metricsVisitor.visit(cu, ctx);
         });
 
@@ -240,8 +239,8 @@ class MetricsCollectionTest {
 
         MetricsCollectingVisitor metricsVisitor = new MetricsCollectingVisitor(metricsCollector);
 
-        List<Path> list = Files.walk(Paths.get(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
-        javaParser.parse(list, Paths.get(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> {
+        List<Path> list = Files.walk(Path.of(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
+        javaParser.parse(list, Path.of(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> {
             metricsVisitor.visit(cu, ctx);
         });
 
@@ -276,8 +275,8 @@ class MetricsCollectionTest {
 
         MetricsCollectingVisitor metricsVisitor = new MetricsCollectingVisitor(metricsCollector);
 
-        List<Path> list = Files.walk(Paths.get(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
-        javaParser.parse(list, Paths.get(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> {
+        List<Path> list = Files.walk(Path.of(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
+        javaParser.parse(list, Path.of(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> {
             metricsVisitor.visit(cu, ctx);
         });
 
@@ -351,8 +350,8 @@ class MetricsCollectionTest {
 
         MetricsCollectingVisitor metricsVisitor = new MetricsCollectingVisitor(metricsCollector);
 
-        List<Path> list = Files.walk(Paths.get(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
-        javaParser.parse(list, Paths.get(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> {
+        List<Path> list = Files.walk(Path.of(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
+        javaParser.parse(list, Path.of(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> {
             metricsVisitor.visit(cu, ctx);
         });
 
@@ -433,8 +432,8 @@ class MetricsCollectionTest {
 
         MetricsCollectingVisitor metricsVisitor = new MetricsCollectingVisitor(metricsCollector);
 
-        List<Path> list = Files.walk(Paths.get(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
-        javaParser.parse(list, Paths.get(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> {
+        List<Path> list = Files.walk(Path.of(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
+        javaParser.parse(list, Path.of(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> {
             metricsVisitor.visit(cu, ctx);
         });
 
@@ -509,8 +508,8 @@ class MetricsCollectionTest {
 
         MetricsCollectingVisitor metricsVisitor = new MetricsCollectingVisitor(metricsCollector);
 
-        List<Path> list = Files.walk(Paths.get(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
-        javaParser.parse(list, Paths.get(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> {
+        List<Path> list = Files.walk(Path.of(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
+        javaParser.parse(list, Path.of(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> {
             metricsVisitor.visit(cu, ctx);
         });
 
@@ -585,8 +584,8 @@ class MetricsCollectionTest {
 
         MetricsCollectingVisitor metricsVisitor = new MetricsCollectingVisitor(metricsCollector);
 
-        List<Path> list = Files.walk(Paths.get(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
-        javaParser.parse(list, Paths.get(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> {
+        List<Path> list = Files.walk(Path.of(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
+        javaParser.parse(list, Path.of(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> {
             metricsVisitor.visit(cu, ctx);
         });
 
@@ -657,8 +656,8 @@ class MetricsCollectionTest {
 
         MetricsCollectingVisitor metricsVisitor = new MetricsCollectingVisitor(metricsCollector);
 
-        List<Path> list = Files.walk(Paths.get(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
-        javaParser.parse(list, Paths.get(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> {
+        List<Path> list = Files.walk(Path.of(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
+        javaParser.parse(list, Path.of(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> {
             metricsVisitor.visit(cu, ctx);
         });
 
@@ -747,8 +746,8 @@ class MetricsCollectionTest {
 
         MetricsCollectingVisitor metricsVisitor = new MetricsCollectingVisitor(metricsCollector);
 
-        List<Path> list = Files.walk(Paths.get(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
-        javaParser.parse(list, Paths.get(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> {
+        List<Path> list = Files.walk(Path.of(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
+        javaParser.parse(list, Path.of(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> {
             metricsVisitor.visit(cu, ctx);
         });
 
@@ -830,8 +829,8 @@ class MetricsCollectionTest {
 
         MetricsCollectingVisitor metricsVisitor = new MetricsCollectingVisitor(metricsCollector);
 
-        List<Path> list = Files.walk(Paths.get(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
-        javaParser.parse(list, Paths.get(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> {
+        List<Path> list = Files.walk(Path.of(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
+        javaParser.parse(list, Path.of(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> {
             metricsVisitor.visit(cu, ctx);
         });
 
@@ -867,9 +866,9 @@ class MetricsCollectionTest {
         GraphMetricsCollector metricsCollector = new GraphMetricsCollector(classGraph, packageGraph);
         MetricsCollectingVisitor metricsVisitor = new MetricsCollectingVisitor(metricsCollector);
 
-        List<Path> list = Files.walk(Paths.get(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
+        List<Path> list = Files.walk(Path.of(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
         javaParser
-                .parse(list, Paths.get(srcDirectory.getAbsolutePath()), ctx)
+                .parse(list, Path.of(srcDirectory.getAbsolutePath()), ctx)
                 .forEach(cu -> metricsVisitor.visit(cu, ctx));
 
         metricsCollector.finalizeMetrics();
