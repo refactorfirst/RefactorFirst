@@ -84,6 +84,24 @@ public class MetricsCollectingVisitor extends JavaIsoVisitor<ExecutionContext> {
             currentClassMetrics.setParentClass(parentType.getFullyQualifiedName());
         }
 
+        // Handle record components
+        boolean isRecord = classDecl.getKind() == J.ClassDeclaration.Kind.Type.Record;
+        if (isRecord) {
+            // Record components are in the primary constructor
+            List<Statement> primaryConstructor = classDecl.getPrimaryConstructor();
+            if (primaryConstructor != null) {
+                for (Statement stmt : primaryConstructor) {
+                    if (stmt instanceof J.VariableDeclarations varDecl) {
+                        for (J.VariableDeclarations.NamedVariable var : varDecl.getVariables()) {
+                            // Record components are implicitly public final fields with accessor methods
+                            String varName = var.getSimpleName();
+                            currentClassMetrics.addAttribute(varName, true); // public
+                        }
+                    }
+                }
+            }
+        }
+
         // Count protected members
         int protectedMembers = 0;
         for (Statement statement : classDecl.getBody().getStatements()) {
@@ -188,6 +206,23 @@ public class MetricsCollectingVisitor extends JavaIsoVisitor<ExecutionContext> {
     public J.VariableDeclarations visitVariableDeclarations(
             J.VariableDeclarations multiVariable, ExecutionContext ctx) {
         if (currentClassName != null && currentMethodSignature == null) {
+            // Skip record components in primary constructor - they're already counted in visitClassDeclaration
+            J.ClassDeclaration enclosingClass = getCursor().firstEnclosing(J.ClassDeclaration.class);
+            if (enclosingClass != null && enclosingClass.getKind() == J.ClassDeclaration.Kind.Type.Record) {
+                // Check if this VariableDeclarations is in the primary constructor
+                // The parent is JRightPadded, grandparent is the JContainer/List
+                Object grandParent = getCursor().getParent().getParent().getValue();
+                List<Statement> primaryConstructor = enclosingClass.getPrimaryConstructor();
+                if (primaryConstructor != null) {
+                    if (grandParent == primaryConstructor
+                            || (grandParent instanceof JContainer<?> container
+                                    && primaryConstructor.equals(container.getElements()))) {
+                        // This is a record component in the primary constructor, skip it
+                        return super.visitVariableDeclarations(multiVariable, ctx);
+                    }
+                }
+            }
+
             for (J.VariableDeclarations.NamedVariable var : multiVariable.getVariables()) {
                 String varName = var.getSimpleName();
                 boolean isPublic = multiVariable.hasModifier(J.Modifier.Type.Public);

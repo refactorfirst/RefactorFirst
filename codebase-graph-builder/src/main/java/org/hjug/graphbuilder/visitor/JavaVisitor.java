@@ -7,7 +7,10 @@ import org.hjug.graphbuilder.DependencyCollector;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavadocVisitor;
 import org.openrewrite.java.tree.*;
+import org.openrewrite.java.tree.J.VariableDeclarations;
 import org.openrewrite.java.tree.Javadoc;
+import org.openrewrite.java.tree.Statement;
+import org.openrewrite.java.tree.TypeTree;
 
 /**
  * BUG: Static method calls and definitions are not being captured, but were previously being captured.
@@ -107,6 +110,25 @@ public class JavaVisitor<P> extends JavaIsoVisitor<P> {
             if (classDecl.getTypeParameters() != null) {
                 for (J.TypeParameter typeParameter : classDecl.getTypeParameters()) {
                     typeProcessor.processTypeParameter(owningFqn, typeParameter, getCursor());
+                }
+            }
+
+            // Handle record components (record header parameters)
+            if (classDecl.getKind() == J.ClassDeclaration.Kind.Type.Record) {
+                List<Statement> primaryConstructor = classDecl.getPrimaryConstructor();
+                if (primaryConstructor != null) {
+                    for (Statement stmt : primaryConstructor) {
+                        if (stmt instanceof VariableDeclarations varDecl) {
+                            TypeTree typeExpression = varDecl.getTypeExpression();
+                            if (typeExpression != null) {
+                                typeProcessor.processType(owningFqn, typeExpression.getType());
+                            }
+                            // Also process annotations on record components
+                            for (J.Annotation annotation : varDecl.getLeadingAnnotations()) {
+                                typeProcessor.processAnnotation(owningFqn, annotation, getCursor());
+                            }
+                        }
+                    }
                 }
             }
 

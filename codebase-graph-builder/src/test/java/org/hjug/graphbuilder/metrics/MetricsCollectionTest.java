@@ -883,4 +883,49 @@ class MetricsCollectionTest {
                 "CBO must be 0: Semaphore.acquire() is Javadoc-only and must not be counted as a foreign dependency. Got: "
                         + metrics.getCouplingBetweenObjects());
     }
+
+    @Test
+    void collectRecordClassMetrics() throws IOException {
+        File srcDirectory = new File("src/test/java/org/hjug/graphbuilder/metrics/testclasses");
+
+        JavaParser javaParser = JavaParser.fromJavaVersion().build();
+        ExecutionContext ctx = new InMemoryExecutionContext(Throwable::printStackTrace);
+
+        DefaultDirectedWeightedGraph<String, DefaultWeightedEdge> classGraph =
+                new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        DefaultDirectedWeightedGraph<String, DefaultWeightedEdge> packageGraph =
+                new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+
+        GraphMetricsCollector metricsCollector = new GraphMetricsCollector(classGraph, packageGraph);
+
+        MetricsCollectingVisitor metricsVisitor = new MetricsCollectingVisitor(metricsCollector);
+
+        List<Path> list = Files.walk(Path.of(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
+        javaParser.parse(list, Path.of(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> {
+            metricsVisitor.visit(cu, ctx);
+        });
+
+        metricsCollector.finalizeMetrics();
+
+        ClassMetrics recordMetrics =
+                metricsCollector.getClassMetrics("org.hjug.graphbuilder.metrics.testclasses.RecordMetricsExample");
+        Assertions.assertNotNull(recordMetrics, "RecordMetricsExample metrics should be collected");
+
+        Assertions.assertTrue(recordMetrics.getLinesOfCode() > 0, "LOC should be greater than 0");
+        Assertions.assertEquals(
+                3, recordMetrics.getNumberOfAttributes(), "Record should have 3 components as attributes");
+        Assertions.assertEquals(3, recordMetrics.getNumberOfPublicAttributes(), "Record components should be public");
+        // Record accessor methods (name(), value(), tags()) are implicit and not explicitly declared in source
+        // Only explicitly declared methods like getDisplayName() are counted as accessors
+        Assertions.assertEquals(
+                1,
+                recordMetrics.getNumberOfAccessorMethods(),
+                "Record should have 1 accessor method (getDisplayName())");
+
+        System.out.println("\nRecordMetricsExample Metrics:");
+        System.out.println("  LOC: " + recordMetrics.getLinesOfCode());
+        System.out.println("  Number of Attributes: " + recordMetrics.getNumberOfAttributes());
+        System.out.println("  Number of Public Attributes: " + recordMetrics.getNumberOfPublicAttributes());
+        System.out.println("  Number of Accessor Methods: " + recordMetrics.getNumberOfAccessorMethods());
+    }
 }
