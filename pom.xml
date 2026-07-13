@@ -50,13 +50,13 @@
     </issueManagement>
 
     <properties>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>11</maven.compiler.source>
-        <maven.compiler.target>11</maven.compiler.target>
 
         <!--Compiler plugins-->
         <!--<errorprone.version>2.22.0</errorprone.version>-->
-        <lombok.version>1.18.36</lombok.version>
+        <lombok.version>1.18.46</lombok.version>
         <sonar.projectKey>jimbethancourt_RefactorFirst</sonar.projectKey>
         <sonar.moduleKey>${project.artifactId}</sonar.moduleKey>
         <sonar.organization>jimbethancourt-github</sonar.organization>
@@ -140,19 +140,19 @@
             <dependency>
                 <groupId>org.eclipse.jgit</groupId>
                 <artifactId>org.eclipse.jgit</artifactId>
-                <version>6.10.0.202406032230-r</version>
+                <version>7.7.0.202606012155-r</version>
                 <scope>compile</scope>
             </dependency>
 
             <dependency>
                 <groupId>org.jgrapht</groupId>
                 <artifactId>jgrapht-core</artifactId>
-                <version>1.5.2</version>
+                <version>1.5.3</version>
             </dependency>
             <dependency>
                 <groupId>org.jgrapht</groupId>
                 <artifactId>jgrapht-opt</artifactId>
-                <version>1.5.2</version>
+                <version>1.5.3</version>
             </dependency>
 
             <dependency>
@@ -273,13 +273,26 @@
                     <artifactId>maven-deploy-plugin</artifactId>
                     <version>3.1.4</version>
                 </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <configuration>
+                        <annotationProcessorPaths>
+                            <path>
+                                <groupId>org.projectlombok</groupId>
+                                <artifactId>lombok</artifactId>
+                                <version>1.18.40</version>
+                            </path>
+                        </annotationProcessorPaths>
+                    </configuration>
+                </plugin>
             </plugins>
         </pluginManagement>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.8.1</version>
+                <version>3.15.0</version>
                 <configuration>
                     <compilerArgs>
                         <arg>-XDcompilePolicy=simple</arg>
@@ -297,14 +310,14 @@
                                         <version>${errorprone.version}</version>
                                     </path>-->
                     </annotationProcessorPaths>
-                    <release>11</release>
+                    <release>17</release>
                 </configuration>
             </plugin>
 
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.14</version>
+                <version>0.8.15</version>
                 <executions>
                     <!-- to avoid bugs in some situations -->
                     <execution>
@@ -364,7 +377,7 @@
             <plugin>
                 <groupId>com.github.spotbugs</groupId>
                 <artifactId>spotbugs-maven-plugin</artifactId>
-                <version>4.9.2.0</version>
+                <version>4.9.8.5</version>
                 <dependencies>
                     <dependency>
                         <groupId>com.github.spotbugs</groupId>

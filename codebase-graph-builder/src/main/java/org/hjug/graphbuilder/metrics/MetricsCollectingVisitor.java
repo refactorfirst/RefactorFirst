@@ -60,8 +60,7 @@ public class MetricsCollectingVisitor extends JavaIsoVisitor<ExecutionContext> {
         currentPackageName = type.getPackageName();
 
         // Get or create metrics - this ensures it's stored in the collector
-        if (metricsCollector instanceof GraphMetricsCollector) {
-            GraphMetricsCollector gmc = (GraphMetricsCollector) metricsCollector;
+        if (metricsCollector instanceof GraphMetricsCollector gmc) {
             currentClassMetrics = gmc.getAllClassMetrics().computeIfAbsent(currentClassName, ClassMetrics::new);
         } else {
             currentClassMetrics = metricsCollector.getClassMetrics(currentClassName);
@@ -85,16 +84,32 @@ public class MetricsCollectingVisitor extends JavaIsoVisitor<ExecutionContext> {
             currentClassMetrics.setParentClass(parentType.getFullyQualifiedName());
         }
 
+        // Handle record components
+        boolean isRecord = classDecl.getKind() == J.ClassDeclaration.Kind.Type.Record;
+        if (isRecord) {
+            // Record components are in the primary constructor
+            List<Statement> primaryConstructor = classDecl.getPrimaryConstructor();
+            if (primaryConstructor != null) {
+                for (Statement stmt : primaryConstructor) {
+                    if (stmt instanceof J.VariableDeclarations varDecl) {
+                        for (J.VariableDeclarations.NamedVariable var : varDecl.getVariables()) {
+                            // Record components are implicitly public final fields with accessor methods
+                            String varName = var.getSimpleName();
+                            currentClassMetrics.addAttribute(varName, true); // public
+                        }
+                    }
+                }
+            }
+        }
+
         // Count protected members
         int protectedMembers = 0;
         for (Statement statement : classDecl.getBody().getStatements()) {
-            if (statement instanceof J.VariableDeclarations) {
-                J.VariableDeclarations varDecl = (J.VariableDeclarations) statement;
+            if (statement instanceof J.VariableDeclarations varDecl) {
                 if (varDecl.getModifiers().stream().anyMatch(mod -> mod.getType() == J.Modifier.Type.Protected)) {
                     protectedMembers++;
                 }
-            } else if (statement instanceof J.MethodDeclaration) {
-                J.MethodDeclaration methodDecl = (J.MethodDeclaration) statement;
+            } else if (statement instanceof J.MethodDeclaration methodDecl) {
                 if (methodDecl.getModifiers().stream().anyMatch(mod -> mod.getType() == J.Modifier.Type.Protected)) {
                     protectedMembers++;
                 }
@@ -191,6 +206,23 @@ public class MetricsCollectingVisitor extends JavaIsoVisitor<ExecutionContext> {
     public J.VariableDeclarations visitVariableDeclarations(
             J.VariableDeclarations multiVariable, ExecutionContext ctx) {
         if (currentClassName != null && currentMethodSignature == null) {
+            // Skip record components in primary constructor - they're already counted in visitClassDeclaration
+            J.ClassDeclaration enclosingClass = getCursor().firstEnclosing(J.ClassDeclaration.class);
+            if (enclosingClass != null && enclosingClass.getKind() == J.ClassDeclaration.Kind.Type.Record) {
+                // Check if this VariableDeclarations is in the primary constructor
+                // The parent is JRightPadded, grandparent is the JContainer/List
+                Object grandParent = getCursor().getParent().getParent().getValue();
+                List<Statement> primaryConstructor = enclosingClass.getPrimaryConstructor();
+                if (primaryConstructor != null) {
+                    if (grandParent == primaryConstructor
+                            || (grandParent instanceof JContainer<?> container
+                                    && primaryConstructor.equals(container.getElements()))) {
+                        // This is a record component in the primary constructor, skip it
+                        return super.visitVariableDeclarations(multiVariable, ctx);
+                    }
+                }
+            }
+
             for (J.VariableDeclarations.NamedVariable var : multiVariable.getVariables()) {
                 String varName = var.getSimpleName();
                 boolean isPublic = multiVariable.hasModifier(J.Modifier.Type.Public);
@@ -238,8 +270,8 @@ public class MetricsCollectingVisitor extends JavaIsoVisitor<ExecutionContext> {
             JavaType.Method methodType = method.getMethodType();
             if (methodType != null && !methodType.isConstructor()) {
                 JavaType declaringType = methodType.getDeclaringType();
-                if (declaringType instanceof JavaType.FullyQualified) {
-                    String declaringFqn = ((JavaType.FullyQualified) declaringType).getFullyQualifiedName();
+                if (declaringType instanceof JavaType.FullyQualified qualified) {
+                    String declaringFqn = qualified.getFullyQualifiedName();
                     if (!declaringFqn.equals(currentClassName)) {
                         StringBuilder sig = new StringBuilder();
                         sig.append(declaringFqn)
@@ -271,8 +303,7 @@ public class MetricsCollectingVisitor extends JavaIsoVisitor<ExecutionContext> {
     public J.FieldAccess visitFieldAccess(J.FieldAccess fieldAccess, ExecutionContext ctx) {
         if (currentMethodMetrics != null && fieldAccess.getType() != null) {
             JavaType type = fieldAccess.getType();
-            if (type instanceof JavaType.Variable) {
-                JavaType.Variable varType = (JavaType.Variable) type;
+            if (type instanceof JavaType.Variable varType) {
                 if (varType.getOwner() instanceof JavaType.FullyQualified) {
                     JavaType.FullyQualified owner = (JavaType.FullyQualified) varType.getOwner();
                     String ownerFqn = owner.getFullyQualifiedName();
@@ -311,8 +342,7 @@ public class MetricsCollectingVisitor extends JavaIsoVisitor<ExecutionContext> {
         sig.append(method.getSimpleName()).append("(");
         boolean first = true;
         for (org.openrewrite.java.tree.Statement param : method.getParameters()) {
-            if (param instanceof J.VariableDeclarations) {
-                J.VariableDeclarations varDecl = (J.VariableDeclarations) param;
+            if (param instanceof J.VariableDeclarations varDecl) {
                 if (!first) {
                     sig.append(",");
                 }

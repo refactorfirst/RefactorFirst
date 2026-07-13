@@ -7,8 +7,8 @@ public abstract class SuperTypeToken<T> {
 
     protected SuperTypeToken() {
         Type superclass = getClass().getGenericSuperclass();
-        if (superclass instanceof ParameterizedType) {
-            this.type = ((ParameterizedType) superclass).getActualTypeArguments()[0];
+        if (superclass instanceof ParameterizedType parameterizedType) {
+            this.type = parameterizedType.getActualTypeArguments()[0];
         } else {
             throw new RuntimeException("Missing type parameter.");
         }
@@ -24,19 +24,19 @@ public abstract class SuperTypeToken<T> {
 
     // ((ParameterizedType) type).getActualTypeArguments()[0] - returns String in List<String>
     static Class<?> getClassFromTypeToken(Type type) {
-        if (type instanceof Class<?>) {
-            return (Class<?>) type;
-        } else if (type instanceof ParameterizedType) {
-            return (Class<?>) ((ParameterizedType) type).getRawType();
-        } else if (type instanceof GenericArrayType) {
-            Type componentType = ((GenericArrayType) type).getGenericComponentType();
+        if (type instanceof Class<?> clazz) {
+            return clazz;
+        } else if (type instanceof ParameterizedType parameterizedType) {
+            return (Class<?>) parameterizedType.getRawType();
+        } else if (type instanceof GenericArrayType arrayType) {
+            Type componentType = arrayType.getGenericComponentType();
             return java.lang.reflect.Array.newInstance(getClassFromTypeToken(componentType), 0)
                     .getClass();
         } else if (type instanceof TypeVariable<?>) {
             // Type variables don't have a direct class representation
             return Object.class; // Fallback
-        } else if (type instanceof WildcardType) {
-            Type[] upperBounds = ((WildcardType) type).getUpperBounds();
+        } else if (type instanceof WildcardType wildcardType) {
+            Type[] upperBounds = wildcardType.getUpperBounds();
             return getClassFromTypeToken(upperBounds[0]); // Use the first upper bound
         }
         throw new IllegalArgumentException("Unsupported Type: " + type);

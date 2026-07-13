@@ -3,7 +3,7 @@ package org.hjug.refactorfirst.report;
 import static org.hjug.refactorfirst.report.ReportWriter.writeReportToDisk;
 
 import java.io.File;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -33,7 +33,7 @@ public class CsvReport {
         String filename = fileNameSB.toString();
 
         if (Objects.equals(projectName, "Maven Stub Project (No POM)")) {
-            projectName = new File(Paths.get("").toAbsolutePath().toString()).getName();
+            projectName = new File(Path.of("").toAbsolutePath().toString()).getName();
         }
 
         log.info("Generating {} for {} - {} date: {}", filename, projectName, projectVersion, publishedDate);
@@ -49,7 +49,7 @@ public class CsvReport {
             projectBaseDir = baseDir.getPath();
             optionalGitDir = Optional.ofNullable(gitLogReader.getGitDir(baseDir));
         } else {
-            projectBaseDir = Paths.get("").toAbsolutePath().toString();
+            projectBaseDir = Path.of("").toAbsolutePath().toString();
             optionalGitDir = Optional.ofNullable(gitLogReader.getGitDir(new File(projectBaseDir)));
         }
 

@@ -6,7 +6,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -29,7 +29,7 @@ public class JsonReportExecutor {
         if (baseDir != null) {
             projectBaseDir = baseDir.getPath();
         } else {
-            projectBaseDir = Paths.get("").toAbsolutePath().toString();
+            projectBaseDir = Path.of("").toAbsolutePath().toString();
         }
 
         // TODO: revisit

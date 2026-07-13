@@ -7,7 +7,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -66,7 +65,7 @@ public class CostBenefitCalculator implements AutoCloseable {
         try (PmdAnalysis pmd = PmdAnalysis.create(configuration)) {
             loadRules(pmd);
 
-            try (Stream<Path> files = Files.walk(Paths.get(repositoryPath))) {
+            try (Stream<Path> files = Files.walk(Path.of(repositoryPath))) {
                 files.filter(Files::isRegularFile).forEach(file -> pmd.files().addFile(file));
             }
 
@@ -82,7 +81,7 @@ public class CostBenefitCalculator implements AutoCloseable {
         cboClassRule.setLanguage(LanguageRegistry.PMD.getLanguageByFullName("Java"));
         pmd.addRuleSet(RuleSet.forSingleRule(cboClassRule));
 
-        log.info("files to be scanned: " + Paths.get(repositoryPath));
+        log.info("files to be scanned: " + Path.of(repositoryPath));
     }
 
     public List<RankedDisharmony> calculateGodClassCostBenefitValues(List<GodClass> godClasses) {
@@ -252,8 +251,11 @@ public class CostBenefitCalculator implements AutoCloseable {
                     } catch (NullPointerException e) {
                         // Should not be reached
                         log.error(
-                                "Error looking up class SCM info.  If this error is encountered, "
-                                        + "please log a bug on the RefactorFirst project and describe if the class is a nested class, lambda, etc. \nClass: {}, Path: {}",
+                                """
+                                Error looking up class SCM info.  If this error is encountered, \
+                                please log a bug on the RefactorFirst project and describe if the class is a nested class, lambda, etc.\s
+                                Class: {}, Path: {}\
+                                """,
                                 className,
                                 path,
                                 e);
@@ -267,10 +269,8 @@ public class CostBenefitCalculator implements AutoCloseable {
                 })
                 .collect(Collectors.toList());
 
-        List<ScmLogInfo> sortedScmInfos = scmLogInfos.stream()
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .collect(Collectors.toList());
+        List<ScmLogInfo> sortedScmInfos =
+                scmLogInfos.stream().flatMap(Optional::stream).collect(Collectors.toList());
 
         changePronenessRanker.rankChangeProneness(sortedScmInfos);
         return sortedScmInfos;

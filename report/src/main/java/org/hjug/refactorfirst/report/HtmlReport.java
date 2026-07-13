@@ -16,366 +16,376 @@ public class HtmlReport extends SimpleHtmlReport {
 
     // use Files.readString(Path.of(file))
     // Created by generative AI and modified slightly
-    public static final String SUGIYAMA_SIGMA_GRAPH = "<script>\n"
-            + "function sugiyamaLayout(graph) {\n" + "    var layers = [];\n"
-            + "    var nodeLevels = {};\n"
-            + "    var nodes = graph.nodes();\n"
-            + "    //var edges = graph.edges();\n"
-            + "\n"
-            + "    // Step 1: Assign levels to nodes\n"
-            + "    function assignLevels() {\n"
-            + "        var visited = {};\n"
-            + "        var stack = [];\n"
-            + "\n"
-            + "        function visit(node, level) {\n"
-            + "            if (visited[node]) return;\n"
-            + "            visited[node] = true;\n"
-            + "            nodeLevels[node] = level;\n"
-            + "            if (!layers[level]) layers[level] = [];\n"
-            + "            layers[level].push(node);\n"
-            + "            stack.push(node);\n"
-            + "            graph.forEachNeighbor(node, function (neighbor) {\n"
-            + "                visit(neighbor, level + 1);\n"
-            + "            });\n"
-            + "        }\n"
-            + "\n"
-            + "        nodes.forEach(function (node) {\n"
-            + "            if (!visited[node]) visit(node, 0);\n"
-            + "        });\n"
-            + "    }\n"
-            + "\n"
-            + "    // Step 2: Reduce edge crossings\n"
-            + "    function reduceCrossings() {\n"
-            + "        for (var i = 0; i < layers.length - 1; i++) {\n"
-            + "            var layer = layers[i];\n"
-            + "            var nextLayer = layers[i + 1];\n"
-            + "            var positions = {};\n"
-            + "\n"
-            + "            nextLayer.forEach(function (node, index) {\n"
-            + "                positions[node] = index;\n"
-            + "            });\n"
-            + "\n"
-            + "            layer.sort(function (a, b) {\n"
-            + "                var aPos = 0, bPos = 0;\n"
-            + "                graph.forEachNeighbor(a, function (neighbor) {\n"
-            + "                    aPos += positions[neighbor] || 0;\n"
-            + "                });\n"
-            + "                graph.forEachNeighbor(b, function (neighbor) {\n"
-            + "                    bPos += positions[neighbor] || 0;\n"
-            + "                });\n"
-            + "                return aPos - bPos;\n"
-            + "            });\n"
-            + "        }\n"
-            + "    }\n"
-            + "\n"
-            + "    // Step 3: Assign positions to nodes\n"
-            + "    function assignPositions() {\n"
-            + "        var yStep = 100;\n"
-            + "        var xStep = 2000;\n"
-            + "\n"
-            + "        layers.forEach(function (layer, level) {\n"
-            + "            var layerWidth = layer.length * xStep;\n"
-            + "            var offsetX = ((screen.width - 200) - layerWidth) / 2; // Centering the nodes\n"
-            + "\n"
-            + "            layer.forEach(function (node, index) {\n"
-            + "                graph.setNodeAttribute(node, 'x', offsetX + index * xStep);\n"
-            + "                graph.setNodeAttribute(node, 'y', -level * yStep);\n"
-            + "            });\n"
-            + "        });\n"
-            + "    }\n"
-            + "\n"
-            + "    assignLevels();\n"
-            + "    reduceCrossings();\n"
-            + "    assignPositions();\n"
-            + "}\n"
-            + "\n"
-            + "function renderGraph(dot) {\n"
-            + "    // Parse the DOT graph using graphlib-dot\n"
-            + "    const graphlibGraph = graphlibDot.read(dot);\n"
-            + "\n"
-            + "    // Convert graphlib graph to graphology graph\n"
-            + "    const graphologyGraph = new graphology.Graph();\n"
-            + "    graphlibGraph.nodes().forEach(node => {\n"
-            + "        const attrs = graphlibGraph.node(node);\n"
-            + "        graphologyGraph.addNode(node, {\n"
-            + "            label: attrs.label || node,\n"
-            + "            color: attrs.color,\n"
-            + "            size: 5,\n"
-            + "        });\n"
-            + "    });\n"
-            + "\n"
-            + "    graphlibGraph.edges().forEach(edge => {\n"
-            + "        const attrs = graphlibGraph.edge(edge);\n"
-            + "        graphologyGraph.addEdge(edge.v, edge.w, {\n"
-            + "            color: attrs.color,\n"
-            + "            size: 1,\n"
-            + "            type: 'arrow',\n"
-            + "        });\n"
-            + "    });\n"
-            + "\n"
-            + "    sugiyamaLayout(graphologyGraph)\n"
-            + "\n"
-            + "    return graphologyGraph;\n"
-            + "}\n"
-            + "</script>";
+    public static final String SUGIYAMA_SIGMA_GRAPH =
+            """
+            <script>
+            function sugiyamaLayout(graph) {
+                var layers = [];
+                var nodeLevels = {};
+                var nodes = graph.nodes();
+                //var edges = graph.edges();
+
+                // Step 1: Assign levels to nodes
+                function assignLevels() {
+                    var visited = {};
+                    var stack = [];
+
+                    function visit(node, level) {
+                        if (visited[node]) return;
+                        visited[node] = true;
+                        nodeLevels[node] = level;
+                        if (!layers[level]) layers[level] = [];
+                        layers[level].push(node);
+                        stack.push(node);
+                        graph.forEachNeighbor(node, function (neighbor) {
+                            visit(neighbor, level + 1);
+                        });
+                    }
+
+                    nodes.forEach(function (node) {
+                        if (!visited[node]) visit(node, 0);
+                    });
+                }
+
+                // Step 2: Reduce edge crossings
+                function reduceCrossings() {
+                    for (var i = 0; i < layers.length - 1; i++) {
+                        var layer = layers[i];
+                        var nextLayer = layers[i + 1];
+                        var positions = {};
+
+                        nextLayer.forEach(function (node, index) {
+                            positions[node] = index;
+                        });
+
+                        layer.sort(function (a, b) {
+                            var aPos = 0, bPos = 0;
+                            graph.forEachNeighbor(a, function (neighbor) {
+                                aPos += positions[neighbor] || 0;
+                            });
+                            graph.forEachNeighbor(b, function (neighbor) {
+                                bPos += positions[neighbor] || 0;
+                            });
+                            return aPos - bPos;
+                        });
+                    }
+                }
+
+                // Step 3: Assign positions to nodes
+                function assignPositions() {
+                    var yStep = 100;
+                    var xStep = 2000;
+
+                    layers.forEach(function (layer, level) {
+                        var layerWidth = layer.length * xStep;
+                        var offsetX = ((screen.width - 200) - layerWidth) / 2; // Centering the nodes
+
+                        layer.forEach(function (node, index) {
+                            graph.setNodeAttribute(node, 'x', offsetX + index * xStep);
+                            graph.setNodeAttribute(node, 'y', -level * yStep);
+                        });
+                    });
+                }
+
+                assignLevels();
+                reduceCrossings();
+                assignPositions();
+            }
+
+            function renderGraph(dot) {
+                // Parse the DOT graph using graphlib-dot
+                const graphlibGraph = graphlibDot.read(dot);
+
+                // Convert graphlib graph to graphology graph
+                const graphologyGraph = new graphology.Graph();
+                graphlibGraph.nodes().forEach(node => {
+                    const attrs = graphlibGraph.node(node);
+                    graphologyGraph.addNode(node, {
+                        label: attrs.label || node,
+                        color: attrs.color,
+                        size: 5,
+                    });
+                });
+
+                graphlibGraph.edges().forEach(edge => {
+                    const attrs = graphlibGraph.edge(edge);
+                    graphologyGraph.addEdge(edge.v, edge.w, {
+                        color: attrs.color,
+                        size: 1,
+                        type: 'arrow',
+                    });
+                });
+
+                sugiyamaLayout(graphologyGraph)
+
+                return graphologyGraph;
+            }
+            </script>""";
 
     public static final String FORCE_3D_GRAPH =
-            "<script type=\"module\">\n" + "// SpriteText will only work as import\n"
-                    + "        // this script block requires type=module since we are using an import\n"
-                    + "        import SpriteText from \"https://esm.sh/three-spritetext\";\n"
-                    + "\n"
-                    + "        function createForceGraph(popupId, containerName, dot) {\n"
-                    + "            // Add event listener for Escape key to close the popup\n"
-                    + "            document.addEventListener('keydown', function (event) {\n"
-                    + "                if (event.key === 'Escape') {\n"
-                    + "                    hidePopup();\n"
-                    + "                }\n"
-                    + "            });\n"
-                    + "\n"
-                    + "            document.getElementById('overlay').style.display = 'block';\n"
-                    + "            document.getElementById(popupId).style.display = 'block';\n"
-                    + "            var container = document.getElementById(containerName);\n"
-                    + "\n"
-                    + "            // Parse the DOT graph using graphlib-dot\n"
-                    + "            const graphlibGraph = graphlibDot.read(dot);\n"
-                    + "\n"
-                    + "            var nodes = [];\n"
-                    + "            var links = [];\n"
-                    + "\n"
-                    + "            graphlibGraph.nodes().forEach(function (node) {\n"
-                    + "                var nodeData = graphlibGraph.node(node);\n"
-                    + "                nodes.push({\n"
-                    + "                    id: node,\n"
-                    + "                    color: nodeData.color || 'white',\n"
-                    + "                });\n"
-                    + "            });\n"
-                    + "\n"
-                    + "            graphlibGraph.edges().forEach(function (edge) {\n"
-                    + "                links.push({\n"
-                    + "                    source: edge.v,\n"
-                    + "                    target: edge.w,\n"
-                    + "                    color: graphlibGraph.edge(edge).color || 'white',\n"
-                    + "                    weight: graphlibGraph.edge(edge).weight,\n"
-                    + "                });\n"
-                    + "            });\n"
-                    + "\n"
-                    + "            const gData = {\n"
-                    + "                nodes: nodes,\n"
-                    + "                links: links\n"
-                    + "            };\n"
-                    + "\n"
-                    + "            // cross-link node objects\n"
-                    + "            gData.links.forEach(link => {\n"
-                    + "                const a = gData.nodes.find(node => node.id === link.source);\n"
-                    + "                const b = gData.nodes.find(node => node.id === link.target);\n"
-                    + "                !a.neighbors && (a.neighbors = []);\n"
-                    + "                !b.neighbors && (b.neighbors = []);\n"
-                    + "                a.neighbors.push(b);\n"
-                    + "                b.neighbors.push(a);\n"
-                    + "\n"
-                    + "                !a.links && (a.links = []);\n"
-                    + "                !b.links && (b.links = []);\n"
-                    + "                a.links.push(link);\n"
-                    + "                b.links.push(link);\n"
-                    + "            });\n"
-                    + "\n"
-                    + "            const Graph = new ForceGraph3D(container)\n"
-                    + "                .graphData(gData)\n"
-                    + "                .nodeLabel('id')\n"
-                    + "                .width(container.clientWidth)\n"
-                    + "                .height(container.clientHeight);\n"
-                    + "\n"
-                    + "            if(gData.links.length + gData.nodes.length < 4000) {\n"
-                    + "                console.log(gData.links.length + gData.nodes.length);\n"
-                    + "\n"
-                    + "\n"
-                    + "                // use node labels instead of spheres\n"
-                    + "                Graph.nodeThreeObject(node => {\n"
-                    + "                    const sprite = new SpriteText(node.id);\n"
-                    + "                    sprite.material.depthWrite = false; // make sprite background transparent\n"
-                    + "                    sprite.color = node.color;\n"
-                    + "                    sprite.textHeight = 4;\n"
-                    + "                    return sprite;\n"
-                    + "                });\n"
-                    + "\n"
-                    + "                // code to display weight as link text\n"
-                    + "                // may be too much for browsers to handle\n"
-                    + "                // Graph\n"
-                    + "                //     .linkThreeObjectExtend(true)\n"
-                    + "                //     .linkThreeObject(link => {\n"
-                    + "                //         // extend link with text sprite\n"
-                    + "                //         const sprite = new SpriteText(`${link.weight}`);\n"
-                    + "                //         sprite.color = 'lightgrey';\n"
-                    + "                //         sprite.textHeight = 3;\n"
-                    + "                //         return sprite;\n"
-                    + "                //     })\n"
-                    + "                //     .linkPositionUpdate((sprite, {start, end}) => {\n"
-                    + "                //         const middlePos = Object.assign(...['x', 'y', 'z'].map(c => ({\n"
-                    + "                //             [c]: start[c] + (end[c] - start[c]) / 2 // calc middle point\n"
-                    + "                //         })));\n"
-                    + "                //\n"
-                    + "                //         // Position sprite\n"
-                    + "                //         Object.assign(sprite.position, middlePos);\n"
-                    + "                //     });\n"
-                    + "\n"
-                    + "\n"
-                    + "                // code to highlight nodes & links\n"
-                    + "                // TODO: enable via control - see Manipulate Link Force Distance for example\n"
-                    + "                const highlightNodes = new Set();\n"
-                    + "                const highlightLinks = new Set();\n"
-                    + "                let hoverNode = null;\n"
-                    + "                Graph\n"
-                    + "                    .nodeColor(node => highlightNodes.has(node) ? node === hoverNode ? 'rgb(255,0,0,1)' : 'rgba(255,160,0,0.8)' : 'rgba(0,255,255,0.6)')\n"
-                    + "                    .linkWidth(link => highlightLinks.has(link) ? 4 : 1)\n"
-                    + "                    .linkDirectionalParticles(link => highlightLinks.has(link) ? 4 : 0)\n"
-                    + "                    .linkDirectionalParticleWidth(4)\n"
-                    + "                    .onNodeHover(node => {\n"
-                    + "                        // no state change\n"
-                    + "                        if ((!node && !highlightNodes.size) || (node && hoverNode === node)) return;\n"
-                    + "\n"
-                    + "                        highlightNodes.clear();\n"
-                    + "                        highlightLinks.clear();\n"
-                    + "                        if (node) {\n"
-                    + "                            highlightNodes.add(node);\n"
-                    + "                            node.neighbors.forEach(neighbor => highlightNodes.add(neighbor));\n"
-                    + "                            node.links.forEach(link => highlightLinks.add(link));\n"
-                    + "                        }\n"
-                    + "\n"
-                    + "                        hoverNode = node || null;\n"
-                    + "\n"
-                    + "                        updateHighlight(Graph);\n"
-                    + "                    })\n"
-                    + "                    .onLinkHover(link => {\n"
-                    + "                        highlightNodes.clear();\n"
-                    + "                        highlightLinks.clear();\n"
-                    + "\n"
-                    + "                        if (link) {\n"
-                    + "                            highlightLinks.add(link);\n"
-                    + "                            highlightNodes.add(link.source);\n"
-                    + "                            highlightNodes.add(link.target);\n"
-                    + "                        }\n"
-                    + "\n"
-                    + "                        updateHighlight(Graph);\n"
-                    + "                    });\n"
-                    + "\n"
-                    + "            }\n"
-                    + "        }\n"
-                    + "\n"
-                    + "        // used by highlighting functionality\n"
-                    + "        function updateHighlight(Graph) {\n"
-                    + "            // trigger update of highlighted objects in scene\n"
-                    + "            Graph\n"
-                    + "                .nodeColor(Graph.nodeColor())\n"
-                    + "                .linkWidth(Graph.linkWidth())\n"
-                    + "                .linkDirectionalParticles(Graph.linkDirectionalParticles());\n"
-                    + "        }\n"
-                    + "\n"
-                    + "        // needed to allow the button to open the graph\n"
-                    + "        window.createForceGraph = createForceGraph;"
-                    + "    </script>";
+            """
+            <script type="module">
+            // SpriteText will only work as import
+                    // this script block requires type=module since we are using an import
+                    import SpriteText from "https://esm.sh/three-spritetext";
+
+                    function createForceGraph(popupId, containerName, dot) {
+                        // Add event listener for Escape key to close the popup
+                        document.addEventListener('keydown', function (event) {
+                            if (event.key === 'Escape') {
+                                hidePopup();
+                            }
+                        });
+
+                        document.getElementById('overlay').style.display = 'block';
+                        document.getElementById(popupId).style.display = 'block';
+                        var container = document.getElementById(containerName);
+
+                        // Parse the DOT graph using graphlib-dot
+                        const graphlibGraph = graphlibDot.read(dot);
+
+                        var nodes = [];
+                        var links = [];
+
+                        graphlibGraph.nodes().forEach(function (node) {
+                            var nodeData = graphlibGraph.node(node);
+                            nodes.push({
+                                id: node,
+                                color: nodeData.color || 'white',
+                            });
+                        });
+
+                        graphlibGraph.edges().forEach(function (edge) {
+                            links.push({
+                                source: edge.v,
+                                target: edge.w,
+                                color: graphlibGraph.edge(edge).color || 'white',
+                                weight: graphlibGraph.edge(edge).weight,
+                            });
+                        });
+
+                        const gData = {
+                            nodes: nodes,
+                            links: links
+                        };
+
+                        // cross-link node objects
+                        gData.links.forEach(link => {
+                            const a = gData.nodes.find(node => node.id === link.source);
+                            const b = gData.nodes.find(node => node.id === link.target);
+                            !a.neighbors && (a.neighbors = []);
+                            !b.neighbors && (b.neighbors = []);
+                            a.neighbors.push(b);
+                            b.neighbors.push(a);
+
+                            !a.links && (a.links = []);
+                            !b.links && (b.links = []);
+                            a.links.push(link);
+                            b.links.push(link);
+                        });
+
+                        const Graph = new ForceGraph3D(container)
+                            .graphData(gData)
+                            .nodeLabel('id')
+                            .width(container.clientWidth)
+                            .height(container.clientHeight);
+
+                        if(gData.links.length + gData.nodes.length < 4000) {
+                            console.log(gData.links.length + gData.nodes.length);
+
+
+                            // use node labels instead of spheres
+                            Graph.nodeThreeObject(node => {
+                                const sprite = new SpriteText(node.id);
+                                sprite.material.depthWrite = false; // make sprite background transparent
+                                sprite.color = node.color;
+                                sprite.textHeight = 4;
+                                return sprite;
+                            });
+
+                            // code to display weight as link text
+                            // may be too much for browsers to handle
+                            // Graph
+                            //     .linkThreeObjectExtend(true)
+                            //     .linkThreeObject(link => {
+                            //         // extend link with text sprite
+                            //         const sprite = new SpriteText(`${link.weight}`);
+                            //         sprite.color = 'lightgrey';
+                            //         sprite.textHeight = 3;
+                            //         return sprite;
+                            //     })
+                            //     .linkPositionUpdate((sprite, {start, end}) => {
+                            //         const middlePos = Object.assign(...['x', 'y', 'z'].map(c => ({
+                            //             [c]: start[c] + (end[c] - start[c]) / 2 // calc middle point
+                            //         })));
+                            //
+                            //         // Position sprite
+                            //         Object.assign(sprite.position, middlePos);
+                            //     });
+
+
+                            // code to highlight nodes & links
+                            // TODO: enable via control - see Manipulate Link Force Distance for example
+                            const highlightNodes = new Set();
+                            const highlightLinks = new Set();
+                            let hoverNode = null;
+                            Graph
+                                .nodeColor(node => highlightNodes.has(node) ? node === hoverNode ? 'rgb(255,0,0,1)' : 'rgba(255,160,0,0.8)' : 'rgba(0,255,255,0.6)')
+                                .linkWidth(link => highlightLinks.has(link) ? 4 : 1)
+                                .linkDirectionalParticles(link => highlightLinks.has(link) ? 4 : 0)
+                                .linkDirectionalParticleWidth(4)
+                                .onNodeHover(node => {
+                                    // no state change
+                                    if ((!node && !highlightNodes.size) || (node && hoverNode === node)) return;
+
+                                    highlightNodes.clear();
+                                    highlightLinks.clear();
+                                    if (node) {
+                                        highlightNodes.add(node);
+                                        node.neighbors.forEach(neighbor => highlightNodes.add(neighbor));
+                                        node.links.forEach(link => highlightLinks.add(link));
+                                    }
+
+                                    hoverNode = node || null;
+
+                                    updateHighlight(Graph);
+                                })
+                                .onLinkHover(link => {
+                                    highlightNodes.clear();
+                                    highlightLinks.clear();
+
+                                    if (link) {
+                                        highlightLinks.add(link);
+                                        highlightNodes.add(link.source);
+                                        highlightNodes.add(link.target);
+                                    }
+
+                                    updateHighlight(Graph);
+                                });
+
+                        }
+                    }
+
+                    // used by highlighting functionality
+                    function updateHighlight(Graph) {
+                        // trigger update of highlighted objects in scene
+                        Graph
+                            .nodeColor(Graph.nodeColor())
+                            .linkWidth(Graph.linkWidth())
+                            .linkDirectionalParticles(Graph.linkDirectionalParticles());
+                    }
+
+                    // needed to allow the button to open the graph
+                    window.createForceGraph = createForceGraph;\
+                </script>""";
 
     // Created by generative AI and modified
-    public static final String POPUP_STYLE = "<style>\n"
-            + "    main {\n" + "        max-width: 100vw;/*3840px;*/\n"
-            + "        width: 100vw;   /* or 100vw for viewport width */\n"
-            + "        padding: 0px 0px; /* 0px top & bottom, 40px left & right */\n"
-            + "    }\n"
-            + "\n"
-            + "    nav {\n"
-            + "        justify-content: center; /* Center horizontally */\n"
-            + "        padding: 0px 40px; /* 0px top & bottom, 40px left & right */\n"
-            + "        margin: 0px auto;\n"
-            + "    }\n"
-            + "\n"
-            + "    header {\n"
-            + "        padding: 0px 40px; /* 0px top & bottom, 40px left & right */\n"
-            + "    }\n"
-            + "\n"
-            + "    /* Scale the SVG to fill the screen */\n"
-            + "    .fullscreen-svg {\n"
-            + "        width: 100%;\n"
-            + "        height: 100%;\n"
-            + "    }"
-            + "        /* Popup container */\n"
-            + "        .popup {\n"
-            + "            position: fixed;\n"
-            + "            display: none;\n"
-            + "            width: 95%;\n"
-            + "            height: 95%;\n"
-            + "            background-color: white;\n"
-            + "            border: 1px solid #ccc;\n"
-            + "            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);\n"
-            + "            top: 50%;\n"
-            + "            left: 50%;\n"
-            + "            transform: translate(-50%, -50%);\n"
-            + "            z-index: 1000;\n"
-            + "            padding: 20px;\n"
-            + "            box-sizing: border-box;\n"
-            + "        }\n"
-            + "\n"
-            + "        /* Popup overlay */\n"
-            + "        .overlay {\n"
-            + "            position: fixed;\n"
-            + "            display: none;\n"
-            + "            width: 100%;\n"
-            + "            height: 100%;\n"
-            + "            top: 0;\n"
-            + "            left: 0;\n"
-            + "            background: rgba(0, 0, 0, 0.5);\n"
-            + "            z-index: 999;\n"
-            + "        }\n"
-            + "\n"
-            + "        /* Close button */\n"
-            + "        .close-btn {\n"
-            + "            position: absolute;\n"
-            + "            top: 10px;\n"
-            + "            right: 10px;\n"
-            + "            cursor: pointer;\n"
-            + "        }\n"
-            + "    </style>";
+    public static final String POPUP_STYLE =
+            """
+            <style>
+                main {
+                    max-width: 100vw;/*3840px;*/
+                    width: 100vw;   /* or 100vw for viewport width */
+                    padding: 0px 0px; /* 0px top & bottom, 40px left & right */
+                }
+
+                nav {
+                    justify-content: center; /* Center horizontally */
+                    padding: 0px 40px; /* 0px top & bottom, 40px left & right */
+                    margin: 0px auto;
+                }
+
+                header {
+                    padding: 0px 40px; /* 0px top & bottom, 40px left & right */
+                }
+
+                /* Scale the SVG to fill the screen */
+                .fullscreen-svg {
+                    width: 100%;
+                    height: 100%;
+                }\
+                    /* Popup container */
+                    .popup {
+                        position: fixed;
+                        display: none;
+                        width: 95%;
+                        height: 95%;
+                        background-color: white;
+                        border: 1px solid #ccc;
+                        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+                        top: 50%;
+                        left: 50%;
+                        transform: translate(-50%, -50%);
+                        z-index: 1000;
+                        padding: 20px;
+                        box-sizing: border-box;
+                    }
+
+                    /* Popup overlay */
+                    .overlay {
+                        position: fixed;
+                        display: none;
+                        width: 100%;
+                        height: 100%;
+                        top: 0;
+                        left: 0;
+                        background: rgba(0, 0, 0, 0.5);
+                        z-index: 999;
+                    }
+
+                    /* Close button */
+                    .close-btn {
+                        position: absolute;
+                        top: 10px;
+                        right: 10px;
+                        cursor: pointer;
+                    }
+                </style>""";
 
     // Created by generative AI and modified
-    public static final String POPUP_FUNCTIONS = "<script>\n"
-            + "    function showPopup(popupId, containerName, dot) {\n"
-            + "        // Add event listener for Escape key to close the popup\n"
-            + "        document.addEventListener('keydown', function (event) {\n"
-            + "            if (event.key === 'Escape') {\n"
-            + "                hidePopup();\n"
-            + "            }\n"
-            + "        });"
-            + "        "
-            + "        document.getElementById('overlay').style.display = 'block';\n"
-            + "        document.getElementById(popupId).style.display = 'block';\n"
-            + "\n"
-            + "        var graph = renderGraph(dot);\n"
-            + "        var container = document.getElementById(containerName);\n"
-            + "\n"
-            + "        // Render with Sigma.js\n"
-            + "        new Sigma(graph, container);\n"
-            + "    }\n"
-            + "\n"
-            + "    function hidePopup() {\n"
-            + "        document.getElementById('overlay').style.display = 'none';\n"
-            + "        var popups = document.getElementsByClassName('popup');\n"
-            + "        for (var i = 0; i < popups.length; i++) {\n"
-            + "            popups[i].style.display = 'none';\n"
-            + "        }\n"
-            + "\n"
-            + "        // Clear the graph containers to remove the previous graphs\n"
-            + "        var containers = document.querySelectorAll('[id^=\"graph-container\"]');\n"
-            + "        containers.forEach(function(container) {\n"
-            + "            while (container.firstChild) {\n"
-            + "                container.removeChild(container.firstChild);\n"
-            + "            }\n"
-            + "        });\n"
-            + "// Remove the Escape key event listener\n"
-            + "            document.removeEventListener('keydown', function (event) {\n"
-            + "                if (event.key === 'Escape') {\n"
-            + "                    hidePopup();\n"
-            + "                }\n"
-            + "            });"
-            + "    }\n"
-            + "</script>";
+    public static final String POPUP_FUNCTIONS =
+            """
+            <script>
+                function showPopup(popupId, containerName, dot) {
+                    // Add event listener for Escape key to close the popup
+                    document.addEventListener('keydown', function (event) {
+                        if (event.key === 'Escape') {
+                            hidePopup();
+                        }
+                    });\
+                    \
+                    document.getElementById('overlay').style.display = 'block';
+                    document.getElementById(popupId).style.display = 'block';
+
+                    var graph = renderGraph(dot);
+                    var container = document.getElementById(containerName);
+
+                    // Render with Sigma.js
+                    new Sigma(graph, container);
+                }
+
+                function hidePopup() {
+                    document.getElementById('overlay').style.display = 'none';
+                    var popups = document.getElementsByClassName('popup');
+                    for (var i = 0; i < popups.length; i++) {
+                        popups[i].style.display = 'none';
+                    }
+
+                    // Clear the graph containers to remove the previous graphs
+                    var containers = document.querySelectorAll('[id^="graph-container"]');
+                    containers.forEach(function(container) {
+                        while (container.firstChild) {
+                            container.removeChild(container.firstChild);
+                        }
+                    });
+            // Remove the Escape key event listener
+                        document.removeEventListener('keydown', function (event) {
+                            if (event.key === 'Escape') {
+                                hidePopup();
+                            }
+                        });\
+                }
+            </script>""";
 
     @Override
     public String printHead() {
@@ -423,13 +433,15 @@ public class HtmlReport extends SimpleHtmlReport {
 
     @Override
     String renderGithubButtons() {
-        return "<div align=\"center\">\n" + "<h2>Show RefactorFirst some &#10084;&#65039;</h2>\n"
-                + "<a class=\"github-button\" href=\"https://github.com/refactorfirst/refactorfirst\" data-icon=\"octicon-star\" data-size=\"large\" data-show-count=\"true\" aria-label=\"Star refactorfirst/refactorfirst on GitHub\">Star</a>\n"
-                + "<a class=\"github-button\" href=\"https://github.com/refactorfirst/refactorfirst/fork\" data-icon=\"octicon-repo-forked\" data-size=\"large\" data-show-count=\"true\" aria-label=\"Fork refactorfirst/refactorfirst on GitHub\">Fork</a>\n"
-                + "<a class=\"github-button\" href=\"https://github.com/refactorfirst/refactorfirst/subscription\" data-icon=\"octicon-eye\" data-size=\"large\" data-show-count=\"true\" aria-label=\"Watch refactorfirst/refactorfirst on GitHub\">Watch</a>\n"
-                + "<a class=\"github-button\" href=\"https://github.com/refactorfirst/refactorfirst/issues\" data-icon=\"octicon-issue-opened\" data-size=\"large\" data-show-count=\"false\" aria-label=\"Issue refactorfirst/refactorfirst on GitHub\">Issue</a>\n"
-                + "<a class=\"github-button\" href=\"https://github.com/sponsors/jimbethancourt\" data-icon=\"octicon-heart\" data-size=\"large\" aria-label=\"Sponsor @jimbethancourt on GitHub\">Sponsor</a>\n"
-                + "</div>";
+        return """
+                <div align="center">
+                <h2>Show RefactorFirst some &#10084;&#65039;</h2>
+                <a class="github-button" href="https://github.com/refactorfirst/refactorfirst" data-icon="octicon-star" data-size="large" data-show-count="true" aria-label="Star refactorfirst/refactorfirst on GitHub">Star</a>
+                <a class="github-button" href="https://github.com/refactorfirst/refactorfirst/fork" data-icon="octicon-repo-forked" data-size="large" data-show-count="true" aria-label="Fork refactorfirst/refactorfirst on GitHub">Fork</a>
+                <a class="github-button" href="https://github.com/refactorfirst/refactorfirst/subscription" data-icon="octicon-eye" data-size="large" data-show-count="true" aria-label="Watch refactorfirst/refactorfirst on GitHub">Watch</a>
+                <a class="github-button" href="https://github.com/refactorfirst/refactorfirst/issues" data-icon="octicon-issue-opened" data-size="large" data-show-count="false" aria-label="Issue refactorfirst/refactorfirst on GitHub">Issue</a>
+                <a class="github-button" href="https://github.com/sponsors/jimbethancourt" data-icon="octicon-heart" data-size="large" aria-label="Sponsor @jimbethancourt on GitHub">Sponsor</a>
+                </div>""";
     }
 
     public String getName(Locale locale) {

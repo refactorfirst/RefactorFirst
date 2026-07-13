@@ -10,7 +10,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.hjug.graphbuilder.DependencyCollector;
@@ -34,6 +33,7 @@ class JavaVisitorTest {
     private static final String VARIABLE_INITIALIZERS = TESTCLASSES + "/variableInitializers";
     private static final String TRY_CATCH = TESTCLASSES + "/tryCatch";
     private static final String JAVADOC_TESTCLASSES = TESTCLASSES + "/javadoc";
+    private static final String RECORD = TESTCLASSES + "/record";
 
     private static String repoFrom(String pathString) {
         return new File(pathString).toURI().toString().replace("/" + pathString, "");
@@ -43,8 +43,8 @@ class JavaVisitorTest {
         File srcDirectory = new File(pathString);
         JavaParser javaParser = JavaParser.fromJavaVersion().build();
         ExecutionContext ctx = new InMemoryExecutionContext(Throwable::printStackTrace);
-        List<Path> list = Files.walk(Paths.get(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
-        javaParser.parse(list, Paths.get(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> visitor.visit(cu, ctx));
+        List<Path> list = Files.walk(Path.of(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
+        javaParser.parse(list, Path.of(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> visitor.visit(cu, ctx));
     }
 
     private static Graph<String, DefaultWeightedEdge> buildAndVisit(String pathString) throws IOException {
@@ -81,11 +81,9 @@ class JavaVisitorTest {
                 new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class),
                 new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class));
         JavaVisitor<ExecutionContext> javaVisitor = new JavaVisitor<>(repoFrom(TESTCLASSES), dependencyCollector);
-        List<Path> list = Files.walk(Paths.get(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
-        javaParser
-                .parse(list, Paths.get(srcDirectory.getAbsolutePath()), ctx)
-                .forEach(cu -> javaVisitor.visit(cu, ctx));
-        assertEquals(8, dependencyCollector.getPackagesInCodebase().size());
+        List<Path> list = Files.walk(Path.of(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
+        javaParser.parse(list, Path.of(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> javaVisitor.visit(cu, ctx));
+        assertEquals(9, dependencyCollector.getPackagesInCodebase().size());
     }
 
     @Test
@@ -370,6 +368,85 @@ class JavaVisitorTest {
                         "org.hjug.graphbuilder.visitor.testclasses.javadoc.JavaDocOwner",
                         "org.hjug.graphbuilder.visitor.testclasses.javadoc.JavaDocSibling"),
                 "JavaDocSibling is referenced only in Javadoc {@link} and must not create a dependency edge from JavaDocOwner");
+    }
+
+    @Test
+    void visitRecordDeclaration_capturesRecordAsVertex() throws IOException {
+        Graph<String, DefaultWeightedEdge> graph = buildAndVisit(RECORD);
+        assertTrue(
+                graph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.record.SimpleRecord"),
+                "SimpleRecord should be in the graph");
+    }
+
+    @Test
+    void visitRecordDeclaration_capturesRecordComponentsAsDependencies() throws IOException {
+        Graph<String, DefaultWeightedEdge> graph = buildAndVisit(RECORD);
+
+        // ComplexRecord has components: String, List<String>, Map<String, Integer>, NestedRecord, SimpleRecord[]
+        assertTrue(
+                graph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.record.ComplexRecord"),
+                "ComplexRecord should be in the graph");
+        assertTrue(
+                graph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.record.ComplexRecord$NestedRecord"),
+                "NestedRecord should be in the graph");
+        assertTrue(
+                graph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.record.SimpleRecord"),
+                "SimpleRecord should be in the graph");
+
+        // Check dependencies from ComplexRecord to its component types
+        assertTrue(
+                graph.containsEdge(
+                        "org.hjug.graphbuilder.visitor.testclasses.record.ComplexRecord", "java.lang.String"),
+                "Should have edge from ComplexRecord to String");
+        assertTrue(
+                graph.containsEdge("org.hjug.graphbuilder.visitor.testclasses.record.ComplexRecord", "java.util.List"),
+                "Should have edge from ComplexRecord to List");
+        assertTrue(
+                graph.containsEdge("org.hjug.graphbuilder.visitor.testclasses.record.ComplexRecord", "java.util.Map"),
+                "Should have edge from ComplexRecord to Map");
+    }
+
+    @Test
+    void visitGenericRecordDeclaration_capturesTypeParameters() throws IOException {
+        Graph<String, DefaultWeightedEdge> graph = buildAndVisit(RECORD);
+
+        assertTrue(
+                graph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.record.GenericRecord"),
+                "GenericRecord should be in the graph");
+        assertTrue(
+                graph.containsVertex("java.lang.Comparable"),
+                "Should have edge from GenericRecord to Comparable (type bound)");
+    }
+
+    @Test
+    void visitAnnotatedRecordDeclaration_capturesAnnotations() throws IOException {
+        Graph<String, DefaultWeightedEdge> graph = buildAndVisit(RECORD);
+
+        assertTrue(
+                graph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.record.AnnotatedRecord"),
+                "AnnotatedRecord should be in the graph");
+        assertTrue(
+                graph.containsVertex("java.io.Serializable"),
+                "Should have edge from AnnotatedRecord to Serializable (implements)");
+        // Deprecated annotation should also be captured
+        assertTrue(
+                graph.containsVertex("java.lang.Deprecated"),
+                "Should have edge from AnnotatedRecord to Deprecated annotation");
+    }
+
+    @Test
+    void visitRecordDeclaration_recordsSourceFileMapping() throws IOException {
+        JavaVisitor<ExecutionContext> visitor = buildVisitor(repoFrom(RECORD));
+        visitAll(visitor, RECORD);
+
+        assertTrue(
+                visitor.getClassToSourceFilePathMapping()
+                        .containsKey("org.hjug.graphbuilder.visitor.testclasses.record.SimpleRecord"),
+                "SimpleRecord should have source file mapping");
+        assertTrue(
+                visitor.getClassToSourceFilePathMapping()
+                        .containsKey("org.hjug.graphbuilder.visitor.testclasses.record.ComplexRecord$NestedRecord"),
+                "NestedRecord should have source file mapping");
     }
 
     private static double getEdgeWeight(
