@@ -15,8 +15,7 @@ public class SignificantDuplicationIntraClass {
         int j = i - 3;
         int k = j / 4;
         int l = k + 5;
-        int m = l * 6;
-        return m;
+        return l * 6;
     }
 
     public int methodB(int x) {
@@ -32,7 +31,6 @@ public class SignificantDuplicationIntraClass {
         int j = i - 3;
         int k = j / 4;
         int l = k + 5;
-        int m = l * 6;
-        return m;
+        return l * 6;
     }
 }

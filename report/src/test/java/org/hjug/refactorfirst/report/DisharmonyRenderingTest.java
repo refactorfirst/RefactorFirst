@@ -2,6 +2,7 @@ package org.hjug.refactorfirst.report;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.util.ArrayList;
 import java.util.List;
 import org.hjug.cbc.RankedDisharmony;
 import org.hjug.git.ScmLogInfo;
@@ -187,11 +188,110 @@ class DisharmonyRenderingTest {
         assertFalse(html.contains("Duplicate Partners"), "Non-duplication table must not show 'Duplicate Partners'");
     }
 
+    // ── Kotlin-specific disharmony types ─────────────────────────
+
+    @Test
+    void excessiveExtensionsRendersInReport() {
+        List<RankedDisharmony> ranked = List.of(makeRankedDisharmony("ExtensionHost.java", null, 1, 15.0, 5.0, 0.0));
+
+        SimpleHtmlReport.DisharmonySpec spec = new SimpleHtmlReport.DisharmonySpec(
+                DisharmonyTypes.EXCESSIVE_EXTENSIONS,
+                "EXCESSIVE_EXTENSIONS",
+                "Excessive Extensions",
+                false,
+                "Class declares many extension functions across many receiver types, indicating it's trying to extend too many unrelated types.",
+                "Consider moving extension functions closer to the types they extend. Group related extensions into separate files or classes.");
+        String html = simpleReport.renderDisharmonyInfo("", spec, false, ranked);
+
+        assertTrue(html.contains("Excessive Extensions"), "Report should contain Excessive Extensions title");
+        assertTrue(html.contains("id=\"EXCESSIVE_EXTENSIONS\""), "Report should have Excessive Extensions anchor");
+        assertTrue(
+                html.contains("Class declares many extension functions"), "Report should contain problem description");
+        assertTrue(html.contains("Consider moving extension functions"), "Report should contain solution");
+        // Verify no method column (class-level)
+        assertFalse(html.contains("<th>Method</th>"), "Class-level rendering must not have Method column");
+    }
+
+    @Test
+    void largeSealedHierarchyRendersInReport() {
+        List<RankedDisharmony> ranked = List.of(makeRankedDisharmony("Shape.java", null, 1, 12.0, 0.0, 0.0));
+
+        SimpleHtmlReport.DisharmonySpec spec = new SimpleHtmlReport.DisharmonySpec(
+                DisharmonyTypes.LARGE_SEALED_HIERARCHY,
+                "LARGE_SEALED_HIERARCHY",
+                "Large Sealed Hierarchy",
+                false,
+                "Sealed class has many permitted subtypes, making the hierarchy hard to maintain and exhaustive when expressions unwieldy.",
+                "Re-evaluate the domain model. Consider grouping subtypes into intermediate sealed classes or using a different pattern.");
+        String html = simpleReport.renderDisharmonyInfo("", spec, false, ranked);
+
+        assertTrue(html.contains("Large Sealed Hierarchy"), "Report should contain Large Sealed Hierarchy title");
+        assertTrue(html.contains("id=\"LARGE_SEALED_HIERARCHY\""), "Report should have Large Sealed Hierarchy anchor");
+        assertTrue(
+                html.contains("Sealed class has many permitted subtypes"), "Report should contain problem description");
+        assertTrue(html.contains("Re-evaluate the domain model"), "Report should contain solution");
+        assertFalse(html.contains("<th>Method</th>"), "Class-level rendering must not have Method column");
+    }
+
+    @Test
+    void dataClassWithLogicRendersInReport() {
+        List<RankedDisharmony> ranked = List.of(makeRankedDisharmony("Money.java", null, 1, 14.0, 3.0, 0.0));
+
+        SimpleHtmlReport.DisharmonySpec spec = new SimpleHtmlReport.DisharmonySpec(
+                DisharmonyTypes.DATA_CLASS_WITH_LOGIC,
+                "DATA_CLASS_WITH_LOGIC",
+                "Data Class with Logic",
+                false,
+                "Data class contains non-accessor methods with business logic, violating the data carrier principle.",
+                "Move business logic to separate service classes. Keep data classes as pure data holders with only accessor methods.");
+        String html = simpleReport.renderDisharmonyInfo("", spec, false, ranked);
+
+        assertTrue(html.contains("Data Class with Logic"), "Report should contain Data Class with Logic title");
+        assertTrue(html.contains("id=\"DATA_CLASS_WITH_LOGIC\""), "Report should have Data Class with Logic anchor");
+        assertTrue(
+                html.contains("Data class contains non-accessor methods"), "Report should contain problem description");
+        assertTrue(html.contains("Move business logic to separate service classes"), "Report should contain solution");
+        assertFalse(html.contains("<th>Method</th>"), "Class-level rendering must not have Method column");
+    }
+
+    @Test
+    void newKotlinDisharmoniesShowMetricsInDetailedMode() {
+        List<RankedDisharmony> ranked = List.of(makeRankedDisharmony("Test.java", null, 1, 10.0, 5.0, 0.5));
+
+        // Test each type in detailed mode
+        for (var spec : List.of(
+                new SimpleHtmlReport.DisharmonySpec(
+                        DisharmonyTypes.EXCESSIVE_EXTENSIONS,
+                        "EXCESSIVE_EXTENSIONS",
+                        "Excessive Extensions",
+                        false,
+                        "p",
+                        "s"),
+                new SimpleHtmlReport.DisharmonySpec(
+                        DisharmonyTypes.LARGE_SEALED_HIERARCHY,
+                        "LARGE_SEALED_HIERARCHY",
+                        "Large Sealed Hierarchy",
+                        false,
+                        "p",
+                        "s"),
+                new SimpleHtmlReport.DisharmonySpec(
+                        DisharmonyTypes.DATA_CLASS_WITH_LOGIC,
+                        "DATA_CLASS_WITH_LOGIC",
+                        "Data Class with Logic",
+                        false,
+                        "p",
+                        "s"))) {
+            String detailed = simpleReport.renderDisharmonyInfo("", spec, true, ranked);
+            assertTrue(detailed.contains("Raw Priority"), "Detailed mode must show Raw Priority for " + spec.title());
+            assertTrue(detailed.contains("Full Path"), "Detailed mode must show Full Path for " + spec.title());
+        }
+    }
+
     // ── helper ─────────────────────────────────────────────────────────────────
 
     private RankedDisharmony makeRankedDisharmony(
             String fileName, String methodSignature, int priority, double metric1, double metric2, double metric3) {
-        List<DisharmonyMetric> metrics = new java.util.ArrayList<>();
+        List<DisharmonyMetric> metrics = new ArrayList<>();
         metrics.add(new DisharmonyMetric("BrainMethods", metric1, Direction.ASCENDING));
         metrics.add(new DisharmonyMetric("LOC", 200.0, Direction.ASCENDING));
         metrics.add(new DisharmonyMetric("WMC", metric2, Direction.ASCENDING));

@@ -32,8 +32,8 @@ public class DirectedFeedbackVertexSetSolver<V, E> {
 
     // Zone decomposition components
     private Set<V> remainder;
-    private Map<Integer, Set<V>> zones;
-    private Map<Set<V>, Set<V>> kDfvsRepresentatives;
+    private final Map<Integer, Set<V>> zones;
+    private final Map<Set<V>, Set<V>> kDfvsRepresentatives;
     private int k;
 
     public DirectedFeedbackVertexSetSolver(
@@ -121,16 +121,14 @@ public class DirectedFeedbackVertexSetSolver<V, E> {
         Set<V> flowBlocker = ConcurrentHashMap.newKeySet();
 
         // For every ordered pair of vertices in modulator
-        modulator.parallelStream().forEach(u -> {
-            modulator.parallelStream().forEach(v -> {
-                if (!u.equals(v) && !graph.containsEdge(u, v)) {
-                    Set<V> minCut = computeMinimumVertexCut(u, v, solutionS, k);
-                    if (minCut.size() <= k) {
-                        flowBlocker.addAll(minCut);
-                    }
+        modulator.parallelStream().forEach(u -> modulator.parallelStream().forEach(v -> {
+            if (!u.equals(v) && !graph.containsEdge(u, v)) {
+                Set<V> minCut = computeMinimumVertexCut(u, v, solutionS, k);
+                if (minCut.size() <= k) {
+                    flowBlocker.addAll(minCut);
                 }
-            });
-        });
+            }
+        }));
 
         return flowBlocker;
     }
@@ -274,12 +272,11 @@ public class DirectedFeedbackVertexSetSolver<V, E> {
         // For each non-trivial SCC, add important vertices to representative
         sccInspector.stronglyConnectedSets().parallelStream()
                 .filter(scc -> scc.size() > 1 || hasSelfLoop(scc.iterator().next()))
-                .forEach(scc -> {
-                    // Add vertices with highest degree from each SCC
-                    scc.stream()
-                            .max(Comparator.comparingInt(v -> graph.inDegreeOf(v) + graph.outDegreeOf(v)))
-                            .ifPresent(representative::add);
-                });
+                .forEach(scc ->
+                        // Add vertices with highest degree from each SCC
+                        scc.stream()
+                                .max(Comparator.comparingInt(v -> graph.inDegreeOf(v) + graph.outDegreeOf(v)))
+                                .ifPresent(representative::add));
 
         // Bound size according to Lemma 4.2[1]
         int maxRepresentativeSize = (int) Math.pow(k * modulator.size(), eta * eta);
@@ -338,21 +335,20 @@ public class DirectedFeedbackVertexSetSolver<V, E> {
      */
     private void applyReductionRulesForZone(Set<V> nonRepresentative, Set<V> representative) {
         // Reduction Rule 5 & 6: Remove arcs between modulator and non-representative vertices[1]
-        nonRepresentative.parallelStream().forEach(vertex -> {
-            modulator.parallelStream().forEach(modulatorVertex -> {
-                // Remove incoming edges from modulator
-                if (graph.containsEdge(modulatorVertex, vertex)) {
-                    // Mark for removal (in actual implementation, would remove)
-                    addBypassEdges(modulatorVertex, vertex, representative);
-                }
+        nonRepresentative.parallelStream()
+                .forEach(vertex -> modulator.parallelStream().forEach(modulatorVertex -> {
+                    // Remove incoming edges from modulator
+                    if (graph.containsEdge(modulatorVertex, vertex)) {
+                        // Mark for removal (in actual implementation, would remove)
+                        addBypassEdges(modulatorVertex, vertex, representative);
+                    }
 
-                // Remove outgoing edges to modulator
-                if (graph.containsEdge(vertex, modulatorVertex)) {
-                    // Mark for removal (in actual implementation, would remove)
-                    addBypassEdges(vertex, modulatorVertex, representative);
-                }
-            });
-        });
+                    // Remove outgoing edges to modulator
+                    if (graph.containsEdge(vertex, modulatorVertex)) {
+                        // Mark for removal (in actual implementation, would remove)
+                        addBypassEdges(vertex, modulatorVertex, representative);
+                    }
+                }));
     }
 
     /**
@@ -842,7 +838,9 @@ public class DirectedFeedbackVertexSetSolver<V, E> {
     private int computeDensityBasedLimit(int n) {
         int m = graph.edgeSet().size();
 
-        if (n <= 1) return 1;
+        if (n <= 1) {
+            return 1;
+        }
 
         // Density = m / (n * (n-1)) for directed graphs
         double density = (double) m / (n * (n - 1));
@@ -1051,8 +1049,8 @@ public class DirectedFeedbackVertexSetSolver<V, E> {
      * Simple performance tracking for adaptive behavior
      */
     private static class PathComputationStats {
-        private long totalTime = 0;
-        private int callCount = 0;
+        private long totalTime;
+        private int callCount;
 
         public void recordTime(long time) {
             totalTime += time;
@@ -1065,7 +1063,7 @@ public class DirectedFeedbackVertexSetSolver<V, E> {
     }
 
     // Instance variable for tracking performance (optional)
-    private PathComputationStats pathComputationStats = new PathComputationStats();
+    private final PathComputationStats pathComputationStats = new PathComputationStats();
 
     /**
      * Main method to get MAX_PATH_LENGTH - delegates to appropriate implementation

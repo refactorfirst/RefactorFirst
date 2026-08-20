@@ -21,7 +21,7 @@ import org.hjug.refactorfirst.report.SimpleHtmlReport;
 public class RefactorFirstSimpleHtmlReport extends AbstractMojo {
 
     @Parameter(property = "showDetails")
-    private boolean showDetails = false;
+    private boolean showDetails;
 
     @Parameter(property = "backEdgeAnalysisCount")
     private int backEdgeAnalysisCount = 50;
@@ -30,7 +30,7 @@ public class RefactorFirstSimpleHtmlReport extends AbstractMojo {
     private boolean analyzeCycles = true;
 
     @Parameter(property = "minifyHtml")
-    private boolean minifyHtml = false;
+    private boolean minifyHtml;
 
     @Parameter(property = "excludeTests")
     private boolean excludeTests = true;

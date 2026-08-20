@@ -14,13 +14,13 @@ import java.util.List;
  */
 public class GodClassExample {
 
-    private OrderService orderService = new OrderService();
-    private PaymentService paymentService = new PaymentService();
-    private ShippingService shippingService = new ShippingService();
-    private InventoryService inventoryService = new InventoryService();
-    private CustomerService customerService = new CustomerService();
-    private NotificationService notificationService = new NotificationService();
-    private ReportingService reportingService = new ReportingService();
+    private final OrderService orderService = new OrderService();
+    private final PaymentService paymentService = new PaymentService();
+    private final ShippingService shippingService = new ShippingService();
+    private final InventoryService inventoryService = new InventoryService();
+    private final CustomerService customerService = new CustomerService();
+    private final NotificationService notificationService = new NotificationService();
+    private final ReportingService reportingService = new ReportingService();
 
     // --- Order concern ---
 
@@ -168,7 +168,7 @@ public class GodClassExample {
         String customerEmail = customerService.customerEmail;
         String customerPhone = customerService.customerPhone;
         for (String field : requiredFields) {
-            if (field.equals("email") && customerEmail == null) {
+            if ("email".equals(field) && customerEmail == null) {
                 return false;
             }
         }
@@ -210,13 +210,13 @@ public class GodClassExample {
     public String formatReport(String format, boolean includeDetails) {
         String reportTitle = reportingService.reportTitle;
         String reportId = reportingService.reportId;
-        if (format.equals("pdf")) {
+        if ("pdf".equals(format)) {
             return reportId + ":pdf:" + reportTitle;
-        } else if (format.equals("csv")) {
+        } else if ("csv".equals(format)) {
             return reportId + ":csv:" + reportTitle;
-        } else if (format.equals("html")) {
+        } else if ("html".equals(format)) {
             return reportId + ":html:" + (includeDetails ? reportTitle : "summary");
-        } else if (format.equals("json")) {
+        } else if ("json".equals(format)) {
             return reportId + ":json";
         } else {
             return reportId + ":text";
@@ -283,7 +283,7 @@ public class GodClassExample {
     static class OrderService {
         public String orderId = "ORD-001";
         public int orderStatus = 1;
-        public int orderCount = 0;
+        public int orderCount;
     }
 
     static class PaymentService {

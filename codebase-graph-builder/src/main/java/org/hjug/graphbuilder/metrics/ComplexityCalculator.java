@@ -7,8 +7,8 @@ import org.openrewrite.java.tree.J;
 public class ComplexityCalculator extends JavaIsoVisitor<ExecutionContext> {
 
     private int cyclomaticComplexity = 1;
-    private int nestingLevel = 0;
-    private int maxNestingDepth = 0;
+    private int nestingLevel;
+    private int maxNestingDepth;
 
     public int getCyclomaticComplexity() {
         return cyclomaticComplexity;

@@ -198,7 +198,9 @@ public class PageRankFAS<V, E> {
         Set<LineVertex<V, E>> vertices = lineDigraph.vertexSet();
         int numVertices = vertices.size();
 
-        if (numVertices == 0) return new HashMap<>();
+        if (numVertices == 0) {
+            return new HashMap<>();
+        }
 
         // Initialize PageRank scores
         Map<LineVertex<V, E>, Double> currentScores =
@@ -371,8 +373,12 @@ class LineVertex<V, E> {
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj) return true;
-        if (!(obj instanceof LineVertex)) return false;
+        if (this == obj) {
+            return true;
+        }
+        if (!(obj instanceof LineVertex)) {
+            return false;
+        }
         LineVertex<?, ?> other = (LineVertex<?, ?>) obj;
         return Objects.equals(originalEdge, other.originalEdge);
     }

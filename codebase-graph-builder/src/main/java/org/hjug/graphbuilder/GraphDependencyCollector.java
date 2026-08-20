@@ -68,6 +68,14 @@ public class GraphDependencyCollector implements DependencyCollector {
         String fromPackageName = getPackageFromFqn(fromClassFqn);
         String toPackageName = getPackageFromFqn(toClassFqn);
 
+        // An empty package (e.g. the packageless Kotlin "<anonymous>" FQN, which has no '.') would
+        // otherwise pollute the package graph with an "" vertex. Treat a degenerate (empty) package
+        // on either end as a no-op — anonymous/synthetic classes are still first-class class-graph
+        // members, but they cannot meaningfully contribute to the package graph.
+        if (fromPackageName.isEmpty() || toPackageName.isEmpty()) {
+            return null;
+        }
+
         if (fromPackageName.equals(toPackageName)) {
             return null;
         }
@@ -102,5 +110,10 @@ public class GraphDependencyCollector implements DependencyCollector {
     @Override
     public void registerPackage(String packageName) {
         packagesInCodebase.add(packageName);
+    }
+
+    @Override
+    public void registerClassVertex(String classFqn) {
+        classReferencesGraph.addVertex(classFqn);
     }
 }

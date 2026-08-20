@@ -25,8 +25,8 @@ class CostBenefitCalculatorTest {
     @TempDir
     public File tempFolder;
 
-    private String faceletsPath = "org/apache/myfaces/tobago/facelets/";
-    private String hudsonPath = "hudson/model/";
+    private final String faceletsPath = "org/apache/myfaces/tobago/facelets/";
+    private final String hudsonPath = "hudson/model/";
     private Git git;
     private Repository repository;
 
@@ -85,8 +85,8 @@ class CostBenefitCalculatorTest {
         git.add().addFilepattern(".").call();
         RevCommit secondCommit = git.commit().setMessage("message").call();
 
-        CycleRanker cycleRanker =
-                new CycleRanker(git.getRepository().getDirectory().getParent());
+        String repoPath = git.getRepository().getDirectory().getParent();
+        CycleRanker cycleRanker = new CycleRanker(repoPath, repoPath);
         cycleRanker.generateClassReferencesGraph(true, "src/test");
 
         CodebaseGraphDTO codebaseGraphDTO = cycleRanker.getCodebaseGraphDTO();
@@ -389,26 +389,26 @@ class CostBenefitCalculatorTest {
         // then packageRelationshipShouldBeRemoved desc (true before false), then packageCycleCount desc,
         // then sourceRemoved desc, then targetRemoved desc
         // cycle=5, source=0, target=0, packageCycleCount=6, packageRelationshipShouldBeRemoved=false
-        RankedDisharmony disharmony1 = new RankedDisharmony(
-                "Class1", new org.jgrapht.graph.DefaultWeightedEdge(), 5, 1, false, false, 6, false);
+        RankedDisharmony disharmony1 =
+                new RankedDisharmony("Class1", new DefaultWeightedEdge(), 5, 1, false, false, 6, false);
 
         // cycle=5, source=1, target=0, packageCycleCount=1, packageRelationshipShouldBeRemoved=false
-        RankedDisharmony disharmony2 = new RankedDisharmony(
-                "Class2", new org.jgrapht.graph.DefaultWeightedEdge(), 5, 1, true, false, 1, false);
+        RankedDisharmony disharmony2 =
+                new RankedDisharmony("Class2", new DefaultWeightedEdge(), 5, 1, true, false, 1, false);
 
         // cycle=3, source=0, target=1, packageCycleCount=5, packageRelationshipShouldBeRemoved=false
-        RankedDisharmony disharmony3 = new RankedDisharmony(
-                "Class3", new org.jgrapht.graph.DefaultWeightedEdge(), 3, 1, false, true, 5, false);
+        RankedDisharmony disharmony3 =
+                new RankedDisharmony("Class3", new DefaultWeightedEdge(), 3, 1, false, true, 5, false);
 
         // cycle=3, source=0, target=0, packageCycleCount=0, packageRelationshipShouldBeRemoved=false
-        RankedDisharmony disharmony4 = new RankedDisharmony(
-                "Class4", new org.jgrapht.graph.DefaultWeightedEdge(), 3, 1, false, false, 0, false);
+        RankedDisharmony disharmony4 =
+                new RankedDisharmony("Class4", new DefaultWeightedEdge(), 3, 1, false, false, 0, false);
 
         // cycle=3, source=0, target=0, packageCycleCount=2, packageRelationshipShouldBeRemoved=true
         // lower packageCycleCount than disharmony3, but packageRelationshipShouldBeRemoved=true must still
         // bubble it ahead of disharmony3, proving the new sort clause is applied before packageCycleCount
-        RankedDisharmony disharmony5 = new RankedDisharmony(
-                "Class5", new org.jgrapht.graph.DefaultWeightedEdge(), 3, 1, false, false, 2, true);
+        RankedDisharmony disharmony5 =
+                new RankedDisharmony("Class5", new DefaultWeightedEdge(), 3, 1, false, false, 2, true);
 
         List<RankedDisharmony> disharmonies =
                 Arrays.asList(disharmony4, disharmony2, disharmony1, disharmony3, disharmony5);

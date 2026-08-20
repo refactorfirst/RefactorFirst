@@ -18,7 +18,7 @@
             <dependency>
                 <groupId>org.openrewrite.recipe</groupId>
                 <artifactId>rewrite-recipe-bom</artifactId>
-                <version>3.34.0</version>
+                <version>3.37.0</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -35,11 +35,14 @@
             <artifactId>jgrapht-core</artifactId>
         </dependency>
 
-        <!-- Addresses CVE-2026-40984 introduced through rewrite-core 8.86.0 -->
+        <!-- Parent <dependencyManagement> pins these two transitives
+             (gizmo, micrometer-core) per the centralized CVE-mitigation
+             rule so this child module imports them by bare GAV and stays
+             aligned with any other module that picks up the same transitive
+             path. -->
         <dependency>
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-core</artifactId>
-            <version>1.10.0</version>
         </dependency>
         <dependency>
             <groupId>org.openrewrite</groupId>
@@ -58,15 +61,23 @@
             <artifactId>rewrite-java</artifactId>
         </dependency>
 
-        <!--gizmo 1.0.11, used by rewrite-core has a CVSS score > 8.0 -->
+        <!--gizmo 1.0.11, used by rewrite-core has a CVSS score > 8.0 — pinned
+            in parent <dependencyManagement>. -->
         <dependency>
             <groupId>io.quarkus.gizmo</groupId>
             <artifactId>gizmo</artifactId>
-            <version>1.9.0</version>
         </dependency>
         <dependency>
             <groupId>org.openrewrite</groupId>
             <artifactId>rewrite-core</artifactId>
+        </dependency>
+
+        <!-- Kotlin language support (compile dependency: enables Kotlin
+             codebase analysis; see AGENTS.md "Kotlin analysis" section for
+             the distribution impact on the Maven plugin / CLI fat-jar). -->
+        <dependency>
+            <groupId>org.openrewrite</groupId>
+            <artifactId>rewrite-kotlin</artifactId>
         </dependency>
     </dependencies>
 </project>

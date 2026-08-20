@@ -8,7 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hjug.dsm.CircularReferenceChecker;
 import org.hjug.graphbuilder.CodebaseGraphDTO;
-import org.hjug.graphbuilder.JavaGraphBuilder;
+import org.hjug.graphbuilder.CompositeGraphBuilder;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.AsSubgraph;
 import org.jgrapht.graph.DefaultWeightedEdge;
@@ -18,6 +18,7 @@ import org.jgrapht.graph.DefaultWeightedEdge;
 public class CycleRanker {
 
     private final String repositoryPath;
+    private final String repositoryRoot;
 
     @Getter
     private CodebaseGraphDTO codebaseGraphDTO;
@@ -25,13 +26,42 @@ public class CycleRanker {
     // TODO: should this method belong in this class?
     public CodebaseGraphDTO generateClassReferencesGraph(boolean excludeTests, String testSourceDirectory) {
         try {
-            JavaGraphBuilder javaGraphBuilder = new JavaGraphBuilder();
-            codebaseGraphDTO = javaGraphBuilder.getCodebaseGraphDTO(repositoryPath, excludeTests, testSourceDirectory);
+            // Route through CompositeGraphBuilder so Kotlin source files are
+            // also walked and contribute edges/vertices. Kotlin analysis runs
+            // unconditionally; a Kotlin parse/build failure falls back to the
+            // Java-only DTO.
+            CompositeGraphBuilder compositeGraphBuilder = new CompositeGraphBuilder();
+            codebaseGraphDTO = compositeGraphBuilder.getCodebaseGraphDTO(
+                    repositoryPath, repositoryRoot, excludeTests, testSourceDirectory);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
 
         return codebaseGraphDTO;
+    }
+
+    /**
+     * Build a unified {@link CodebaseGraphDTO} from a directory that may contain
+     * both Java and Kotlin source files.
+     *
+     * @param repositoryPath     path to the source directory
+     * @param repositoryRoot     path to the Git repository root for URL canonicalization;
+     *                           may be empty or equal to repositoryPath for single-module projects
+     * @param excludeTests      whether to exclude test files
+     * @param testSourceDirectory test source directory pattern
+     * @return a merged CodebaseGraphDTO
+     * @throws IOException if parsing fails
+     */
+    public CodebaseGraphDTO getCodebaseGraphDTO(
+            String repositoryPath, String repositoryRoot, boolean excludeTests, String testSourceDirectory)
+            throws IOException {
+        if (repositoryPath == null || repositoryPath.isEmpty()) {
+            throw new IllegalArgumentException("Source directory cannot be null or empty");
+        }
+
+        CompositeGraphBuilder compositeGraphBuilder = new CompositeGraphBuilder();
+        return compositeGraphBuilder.getCodebaseGraphDTO(
+                repositoryPath, repositoryRoot, excludeTests, testSourceDirectory);
     }
 
     public List<RankedCycle> rankCycles(Graph<String, DefaultWeightedEdge> graph) {

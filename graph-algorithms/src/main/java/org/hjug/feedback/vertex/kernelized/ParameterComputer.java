@@ -2,6 +2,7 @@ package org.hjug.feedback.vertex.kernelized;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.hjug.feedback.SuperTypeToken;
 import org.jgrapht.Graph;
 
@@ -53,7 +54,9 @@ public class ParameterComputer<V, E> {
      * Finds a good treewidth modulator using various heuristics
      */
     private Set<V> findGoodModulator(Graph<V, E> graph, int maxSize) {
-        if (maxSize <= 0) return new HashSet<>();
+        if (maxSize <= 0) {
+            return new HashSet<>();
+        }
 
         // Try different modulator finding strategies
         Set<V> degreeBasedModulator = findDegreeBasedModulator(graph, maxSize);
@@ -71,7 +74,7 @@ public class ParameterComputer<V, E> {
                 .sorted((v1, v2) -> Integer.compare(
                         graph.inDegreeOf(v2) + graph.outDegreeOf(v2), graph.inDegreeOf(v1) + graph.outDegreeOf(v1)))
                 .limit(maxSize)
-                .collect(java.util.stream.Collectors.toSet());
+                .collect(Collectors.toSet());
     }
 
     private Set<V> findFeedbackVertexSetBasedModulator(Graph<V, E> graph, int maxSize) {
@@ -79,7 +82,7 @@ public class ParameterComputer<V, E> {
         if (fvs.size() <= maxSize) {
             return fvs;
         } else {
-            return fvs.stream().limit(maxSize).collect(java.util.stream.Collectors.toSet());
+            return fvs.stream().limit(maxSize).collect(Collectors.toSet());
         }
     }
 

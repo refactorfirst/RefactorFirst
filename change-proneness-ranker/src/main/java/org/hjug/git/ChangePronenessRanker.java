@@ -35,7 +35,7 @@ public class ChangePronenessRanker {
         for (ScmLogInfo scmLogInfo : scmLogInfos) {
             if (!cachedScmLogInfos.containsKey(scmLogInfo.getPath())) {
                 Map.Entry<Integer, Integer> entry = suffixSums.ceilingEntry(scmLogInfo.getEarliestCommit());
-                int commitsInRepositorySinceCreation = (entry != null) ? entry.getValue() : 0;
+                int commitsInRepositorySinceCreation = entry != null ? entry.getValue() : 0;
 
                 scmLogInfo.setChangeProneness((float) scmLogInfo.getCommitCount() / commitsInRepositorySinceCreation);
                 cachedScmLogInfos.put(scmLogInfo.getPath(), scmLogInfo);

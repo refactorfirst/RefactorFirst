@@ -19,8 +19,8 @@ package org.hjug.graphbuilder.metrics.testclasses;
 public class TraditionBreakerExample extends BaseService {
 
     private String feature1 = "";
-    private int feature2 = 0;
-    private boolean feature3 = false;
+    private int feature2;
+    private boolean feature3;
     private double feature4 = 0.0;
     private String feature5 = "";
 

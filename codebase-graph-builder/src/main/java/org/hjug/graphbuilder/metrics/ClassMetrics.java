@@ -1,47 +1,79 @@
 package org.hjug.graphbuilder.metrics;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import lombok.Getter;
-import lombok.Setter;
 
+/**
+ * Per-class metrics accumulator. Mutable during the parse-time visitor walk
+ * (single-threaded write phase); frozen in place by
+ * {@link GraphMetricsCollector#finalizeMetrics()} after all derived
+ * computations complete. Once frozen, every setter/adder rejects mutation
+ * with {@link IllegalStateException} and every collection getter returns an
+ * unmodifiable view (review item #9). The {@code volatile} {@link #finalized}
+ * flag is the publish contract for the post-finalize read phase.
+ */
 public class ClassMetrics {
+    /**
+     * Single-threaded write-then-read publish flag, set by {@link #freeze()}
+     * (invoked only from {@link GraphMetricsCollector#finalizeMetrics()}).
+     * Once {@code true}, every setter/adder rejects mutation. {@code volatile}
+     * documents the publish-to-reader intent and provides a happens-before for
+     * a notional future cross-thread read of the finalized DTO.
+     */
+    private volatile boolean finalized;
+
+    /**
+     * Throws {@link IllegalStateException} naming the FQN if this instance has
+     * been frozen. Called as the first statement of every setter/adder so the
+     * parse-time visitors (which run pre-finalize) keep working unchanged.
+     */
+    private void requireMutable() {
+        if (finalized) {
+            throw new IllegalStateException("ClassMetrics is final for FQN=" + fullyQualifiedName);
+        }
+    }
+
+    /**
+     * Package-private freeze entry point, invoked only by
+     * {@link GraphMetricsCollector#finalizeMetrics()} after every derived
+     * computation completes. Idempotent. Cascades the freeze to every owned
+     * {@link MethodMetrics} so that freezing the class cannot leave its inner
+     * method accumulators mutable (the collector also freezes them, but this
+     * makes the freeze self-contained and safe to call in isolation from
+     * tests).
+     */
+    void freeze() {
+        finalized = true;
+        for (MethodMetrics m : methods.values()) {
+            m.freeze();
+        }
+    }
+
     @Getter
-    @Setter
     private String sourceFilePath;
 
     @Getter
-    @Setter
     private String fullyQualifiedName;
 
     @Getter
-    @Setter
     private String className;
 
     @Getter
-    @Setter
     private String packageName;
 
     @Getter
-    @Setter
     private int linesOfCode;
 
     @Getter
-    @Setter
     private int numberOfAttributes;
 
     @Getter
-    @Setter
     private int numberOfPublicAttributes;
 
     @Getter
-    @Setter
     private int accessToForeignData;
 
     @Getter
-    @Setter
     private double tightClassCohesion;
 
     @Getter
@@ -54,24 +86,305 @@ public class ClassMetrics {
     private Set<String> attributes = new HashSet<>();
 
     @Getter
-    @Setter
     private String parentClass;
 
     @Getter
     private Set<String> overriddenMethods = new HashSet<>();
 
     @Getter
-    @Setter
     private int numberOfProtectedMembers;
 
     @Getter
     private Set<String> usedParentMembers = new HashSet<>();
+
+    /**
+     * FQNs of every class referenced as a type-parameter bound on this
+     * class declaration and on any of its declared methods or Kotlin
+     * properties. Populated by the metrics visitor's handling of
+     * {@link org.openrewrite.java.tree.J.TypeParameter} bounds (Java and
+     * Kotlin) and Kotlin {@link org.openrewrite.kotlin.tree.K.TypeAlias}
+     * initializers/type parameters. Used by the type-parameter metric
+     * collection and downstream Kotlin-specific disharmony detectors.
+     */
+    @Getter
+    private Set<String> typeParameterFqns = new HashSet<>();
+
+    /**
+     * Kotlin-specific: number of extension functions
+     * ({@code fun Receiver.methodName()}) declared inside this class's
+     * body. Top-level extension functions (file-scope) are NOT counted
+     * against an owning class; only extension functions physically
+     * declared inside this class contribute. Used by
+     * {@link DisharmonyDetector#detectExcessiveExtensions}.
+     */
+    @Getter
+    private int numberOfExtensionFunctions;
+
+    /**
+     * Kotlin-specific: number of distinct receiver foreign types targeted
+     * by this class's declared extension functions. Receiver types are
+     * extracted from
+     * {@link org.openrewrite.kotlin.tree.K.MethodDeclaration}'s
+     * {@code Extension} marker / receiver type expression. Maintained as
+     * the visitor walks each extension function declaration; size is used
+     * as the "≥5 foreign receiver types" criterion of
+     * {@link DisharmonyDetector#detectExcessiveExtensions}.
+     */
+    @Getter
+    private final Set<String> extensionReceiverTypes = new HashSet<>();
+
+    /**
+     * Kotlin-specific: FQNs of all sealed ancestors in this class's type
+     * hierarchy. Populated by inspecting the {@code implements} list
+     * (Kotlin sealed subtypes are surfaced as Java {@code implements
+     * Shape}) for ancestor FQNs whose corresponding
+     * {@link ClassMetrics#isSealed} flag is {@code true}. Used by
+     * {@link DisharmonyDetector#detectLargeSealedHierarchy}.
+     */
+    @Getter
+    private final Set<String> sealedHierarchyAncestors = new HashSet<>();
+
+    /**
+     * Kotlin-specific: depth of this class in a sealed hierarchy. Root
+     * sealed class has depth=1; each indirect descendant nests deeper.
+     * Computed post-walk in
+     * {@link GraphMetricsCollector#finalizeMetrics()}.
+     */
+    @Getter
+    private int sealedHierarchyDepth;
+
+    /**
+     * Kotlin-specific: {@code true} when this class is a Kotlin data class
+     * ({@code data class Foo}). Detected by inspecting
+     * {@link org.openrewrite.java.tree.J.Modifier}s of type
+     * {@code LanguageExtension} whose {@code getKeyword()} equals
+     * {@code "data"}. Java classes always return {@code false}. Used by
+     * {@link DisharmonyDetector#detectDataClassWithLogic}.
+     */
+    @Getter
+    private boolean dataClass;
+
+    /**
+     * Kotlin-specific: {@code true} when this class is a Kotlin sealed
+     * class ({@code sealed class}) or sealed interface. Detected by
+     * inspecting {@link org.openrewrite.java.tree.J.Modifier}s of type
+     * {@code LanguageExtension} whose {@code getKeyword()} equals
+     * {@code "sealed"}. Used by
+     * {@link DisharmonyDetector#detectLargeSealedHierarchy}.
+     */
+    @Getter
+    private boolean sealed;
+
+    /**
+     * Kotlin-specific: {@code true} when this class is a data class that
+     * also declares non-accessor methods beyond simple getters/setters.
+     * {@link DisharmonyDetector#detectDataClassWithLogic} uses this flag
+     * combined with WMC > 14.
+     */
+    @Getter
+    private boolean hasExplicitLogic;
+
+    // --- Setters (guarded; reject post-finalize mutation) -----------------
+
+    public void setSourceFilePath(String sourceFilePath) {
+        requireMutable();
+        this.sourceFilePath = sourceFilePath;
+    }
+
+    public void setFullyQualifiedName(String fullyQualifiedName) {
+        requireMutable();
+        this.fullyQualifiedName = fullyQualifiedName;
+    }
+
+    public void setClassName(String className) {
+        requireMutable();
+        this.className = className;
+    }
+
+    public void setPackageName(String packageName) {
+        requireMutable();
+        this.packageName = packageName;
+    }
+
+    public void setLinesOfCode(int linesOfCode) {
+        requireMutable();
+        this.linesOfCode = linesOfCode;
+    }
+
+    public void setNumberOfAttributes(int numberOfAttributes) {
+        requireMutable();
+        this.numberOfAttributes = numberOfAttributes;
+    }
+
+    public void setNumberOfPublicAttributes(int numberOfPublicAttributes) {
+        requireMutable();
+        this.numberOfPublicAttributes = numberOfPublicAttributes;
+    }
+
+    public void setAccessToForeignData(int accessToForeignData) {
+        requireMutable();
+        this.accessToForeignData = accessToForeignData;
+    }
+
+    public void setTightClassCohesion(double tightClassCohesion) {
+        requireMutable();
+        this.tightClassCohesion = tightClassCohesion;
+    }
+
+    public void setParentClass(String parentClass) {
+        requireMutable();
+        this.parentClass = parentClass;
+    }
+
+    public void setNumberOfProtectedMembers(int numberOfProtectedMembers) {
+        requireMutable();
+        this.numberOfProtectedMembers = numberOfProtectedMembers;
+    }
+
+    public void setNumberOfExtensionFunctions(int numberOfExtensionFunctions) {
+        requireMutable();
+        this.numberOfExtensionFunctions = numberOfExtensionFunctions;
+    }
+
+    public void setSealedHierarchyDepth(int sealedHierarchyDepth) {
+        requireMutable();
+        this.sealedHierarchyDepth = sealedHierarchyDepth;
+    }
+
+    public void setDataClass(boolean dataClass) {
+        requireMutable();
+        this.dataClass = dataClass;
+    }
+
+    public void setSealed(boolean sealed) {
+        requireMutable();
+        this.sealed = sealed;
+    }
+
+    public void setHasExplicitLogic(boolean hasExplicitLogic) {
+        requireMutable();
+        this.hasExplicitLogic = hasExplicitLogic;
+    }
+
+    // --- Collection getters: lazy-cached unmodifiable views ----------------
+
+    private Set<String> dependenciesView;
+
+    public Set<String> getDependencies() {
+        Set<String> v = dependenciesView;
+        if (v == null) {
+            v = Collections.unmodifiableSet(dependencies);
+            dependenciesView = v;
+        }
+        return v;
+    }
+
+    private Map<String, MethodMetrics> methodsView;
+
+    public Map<String, MethodMetrics> getMethods() {
+        Map<String, MethodMetrics> v = methodsView;
+        if (v == null) {
+            v = Collections.unmodifiableMap(methods);
+            methodsView = v;
+        }
+        return v;
+    }
+
+    private Set<String> attributesView;
+
+    public Set<String> getAttributes() {
+        Set<String> v = attributesView;
+        if (v == null) {
+            v = Collections.unmodifiableSet(attributes);
+            attributesView = v;
+        }
+        return v;
+    }
+
+    private Set<String> overriddenMethodsView;
+
+    public Set<String> getOverriddenMethods() {
+        Set<String> v = overriddenMethodsView;
+        if (v == null) {
+            v = Collections.unmodifiableSet(overriddenMethods);
+            overriddenMethodsView = v;
+        }
+        return v;
+    }
+
+    private Set<String> usedParentMembersView;
+
+    public Set<String> getUsedParentMembers() {
+        Set<String> v = usedParentMembersView;
+        if (v == null) {
+            v = Collections.unmodifiableSet(usedParentMembers);
+            usedParentMembersView = v;
+        }
+        return v;
+    }
+
+    private Set<String> typeParameterFqnsView;
+
+    public Set<String> getTypeParameterFqns() {
+        Set<String> v = typeParameterFqnsView;
+        if (v == null) {
+            v = Collections.unmodifiableSet(typeParameterFqns);
+            typeParameterFqnsView = v;
+        }
+        return v;
+    }
+
+    private Set<String> extensionReceiverTypesView;
+
+    public Set<String> getExtensionReceiverTypes() {
+        Set<String> v = extensionReceiverTypesView;
+        if (v == null) {
+            v = Collections.unmodifiableSet(extensionReceiverTypes);
+            extensionReceiverTypesView = v;
+        }
+        return v;
+    }
+
+    private Set<String> sealedHierarchyAncestorsView;
+
+    public Set<String> getSealedHierarchyAncestors() {
+        Set<String> v = sealedHierarchyAncestorsView;
+        if (v == null) {
+            v = Collections.unmodifiableSet(sealedHierarchyAncestors);
+            sealedHierarchyAncestorsView = v;
+        }
+        return v;
+    }
+
+    // --- Adders (guarded) --------------------------------------------------
+
+    public void addTypeParameterFqn(String fqn) {
+        requireMutable();
+        if (fqn != null && !fqn.isEmpty()) {
+            this.typeParameterFqns.add(fqn);
+        }
+    }
+
+    public void addExtensionReceiverType(String fqn) {
+        requireMutable();
+        if (fqn != null && !fqn.isEmpty()) {
+            this.extensionReceiverTypes.add(fqn);
+        }
+    }
+
+    public void addSealedHierarchyAncestor(String fqn) {
+        requireMutable();
+        if (fqn != null && !fqn.isEmpty()) {
+            this.sealedHierarchyAncestors.add(fqn);
+        }
+    }
 
     public ClassMetrics(String fullyQualifiedName) {
         this.fullyQualifiedName = fullyQualifiedName;
     }
 
     public void addOverriddenMethod(String methodSignature) {
+        requireMutable();
         this.overriddenMethods.add(methodSignature);
     }
 
@@ -80,6 +393,7 @@ public class ClassMetrics {
     }
 
     public void addUsedParentMember(String memberName) {
+        requireMutable();
         this.usedParentMembers.add(memberName);
     }
 
@@ -88,7 +402,20 @@ public class ClassMetrics {
     }
 
     public void addMethod(MethodMetrics methodMetrics) {
+        requireMutable();
         this.methods.put(methodMetrics.getSignature(), methodMetrics);
+    }
+
+    /**
+     * Aggregated class-level count of Kotlin/Java callable references
+     * ({@code Klass::method}) across all declared methods. Returns the sum
+     * of {@link MethodMetrics#getNumberOfCallableReferences()} across every
+     * method on this class.
+     */
+    public int getNumberOfCallableReferences() {
+        return methods.values().stream()
+                .mapToInt(MethodMetrics::getNumberOfCallableReferences)
+                .sum();
     }
 
     public int getNumberOfMethods() {
@@ -106,6 +433,7 @@ public class ClassMetrics {
     }
 
     public void addAttribute(String attributeName, boolean isPublic) {
+        requireMutable();
         this.attributes.add(attributeName);
         this.numberOfAttributes++;
         if (isPublic) {
@@ -114,6 +442,7 @@ public class ClassMetrics {
     }
 
     public void addDependency(String className) {
+        requireMutable();
         this.dependencies.add(className);
     }
 
@@ -130,6 +459,7 @@ public class ClassMetrics {
     }
 
     public void calculateAccessToForeignData() {
+        requireMutable();
         Set<String> foreignClasses = new HashSet<>();
         for (MethodMetrics method : methods.values()) {
             foreignClasses.addAll(method.getAccessedForeignClasses());
@@ -139,6 +469,7 @@ public class ClassMetrics {
     }
 
     public void calculateTightClassCohesion() {
+        requireMutable();
         int numMethods = getNumberOfMethods();
         if (numMethods <= 1) {
             this.tightClassCohesion = 0.0;

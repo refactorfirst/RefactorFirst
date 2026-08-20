@@ -5,10 +5,10 @@ import java.util.List;
 
 public class BrainMethodExample {
 
-    private List<String> items = new ArrayList<>();
-    private int counter = 0;
+    private final List<String> items = new ArrayList<>();
+    private int counter;
     private String status = "";
-    private boolean flag = false;
+    private final boolean flag = false;
 
     public void brainMethod(int param1, String param2, boolean param3) {
         int localVar1 = 0;
@@ -25,7 +25,7 @@ public class BrainMethodExample {
                 if (param3) {
                     for (int i = 0; i < param1; i++) {
                         if (i % 2 == 0) {
-                            if (items.size() > 0) {
+                            if (!items.isEmpty()) {
                                 localVar1 = items.size();
                                 localVar2 = counter;
                                 localVar3 = localVar1 + localVar2;

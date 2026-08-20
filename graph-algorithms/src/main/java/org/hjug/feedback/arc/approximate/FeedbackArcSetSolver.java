@@ -66,7 +66,9 @@ public class FeedbackArcSetSolver<V, E> {
                 removeVertex(sink, remainingVertices, feedbackArcs);
             });
 
-            if (remainingVertices.isEmpty()) break;
+            if (remainingVertices.isEmpty()) {
+                break;
+            }
 
             // Process sources in parallel
             List<V> sources = findSources(remainingVertices);
@@ -75,7 +77,9 @@ public class FeedbackArcSetSolver<V, E> {
                 removeVertex(source, remainingVertices, feedbackArcs);
             });
 
-            if (remainingVertices.isEmpty()) break;
+            if (remainingVertices.isEmpty()) {
+                break;
+            }
 
             // Find vertex with maximum delta value
             Optional<V> maxDeltaVertex = findMaxDeltaVertex(remainingVertices);

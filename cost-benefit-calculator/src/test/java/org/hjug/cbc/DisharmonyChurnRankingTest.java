@@ -231,7 +231,9 @@ class DisharmonyChurnRankingTest {
         mm.setLinesOfCode(70);
         mm.setCyclomaticComplexity(5);
         mm.setMaxNestingDepth(5);
-        for (int i = 0; i < 8; i++) mm.addAccessedVariable("v" + i);
+        for (int i = 0; i < 8; i++) {
+            mm.addAccessedVariable("v" + i);
+        }
         classMetrics.addMethod(mm);
 
         List<DisharmonyMetric> methodMetrics = List.of(

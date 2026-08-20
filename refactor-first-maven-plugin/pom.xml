@@ -26,31 +26,29 @@
         </dependency>
 
         <!-- Maven Reporting -->
-        <!-- Needed to suppress CVE-2024-36124 in maven-core-->
+        <!-- CVE-2024-36124 (maven-core) mitigation centralized in parent
+             <dependencyManagement>; child uses bare GAV. -->
         <dependency>
             <groupId>org.iq80.snappy</groupId>
             <artifactId>snappy</artifactId>
-            <version>0.5</version>
         </dependency>
         <dependency>
             <groupId>org.apache.maven</groupId>
             <artifactId>maven-core</artifactId>
         </dependency>
 
-        <!-- commons-beanutils needed to suppress CVE-2025-48734
-         introduced through maven-reporting-impl 4.0.0-->
+        <!-- CVE-2025-48734 (maven-reporting-impl 4.0.0) mitigation
+             centralized in parent <dependencyManagement>; bare GAV. -->
         <dependency>
             <groupId>commons-beanutils</groupId>
             <artifactId>commons-beanutils</artifactId>
-            <version>1.11.0</version>
         </dependency>
 
-        <!-- commons-lang3 needed to suppress CVE-2025-48924
-        introduced through maven-reporting-impl 4.0.0-->
+        <!-- CVE-2025-48924 mitigation centralized in parent
+             <dependencyManagement>; bare GAV. -->
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
-            <version>3.18.0</version>
         </dependency>
         <dependency>
             <groupId>org.apache.maven.reporting</groupId>

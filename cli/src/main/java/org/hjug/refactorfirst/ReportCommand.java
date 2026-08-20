@@ -145,7 +145,7 @@ public class ReportCommand implements Callable<Integer> {
 
     private void inferArgumentsFromMavenProject() {
         if (baseDir.isDirectory()) {
-            File[] potentialPomFiles = baseDir.listFiles(f -> f.getName().equals("pom.xml"));
+            File[] potentialPomFiles = baseDir.listFiles(f -> "pom.xml".equals(f.getName()));
             File pomFile = null;
             if (potentialPomFiles != null && potentialPomFiles.length > 0) {
                 pomFile = potentialPomFiles[0];

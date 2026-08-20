@@ -4,6 +4,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 import org.hjug.feedback.SuperTypeToken;
 import org.jgrapht.Graph;
 
@@ -106,7 +107,7 @@ public class EnhancedParameterComputer<V, E> {
                 .distinct()
                 .sorted((p1, p2) -> Double.compare(p1.getQualityScore(), p2.getQualityScore()))
                 .limit(numOptions)
-                .collect(java.util.stream.Collectors.toList());
+                .collect(Collectors.toList());
     }
 
     /**
@@ -181,14 +182,20 @@ public class EnhancedParameterComputer<V, E> {
          * Kernel size bound: (k·ℓ)^O(η²)
          */
         public double getKernelSizeBound() {
-            if (k == 0 || modulator.size() == 0) return 1.0;
+            if (k == 0 || modulator.isEmpty()) {
+                return 1.0;
+            }
             return Math.pow(k * modulator.size(), eta * eta);
         }
 
         @Override
         public boolean equals(Object obj) {
-            if (this == obj) return true;
-            if (!(obj instanceof EnhancedParameters)) return false;
+            if (this == obj) {
+                return true;
+            }
+            if (!(obj instanceof EnhancedParameters)) {
+                return false;
+            }
             EnhancedParameters<?> other = (EnhancedParameters<?>) obj;
             return k == other.k && eta == other.eta && modulator.equals(other.modulator);
         }

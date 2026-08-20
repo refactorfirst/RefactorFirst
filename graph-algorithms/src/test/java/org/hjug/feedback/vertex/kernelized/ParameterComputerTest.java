@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.hjug.feedback.SuperTypeToken;
 import org.jgrapht.Graph;
@@ -228,14 +229,14 @@ class ParameterComputerTest {
         void testConcurrentParameterComputation() throws InterruptedException {
             List<Graph<String, DefaultEdge>> graphs = IntStream.range(0, 10)
                     .mapToObj(i -> createRandomGraph(20, 0.25))
-                    .collect(java.util.stream.Collectors.toList());
+                    .collect(Collectors.toList());
 
             List<CompletableFuture<ParameterComputer.Parameters>> futures = graphs.stream()
                     .map(graph -> CompletableFuture.supplyAsync(() -> parameterComputer.computeParameters(graph)))
-                    .collect(java.util.stream.Collectors.toList());
+                    .collect(Collectors.toList());
 
             List<ParameterComputer.Parameters> results =
-                    futures.stream().map(CompletableFuture::join).collect(java.util.stream.Collectors.toList());
+                    futures.stream().map(CompletableFuture::join).collect(Collectors.toList());
 
             assertEquals(10, results.size());
             results.forEach(params -> {

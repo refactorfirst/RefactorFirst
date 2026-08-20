@@ -19,7 +19,7 @@ import org.hjug.refactorfirst.report.CsvReport;
 public class RefactorFirstMavenCsvReport extends AbstractMojo {
 
     @Parameter(property = "showDetails")
-    private boolean showDetails = false;
+    private boolean showDetails;
 
     @Parameter(defaultValue = "${project.name}")
     private String projectName;

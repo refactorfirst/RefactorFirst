@@ -3,7 +3,9 @@ package org.hjug.feedback.vertex.kernelized;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.hjug.feedback.SuperTypeToken;
 import org.jgrapht.Graph;
@@ -221,17 +223,15 @@ class ModulatorComputerTest {
         void testConcurrentParameterComputation() throws InterruptedException {
             List<Graph<String, DefaultEdge>> graphs = IntStream.range(0, 5)
                     .mapToObj(i -> createRandomGraph(15, 0.25))
-                    .collect(java.util.stream.Collectors.toList());
+                    .collect(Collectors.toList());
 
-            List<java.util.concurrent.CompletableFuture<EnhancedParameterComputer.EnhancedParameters<String>>> futures =
-                    graphs.stream()
-                            .map(graph -> java.util.concurrent.CompletableFuture.supplyAsync(
-                                    () -> parameterComputer.computeOptimalParameters(graph, 4)))
-                            .collect(java.util.stream.Collectors.toList());
+            List<CompletableFuture<EnhancedParameterComputer.EnhancedParameters<String>>> futures = graphs.stream()
+                    .map(graph ->
+                            CompletableFuture.supplyAsync(() -> parameterComputer.computeOptimalParameters(graph, 4)))
+                    .collect(Collectors.toList());
 
-            List<EnhancedParameterComputer.EnhancedParameters<String>> results = futures.stream()
-                    .map(java.util.concurrent.CompletableFuture::join)
-                    .collect(java.util.stream.Collectors.toList());
+            List<EnhancedParameterComputer.EnhancedParameters<String>> results =
+                    futures.stream().map(CompletableFuture::join).collect(Collectors.toList());
 
             assertEquals(5, results.size());
             results.forEach(params -> {

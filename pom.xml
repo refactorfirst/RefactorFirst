@@ -224,6 +224,69 @@
                 <artifactId>slf4j-simple</artifactId>
                 <version>2.0.17</version>
             </dependency>
+
+            <!--
+                Centralized CVE mitigations.
+                Each entry pins the version of a transitive dependency that an
+                OWASP dependency-check (mvn clean install -Plocal) would otherwise
+                flag. The blanket pinning rule is "any CVE/ Advisory surfaced on
+                a transitive path that we judge worth centralising", NOT a hard
+                CVSS threshold — see each entry's recorded CVSS, which ranges
+                from 5.3 to 8.8. The recorded CVSS and affected range are quoted
+                from the NVD so the justification self-documents; re-verify
+                against the NVD before bumping any version here.
+            -->
+
+            <!-- CVE-2026-40984 — Micrometer DoS via crafted HTTP request.
+                 CVSS 7.5 (NVD, 2026-08-09). Affected ranges:
+                   micrometer-core 1.16.0–1.16.5; 1.15.0–1.15.11; 1.14.0–1.14.15;
+                   1.13.0–1.13.18; 1.9.0–1.9.17.
+                 Introduced via rewrite-core 8.86.0; 1.17.0 is outside every
+                 affected range. -->
+            <dependency>
+                <groupId>io.micrometer</groupId>
+                <artifactId>micrometer-core</artifactId>
+                <version>1.17.0</version>
+            </dependency>
+
+            <!-- No public CVE; gizmo 1.0.11 (transitive of rewrite-core) carries
+                 a > 8.0 CVSS advisory per the dependency-check report. 1.9.0 is
+                 the fixed release. Recorded without a CVE deliberately — the
+                 upstream Quarkus gizmo advisory predates NVD assignment. -->
+            <dependency>
+                <groupId>io.quarkus.gizmo</groupId>
+                <artifactId>gizmo</artifactId>
+                <version>1.9.0</version>
+            </dependency>
+
+            <!-- CVE-2025-48924 — Uncontrolled Recursion in Apache Commons Lang.
+                 CVSS 5.3 (NVD, 2026-08-09). Affects commons-lang3 3.0 before 3.18.0;
+                 surfaced on pmd-java 7.0.0-rc4 and maven-reporting-impl 4.0.0.
+                 3.18.0 is the fixed lower bound. -->
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-lang3</artifactId>
+                <version>3.18.0</version>
+            </dependency>
+
+            <!-- CVE-2024-36124 — iq80 Snappy OOB read via sun.misc.Unsafe.
+                 CVSS 5.3 (NVD, 2026-08-09). Surfaced via maven-core; 0.5 is the
+                 fixed release that overrides the vulnerable transitive. -->
+            <dependency>
+                <groupId>org.iq80.snappy</groupId>
+                <artifactId>snappy</artifactId>
+                <version>0.5</version>
+            </dependency>
+
+            <!-- CVE-2025-48734 — Improper Access Control in Apache Commons
+                 BeanUtils (BeanIntrospector). CVSS 8.8 (NVD, 2026-08-09).
+                 Surfaced via maven-reporting-impl 4.0.0; 1.11.0 is the fixed
+                 release carrying the protective BeanIntrospector. -->
+            <dependency>
+                <groupId>commons-beanutils</groupId>
+                <artifactId>commons-beanutils</artifactId>
+                <version>1.11.0</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -289,6 +352,28 @@
             </plugins>
         </pluginManagement>
         <plugins>
+            <plugin>
+                <groupId>org.openrewrite.maven</groupId>
+                <artifactId>rewrite-maven-plugin</artifactId>
+                <version>6.46.1</version>
+                <configuration>
+                    <exportDatatables>true</exportDatatables>
+                    <activeRecipes>
+                        <recipe>org.openrewrite.staticanalysis.CodeCleanup</recipe>
+                        <recipe>org.openrewrite.staticanalysis.CommonStaticAnalysis</recipe>
+                    </activeRecipes>
+                    <exclusions>
+                        <exclusion>**/testclasses/**</exclusion>
+                    </exclusions>
+                </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.openrewrite.recipe</groupId>
+                        <artifactId>rewrite-static-analysis</artifactId>
+                        <version>2.41.0</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
