@@ -364,29 +364,31 @@ public final class DependencyVisitorLogic {
         String repositoryRoot = state.getRepositoryRoot();
         String baseForCanonicalization = repositoryRoot.isEmpty() ? state.getRepositoryPath() : repositoryRoot;
 
-        if (baseForCanonicalization.contains("junit-") && !isAnonymous) {
+        // The "junit-" heuristic detects synthetic source paths in JUnit test environments
+        // where no explicit repositoryRoot is configured (falls back to repositoryPath).
+        // Only apply it when repositoryRoot is empty (not explicitly configured by user).
+        boolean isJUnitFallback = repositoryRoot.isEmpty() && baseForCanonicalization.contains("junit-");
+
+        String canonicalPath;
+        if (isJUnitFallback && !isAnonymous) {
             // For non-anonymous classes in junit tests: use actual file name from source URI
             // rather than synthetic path from class FQN. This handles cases where class name
             // != file name (e.g., GameSettings in Settings.kt).
             // sourcePathUri = "file:///real/path/to/SourceFile.kt"
             String fileName = extractFileNameFromUri(sourcePathUri);
             String packagePath = extractPackagePathFromFqn(classFqn);
-            String canonicalPath = packagePath + "/" + fileName;
-            state.getClassToSourceFilePathMapping().put(classFqn, canonicalPath);
+            canonicalPath = packagePath + "/" + fileName;
+        } else if (isJUnitFallback && isAnonymous) {
+            // For anonymous classes in junit tests: construct path from package + actual file name
+            // classFqn = "pkg.OuterClass.<anonymous>" or "pkg.<anonymous>"
+            // sourcePathUri = "file:///real/path/to/SourceFile.kt"
+            String fileName = extractFileNameFromUri(sourcePathUri);
+            String packagePath = extractPackagePath(classFqn);
+            canonicalPath = packagePath + "/" + fileName;
         } else {
-            String canonicalPath;
-            if (isAnonymous && baseForCanonicalization.contains("junit-")) {
-                // For anonymous classes in junit tests: construct path from package + actual file name
-                // classFqn = "pkg.OuterClass.<anonymous>" or "pkg.<anonymous>"
-                // sourcePathUri = "file:///real/path/to/SourceFile.kt"
-                String fileName = extractFileNameFromUri(sourcePathUri);
-                String packagePath = extractPackagePath(classFqn);
-                canonicalPath = packagePath + "/" + fileName;
-            } else {
-                canonicalPath = canonicaliseUriStringForRepoLookup(baseForCanonicalization, sourcePathUri);
-            }
-            state.getClassToSourceFilePathMapping().put(classFqn, canonicalPath);
+            canonicalPath = canonicaliseUriStringForRepoLookup(baseForCanonicalization, sourcePathUri);
         }
+        state.getClassToSourceFilePathMapping().put(classFqn, canonicalPath);
         state.getTypeProcessor().getDependencyCollector().recordClassLocation(classFqn, sourcePathUri);
     }
 

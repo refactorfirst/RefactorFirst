@@ -307,4 +307,247 @@ class CompositeGraphBuilderReconciliationTest {
         // it would be a UNIQUE match (not package-aware) to com.pkg2.Target.
         // The package-aware logic only applies when BOTH candidates are in sourcePathMapping.
     }
+
+    // ===================== Merge Edge Ownership Tests =====================
+
+    /**
+     * Tests that mergeClassRelationships creates edges in the merged class graph
+     * rather than copying source-graph edges by object identity.
+     */
+    @Test
+    void mergeClassRelationships_usesMergedGraphEdges() {
+        // Java DTO: com.java.A -> com.java.B (weight 2), both in pkg com.java
+        CodebaseGraphDTO javaDto = createDto("com.java.A", "com.java.B", 2.0, "com.java", "com.java");
+
+        // Kotlin DTO: com.kotlin.C -> com.kotlin.D (weight 3), both in pkg com.kotlin
+        CodebaseGraphDTO kotlinDto = createDto("com.kotlin.C", "com.kotlin.D", 3.0, "com.kotlin", "com.kotlin");
+
+        CodebaseGraphDTO merged = CompositeGraphBuilder.merge(javaDto, kotlinDto);
+
+        // Verify merged package graph has both package vertices and the cross-package edge
+        Graph<String, DefaultWeightedEdge> mergedPkgGraph = merged.getPackageReferencesGraph();
+        assertTrue(mergedPkgGraph.containsVertex("com.java"));
+        assertTrue(mergedPkgGraph.containsVertex("com.kotlin"));
+
+        // Verify merged class graph has all four class vertices
+        Graph<String, DefaultWeightedEdge> mergedClassGraph = merged.getClassReferencesGraph();
+        assertTrue(mergedClassGraph.containsVertex("com.java.A"));
+        assertTrue(mergedClassGraph.containsVertex("com.java.B"));
+        assertTrue(mergedClassGraph.containsVertex("com.kotlin.C"));
+        assertTrue(mergedClassGraph.containsVertex("com.kotlin.D"));
+
+        // Verify class relationship map keys are edges from MERGED package graph
+        Map<DefaultWeightedEdge, Set<DefaultWeightedEdge>> relMap = merged.getClassRelationshipsInPackageRelationship();
+
+        for (DefaultWeightedEdge pkgEdge : relMap.keySet()) {
+            assertTrue(
+                    mergedPkgGraph.containsEdge(pkgEdge),
+                    "Package relationship key must belong to merged package graph");
+        }
+
+        // Verify class edges in relationship sets belong to MERGED class graph
+        for (Set<DefaultWeightedEdge> classEdges : relMap.values()) {
+            for (DefaultWeightedEdge classEdge : classEdges) {
+                assertTrue(
+                        mergedClassGraph.containsEdge(classEdge),
+                        "Class relationship edge must belong to merged class graph");
+            }
+        }
+    }
+
+    /**
+     * Tests that source and target endpoints are preserved when merging
+     * class relationships.
+     */
+    @Test
+    void mergeClassRelationships_preservesEndpoints() {
+        // Java: com.pkg1.Source -> com.pkg2.Target
+        CodebaseGraphDTO javaDto = createDto("com.pkg1.Source", "com.pkg2.Target", 1.0, "com.pkg1", "com.pkg2");
+
+        // Kotlin: com.pkg3.Source -> com.pkg4.Target
+        CodebaseGraphDTO kotlinDto = createDto("com.pkg3.Source", "com.pkg4.Target", 1.0, "com.pkg3", "com.pkg4");
+
+        CodebaseGraphDTO merged = CompositeGraphBuilder.merge(javaDto, kotlinDto);
+
+        Graph<String, DefaultWeightedEdge> mergedClassGraph = merged.getClassReferencesGraph();
+        Map<DefaultWeightedEdge, Set<DefaultWeightedEdge>> relMap = merged.getClassRelationshipsInPackageRelationship();
+
+        // Verify Java relationship endpoints preserved
+        DefaultWeightedEdge javaPkgEdge = merged.getPackageReferencesGraph().getEdge("com.pkg1", "com.pkg2");
+        assertNotNull(javaPkgEdge);
+        Set<DefaultWeightedEdge> javaClassEdges = relMap.get(javaPkgEdge);
+        assertNotNull(javaClassEdges);
+        assertEquals(1, javaClassEdges.size());
+        DefaultWeightedEdge javaClassEdge = javaClassEdges.iterator().next();
+        assertEquals("com.pkg1.Source", mergedClassGraph.getEdgeSource(javaClassEdge));
+        assertEquals("com.pkg2.Target", mergedClassGraph.getEdgeTarget(javaClassEdge));
+
+        // Verify Kotlin relationship endpoints preserved
+        DefaultWeightedEdge kotlinPkgEdge = merged.getPackageReferencesGraph().getEdge("com.pkg3", "com.pkg4");
+        assertNotNull(kotlinPkgEdge);
+        Set<DefaultWeightedEdge> kotlinClassEdges = relMap.get(kotlinPkgEdge);
+        assertNotNull(kotlinClassEdges);
+        assertEquals(1, kotlinClassEdges.size());
+        DefaultWeightedEdge kotlinClassEdge = kotlinClassEdges.iterator().next();
+        assertEquals("com.pkg3.Source", mergedClassGraph.getEdgeSource(kotlinClassEdge));
+        assertEquals("com.pkg4.Target", mergedClassGraph.getEdgeTarget(kotlinClassEdge));
+    }
+
+    /**
+     * Tests that weights are correctly summed when Java and Kotlin contribute
+     * the same class or package relationship.
+     */
+    @Test
+    void mergeClassRelationships_sumsWeightsForSameRelationship() {
+        // Java: com.shared.A -> com.shared.B (weight 2)
+        CodebaseGraphDTO javaDto = createDto("com.shared.A", "com.shared.B", 2.0, "com.shared", "com.shared");
+
+        // Kotlin: com.shared.A -> com.shared.B (weight 3) - SAME relationship
+        CodebaseGraphDTO kotlinDto = createDto("com.shared.A", "com.shared.B", 3.0, "com.shared", "com.shared");
+
+        CodebaseGraphDTO merged = CompositeGraphBuilder.merge(javaDto, kotlinDto);
+
+        Graph<String, DefaultWeightedEdge> mergedClassGraph = merged.getClassReferencesGraph();
+        Graph<String, DefaultWeightedEdge> mergedPkgGraph = merged.getPackageReferencesGraph();
+
+        // Class edge weight should be 2 + 3 = 5
+        DefaultWeightedEdge mergedClassEdge = mergedClassGraph.getEdge("com.shared.A", "com.shared.B");
+        assertNotNull(mergedClassEdge);
+        assertEquals(5.0, mergedClassGraph.getEdgeWeight(mergedClassEdge));
+
+        // Package graph has self-edge (intra-package), weight should be 2 + 3 = 5
+        // (addPackageEdgeIfCrossPackage only adds for cross-package, so self-edge not added by mergeGraph)
+        // The package self-edge comes from the dependency collector, not mergeGraph.
+        // In mergeGraph, self-edges from source graphs ARE copied.
+        DefaultWeightedEdge mergedPkgEdge = mergedPkgGraph.getEdge("com.shared", "com.shared");
+        if (mergedPkgEdge != null) {
+            // If self-edge exists, weight should be sum
+            assertEquals(5.0, mergedPkgGraph.getEdgeWeight(mergedPkgEdge));
+        }
+    }
+
+    /**
+     * Tests that relationships affected by fabricated-vertex reconciliation
+     * are correctly rebuilt to reference the final merged edges.
+     */
+    @Test
+    void mergeClassRelationships_reconciliationRebuildsRelationshipMap() {
+        // Java DTO with a fabricated cross-language reference:
+        // Java class com.java.Caller references Kotlin class com.kotlin.Target
+        // but Java parser fabricates com.java.Target (wrong package)
+        Graph<String, DefaultWeightedEdge> javaClassGraph =
+                new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        javaClassGraph.addVertex("com.java.Caller");
+        javaClassGraph.addVertex("com.java.Target"); // fabricated
+        DefaultWeightedEdge javaEdge = javaClassGraph.addEdge("com.java.Caller", "com.java.Target");
+        javaClassGraph.setEdgeWeight(javaEdge, 2);
+
+        Graph<String, DefaultWeightedEdge> javaPkgGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        javaPkgGraph.addVertex("com.java");
+        javaPkgGraph.addEdge("com.java", "com.java"); // self-edge
+
+        Map<DefaultWeightedEdge, Set<DefaultWeightedEdge>> javaClassRels = new HashMap<>();
+        javaClassRels.put(javaPkgGraph.getEdge("com.java", "com.java"), Set.of(javaEdge));
+
+        Map<String, String> javaSourceMapping = new HashMap<>();
+        javaSourceMapping.put("com.java.Caller", "/src/main/java/com/java/Caller.java");
+
+        CodebaseGraphDTO javaDto = new CodebaseGraphDTO(
+                javaClassGraph, javaPkgGraph, javaClassRels, javaSourceMapping, new ArrayList<>(), new ArrayList<>());
+
+        // Kotlin DTO with the REAL target class
+        Graph<String, DefaultWeightedEdge> kotlinClassGraph =
+                new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        kotlinClassGraph.addVertex("com.kotlin.Target"); // real canonical
+        kotlinClassGraph.addVertex("com.kotlin.Other");
+        DefaultWeightedEdge kotlinEdge = kotlinClassGraph.addEdge("com.kotlin.Other", "com.kotlin.Target");
+        kotlinClassGraph.setEdgeWeight(kotlinEdge, 3);
+
+        Graph<String, DefaultWeightedEdge> kotlinPkgGraph =
+                new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        kotlinPkgGraph.addVertex("com.kotlin");
+        kotlinPkgGraph.addEdge("com.kotlin", "com.kotlin");
+
+        Map<DefaultWeightedEdge, Set<DefaultWeightedEdge>> kotlinClassRels = new HashMap<>();
+        kotlinClassRels.put(kotlinPkgGraph.getEdge("com.kotlin", "com.kotlin"), Set.of(kotlinEdge));
+
+        Map<String, String> kotlinSourceMapping = new HashMap<>();
+        kotlinSourceMapping.put("com.kotlin.Target", "/src/main/kotlin/com/kotlin/Target.kt");
+        kotlinSourceMapping.put("com.kotlin.Other", "/src/main/kotlin/com/kotlin/Other.kt");
+
+        CodebaseGraphDTO kotlinDto = new CodebaseGraphDTO(
+                kotlinClassGraph,
+                kotlinPkgGraph,
+                kotlinClassRels,
+                kotlinSourceMapping,
+                new ArrayList<>(),
+                new ArrayList<>());
+
+        // Merge - reconciliation should contract com.java.Target into com.kotlin.Target
+        CodebaseGraphDTO merged = CompositeGraphBuilder.merge(javaDto, kotlinDto);
+
+        Graph<String, DefaultWeightedEdge> mergedClassGraph = merged.getClassReferencesGraph();
+        Graph<String, DefaultWeightedEdge> mergedPkgGraph = merged.getPackageReferencesGraph();
+        Map<DefaultWeightedEdge, Set<DefaultWeightedEdge>> relMap = merged.getClassRelationshipsInPackageRelationship();
+
+        // Fabricated vertex should be gone
+        assertFalse(
+                mergedClassGraph.containsVertex("com.java.Target"),
+                "Fabricated vertex should be removed by reconciliation");
+
+        // Canonical vertex should exist
+        assertTrue(mergedClassGraph.containsVertex("com.kotlin.Target"), "Canonical vertex should remain");
+
+        // Edge from Caller should now point to canonical
+        assertTrue(
+                mergedClassGraph.containsEdge("com.java.Caller", "com.kotlin.Target"),
+                "Edge should be redirected to canonical after reconciliation");
+
+        // Verify relationship map was rebuilt after reconciliation
+        // The package edge com.java -> com.kotlin should exist (cross-package)
+        DefaultWeightedEdge crossPkgEdge = mergedPkgGraph.getEdge("com.java", "com.kotlin");
+        assertNotNull(crossPkgEdge, "Cross-package edge should be created by reconciliation");
+
+        // The relationship map should have the cross-package edge as key
+        // and the redirected class edge as value
+        assertTrue(relMap.containsKey(crossPkgEdge), "Relationship map should contain the cross-package edge");
+
+        Set<DefaultWeightedEdge> classEdges = relMap.get(crossPkgEdge);
+        assertNotNull(classEdges);
+        assertEquals(1, classEdges.size());
+
+        DefaultWeightedEdge redirectedEdge = classEdges.iterator().next();
+        assertTrue(mergedClassGraph.containsEdge(redirectedEdge), "Redirected edge must belong to merged class graph");
+        assertEquals("com.java.Caller", mergedClassGraph.getEdgeSource(redirectedEdge));
+        assertEquals("com.kotlin.Target", mergedClassGraph.getEdgeTarget(redirectedEdge));
+    }
+
+    /**
+     * Helper to create a simple DTO with one class edge and corresponding package relationship.
+     */
+    private static CodebaseGraphDTO createDto(
+            String classSource, String classTarget, double weight, String pkgSource, String pkgTarget) {
+
+        Graph<String, DefaultWeightedEdge> classGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        classGraph.addVertex(classSource);
+        classGraph.addVertex(classTarget);
+        DefaultWeightedEdge classEdge = classGraph.addEdge(classSource, classTarget);
+        classGraph.setEdgeWeight(classEdge, weight);
+
+        Graph<String, DefaultWeightedEdge> pkgGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        pkgGraph.addVertex(pkgSource);
+        pkgGraph.addVertex(pkgTarget);
+        DefaultWeightedEdge pkgEdge = pkgGraph.addEdge(pkgSource, pkgTarget);
+        pkgGraph.setEdgeWeight(pkgEdge, weight);
+
+        Map<DefaultWeightedEdge, Set<DefaultWeightedEdge>> classRels = new HashMap<>();
+        classRels.put(pkgEdge, Set.of(classEdge));
+
+        Map<String, String> sourceMapping = new HashMap<>();
+        sourceMapping.put(classSource, "/src/main/java/" + classSource.replace(".", "/") + ".java");
+        sourceMapping.put(classTarget, "/src/main/java/" + classTarget.replace(".", "/") + ".java");
+
+        return new CodebaseGraphDTO(
+                classGraph, pkgGraph, classRels, sourceMapping, new ArrayList<>(), new ArrayList<>());
+    }
 }

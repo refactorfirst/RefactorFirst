@@ -50,7 +50,8 @@ public class CompositeGraphBuilder {
     }
 
     public CodebaseGraphDTO getCodebaseGraphDTO(String repositoryPath, GraphBuilderConfig config) throws IOException {
-        return getCodebaseGraphDTO(repositoryPath, "", config);
+        String repositoryRoot = config.getRepositoryRoot() != null ? config.getRepositoryRoot() : "";
+        return getCodebaseGraphDTO(repositoryPath, repositoryRoot, config);
     }
 
     /**
@@ -130,8 +131,18 @@ public class CompositeGraphBuilder {
         mergeGraph(kotlinDto.getPackageReferencesGraph(), mergedPackageGraph);
 
         // Merge class-to-package-relationship mapping
-        mergeClassRelationships(javaDto, mergedPackageGraph, mergedClassRelationships);
-        mergeClassRelationships(kotlinDto, mergedPackageGraph, mergedClassRelationships);
+        mergeClassRelationships(
+                javaDto,
+                javaDto.getClassReferencesGraph(),
+                mergedPackageGraph,
+                mergedClassGraph,
+                mergedClassRelationships);
+        mergeClassRelationships(
+                kotlinDto,
+                kotlinDto.getClassReferencesGraph(),
+                mergedPackageGraph,
+                mergedClassGraph,
+                mergedClassRelationships);
 
         // Merge source path mapping
         mergedSourcePathMapping.putAll(javaDto.getClassToSourceFilePathMapping());
@@ -148,6 +159,10 @@ public class CompositeGraphBuilder {
 
         // Reconcile fabricated cross-language vertices against real declarations
         reconcileUnattributedVertices(mergedClassGraph, mergedPackageGraph, mergedSourcePathMapping);
+
+        // Rebuild class relationships after reconciliation since vertex contraction
+        // may have removed/replaced edges referenced in the relationship map
+        rebuildClassRelationshipsAfterReconciliation(mergedClassGraph, mergedPackageGraph, mergedClassRelationships);
 
         return new CodebaseGraphDTO(
                 mergedClassGraph,
@@ -374,7 +389,9 @@ public class CompositeGraphBuilder {
 
     private static void mergeClassRelationships(
             CodebaseGraphDTO dto,
+            Graph<String, DefaultWeightedEdge> sourceClassGraph,
             Graph<String, DefaultWeightedEdge> mergedPackageGraph,
+            Graph<String, DefaultWeightedEdge> mergedClassGraph,
             Map<DefaultWeightedEdge, Set<DefaultWeightedEdge>> mergedClassRelationships) {
         for (Map.Entry<DefaultWeightedEdge, Set<DefaultWeightedEdge>> entry :
                 dto.getClassRelationshipsInPackageRelationship().entrySet()) {
@@ -382,11 +399,57 @@ public class CompositeGraphBuilder {
             String pkgSource = dto.getPackageReferencesGraph().getEdgeSource(entry.getKey());
             String pkgTarget = dto.getPackageReferencesGraph().getEdgeTarget(entry.getKey());
             DefaultWeightedEdge mergedPkgEdge = mergedPackageGraph.getEdge(pkgSource, pkgTarget);
-            if (mergedPkgEdge != null) {
+            if (mergedPkgEdge == null) {
+                continue;
+            }
+
+            Set<DefaultWeightedEdge> mergedClassEdges = new HashSet<>();
+            for (DefaultWeightedEdge sourceClassEdge : entry.getValue()) {
+                String classSource = sourceClassGraph.getEdgeSource(sourceClassEdge);
+                String classTarget = sourceClassGraph.getEdgeTarget(sourceClassEdge);
+                DefaultWeightedEdge mergedClassEdge = mergedClassGraph.getEdge(classSource, classTarget);
+                if (mergedClassEdge != null) {
+                    mergedClassEdges.add(mergedClassEdge);
+                }
+            }
+
+            if (!mergedClassEdges.isEmpty()) {
                 mergedClassRelationships
                         .computeIfAbsent(mergedPkgEdge, k -> new HashSet<>())
-                        .addAll(entry.getValue());
+                        .addAll(mergedClassEdges);
             }
         }
+    }
+
+    /**
+     * Rebuilds the class relationship map after reconciliation.
+     * Vertex contraction during reconciliation may have removed or replaced
+     * edges that were previously referenced in the relationship map, and may
+     * have created new cross-package edges. This method reconstructs the map
+     * by iterating all class edges in the final merged class graph and grouping
+     * them by their corresponding package edge in the merged package graph.
+     */
+    private static void rebuildClassRelationshipsAfterReconciliation(
+            Graph<String, DefaultWeightedEdge> mergedClassGraph,
+            Graph<String, DefaultWeightedEdge> mergedPackageGraph,
+            Map<DefaultWeightedEdge, Set<DefaultWeightedEdge>> mergedClassRelationships) {
+        Map<DefaultWeightedEdge, Set<DefaultWeightedEdge>> rebuilt = new HashMap<>();
+
+        // Iterate all class edges in the final merged class graph
+        for (DefaultWeightedEdge classEdge : mergedClassGraph.edgeSet()) {
+            String classSource = mergedClassGraph.getEdgeSource(classEdge);
+            String classTarget = mergedClassGraph.getEdgeTarget(classEdge);
+
+            String pkgSource = packageName(classSource);
+            String pkgTarget = packageName(classTarget);
+
+            DefaultWeightedEdge pkgEdge = mergedPackageGraph.getEdge(pkgSource, pkgTarget);
+            if (pkgEdge != null) {
+                rebuilt.computeIfAbsent(pkgEdge, k -> new HashSet<>()).add(classEdge);
+            }
+        }
+
+        mergedClassRelationships.clear();
+        mergedClassRelationships.putAll(rebuilt);
     }
 }
