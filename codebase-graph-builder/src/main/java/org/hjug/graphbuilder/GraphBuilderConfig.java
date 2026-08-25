@@ -21,7 +21,7 @@ public class GraphBuilderConfig {
      * on {@code rewrite-kotlin}'s enum type.
      */
     @Builder.Default
-    String kotlinLanguageLevel = "KOTLIN_2_2";
+    String kotlinLanguageLevel = "KOTLIN_2_4";
 
     /**
      * Git repository root path for URL canonicalization. When set, source file

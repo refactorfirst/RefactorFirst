@@ -18,6 +18,7 @@
             <dependency>
                 <groupId>org.openrewrite.recipe</groupId>
                 <artifactId>rewrite-recipe-bom</artifactId>
+                <!-- Remove rewrite-kotlin version when upgrading rewrite-recipe-bom-->
                 <version>3.37.0</version>
                 <type>pom</type>
                 <scope>import</scope>
@@ -34,12 +35,6 @@
             <groupId>org.jgrapht</groupId>
             <artifactId>jgrapht-core</artifactId>
         </dependency>
-
-        <!-- Parent <dependencyManagement> pins these two transitives
-             (gizmo, micrometer-core) per the centralized CVE-mitigation
-             rule so this child module imports them by bare GAV and stays
-             aligned with any other module that picks up the same transitive
-             path. -->
         <dependency>
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-core</artifactId>
@@ -51,10 +46,6 @@
         <dependency>
             <groupId>org.openrewrite</groupId>
             <artifactId>rewrite-java-17</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.openrewrite</groupId>
-            <artifactId>rewrite-java-11</artifactId>
         </dependency>
         <dependency>
             <groupId>org.openrewrite</groupId>
@@ -71,13 +62,10 @@
             <groupId>org.openrewrite</groupId>
             <artifactId>rewrite-core</artifactId>
         </dependency>
-
-        <!-- Kotlin language support (compile dependency: enables Kotlin
-             codebase analysis; see AGENTS.md "Kotlin analysis" section for
-             the distribution impact on the Maven plugin / CLI fat-jar). -->
         <dependency>
             <groupId>org.openrewrite</groupId>
             <artifactId>rewrite-kotlin</artifactId>
+            <version>8.90.4</version>
         </dependency>
     </dependencies>
 </project>

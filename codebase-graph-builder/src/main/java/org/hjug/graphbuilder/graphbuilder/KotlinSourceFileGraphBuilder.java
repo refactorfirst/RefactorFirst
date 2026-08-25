@@ -41,12 +41,12 @@ public class KotlinSourceFileGraphBuilder implements SourceFileGraphBuilder {
         File srcDirectory = new File(repositoryPath);
 
         String langLevelStr = config.getKotlinLanguageLevel();
-        KotlinParser.KotlinLanguageLevel kotlinLangLevel = KotlinParser.KotlinLanguageLevel.KOTLIN_2_2;
+        KotlinParser.KotlinLanguageLevel kotlinLangLevel = KotlinParser.KotlinLanguageLevel.KOTLIN_2_4;
         if (!langLevelStr.isEmpty()) {
             try {
                 kotlinLangLevel = KotlinParser.KotlinLanguageLevel.valueOf(langLevelStr);
             } catch (IllegalArgumentException e) {
-                log.warn("Unknown Kotlin language level '{}', falling back to KOTLIN_2_2", langLevelStr);
+                log.warn("Unknown Kotlin language level '{}', falling back to KOTLIN_2_4", langLevelStr);
             }
         }
 
