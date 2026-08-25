@@ -13,22 +13,6 @@
 
     <name>RefactorFirst Cost Benefit Calculator</name>
 
-    <dependencyManagement>
-        <dependencies>
-            <!-- Aligns the test-scoped rewrite-kotlin dependency below
-                 with the (now non-optional) compile-scope dependency
-                 declared by codebase-graph-builder, so the version
-                 resolves consistently. -->
-            <dependency>
-                <groupId>org.openrewrite.recipe</groupId>
-                <artifactId>rewrite-recipe-bom</artifactId>
-                <version>3.34.0</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
-
     <dependencies>
         <!-- Needed for PMD -->
         <dependency>
@@ -39,18 +23,6 @@
         <dependency>
             <groupId>org.hjug.refactorfirst.codebasegraphbuilder</groupId>
             <artifactId>codebase-graph-builder</artifactId>
-        </dependency>
-
-        <!-- Test-scope rewrite-kotlin: codebase-graph-builder now declares
-             this as a compile dependency, so CycleRanker's production
-             classpath already carries it transitively. This test-scoped
-             declaration is retained only to pin the rewrite-recipe-bom
-             (3.34.0) for version parity with the Kotlin source-path
-             mapping tests in this module. -->
-        <dependency>
-            <groupId>org.openrewrite</groupId>
-            <artifactId>rewrite-kotlin</artifactId>
-            <scope>test</scope>
         </dependency>
 
         <dependency>
