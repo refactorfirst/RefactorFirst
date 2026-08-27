@@ -32,8 +32,8 @@ public class DirectedFeedbackVertexSetSolver<V, E> {
 
     // Zone decomposition components
     private Set<V> remainder;
-    private final Map<Integer, Set<V>> zones;
-    private final Map<Set<V>, Set<V>> kDfvsRepresentatives;
+    private Map<Integer, Set<V>> zones;
+    private Map<Set<V>, Set<V>> kDfvsRepresentatives;
     private int k;
 
     public DirectedFeedbackVertexSetSolver(

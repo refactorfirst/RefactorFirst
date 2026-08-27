@@ -15,6 +15,7 @@ public class SignificantDuplicationCrossClassA {
         int bb = aa - 4;
         int cc = bb / 5;
         int dd = cc + 6;
-        return dd * 7;
+        int ee = dd * 7;
+        return ee;
     }
 }

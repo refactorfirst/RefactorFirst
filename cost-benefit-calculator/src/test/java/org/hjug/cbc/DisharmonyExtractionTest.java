@@ -148,9 +148,7 @@ class DisharmonyExtractionTest {
             brain.setLinesOfCode(70);
             brain.setCyclomaticComplexity(5);
             brain.setMaxNestingDepth(5);
-            for (int i = 0; i < 8; i++) {
-                brain.addAccessedVariable("var" + k + i);
-            }
+            for (int i = 0; i < 8; i++) brain.addAccessedVariable("var" + k + i);
             m.addMethod(brain);
         }
         for (int i = 0; i < 45; i++) {

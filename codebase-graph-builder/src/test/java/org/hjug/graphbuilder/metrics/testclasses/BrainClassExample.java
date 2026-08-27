@@ -7,26 +7,26 @@ import java.util.Map;
 
 public class BrainClassExample {
 
-    private final List<String> dataList = new ArrayList<>();
-    private final Map<String, Integer> dataMap = new HashMap<>();
-    private int counter;
-    private final String status = "";
-    private final boolean flag = false;
+    private List<String> dataList = new ArrayList<>();
+    private Map<String, Integer> dataMap = new HashMap<>();
+    private int counter = 0;
+    private String status = "";
+    private boolean flag = false;
 
     private String method1Result = "";
-    private int method1Counter;
+    private int method1Counter = 0;
 
     private String method2Result = "";
-    private int method2Total;
+    private int method2Total = 0;
 
     private String method3Result = "";
-    private int method3Value;
+    private int method3Value = 0;
 
     private String m4result = "";
-    private int m4low;
-    private int m4high;
+    private int m4low = 0;
+    private int m4high = 0;
 
-    private boolean m5flag;
+    private boolean m5flag = false;
     private String m5data = "";
 
     public void complexMethod1(int param1, String param2, boolean param3) {
@@ -44,7 +44,7 @@ public class BrainClassExample {
                 if (param3) {
                     for (int i = 0; i < param1; i++) {
                         if (i % 2 == 0) {
-                            if (!dataList.isEmpty()) {
+                            if (dataList.size() > 0) {
                                 localVar1 = dataList.size();
                                 localVar2 = counter;
                                 localVar3 = localVar1 + localVar2;
@@ -124,7 +124,7 @@ public class BrainClassExample {
         String suffix = "";
         int maxVal = 0;
 
-        if (items != null && !items.isEmpty()) {
+        if (items != null && items.size() > 0) {
             for (String item : items) {
                 if (item != null) {
                     if (item.length() > threshold) {

@@ -33,7 +33,7 @@ as a starting point.
 public class DSM<V, E> {
     private final Graph<V, E> graph;
     private List<V> sortedActivities;
-    boolean activitiesSorted;
+    boolean activitiesSorted = false;
     private final List<E> edgesAboveDiagonal = new ArrayList<>();
 
     List<Integer> sparseIntSortedActivities;
@@ -45,7 +45,7 @@ public class DSM<V, E> {
     Map<V, Integer> vertexToInt = new HashMap<>();
     Map<Integer, V> intToVertex = new HashMap<>();
     List<Triple<Integer, Integer, Double>> sparseEdges = new ArrayList<>();
-    int vertexCount;
+    int vertexCount = 0;
 
     public DSM(Graph<V, E> graph) {
         this.graph = graph;

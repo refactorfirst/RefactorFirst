@@ -198,9 +198,7 @@ public class PageRankFAS<V, E> {
         Set<LineVertex<V, E>> vertices = lineDigraph.vertexSet();
         int numVertices = vertices.size();
 
-        if (numVertices == 0) {
-            return new HashMap<>();
-        }
+        if (numVertices == 0) return new HashMap<>();
 
         // Initialize PageRank scores
         Map<LineVertex<V, E>, Double> currentScores =

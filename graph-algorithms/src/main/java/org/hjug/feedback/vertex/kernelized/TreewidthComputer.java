@@ -133,9 +133,7 @@ public class TreewidthComputer<V, E> {
                             .count()))
                     .orElse(null);
 
-            if (minDegreeVertex == null) {
-                break;
-            }
+            if (minDegreeVertex == null) break;
 
             Set<V> neighbors = adjacencyMap.get(minDegreeVertex).stream()
                     .filter(remainingVertices::contains)
@@ -144,12 +142,12 @@ public class TreewidthComputer<V, E> {
             maxBagSize = Math.max(maxBagSize, neighbors.size());
 
             // Make neighbors a clique
-            neighbors.parallelStream().forEach(u -> neighbors.parallelStream()
-                    .filter(v -> !v.equals(u))
-                    .forEach(v -> {
-                        adjacencyMap.get(u).add(v);
-                        adjacencyMap.get(v).add(u);
-                    }));
+            neighbors.parallelStream().forEach(u -> {
+                neighbors.parallelStream().filter(v -> !v.equals(u)).forEach(v -> {
+                    adjacencyMap.get(u).add(v);
+                    adjacencyMap.get(v).add(u);
+                });
+            });
 
             remainingVertices.remove(minDegreeVertex);
         }
@@ -441,9 +439,7 @@ public class TreewidthComputer<V, E> {
 
         while (!eliminationOrder.isEmpty()) {
             V vertex = eliminationOrder.poll();
-            if (vertex == null) {
-                break;
-            }
+            if (vertex == null) break;
 
             Set<V> neighbors = adjacencyMap.get(vertex);
             maxBagSize = Math.max(maxBagSize, neighbors.size());
@@ -457,21 +453,25 @@ public class TreewidthComputer<V, E> {
 
     private void triangulateNeighborhood(Set<V> neighbors, Map<V, Set<V>> adjacencyMap) {
         List<V> neighborList = new ArrayList<>(neighbors);
-        neighborList.parallelStream().forEach(u -> neighborList.parallelStream()
-                .filter(v -> !v.equals(u) && !adjacencyMap.get(u).contains(v))
-                .forEach(v -> {
-                    adjacencyMap.get(u).add(v);
-                    adjacencyMap.get(v).add(u);
-                }));
+        neighborList.parallelStream().forEach(u -> {
+            neighborList.parallelStream()
+                    .filter(v -> !v.equals(u) && !adjacencyMap.get(u).contains(v))
+                    .forEach(v -> {
+                        adjacencyMap.get(u).add(v);
+                        adjacencyMap.get(v).add(u);
+                    });
+        });
     }
 
     // original implementation
     private int calculateFillIn(Set<V> neighbors, Map<V, Set<V>> adjacencyMap) {
         AtomicInteger fillIn = new AtomicInteger(0);
 
-        neighbors.parallelStream().forEach(u -> neighbors.parallelStream()
-                .filter(v -> !v.equals(u) && !adjacencyMap.get(u).contains(v))
-                .forEach(v -> fillIn.incrementAndGet()));
+        neighbors.parallelStream().forEach(u -> {
+            neighbors.parallelStream()
+                    .filter(v -> !v.equals(u) && !adjacencyMap.get(u).contains(v))
+                    .forEach(v -> fillIn.incrementAndGet());
+        });
 
         return fillIn.get() / 2; // Each edge counted twice
     }
@@ -521,7 +521,7 @@ public class TreewidthComputer<V, E> {
     private int computeFallbackTreewidth(Graph<V, DefaultEdge> graph) {
         // Simple fallback: maximum degree
         return graph.vertexSet().parallelStream()
-                .mapToInt(graph::degreeOf)
+                .mapToInt(v -> graph.degreeOf(v))
                 .max()
                 .orElse(0);
     }

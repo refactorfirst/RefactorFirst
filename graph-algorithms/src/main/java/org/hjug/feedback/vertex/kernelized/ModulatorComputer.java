@@ -93,9 +93,7 @@ public class ModulatorComputer<V, E> {
                     computeVertexRemovalScore(workingGraph, targetTreewidth).entrySet().parallelStream()
                             .max(Map.Entry.comparingByValue());
 
-            if (bestVertex == null || bestVertex.isEmpty()) {
-                break;
-            }
+            if (bestVertex == null || bestVertex.isEmpty()) break;
 
             modulator.add(bestVertex.get().getKey());
             workingGraph.removeVertex(bestVertex.get().getKey());
@@ -134,9 +132,7 @@ public class ModulatorComputer<V, E> {
                     .collect(Collectors.toList());
 
             for (V vertex : remainingVertices) {
-                if (modulator.size() >= maxSize) {
-                    break;
-                }
+                if (modulator.size() >= maxSize) break;
 
                 modulator.add(vertex);
                 int currentTreewidth = treewidthComputer.computeEta(graph, modulator);
@@ -173,9 +169,7 @@ public class ModulatorComputer<V, E> {
                 .collect(Collectors.toList());
 
         for (V vertex : sortedVertices) {
-            if (modulator.size() >= maxSize) {
-                break;
-            }
+            if (modulator.size() >= maxSize) break;
 
             modulator.add(vertex);
             int currentTreewidth = treewidthComputer.computeEta(graph, modulator);
@@ -199,9 +193,7 @@ public class ModulatorComputer<V, E> {
                 .collect(Collectors.toList());
 
         for (V vertex : verticesByDegree) {
-            if (modulator.size() >= maxSize) {
-                break;
-            }
+            if (modulator.size() >= maxSize) break;
 
             modulator.add(vertex);
             int currentTreewidth = treewidthComputer.computeEta(graph, modulator);
@@ -234,9 +226,7 @@ public class ModulatorComputer<V, E> {
 
         // Greedily select best candidates
         for (V vertex : candidates) {
-            if (modulator.size() >= maxSize) {
-                break;
-            }
+            if (modulator.size() >= maxSize) break;
 
             modulator.add(vertex);
             int currentTreewidth = treewidthComputer.computeEta(graph, modulator);
@@ -409,13 +399,13 @@ public class ModulatorComputer<V, E> {
         // Boost score if degree significantly exceeds target treewidth
         if (degree > targetTreewidth) {
             double excess = (double) (degree - targetTreewidth) / Math.max(1, targetTreewidth);
-            baseScore *= 1.0 + excess; // Amplify score for high-degree vertices
+            baseScore *= (1.0 + excess); // Amplify score for high-degree vertices
         }
 
         // Penalty if degree is already below or at target
         else if (degree <= targetTreewidth) {
             double deficit = (double) (targetTreewidth - degree) / Math.max(1, targetTreewidth);
-            baseScore *= 1.0 - deficit * 0.5; // Reduce score but don't eliminate
+            baseScore *= (1.0 - deficit * 0.5); // Reduce score but don't eliminate
         }
 
         return baseScore * 0.3; // Weight: 30% of total score
@@ -447,7 +437,9 @@ public class ModulatorComputer<V, E> {
         double clusteringCoefficient = maxPossibleEdges > 0 ? (double) edgeCount.get() / maxPossibleEdges : 0.0;
 
         // High clustering + high degree suggests clique-like structures that increase treewidth
-        return clusteringCoefficient * Math.min(1.0, (double) neighbors.size() / (targetTreewidth + 1));
+        double impact = clusteringCoefficient * Math.min(1.0, (double) neighbors.size() / (targetTreewidth + 1));
+
+        return impact;
     }
 
     /**
@@ -1082,9 +1074,7 @@ public class ModulatorComputer<V, E> {
             double cumulativeWeight = 0;
 
             for (V vertex : vertexList) {
-                if (sampledSources.contains(vertex)) {
-                    continue;
-                }
+                if (sampledSources.contains(vertex)) continue;
 
                 cumulativeWeight += degrees.get(vertex);
                 if (randomValue <= cumulativeWeight) {
@@ -1094,9 +1084,7 @@ public class ModulatorComputer<V, E> {
             }
 
             // Prevent infinite loop in edge cases
-            if (sampledSources.size() == vertexList.size()) {
-                break;
-            }
+            if (sampledSources.size() == vertexList.size()) break;
         }
 
         return sampledSources;
@@ -1609,8 +1597,9 @@ public class ModulatorComputer<V, E> {
                     computeSingleSourceBetweennessContributionsParallel(graph, source);
 
             // Atomically merge contributions
-            contributions.entrySet().parallelStream()
-                    .forEach(entry -> betweenness.merge(entry.getKey(), entry.getValue(), Double::sum));
+            contributions.entrySet().parallelStream().forEach(entry -> {
+                betweenness.merge(entry.getKey(), entry.getValue(), Double::sum);
+            });
         });
 
         return betweenness;
@@ -1643,9 +1632,7 @@ public class ModulatorComputer<V, E> {
                     int currentBatchStart = minSamples + batchIndex * batchSize;
                     int currentBatchSize = Math.min(batchSize, maxSamples - currentBatchStart);
 
-                    if (currentBatchSize <= 0) {
-                        return false;
-                    }
+                    if (currentBatchSize <= 0) return false;
 
                     // Sample new batch in parallel
                     Set<V> newSamples =

@@ -76,9 +76,7 @@ public class FeedbackVertexSetComputer<V, E> {
                 // Find vertex with maximum degree in current SCCs
                 V maxDegreeVertex = findVertexInCyclesWithMaxDegree(workingGraph);
 
-                if (maxDegreeVertex == null) {
-                    break;
-                }
+                if (maxDegreeVertex == null) break;
 
                 feedbackSet.add(maxDegreeVertex);
                 workingGraph.removeVertex(maxDegreeVertex);
@@ -188,9 +186,7 @@ public class FeedbackVertexSetComputer<V, E> {
                     }
                 }
 
-                if (improved) {
-                    break;
-                }
+                if (improved) break;
             }
         }
 

@@ -1,6 +1,13 @@
 package org.hjug.graphbuilder.metrics.testclasses;
 
-import org.hjug.graphbuilder.metrics.testclasses.external.*;
+import org.hjug.graphbuilder.metrics.testclasses.external.CustomerService;
+import org.hjug.graphbuilder.metrics.testclasses.external.ExternalDataService;
+import org.hjug.graphbuilder.metrics.testclasses.external.InventoryService;
+import org.hjug.graphbuilder.metrics.testclasses.external.NotificationService;
+import org.hjug.graphbuilder.metrics.testclasses.external.OrderService;
+import org.hjug.graphbuilder.metrics.testclasses.external.PaymentService;
+import org.hjug.graphbuilder.metrics.testclasses.external.ProductService;
+import org.hjug.graphbuilder.metrics.testclasses.external.ShippingService;
 
 /**
  * Example class with Dispersed Coupling disharmony.
