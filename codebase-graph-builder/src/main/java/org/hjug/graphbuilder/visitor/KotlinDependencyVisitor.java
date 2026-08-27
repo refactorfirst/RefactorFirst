@@ -250,7 +250,8 @@ public class KotlinDependencyVisitor<P> extends KotlinIsoVisitor<P> {
         }
 
         if (property.getReceiver() != null) {
-            typeProcessor.processType(state.getCurrentOwnerFqn(), property.getReceiver().getType());
+            typeProcessor.processType(
+                    state.getCurrentOwnerFqn(), property.getReceiver().getType());
         }
 
         return result;

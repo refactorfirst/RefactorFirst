@@ -65,7 +65,7 @@ class KotlinDisharmonyParityTest {
     private static GraphMetricsCollector loadDirectory(String directory) throws IOException {
         File srcDirectory = new File(directory);
         KotlinParser kotlinParser = KotlinParser.builder()
-                .languageLevel(KotlinParser.KotlinLanguageLevel.KOTLIN_2_2)
+                .languageLevel(KotlinParser.KotlinLanguageLevel.KOTLIN_2_4)
                 .logCompilationWarningsAndErrors(false)
                 .build();
         ExecutionContext ctx = new InMemoryExecutionContext(Throwable::printStackTrace);

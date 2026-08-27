@@ -63,13 +63,13 @@ public class JavaSourceFileGraphBuilder implements SourceFileGraphBuilder {
         MetricsCollectingVisitor metricsVisitor = new MetricsCollectingVisitor(metricsCollector);
 
         try (Stream<Path> pathStream = Files.walk(Path.of(srcDirectory.getAbsolutePath()))) {
-            Stream<Path> filteredStream = pathStream
-                    .filter(file -> file.toString().endsWith(".java"));
+            Stream<Path> filteredStream =
+                    pathStream.filter(file -> file.toString().endsWith(".java"));
             if (config.isExcludeTests()
                     && config.getTestSourceDirectory() != null
                     && !config.getTestSourceDirectory().isEmpty()) {
-                filteredStream = filteredStream
-                        .filter(file -> !file.toString().contains(config.getTestSourceDirectory()));
+                filteredStream =
+                        filteredStream.filter(file -> !file.toString().contains(config.getTestSourceDirectory()));
             }
             List<Path> list = filteredStream.collect(Collectors.toList());
             log.info("JavaSourceFileGraphBuilder: walking {} Java files under {}", list.size(), repositoryPath);

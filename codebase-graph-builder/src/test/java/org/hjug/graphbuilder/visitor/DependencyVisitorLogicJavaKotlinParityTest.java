@@ -97,7 +97,7 @@ class DependencyVisitorLogicJavaKotlinParityTest {
                 new KotlinDependencyVisitor<>(tempDir.toString(), "", collector);
 
         KotlinParser kotlinParser = KotlinParser.builder()
-                .languageLevel(KotlinParser.KotlinLanguageLevel.KOTLIN_2_2)
+                .languageLevel(KotlinParser.KotlinLanguageLevel.KOTLIN_2_4)
                 .logCompilationWarningsAndErrors(false)
                 .build();
         ExecutionContext ctx = new InMemoryExecutionContext(Throwable::printStackTrace);
@@ -160,7 +160,7 @@ class DependencyVisitorLogicJavaKotlinParityTest {
         GraphDependencyCollector collector = new GraphDependencyCollector(classGraph, pkgGraph);
 
         KotlinParser kotlinParser = KotlinParser.builder()
-                .languageLevel(KotlinParser.KotlinLanguageLevel.KOTLIN_2_2)
+                .languageLevel(KotlinParser.KotlinLanguageLevel.KOTLIN_2_4)
                 .logCompilationWarningsAndErrors(false)
                 .build();
         ExecutionContext ctx = new InMemoryExecutionContext(Throwable::printStackTrace);

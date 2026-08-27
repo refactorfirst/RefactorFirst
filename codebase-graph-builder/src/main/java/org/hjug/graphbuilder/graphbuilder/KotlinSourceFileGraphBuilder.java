@@ -73,14 +73,13 @@ public class KotlinSourceFileGraphBuilder implements SourceFileGraphBuilder {
         KotlinMetricsCollectingVisitor metricsVisitor = new KotlinMetricsCollectingVisitor(metricsCollector);
 
         try (Stream<Path> pathStream = Files.walk(Path.of(srcDirectory.getAbsolutePath()))) {
-            Stream<Path> filteredStream = pathStream
-                    .filter(file -> file.toString().endsWith(".kt")
-                            || file.toString().endsWith(".kts"));
+            Stream<Path> filteredStream = pathStream.filter(
+                    file -> file.toString().endsWith(".kt") || file.toString().endsWith(".kts"));
             if (config.isExcludeTests()
                     && config.getTestSourceDirectory() != null
                     && !config.getTestSourceDirectory().isEmpty()) {
-                filteredStream = filteredStream
-                        .filter(file -> !file.toString().contains(config.getTestSourceDirectory()));
+                filteredStream =
+                        filteredStream.filter(file -> !file.toString().contains(config.getTestSourceDirectory()));
             }
             List<Path> list = filteredStream.collect(Collectors.toList());
 

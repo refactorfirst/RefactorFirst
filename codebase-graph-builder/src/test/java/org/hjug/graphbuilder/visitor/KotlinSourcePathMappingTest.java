@@ -65,7 +65,7 @@ class KotlinSourcePathMappingTest {
     void kotlinJunitBranch_usesKtExtension() throws IOException {
         File srcDirectory = new File(FIXTURE_DIR);
         KotlinParser kotlinParser = KotlinParser.builder()
-                .languageLevel(KotlinParser.KotlinLanguageLevel.KOTLIN_2_2)
+                .languageLevel(KotlinParser.KotlinLanguageLevel.KOTLIN_2_4)
                 .logCompilationWarningsAndErrors(false)
                 .build();
         ExecutionContext ctx = new InMemoryExecutionContext(Throwable::printStackTrace);
@@ -108,7 +108,7 @@ class KotlinSourcePathMappingTest {
     void kotlinRepoBranch_usesCanonicalisedUri() throws IOException {
         File srcDirectory = new File(FIXTURE_DIR);
         KotlinParser kotlinParser = KotlinParser.builder()
-                .languageLevel(KotlinParser.KotlinLanguageLevel.KOTLIN_2_2)
+                .languageLevel(KotlinParser.KotlinLanguageLevel.KOTLIN_2_4)
                 .logCompilationWarningsAndErrors(false)
                 .build();
         ExecutionContext ctx = new InMemoryExecutionContext(Throwable::printStackTrace);
@@ -171,7 +171,7 @@ class KotlinSourcePathMappingTest {
     void kotlinMultiClassFile_junitBranch_classMapsToSourceFile() throws IOException {
         File srcDirectory = new File(MULTI_CLASS_FIXTURE_DIR);
         KotlinParser kotlinParser = KotlinParser.builder()
-                .languageLevel(KotlinParser.KotlinLanguageLevel.KOTLIN_2_2)
+                .languageLevel(KotlinParser.KotlinLanguageLevel.KOTLIN_2_4)
                 .logCompilationWarningsAndErrors(false)
                 .build();
         ExecutionContext ctx = new InMemoryExecutionContext(Throwable::printStackTrace);
@@ -239,7 +239,7 @@ class KotlinSourcePathMappingTest {
     void kotlinMultiClassFile_repoBranch_classMapsToSourceFile() throws IOException {
         File srcDirectory = new File(MULTI_CLASS_FIXTURE_DIR);
         KotlinParser kotlinParser = KotlinParser.builder()
-                .languageLevel(KotlinParser.KotlinLanguageLevel.KOTLIN_2_2)
+                .languageLevel(KotlinParser.KotlinLanguageLevel.KOTLIN_2_4)
                 .logCompilationWarningsAndErrors(false)
                 .build();
         ExecutionContext ctx = new InMemoryExecutionContext(Throwable::printStackTrace);
@@ -307,7 +307,7 @@ class KotlinSourcePathMappingTest {
     void kotlinCompanionObject_junitBranch_hasSourcePath() throws IOException {
         File srcDirectory = new File(MULTI_CLASS_FIXTURE_DIR);
         KotlinParser kotlinParser = KotlinParser.builder()
-                .languageLevel(KotlinParser.KotlinLanguageLevel.KOTLIN_2_2)
+                .languageLevel(KotlinParser.KotlinLanguageLevel.KOTLIN_2_4)
                 .logCompilationWarningsAndErrors(false)
                 .build();
         ExecutionContext ctx = new InMemoryExecutionContext(Throwable::printStackTrace);

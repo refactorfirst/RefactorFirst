@@ -464,6 +464,6 @@ class HtmlReportTest {
         when(dto.getClassToSourceFilePathMapping()).thenReturn(map);
 
         String nodeId3 = htmlReport.renderSafeNodeId(anon2, dto);
-        assertEquals("DeveloperWASDControl_anonymous", nodeId3);
+        assertEquals("DeveloperWASDControl_anonymous_302290128", nodeId3);
     }
 }

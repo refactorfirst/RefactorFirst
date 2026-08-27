@@ -16,10 +16,9 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <groupId>org.openrewrite.recipe</groupId>
-                <artifactId>rewrite-recipe-bom</artifactId>
-                <!-- Remove rewrite-kotlin version when upgrading rewrite-recipe-bom-->
-                <version>3.37.0</version>
+                <groupId>org.openrewrite</groupId>
+                <artifactId>rewrite-bom</artifactId>
+                <version>8.90.4</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>

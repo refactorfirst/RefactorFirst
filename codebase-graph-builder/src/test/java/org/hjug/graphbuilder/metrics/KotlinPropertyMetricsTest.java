@@ -32,7 +32,7 @@ class KotlinPropertyMetricsTest {
         File srcDirectory = new File("src/test/resources/kotlinPropertySrcDirectory");
 
         KotlinParser kotlinParser = KotlinParser.builder()
-                .languageLevel(KotlinParser.KotlinLanguageLevel.KOTLIN_2_2)
+                .languageLevel(KotlinParser.KotlinLanguageLevel.KOTLIN_2_4)
                 .logCompilationWarningsAndErrors(false)
                 .build();
         ExecutionContext ctx = new InMemoryExecutionContext(Throwable::printStackTrace);

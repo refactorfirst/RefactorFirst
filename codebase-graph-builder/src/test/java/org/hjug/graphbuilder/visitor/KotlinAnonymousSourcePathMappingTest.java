@@ -49,7 +49,7 @@ class KotlinAnonymousSourcePathMappingTest {
     void kotlinAnonymousObject_junitBranch_hasSourcePath() throws IOException {
         File srcDirectory = new File(FIXTURE_DIR);
         KotlinParser kotlinParser = KotlinParser.builder()
-                .languageLevel(KotlinParser.KotlinLanguageLevel.KOTLIN_2_2)
+                .languageLevel(KotlinParser.KotlinLanguageLevel.KOTLIN_2_4)
                 .logCompilationWarningsAndErrors(false)
                 .build();
         ExecutionContext ctx = new InMemoryExecutionContext(Throwable::printStackTrace);
@@ -114,7 +114,7 @@ class KotlinAnonymousSourcePathMappingTest {
     void kotlinLambda_junitBranch_hasSourcePath() throws IOException {
         File srcDirectory = new File(FIXTURE_DIR);
         KotlinParser kotlinParser = KotlinParser.builder()
-                .languageLevel(KotlinParser.KotlinLanguageLevel.KOTLIN_2_2)
+                .languageLevel(KotlinParser.KotlinLanguageLevel.KOTLIN_2_4)
                 .logCompilationWarningsAndErrors(false)
                 .build();
         ExecutionContext ctx = new InMemoryExecutionContext(Throwable::printStackTrace);
@@ -163,7 +163,7 @@ class KotlinAnonymousSourcePathMappingTest {
     void kotlinAnonymousObject_repoBranch_hasCanonicalisedPath() throws IOException {
         File srcDirectory = new File(FIXTURE_DIR);
         KotlinParser kotlinParser = KotlinParser.builder()
-                .languageLevel(KotlinParser.KotlinLanguageLevel.KOTLIN_2_2)
+                .languageLevel(KotlinParser.KotlinLanguageLevel.KOTLIN_2_4)
                 .logCompilationWarningsAndErrors(false)
                 .build();
         ExecutionContext ctx = new InMemoryExecutionContext(Throwable::printStackTrace);

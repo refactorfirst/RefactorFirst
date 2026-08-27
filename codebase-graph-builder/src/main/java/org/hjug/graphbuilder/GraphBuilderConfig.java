@@ -14,7 +14,7 @@ public class GraphBuilderConfig {
     String testSourceDirectory = "src/test";
 
     /**
-     * Kotlin language level string (e.g. {@code "KOTLIN_2_2"}). Translated to
+     * Kotlin language level string (e.g. {@code "KOTLIN_2_4"}). Translated to
      * {@code KotlinParser.KotlinLanguageLevel} inside
      * {@link graphbuilder.KotlinSourceFileGraphBuilder}. Kept as a
      * {@code String} so this config DTO does not carry a compile-time import

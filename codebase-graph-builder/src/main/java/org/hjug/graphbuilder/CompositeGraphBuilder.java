@@ -240,6 +240,10 @@ public class CompositeGraphBuilder {
                 if (canonicalFqn != null && !canonicalFqn.equals(fabricatedFqn)) {
                     contractVertex(classGraph, packageGraph, fabricatedFqn, canonicalFqn);
                 }
+            } else {
+                // ZERO MATCH: This is an external class (e.g., JavaFX) that was fabricated
+                // into the caller's package. Remove it entirely.
+                removeFabricatedExternalVertex(classGraph, packageGraph, fabricatedFqn);
             }
             // If multiple candidates and no package match, leave fabricated vertex untouched
             // (could be two real classes with same simple name in different packages)

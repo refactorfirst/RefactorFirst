@@ -57,16 +57,9 @@ public class MethodMetrics {
 
     private boolean isAccessor;
     private boolean isConstructor;
+
     @Setter(AccessLevel.NONE)
     private List<String> normalizedBodyLines = new ArrayList<>();
-
-    /**
-     * Post-finalize publish flag, set by {@link #freeze()} (invoked only by
-     * {@link GraphMetricsCollector#finalizeMetrics()} alongside the owning
-     * {@link ClassMetrics}). Once {@code true}, every setter/mutator rejects
-     * mutation.
-     */
-    private volatile boolean finalized;
 
     private void requireMutable() {
         if (finalized) {
@@ -118,7 +111,8 @@ public class MethodMetrics {
 
     public void setNormalizedBodyLines(List<String> normalizedBodyLines) {
         requireMutable();
-        this.normalizedBodyLines = normalizedBodyLines != null ? new ArrayList<>(normalizedBodyLines) : new ArrayList<>();
+        this.normalizedBodyLines =
+                normalizedBodyLines != null ? new ArrayList<>(normalizedBodyLines) : new ArrayList<>();
         this.normalizedBodyLinesView = null;
     }
 

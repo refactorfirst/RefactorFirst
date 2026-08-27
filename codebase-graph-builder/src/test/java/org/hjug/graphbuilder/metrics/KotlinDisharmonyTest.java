@@ -46,7 +46,7 @@ class KotlinDisharmonyTest {
         File srcDirectory = new File("src/test/resources/kotlinDisharmonySrcDirectory");
 
         KotlinParser kotlinParser = KotlinParser.builder()
-                .languageLevel(KotlinParser.KotlinLanguageLevel.KOTLIN_2_2)
+                .languageLevel(KotlinParser.KotlinLanguageLevel.KOTLIN_2_4)
                 .logCompilationWarningsAndErrors(false)
                 .build();
         ExecutionContext ctx = new InMemoryExecutionContext(Throwable::printStackTrace);
@@ -61,9 +61,7 @@ class KotlinDisharmonyTest {
 
         List<Path> list;
         try (Stream<Path> pathStream = Files.walk(Path.of(srcDirectory.getAbsolutePath()))) {
-            list = pathStream
-                    .filter(p -> p.toString().endsWith(".kt"))
-                    .collect(Collectors.toList());
+            list = pathStream.filter(p -> p.toString().endsWith(".kt")).collect(Collectors.toList());
         }
         kotlinParser
                 .parse(list, Path.of(srcDirectory.getAbsolutePath()), ctx)
