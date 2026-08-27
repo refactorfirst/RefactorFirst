@@ -23,6 +23,12 @@ public class MethodMetrics {
     @Setter(AccessLevel.NONE)
     private String signature;
 
+    @Setter(AccessLevel.NONE)
+    private boolean finalized;
+
+    @Setter(AccessLevel.NONE)
+    private int numberOfCallableReferences;
+
     private int linesOfCode;
     private int cyclomaticComplexity = 1;
     private int maxNestingDepth;
@@ -40,18 +46,18 @@ public class MethodMetrics {
     private Set<String> changingMethods = new HashSet<>();
     /** CC: distinct foreign classes whose methods call this method (Changing Classes — incoming coupling). */
     private Set<String> changingClasses = new HashSet<>();
-    /** Number of method/constructor references (`Klass::method`) this method body emits. */
-    private int numberOfCallableReferences;
     /**
      * FQNs of classes referenced by this method's type-parameter bounds
      * (Kotlin generic methods, Java generic methods). Populated by the
      * metrics visitor while walking {@link org.openrewrite.java.tree.J.TypeParameter}
      * bounds on the method declaration.
      */
+    @Setter(AccessLevel.NONE)
     private Set<String> typeParameterFqns = new HashSet<>();
 
     private boolean isAccessor;
     private boolean isConstructor;
+    @Setter(AccessLevel.NONE)
     private List<String> normalizedBodyLines = new ArrayList<>();
 
     /**
@@ -112,7 +118,18 @@ public class MethodMetrics {
 
     public void setNormalizedBodyLines(List<String> normalizedBodyLines) {
         requireMutable();
-        this.normalizedBodyLines = normalizedBodyLines;
+        this.normalizedBodyLines = normalizedBodyLines != null ? new ArrayList<>(normalizedBodyLines) : new ArrayList<>();
+        this.normalizedBodyLinesView = null;
+    }
+
+    public void setFinalized(boolean finalized) {
+        requireMutable();
+        this.finalized = finalized;
+    }
+
+    public void setNumberOfCallableReferences(int numberOfCallableReferences) {
+        requireMutable();
+        this.numberOfCallableReferences = numberOfCallableReferences;
     }
 
     // --- Guarded mutators --------------------------------------------------

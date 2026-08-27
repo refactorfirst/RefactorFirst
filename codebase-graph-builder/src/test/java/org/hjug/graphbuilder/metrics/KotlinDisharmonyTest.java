@@ -8,6 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.hjug.graphbuilder.metrics.DisharmonyDetector.ClassDisharmony;
 import org.jgrapht.graph.DefaultDirectedWeightedGraph;
 import org.jgrapht.graph.DefaultWeightedEdge;
@@ -58,9 +59,12 @@ class KotlinDisharmonyTest {
         GraphMetricsCollector metricsCollector = new GraphMetricsCollector(classGraph, packageGraph);
         KotlinMetricsCollectingVisitor metricsVisitor = new KotlinMetricsCollectingVisitor(metricsCollector);
 
-        List<Path> list = Files.walk(Path.of(srcDirectory.getAbsolutePath()))
-                .filter(p -> p.toString().endsWith(".kt"))
-                .collect(Collectors.toList());
+        List<Path> list;
+        try (Stream<Path> pathStream = Files.walk(Path.of(srcDirectory.getAbsolutePath()))) {
+            list = pathStream
+                    .filter(p -> p.toString().endsWith(".kt"))
+                    .collect(Collectors.toList());
+        }
         kotlinParser
                 .parse(list, Path.of(srcDirectory.getAbsolutePath()), ctx)
                 .forEach(cu -> metricsVisitor.visit(cu, ctx));

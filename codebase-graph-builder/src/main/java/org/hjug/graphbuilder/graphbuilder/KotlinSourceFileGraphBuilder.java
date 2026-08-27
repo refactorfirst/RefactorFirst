@@ -73,19 +73,16 @@ public class KotlinSourceFileGraphBuilder implements SourceFileGraphBuilder {
         KotlinMetricsCollectingVisitor metricsVisitor = new KotlinMetricsCollectingVisitor(metricsCollector);
 
         try (Stream<Path> pathStream = Files.walk(Path.of(srcDirectory.getAbsolutePath()))) {
-            List<Path> list;
-            if (config.isExcludeTests()) {
-                list = pathStream
-                        .filter(file -> !file.toString().contains(config.getTestSourceDirectory()))
-                        .filter(file -> file.toString().endsWith(".kt")
-                                || file.toString().endsWith(".kts"))
-                        .collect(Collectors.toList());
-            } else {
-                list = pathStream
-                        .filter(file -> file.toString().endsWith(".kt")
-                                || file.toString().endsWith(".kts"))
-                        .collect(Collectors.toList());
+            Stream<Path> filteredStream = pathStream
+                    .filter(file -> file.toString().endsWith(".kt")
+                            || file.toString().endsWith(".kts"));
+            if (config.isExcludeTests()
+                    && config.getTestSourceDirectory() != null
+                    && !config.getTestSourceDirectory().isEmpty()) {
+                filteredStream = filteredStream
+                        .filter(file -> !file.toString().contains(config.getTestSourceDirectory()));
             }
+            List<Path> list = filteredStream.collect(Collectors.toList());
 
             log.info("KotlinSourceFileGraphBuilder: walking {} Kotlin files under {}", list.size(), repositoryPath);
 

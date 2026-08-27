@@ -22,9 +22,6 @@ public class DependencyVisitorState {
     @Setter
     private String currentOwnerFqn;
 
-    /** Snapshot of previous owner FQN for nested class restoration. */
-    private String previousOwnerFqn;
-
     /** Map from class FQN to canonicalised source file path. */
     @Getter
     private final Map<String, String> classToSourceFilePathMapping = new HashMap<>();
@@ -61,20 +58,5 @@ public class DependencyVisitorState {
         this.repositoryPath = repositoryPath;
         this.repositoryRoot = repositoryRoot;
         this.typeProcessor = typeProcessor;
-    }
-
-    /**
-     * Saves the current owner FQN before entering a nested class.
-     * Must be paired with {@link #restoreOwnerFqn()}.
-     */
-    public void saveOwnerFqn() {
-        this.previousOwnerFqn = this.currentOwnerFqn;
-    }
-
-    /**
-     * Restores the owner FQN saved by the most recent {@link #saveOwnerFqn()}.
-     */
-    public void restoreOwnerFqn() {
-        this.currentOwnerFqn = this.previousOwnerFqn;
     }
 }

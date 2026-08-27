@@ -667,7 +667,10 @@ public class HtmlReport extends SimpleHtmlReport {
         if (isAnonymousFqn(vertex)) {
             String owner = enclosingSourceFileBaseName(vertex, codebaseGraphDTO);
             if (owner != null) {
-                return owner.replace("$", "_") + "_anonymous";
+                // Append hash of FQN to prevent collisions between anonymous classes
+                // from same-named files in different packages
+                String discriminator = String.valueOf(Math.abs(vertex.hashCode()));
+                return owner.replace("$", "_") + "_anonymous_" + discriminator;
             }
         }
         return renderSafeNodeId(vertex);

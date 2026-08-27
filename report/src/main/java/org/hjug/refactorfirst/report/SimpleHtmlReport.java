@@ -291,7 +291,7 @@ public class SimpleHtmlReport {
                         true,
                         "Method is called by many methods in many classes",
                         "- Move the method closer to the calling classes (move the behavior closer to the data) if it is small.<br>"
-                                + "- If it is a large method, treat is as a Brain Method and decompose it into two or more smaller methods."),
+                                + "- If it is a large method, treat it as a Brain Method and decompose it into two or more smaller methods."),
                 new DisharmonySpec(
                         DisharmonyTypes.EXCESSIVE_EXTENSIONS,
                         "EXCESSIVE_EXTENSIONS",
@@ -304,7 +304,7 @@ public class SimpleHtmlReport {
                         "LARGE_SEALED_HIERARCHY",
                         "Large Sealed Hierarchy",
                         false,
-                        "Sealed class has many permitted subtypes, making the hierarchy hard to maintain and exhaustive when expressions unwieldy.",
+                        "Sealed class has many permitted subtypes, making the hierarchy hard to maintain and exhaustive when expressions become unwieldy.",
                         "Re-evaluate the domain model. Consider grouping subtypes into intermediate sealed classes or using a different pattern."),
                 new DisharmonySpec(
                         DisharmonyTypes.DATA_CLASS_WITH_LOGIC,

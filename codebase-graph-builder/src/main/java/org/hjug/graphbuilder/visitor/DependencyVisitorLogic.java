@@ -52,9 +52,11 @@ public final class DependencyVisitorLogic {
      */
     public static class ClassSnapshot {
         final String previousOwnerFqn;
+        final String currentOwnerFqn;
 
-        ClassSnapshot(String previousOwnerFqn) {
+        ClassSnapshot(String previousOwnerFqn, String currentOwnerFqn) {
             this.previousOwnerFqn = previousOwnerFqn;
+            this.currentOwnerFqn = currentOwnerFqn;
         }
     }
 
@@ -91,7 +93,7 @@ public final class DependencyVisitorLogic {
         }
 
         String owningFqn = type.getFullyQualifiedName();
-        state.saveOwnerFqn();
+        String previousOwnerFqn = state.getCurrentOwnerFqn();
         state.setCurrentOwnerFqn(owningFqn);
 
         try {
@@ -137,10 +139,10 @@ public final class DependencyVisitorLogic {
                 }
             }
 
-            return new ClassSnapshot(state.getCurrentOwnerFqn());
+            return new ClassSnapshot(previousOwnerFqn, owningFqn);
         } catch (Exception e) {
             // If anything fails, restore owner and rethrow
-            state.restoreOwnerFqn();
+            state.setCurrentOwnerFqn(previousOwnerFqn);
             throw e;
         }
     }
@@ -152,7 +154,7 @@ public final class DependencyVisitorLogic {
         if (snapshot == null) {
             return;
         }
-        state.restoreOwnerFqn();
+        state.setCurrentOwnerFqn(snapshot.previousOwnerFqn);
     }
 
     // ===================== Method Declaration =====================

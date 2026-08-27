@@ -37,8 +37,6 @@ public class KotlinDependencyVisitor<P> extends KotlinIsoVisitor<P> {
 
     private final BaseTypeProcessor typeProcessor;
 
-    protected String currentOwnerFqn;
-
     private final DependencyVisitorState state;
 
     public KotlinDependencyVisitor(
@@ -143,59 +141,53 @@ public class KotlinDependencyVisitor<P> extends KotlinIsoVisitor<P> {
         }
 
         String owningFqn = type.getFullyQualifiedName();
-        String previousOwner = currentOwnerFqn;
-        currentOwnerFqn = owningFqn;
 
         state.setCursor(getCursor());
 
-        try {
-            K.ClassDeclaration result = super.visitClassDeclaration(classDeclaration, p);
+        K.ClassDeclaration result = super.visitClassDeclaration(classDeclaration, p);
 
-            // Get source path for this class
-            String sourcePath = null;
-            J.CompilationUnit enclosingCu = getCursor().firstEnclosing(J.CompilationUnit.class);
-            if (enclosingCu != null) {
-                sourcePath = enclosingCu.getSourcePath().toUri().toString();
-            } else {
-                K.CompilationUnit kcu = getCursor().firstEnclosing(K.CompilationUnit.class);
-                sourcePath = kcu != null ? kcu.getSourcePath().toUri().toString() : null;
-            }
-
-            // Record source location for both top-level and inner classes
-            if (sourcePath != null) {
-                log.debug("Kotlin Class FQN (from K.ClassDeclaration): {}, Source Path: {}", owningFqn, sourcePath);
-                dependencyCollector.registerClassVertex(owningFqn);
-                DependencyVisitorLogic.recordClassLocation(state, owningFqn, sourcePath);
-            }
-
-            // Delegate J-level class declaration processing to shared logic
-            // Note: Kotlin doesn't have record components in the same way
-            var snapshot = DependencyVisitorLogic.enterClassDeclaration(
-                    state,
-                    jcd,
-                    false, // processRecordComponents = false for Kotlin
-                    cursor -> {
-                        J.CompilationUnit jcu = cursor.firstEnclosing(J.CompilationUnit.class);
-                        if (jcu != null) {
-                            return jcu.getSourcePath().toUri().toString();
-                        }
-                        K.CompilationUnit kcu = cursor.firstEnclosing(K.CompilationUnit.class);
-                        return kcu != null ? kcu.getSourcePath().toUri().toString() : null;
-                    });
-
-            // Process Kotlin-specific: type constraints
-            if (classDeclaration.getTypeConstraints() != null) {
-                for (J.TypeParameter typeParameter :
-                        classDeclaration.getTypeConstraints().getConstraints()) {
-                    typeProcessor.processTypeParameter(owningFqn, typeParameter, getCursor());
-                }
-            }
-
-            DependencyVisitorLogic.leaveClassDeclaration(state, snapshot);
-            return result;
-        } finally {
-            currentOwnerFqn = previousOwner;
+        // Get source path for this class
+        String sourcePath = null;
+        J.CompilationUnit enclosingCu = getCursor().firstEnclosing(J.CompilationUnit.class);
+        if (enclosingCu != null) {
+            sourcePath = enclosingCu.getSourcePath().toUri().toString();
+        } else {
+            K.CompilationUnit kcu = getCursor().firstEnclosing(K.CompilationUnit.class);
+            sourcePath = kcu != null ? kcu.getSourcePath().toUri().toString() : null;
         }
+
+        // Record source location for both top-level and inner classes
+        if (sourcePath != null) {
+            log.debug("Kotlin Class FQN (from K.ClassDeclaration): {}, Source Path: {}", owningFqn, sourcePath);
+            dependencyCollector.registerClassVertex(owningFqn);
+            DependencyVisitorLogic.recordClassLocation(state, owningFqn, sourcePath);
+        }
+
+        // Delegate J-level class declaration processing to shared logic
+        // Note: Kotlin doesn't have record components in the same way
+        var snapshot = DependencyVisitorLogic.enterClassDeclaration(
+                state,
+                jcd,
+                false, // processRecordComponents = false for Kotlin
+                cursor -> {
+                    J.CompilationUnit jcu = cursor.firstEnclosing(J.CompilationUnit.class);
+                    if (jcu != null) {
+                        return jcu.getSourcePath().toUri().toString();
+                    }
+                    K.CompilationUnit kcu = cursor.firstEnclosing(K.CompilationUnit.class);
+                    return kcu != null ? kcu.getSourcePath().toUri().toString() : null;
+                });
+
+        // Process Kotlin-specific: type constraints
+        if (classDeclaration.getTypeConstraints() != null) {
+            for (J.TypeParameter typeParameter :
+                    classDeclaration.getTypeConstraints().getConstraints()) {
+                typeProcessor.processTypeParameter(owningFqn, typeParameter, getCursor());
+            }
+        }
+
+        DependencyVisitorLogic.leaveClassDeclaration(state, snapshot);
+        return result;
     }
 
     @Override
@@ -229,7 +221,7 @@ public class KotlinDependencyVisitor<P> extends KotlinIsoVisitor<P> {
     @Override
     public K.Property visitProperty(K.Property property, P p) {
         K.Property result = super.visitProperty(property, p);
-        if (currentOwnerFqn == null) {
+        if (state.getCurrentOwnerFqn() == null) {
             return result;
         }
 
@@ -249,16 +241,16 @@ public class KotlinDependencyVisitor<P> extends KotlinIsoVisitor<P> {
         }
 
         state.setCursor(getCursor());
-        typeProcessor.processType(currentOwnerFqn, javaType);
+        typeProcessor.processType(state.getCurrentOwnerFqn(), javaType);
 
         if (property.getTypeParameters() != null) {
             for (J.TypeParameter typeParameter : property.getTypeParameters()) {
-                typeProcessor.processTypeParameter(currentOwnerFqn, typeParameter, getCursor());
+                typeProcessor.processTypeParameter(state.getCurrentOwnerFqn(), typeParameter, getCursor());
             }
         }
 
         if (property.getReceiver() != null) {
-            typeProcessor.processType(currentOwnerFqn, property.getReceiver().getType());
+            typeProcessor.processType(state.getCurrentOwnerFqn(), property.getReceiver().getType());
         }
 
         return result;
@@ -267,20 +259,20 @@ public class KotlinDependencyVisitor<P> extends KotlinIsoVisitor<P> {
     @Override
     public K.TypeAlias visitTypeAlias(K.TypeAlias typeAlias, P p) {
         K.TypeAlias result = super.visitTypeAlias(typeAlias, p);
-        if (currentOwnerFqn == null) {
+        if (state.getCurrentOwnerFqn() == null) {
             return result;
         }
 
         if (typeAlias.getTypeParameters() != null) {
             for (J.TypeParameter typeParameter : typeAlias.getTypeParameters()) {
-                typeProcessor.processTypeParameter(currentOwnerFqn, typeParameter, getCursor());
+                typeProcessor.processTypeParameter(state.getCurrentOwnerFqn(), typeParameter, getCursor());
             }
         }
 
         if (typeAlias.getPadding().getInitializer() != null) {
             Expression init = typeAlias.getPadding().getInitializer().getElement();
             if (init != null) {
-                typeProcessor.processType(currentOwnerFqn, init.getType());
+                typeProcessor.processType(state.getCurrentOwnerFqn(), init.getType());
             }
         }
 

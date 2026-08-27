@@ -138,13 +138,13 @@ public class KotlinMetricsCollectingVisitor extends KotlinIsoVisitor<ExecutionCo
      */
     @Override
     public K.MethodDeclaration visitMethodDeclaration(K.MethodDeclaration methodDeclaration, ExecutionContext ctx) {
-        K.MethodDeclaration result = super.visitMethodDeclaration(methodDeclaration, ctx);
         if (state.currentMethodMetrics != null && methodDeclaration.getTypeConstraints() != null) {
             MetricsVisitorLogic.collectTypeParameterFqns(
                     methodDeclaration.getTypeConstraints().getConstraints(),
                     state.currentMethodMetrics,
                     state.currentClassMetrics);
         }
+        K.MethodDeclaration result = super.visitMethodDeclaration(methodDeclaration, ctx);
         return result;
     }
 
@@ -259,10 +259,11 @@ public class KotlinMetricsCollectingVisitor extends KotlinIsoVisitor<ExecutionCo
     }
 
     /**
-     * Kotlin recognises Java's {@code @Override} as well as {@code @JvmOverride}
-     * (which interoperates with Java callers).
+     * Recognises Java's {@code @Override} annotation.
+     * Kotlin's {@code override} modifier is handled separately via
+     * {@link #hasKotlinOverrideModifier(org.openrewrite.java.tree.J.MethodDeclaration)}.
      */
     protected boolean isOverrideAnnotation(String simpleName) {
-        return "Override".equals(simpleName) || "JvmOverride".equals(simpleName);
+        return "Override".equals(simpleName);
     }
 }

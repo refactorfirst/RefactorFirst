@@ -364,6 +364,9 @@
                     </activeRecipes>
                     <exclusions>
                         <exclusion>**/testclasses/**</exclusion>
+                        <exclusion>**/kotlinSrcDirectory/**</exclusion>
+                        <exclusion>**/kotlinTestSrcDirectory/**</exclusion>
+                        <exclusion>**/mixedSrcDirectory/**</exclusion>
                     </exclusions>
                 </configuration>
                 <dependencies>

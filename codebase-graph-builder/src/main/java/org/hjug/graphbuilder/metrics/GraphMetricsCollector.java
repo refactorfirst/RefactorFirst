@@ -289,29 +289,29 @@ public class GraphMetricsCollector implements DependencyCollector {
     }
 
     private int computeSealedDepth(ClassMetrics metrics) {
-        if (metrics.isSealed()) {
-            return 1;
-        }
         Set<String> ancestors = metrics.getSealedHierarchyAncestors();
         if (ancestors.isEmpty()) {
-            return 0;
+            // No sealed hierarchy ancestors: depth 1 if sealed, 0 otherwise
+            return metrics.isSealed() ? 1 : 0;
         }
-        // Find first ancestor that is itself sealed; derive depth as
-        // ancestor_depth + 1 (recursing through indirection).
+        // Has sealed hierarchy ancestors: traverse them first
         int maxAncestorDepth = 0;
+        boolean hasObservableAncestor = false;
         for (String ancestorFqn : ancestors) {
             ClassMetrics ancestor = classMetrics.get(ancestorFqn);
             if (ancestor == null) {
-                // Ancestor not in this codebase batch (third-party): treat sealed
-                // hierarchy membership as depth 2 when at least one ancestor is
-                // observable as sealed (records the relationship).
+                // Ancestor not in this codebase batch (third-party): preserve
+                // minimum depth of 2 to record the relationship
                 continue;
             }
-            if (ancestor.isSealed()) {
-                maxAncestorDepth = Math.max(maxAncestorDepth, computeSealedDepth(ancestor) + 1);
-            }
+            hasObservableAncestor = true;
+            maxAncestorDepth = Math.max(maxAncestorDepth, computeSealedDepth(ancestor));
         }
-        return maxAncestorDepth;
+        if (!hasObservableAncestor) {
+            // All ancestors are external; preserve depth 2 to record relationship
+            return 2;
+        }
+        return maxAncestorDepth + 1;
     }
 
     /**

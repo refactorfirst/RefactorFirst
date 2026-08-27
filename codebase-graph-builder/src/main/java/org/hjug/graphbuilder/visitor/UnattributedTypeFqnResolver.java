@@ -1,9 +1,9 @@
 package org.hjug.graphbuilder.visitor;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.openrewrite.Cursor;
+import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.TypeTree;
@@ -111,37 +111,17 @@ final class UnattributedTypeFqnResolver {
      * Returns the FQN of the first type argument that matches an import.
      */
     private static String resolveParameterizedType(J.ParameterizedType pt, String owningPackageName, Cursor cursor) {
-        TypeTree[] typeArguments = null;
-        try {
-            Method m = pt.getClass().getMethod("getTypeArguments");
-            Object result = m.invoke(pt);
-            if (result instanceof TypeTree[]) {
-                typeArguments = (TypeTree[]) result;
-            } else if (result instanceof List) {
-                @SuppressWarnings("unchecked")
-                List<TypeTree> list = (List<TypeTree>) result;
-                typeArguments = list.toArray(new TypeTree[0]);
-            }
-        } catch (Exception e) {
-            // Ignore and try field access
+        List<Expression> typeParams = pt.getTypeParameters();
+        if (typeParams == null || typeParams.isEmpty()) {
+            return null;
         }
-        if (typeArguments == null) {
-            try {
-                Field f = pt.getClass().getDeclaredField("typeArguments");
-                f.setAccessible(true);
-                Object result = f.get(pt);
-                if (result instanceof TypeTree[]) {
-                    typeArguments = (TypeTree[]) result;
-                } else if (result instanceof List) {
-                    @SuppressWarnings("unchecked")
-                    List<TypeTree> list = (List<TypeTree>) result;
-                    typeArguments = list.toArray(new TypeTree[0]);
-                }
-            } catch (Exception e) {
-                // Ignore
-            }
-        }
-        if (typeArguments == null || typeArguments.length == 0) {
+
+        List<TypeTree> typeArguments = typeParams.stream()
+                .filter(TypeTree.class::isInstance)
+                .map(TypeTree.class::cast)
+                .collect(Collectors.toList());
+
+        if (typeArguments.isEmpty()) {
             return null;
         }
 
