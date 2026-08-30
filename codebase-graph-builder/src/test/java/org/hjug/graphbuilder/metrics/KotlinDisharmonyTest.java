@@ -86,13 +86,13 @@ class KotlinDisharmonyTest {
 
         boolean foundHost = flagged.stream()
                 .anyMatch(d -> "com.ideacrest.parser.kotlin.disharmony.ExtensionHost".equals(d.getClassName()));
-        // Sanity: theExtensionHost's metric set is what we expect
+        // Sanity: theExtensionHost metric set is what we expect
         ClassMetrics hostMetrics = collector.getClassMetrics("com.ideacrest.parser.kotlin.disharmony.ExtensionHost");
+        assertNotNull(hostMetrics);
         System.out.println("ExtensionHost raw metrics:");
         System.out.println("  numberOfExtensionFunctions: " + hostMetrics.getNumberOfExtensionFunctions());
         System.out.println("  extensionReceiverTypes: " + hostMetrics.getExtensionReceiverTypes());
         assertTrue(foundHost, "ExtensionHost should be flagged as Excessive Extensions");
-        assertNotNull(hostMetrics);
         assertTrue(
                 hostMetrics.getNumberOfExtensionFunctions() >= 10,
                 "expected ≥10 extension functions, was: " + hostMetrics.getNumberOfExtensionFunctions());

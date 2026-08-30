@@ -13,7 +13,7 @@
 - 11-module Maven build with data flowing left-to-right through the pipeline
 - Central DTO: `CodebaseGraphDTO` (JGraphT graphs + disharmony lists + metrics)
 - CLI entry point: `org.hjug.refactorfirst.Main` → `ReportCommand`
-- Fat jar location: `cli/target/refactor-first-cli-*.jar`
+- Fat jar location: `cli/target/cli-<version>.jar`
 - **Anonymous/synthetic classes are first-class graph members.** Java `Outer$N`/`Outer$` (anonymous/synthetic inner classes) and the Kotlin literal `"<anonymous>"` FQN are **not** sieved out by `GraphDependencyCollector`; they genuinely participate in cycles and can harbour antipatterns, so they are vertices in the class graph and rendered with `$` as the enclosing-class separator. `GraphDependencyCollector` keeps only the `from == to` self-edge guard, plus a degenerate-package guard so a packageless `"<anonymous>"` source never creates an `""` package-graph vertex. **Sink-only** anonymous/synthetic vertices (those with no outgoing edges) are suppressed only at render time in `HtmlReport.isSinkAnonymousOrSyntheticVertex` to keep the Class/Cycle Map DOT graph readable; active ones still render.
 - **Anonymous DOT node ids are source-file derived.** OpenRewrite attributes a Kotlin anonymous object / function-literal type with {@code "<anonymous>"} as the trailing simple-name segment of its FQN: standalone ({@code "<anonymous>"}) or, in real graphs (e.g. FXGL), prefixed by the enclosing class/package ({@code "dev.DeveloperWASDControl.<anonymous>"}). {@code HtmlReport.isAnonymousFqn(vertex)} detects a vertex when its trailing segment starts with {@code <}. {@code HtmlReport.renderSafeNodeId(vertex, codebaseGraphDTO)} then derives the enclosing owner from the vertex's mapped source-file path in {@code CodebaseGraphDTO.classToSourceFilePathMapping} (file base name without extension, e.g. {@code DeveloperWASDControl.kt} -> {@code DeveloperWASDControl}). The DOT node id renders as {@code DeveloperWASDControl_anonymous} and the human-readable label as {@code DeveloperWASDControl\$anonymous} ({@code $} escaped as {@code \$} for DOT). When no source path is mapped (or DTO is null) it degrades to the reversible {@code lt_}/{@code _gt} {@code <}/{@code >} encoding. The renderer is responsible for DOT/HTML-safe encoding of the literal {@code "<anonymous>"} FQN ({@code <}/{@code >} are illegal in Graphviz node ids; {@code <}/{@code >} escaping in HTML table labels).
 
@@ -21,7 +21,7 @@
 
 `rewrite-kotlin` (`org.openrewrite:rewrite-kotlin`) is a **non-optional
 compile dependency** of the `codebase-graph-builder` module, pulled in via that
-module's `rewrite-recipe-bom` import (`rewrite-recipe-bom:3.36.0`). The Kotlin
+module's `rewrite-bom` import (`rewrite-bom:8.90.4`). The Kotlin
 parser is therefore always on the classpath of any consumer of
 `codebase-graph-builder`; there is no opt-in and no reflective "is Kotlin
 present?" guard. (An earlier, never-merged iteration made it `<optional>` with a
@@ -69,7 +69,7 @@ is for build failures, not for "Kotlin is absent".
 
 ## Maven Plugin Usage
 Generate reports directly:
-`mvn org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.8.0:htmlReport`
+`mvn org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.9.0:htmlReport`
 
 Configuration options (most important):
 - `showDetails`: Shows God Class metrics in table (default: false)

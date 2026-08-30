@@ -440,6 +440,38 @@ class HtmlReportTest {
     }
 
     /**
+     * Test that hyperlinkClassForDot handles null CodebaseGraphDTO gracefully,
+     * returning empty string instead of throwing NullPointerException.
+     * This matches the null-handling behavior of enclosingSourceFileBaseName.
+     */
+    @Test
+    void hyperlinkClassForDot_nullDto_returnsEmptyString() {
+        HtmlReport htmlReport = new HtmlReport();
+        String repoUrl = "https://github.com/example/repo/blob/";
+
+        String result = htmlReport.hyperlinkClassForDot("com.example.Test", repoUrl, null);
+
+        assertEquals("", result, "null DTO must return empty string");
+    }
+
+    /**
+     * Test that hyperlinkClassForDot handles null classToSourceFilePathMapping gracefully,
+     * returning empty string instead of throwing NullPointerException.
+     * This matches the null-handling behavior of enclosingSourceFileBaseName.
+     */
+    @Test
+    void hyperlinkClassForDot_nullMapping_returnsEmptyString() {
+        HtmlReport htmlReport = new HtmlReport();
+        CodebaseGraphDTO dto = mock(CodebaseGraphDTO.class);
+        when(dto.getClassToSourceFilePathMapping()).thenReturn(null);
+        String repoUrl = "https://github.com/example/repo/blob/";
+
+        String result = htmlReport.hyperlinkClassForDot("com.example.Test", repoUrl, dto);
+
+        assertEquals("", result, "null mapping must return empty string");
+    }
+
+    /**
      * Test that renderSafeNodeId still handles Kotlin anonymous classes correctly
      * (source-aware when DTO provided, lt_anonymous_gt fallback when not).
      */

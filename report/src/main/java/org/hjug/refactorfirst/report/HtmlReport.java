@@ -621,6 +621,9 @@ public class HtmlReport extends SimpleHtmlReport {
     }
 
     String hyperlinkClassForDot(String fqClassName, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
+        if (codebaseGraphDTO == null || codebaseGraphDTO.getClassToSourceFilePathMapping() == null) {
+            return "";
+        }
         String path = codebaseGraphDTO.getClassToSourceFilePathMapping().get(fqClassName);
         if (path == null || path.isBlank()) {
             return "";

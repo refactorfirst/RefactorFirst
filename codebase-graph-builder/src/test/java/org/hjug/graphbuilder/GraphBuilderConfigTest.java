@@ -117,11 +117,12 @@ class GraphBuilderConfigTest {
         String sourcePath = dto.getClassToSourceFilePathMapping().get("com.example.MyClass");
         assertNotNull(sourcePath);
 
-        // Should be relative to sourceRoot (no module-a prefix)
-        String normalized = sourcePath.replace('/', java.io.File.separatorChar);
-        assertTrue(
-                normalized.contains("com" + java.io.File.separatorChar + "example"),
-                "Source path should be relative to source root when repositoryRoot is empty: " + sourcePath);
+        // Should be relative to sourceRoot: exactly com/example/MyClass.java
+        String normalized = sourcePath.replace(java.io.File.separatorChar, '/');
+        assertEquals(
+                "com/example/MyClass.java",
+                normalized,
+                "Source path should be relative to source root when repositoryRoot is empty");
     }
 
     @DisplayName("repositoryRoot equal to sourceRoot preserves single-module behavior")
@@ -151,9 +152,10 @@ class GraphBuilderConfigTest {
         assertNotNull(sourcePath);
 
         // Should be just the package path + filename
-        String normalized = sourcePath.replace('/', java.io.File.separatorChar);
-        assertTrue(
-                normalized.contains("com" + java.io.File.separatorChar + "example"),
-                "Source path should be relative to repository root (which equals source root): " + sourcePath);
+        String normalized = sourcePath.replace(java.io.File.separatorChar, '/');
+        assertEquals(
+                "com/example/MyClass.java",
+                normalized,
+                "Source path should be relative to repository root (which equals source root)");
     }
 }

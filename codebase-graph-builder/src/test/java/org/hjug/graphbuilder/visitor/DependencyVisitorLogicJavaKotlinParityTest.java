@@ -206,14 +206,41 @@ class DependencyVisitorLogicJavaKotlinParityTest {
         assertFalse(javaVertices.isEmpty(), "Java graph should have project vertices");
         assertFalse(kotlinVertices.isEmpty(), "Kotlin graph should have project vertices");
 
-        // Check that edges between project vertices have same weights
-        // (This is a minimal sanity check - full parity requires equivalent fixtures)
-        for (String v : javaVertices) {
-            for (String t : javaVertices) {
-                DefaultWeightedEdge javaEdge = javaGraph.getEdge(v, t);
+        // Normalize vertex names by stripping package prefix
+        var javaNormalized = javaVertices.stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        v -> v.substring(javaPkgPrefix.length()), v -> v, (a, b) -> a));
+        var kotlinNormalized = kotlinVertices.stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        v -> v.substring(kotlinPkgPrefix.length()), v -> v, (a, b) -> a));
+
+        // Compare edge pairs and weights
+        for (var entry : javaNormalized.entrySet()) {
+            String normV = entry.getKey();
+            String javaV = entry.getValue();
+
+            for (String normT : javaNormalized.keySet()) {
+                String javaT = javaNormalized.get(normT);
+                DefaultWeightedEdge javaEdge = javaGraph.getEdge(javaV, javaT);
                 if (javaEdge != null) {
-                    // Just verify the edge exists and has positive weight
-                    assertTrue(javaGraph.getEdgeWeight(javaEdge) > 0, "Java edge weight should be positive");
+                    double javaWeight = javaGraph.getEdgeWeight(javaEdge);
+
+                    // Find corresponding Kotlin vertices
+                    String kotlinV = kotlinNormalized.get(normV);
+                    String kotlinT = kotlinNormalized.get(normT);
+
+                    assertNotNull(kotlinV, "Kotlin vertex missing for normalized: " + normV);
+                    assertNotNull(kotlinT, "Kotlin vertex missing for normalized: " + normT);
+
+                    DefaultWeightedEdge kotlinEdge = kotlinGraph.getEdge(kotlinV, kotlinT);
+                    assertNotNull(kotlinEdge, "Kotlin edge missing for: " + normV + " -> " + normT);
+
+                    double kotlinWeight = kotlinGraph.getEdgeWeight(kotlinEdge);
+                    assertEquals(
+                            javaWeight,
+                            kotlinWeight,
+                            "Edge weight mismatch for " + normV + " -> " + normT + ": Java=" + javaWeight + " Kotlin="
+                                    + kotlinWeight);
                 }
             }
         }

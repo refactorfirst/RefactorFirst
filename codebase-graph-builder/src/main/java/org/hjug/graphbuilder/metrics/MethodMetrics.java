@@ -34,17 +34,23 @@ public class MethodMetrics {
     private int maxNestingDepth;
     private int numberOfParameters;
     /** CINT: distinct foreign methods called by this method (method invocations, not field accesses). */
+    @Setter(AccessLevel.NONE)
     private Set<String> accessedVariables = new HashSet<>();
 
     private Set<String> accessedForeignClasses = new HashSet<>();
     private Set<String> accessedForeignAttributes = new HashSet<>();
     private Set<String> accessedOwnAttributes = new HashSet<>();
+
+    @Setter(AccessLevel.NONE)
     private Set<String> calledForeignMethods = new HashSet<>();
     /** Distinct classes that own the foreign methods called by this method (for CDISP numerator). */
+    @Setter(AccessLevel.NONE)
     private Set<String> calledForeignMethodClasses = new HashSet<>();
     /** CM: distinct foreign methods that call this method (Changing Methods — incoming coupling). */
+    @Setter(AccessLevel.NONE)
     private Set<String> changingMethods = new HashSet<>();
     /** CC: distinct foreign classes whose methods call this method (Changing Classes — incoming coupling). */
+    @Setter(AccessLevel.NONE)
     private Set<String> changingClasses = new HashSet<>();
     /**
      * FQNs of classes referenced by this method's type-parameter bounds
@@ -55,7 +61,10 @@ public class MethodMetrics {
     @Setter(AccessLevel.NONE)
     private Set<String> typeParameterFqns = new HashSet<>();
 
+    @Setter(AccessLevel.NONE)
     private boolean isAccessor;
+
+    @Setter(AccessLevel.NONE)
     private boolean isConstructor;
 
     @Setter(AccessLevel.NONE)
@@ -194,6 +203,7 @@ public class MethodMetrics {
 
     // --- Collection getters: lazy-cached unmodifiable views ----------------
 
+    @Setter(AccessLevel.NONE)
     private Set<String> accessedVariablesView;
 
     public Set<String> getAccessedVariables() {
@@ -205,6 +215,7 @@ public class MethodMetrics {
         return v;
     }
 
+    @Setter(AccessLevel.NONE)
     private Set<String> accessedForeignClassesView;
 
     public Set<String> getAccessedForeignClasses() {
@@ -216,6 +227,7 @@ public class MethodMetrics {
         return v;
     }
 
+    @Setter(AccessLevel.NONE)
     private Set<String> accessedForeignAttributesView;
 
     public Set<String> getAccessedForeignAttributes() {
@@ -227,6 +239,7 @@ public class MethodMetrics {
         return v;
     }
 
+    @Setter(AccessLevel.NONE)
     private Set<String> accessedOwnAttributesView;
 
     public Set<String> getAccessedOwnAttributes() {
@@ -238,6 +251,7 @@ public class MethodMetrics {
         return v;
     }
 
+    @Setter(AccessLevel.NONE)
     private Set<String> calledForeignMethodsView;
 
     public Set<String> getCalledForeignMethods() {
@@ -249,6 +263,7 @@ public class MethodMetrics {
         return v;
     }
 
+    @Setter(AccessLevel.NONE)
     private Set<String> calledForeignMethodClassesView;
 
     public Set<String> getCalledForeignMethodClasses() {
@@ -260,6 +275,7 @@ public class MethodMetrics {
         return v;
     }
 
+    @Setter(AccessLevel.NONE)
     private Set<String> changingMethodsView;
 
     public Set<String> getChangingMethods() {
@@ -271,6 +287,7 @@ public class MethodMetrics {
         return v;
     }
 
+    @Setter(AccessLevel.NONE)
     private Set<String> changingClassesView;
 
     public Set<String> getChangingClasses() {
@@ -282,6 +299,7 @@ public class MethodMetrics {
         return v;
     }
 
+    @Setter(AccessLevel.NONE)
     private Set<String> typeParameterFqnsView;
 
     public Set<String> getTypeParameterFqns() {
@@ -293,6 +311,7 @@ public class MethodMetrics {
         return v;
     }
 
+    @Setter(AccessLevel.NONE)
     private List<String> normalizedBodyLinesView;
 
     public List<String> getNormalizedBodyLines() {

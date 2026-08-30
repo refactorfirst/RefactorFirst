@@ -12,6 +12,7 @@ import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultWeightedEdge;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 /**
  * Tests for {@link KotlinSourceFileGraphBuilder} focusing on handling of partial parse trees
@@ -19,15 +20,12 @@ import org.junit.jupiter.api.Test;
  */
 class KotlinSourceFileGraphBuilderPartialParseTest {
 
+    @TempDir
+    Path tempDir;
+
     @DisplayName("Kotlin file with license header parse error still registers classes from partial parse tree")
     @Test
     void kotlinFileWithLicenseHeaderParseError_registersClassesFromPartialTree() throws IOException {
-        // Create a temporary directory with a Kotlin file that has a license header
-        // The license header causes OpenRewrite's Kotlin parser to produce a ParseError,
-        // but the erroneous source file should still contain a partial parse tree
-        // with the class declarations that we can visit.
-        Path tempDir = Files.createTempDirectory("kotlin-parse-test");
-        tempDir.toFile().deleteOnExit();
 
         // Create a Kotlin file with a license header that causes ParseError
         String kotlinContent =
@@ -89,8 +87,6 @@ class KotlinSourceFileGraphBuilderPartialParseTest {
     @DisplayName("Kotlin file without parse error still works normally")
     @Test
     void kotlinFileWithoutParseError_worksNormally() throws IOException {
-        Path tempDir = Files.createTempDirectory("kotlin-normal-test");
-        tempDir.toFile().deleteOnExit();
 
         // Create a Kotlin file WITHOUT a license header (should parse cleanly)
         String kotlinContent =
@@ -118,10 +114,6 @@ class KotlinSourceFileGraphBuilderPartialParseTest {
     @DisplayName("ParseError without partial tree is handled gracefully")
     @Test
     void parseErrorWithoutPartialTree_handledGracefully() throws IOException {
-        // This test verifies that if a ParseError occurs but there's no partial tree
-        // (erroneous is not a CompilationUnit), the builder doesn't crash
-        Path tempDir = Files.createTempDirectory("kotlin-parse-error-test");
-        tempDir.toFile().deleteOnExit();
 
         // Create a file that will cause a ParseError but might not have a recoverable partial tree
         // Using an incomplete/invalid Kotlin file
@@ -153,8 +145,6 @@ class KotlinSourceFileGraphBuilderPartialParseTest {
     @DisplayName("Multiple classes in file with ParseError are all registered")
     @Test
     void multipleClassesInFileWithParseError_allRegistered() throws IOException {
-        Path tempDir = Files.createTempDirectory("kotlin-multi-class-test");
-        tempDir.toFile().deleteOnExit();
 
         String kotlinContent =
                 """

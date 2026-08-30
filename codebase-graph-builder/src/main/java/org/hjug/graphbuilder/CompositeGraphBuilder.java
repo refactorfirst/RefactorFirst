@@ -306,6 +306,10 @@ public class CompositeGraphBuilder {
             double weight = classGraph.getEdgeWeight(edge);
             classGraph.removeEdge(edge);
 
+            if (source.equals(canonicalFqn)) {
+                // Contraction would create a self-loop; drop the edge.
+                continue;
+            }
             if (!classGraph.containsEdge(source, canonicalFqn)) {
                 DefaultWeightedEdge newEdge = classGraph.addEdge(source, canonicalFqn);
                 classGraph.setEdgeWeight(newEdge, weight);
@@ -324,6 +328,10 @@ public class CompositeGraphBuilder {
             double weight = classGraph.getEdgeWeight(edge);
             classGraph.removeEdge(edge);
 
+            if (target.equals(canonicalFqn)) {
+                // Contraction would create a self-loop; drop the edge.
+                continue;
+            }
             if (!classGraph.containsEdge(canonicalFqn, target)) {
                 DefaultWeightedEdge newEdge = classGraph.addEdge(canonicalFqn, target);
                 classGraph.setEdgeWeight(newEdge, weight);

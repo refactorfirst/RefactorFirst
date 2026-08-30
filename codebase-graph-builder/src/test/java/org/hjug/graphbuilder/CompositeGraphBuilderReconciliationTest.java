@@ -238,74 +238,155 @@ class CompositeGraphBuilderReconciliationTest {
     }
 
     /**
-     * Tests that the package-aware matching logic correctly prefers a candidate
-     * whose package matches the fabricated vertex's package when multiple
-     * candidates share the same simple name.
+     * Tests that contractVertex guards against self-loops when the source of
+     * an incoming edge to the fabricated vertex is the canonical vertex itself.
      * <p>
-     * This is a synthetic test that directly exercises the package-aware branch
-     * of the reconciliation logic. The fabricated vertex has the exact same
-     * simple name as the candidates but resides in a package that matches
-     * one candidate's package.
+     * Scenario: A Kotlin class {@code b.Bar} references the fabricated vertex
+     * {@code a.Bar} (created by Java parser for the Kotlin class). Reconciliation
+     * maps {@code a.Bar} to {@code b.Bar}. If there's an edge {@code b.Bar ->
+     * a.Bar}, contracting would create {@code b.Bar -> b.Bar} self-loop.
+     * </p>
      */
     @Test
-    void reconcileUnattributedVertices_packageAwareMatch_prefersPackageMatch() {
-        // Setup: two real classes with same simple name "Target" in different packages
-        // Fabricated vertex has simple name "Target" and is in package com.pkg1
-        // (matching the first candidate's package)
+    void reconcileUnattributedVertices_incomingEdgeFromCanonical_guardsAgainstSelfLoop() {
+        // Build a class graph with:
+        // - Canonical Kotlin class: b.Bar (has source mapping)
+        // - Fabricated Java reference: a.Bar (no source mapping)
+        // - Caller: b.Bar -> fabricated a.Bar (weight 3)
         Graph<String, DefaultWeightedEdge> classGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-        classGraph.addVertex("com.pkg1.Target"); // canonical 1 - in sourcePathMapping
-        classGraph.addVertex("com.pkg2.Target"); // canonical 2 - in sourcePathMapping
-        classGraph.addVertex("com.pkg1.Target"); // fabricated - SAME FQN as canonical 1 but NOT in sourcePathMapping
-        classGraph.addVertex("com.pkg1.Caller");
-        classGraph.addVertex("com.pkg2.OtherCaller");
+        classGraph.addVertex("b.Bar"); // canonical
+        classGraph.addVertex("a.Bar"); // fabricated
+        classGraph.addVertex("b.Bar"); // same as canonical, but we add edge from canonical to fabricated
 
-        // This test demonstrates the logic but has a fundamental issue:
-        // If com.pkg1.Target is in sourcePathMapping, it won't be in verticesToCheck.
-        // The package-aware logic only triggers when the fabricated vertex has the
-        // EXACT same simple name as multiple candidates, but its FQN is NOT in
-        // sourcePathMapping (while the candidates ARE).
-        //
-        // In practice, this occurs when a cross-language reference creates a vertex
-        // that matches a real class's simple name but in a package that doesn't have
-        // that class in the source mapping (e.g., Kotlin class not attributed by Java parser).
-        //
-        // The test below verifies the package-aware logic by directly testing the
-        // condition: multiple candidates exist, and we select the one whose package
-        // matches the fabricated vertex's package.
+        DefaultWeightedEdge e1 = classGraph.addEdge("b.Bar", "a.Bar");
+        classGraph.setEdgeWeight(e1, 3);
 
-        // Since the real scenario is complex, we verify the logic works by checking
-        // that when NO package match exists, the vertex remains (ambiguous case).
-        classGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-        classGraph.addVertex("com.pkg1.Target"); // canonical 1
-        classGraph.addVertex("com.pkg2.Target"); // canonical 2
-        classGraph.addVertex("com.caller.Target"); // fabricated - simple name "Target", package "com.caller"
-        classGraph.addVertex("com.caller.Caller");
-        classGraph.addVertex("com.pkg2.OtherCaller");
+        Graph<String, DefaultWeightedEdge> packageGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        packageGraph.addVertex("a");
+        packageGraph.addVertex("b");
 
-        DefaultWeightedEdge e1 = classGraph.addEdge("com.caller.Caller", "com.caller.Target");
+        Map<String, String> sourcePathMapping = new HashMap<>();
+        sourcePathMapping.put("b.Bar", "/src/main/kotlin/b/Bar.kt");
+
+        CompositeGraphBuilder.reconcileUnattributedVertices(classGraph, packageGraph, sourcePathMapping);
+
+        // Fabricated vertex should be removed
+        assertFalse(classGraph.containsVertex("a.Bar"), "Fabricated vertex should be removed");
+
+        // Canonical vertex should exist
+        assertTrue(classGraph.containsVertex("b.Bar"), "Canonical vertex should remain");
+
+        // NO self-loop should exist on canonical vertex
+        assertFalse(
+                classGraph.containsEdge("b.Bar", "b.Bar"),
+                "Self-loop should NOT be created when incoming edge source equals canonical vertex");
+    }
+
+    /**
+     * Tests that contractVertex guards against self-loops when the target of
+     * an outgoing edge from the fabricated vertex is the canonical vertex itself.
+     * <p>
+     * Scenario: The fabricated vertex {@code a.Bar} has an edge to the canonical
+     * vertex {@code b.Bar}. Contracting would create {@code b.Bar -> b.Bar} self-loop.
+     * </p>
+     */
+    @Test
+    void reconcileUnattributedVertices_outgoingEdgeToCanonical_guardsAgainstSelfLoop() {
+        Graph<String, DefaultWeightedEdge> classGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        classGraph.addVertex("b.Bar"); // canonical
+        classGraph.addVertex("a.Bar"); // fabricated
+
+        DefaultWeightedEdge e1 = classGraph.addEdge("a.Bar", "b.Bar");
+        classGraph.setEdgeWeight(e1, 3);
+
+        Graph<String, DefaultWeightedEdge> packageGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        packageGraph.addVertex("a");
+        packageGraph.addVertex("b");
+
+        Map<String, String> sourcePathMapping = new HashMap<>();
+        sourcePathMapping.put("b.Bar", "/src/main/kotlin/b/Bar.kt");
+
+        CompositeGraphBuilder.reconcileUnattributedVertices(classGraph, packageGraph, sourcePathMapping);
+
+        // Fabricated vertex should be removed
+        assertFalse(classGraph.containsVertex("a.Bar"), "Fabricated vertex should be removed");
+
+        // Canonical vertex should exist
+        assertTrue(classGraph.containsVertex("b.Bar"), "Canonical vertex should remain");
+
+        // NO self-loop should exist on canonical vertex
+        assertFalse(
+                classGraph.containsEdge("b.Bar", "b.Bar"),
+                "Self-loop should NOT be created when outgoing edge target equals canonical vertex");
+    }
+
+    /**
+     * Tests that a graph vertex which IS a real declaration (present in the source
+     * path mapping) is never contracted into a same-named class in another package,
+     * even when multiple candidates share its simple name.
+     * <p>
+     * Setup: {@code com.pkg1.Target} and {@code com.pkg2.Target} are both real
+     * declarations in {@code sourcePathMapping}, and {@code com.pkg1.Target} is a
+     * vertex in the graph with edges. Because it is a key in the mapping, it is
+     * excluded from the fabricated-vertex scan and must be left completely untouched.
+     * </p>
+     * <p>
+     * Note: a "fabricated vertex that shares a package with exactly one candidate"
+     * is not constructible. Both {@code simpleName} and {@code packageName} are
+     * derived from a single {@code lastIndexOf('.')} split, so any candidate sharing
+     * the fabricated vertex's simple name AND package would be the same FQN as the
+     * fabricated vertex — which is precisely what the source-mapping exclusion
+     * removes from consideration. The package-preference loop in
+     * {@code reconcileUnattributedVertices} therefore never redirects. This test
+     * pins the reachable behavior of that package-collision configuration instead.
+     * </p>
+     */
+    @Test
+    void reconcileUnattributedVertices_realDeclarationWithDuplicateSimpleName_neverContracted() {
+        Graph<String, DefaultWeightedEdge> classGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        classGraph.addVertex("com.pkg1.Target"); // real declaration (in mapping)
+        classGraph.addVertex("com.pkg2.Target"); // same-named real declaration (in mapping)
+        classGraph.addVertex("com.pkg1.Caller"); // real caller (in mapping)
+
+        DefaultWeightedEdge e1 = classGraph.addEdge("com.pkg1.Caller", "com.pkg1.Target");
         classGraph.setEdgeWeight(e1, 2);
-        DefaultWeightedEdge e2 = classGraph.addEdge("com.pkg2.OtherCaller", "com.pkg2.Target");
+        DefaultWeightedEdge e2 = classGraph.addEdge("com.pkg1.Target", "com.pkg2.Target");
         classGraph.setEdgeWeight(e2, 3);
 
         Map<String, String> sourcePathMapping = new HashMap<>();
         sourcePathMapping.put("com.pkg1.Target", "/src/main/java/com/pkg1/Target.java");
         sourcePathMapping.put("com.pkg2.Target", "/src/main/java/com/pkg2/Target.java");
-        sourcePathMapping.put("com.caller.Caller", "/src/main/java/com/caller/Caller.java");
-        sourcePathMapping.put("com.pkg2.OtherCaller", "/src/main/java/com/pkg2/OtherCaller.java");
-        // Note: com.caller.Target is NOT in sourcePathMapping (fabricated)
+        sourcePathMapping.put("com.pkg1.Caller", "/src/main/java/com/pkg1/Caller.java");
 
         CompositeGraphBuilder.reconcileUnattributedVertices(
                 classGraph, new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class), sourcePathMapping);
 
-        // Fabricated vertex should remain (no package match - com.caller != com.pkg1, com.pkg2)
-        assertTrue(
-                classGraph.containsVertex("com.caller.Target"),
-                "Fabricated vertex should remain when no package match exists");
+        // Both real declarations must remain despite the shared simple name
+        assertTrue(classGraph.containsVertex("com.pkg1.Target"), "Real declaration com.pkg1.Target must remain");
+        assertTrue(classGraph.containsVertex("com.pkg2.Target"), "Real declaration com.pkg2.Target must remain");
+        assertEquals(3, classGraph.vertexSet().size(), "No vertex may be contracted or removed");
 
-        // Now verify: if we had a fabricated vertex in com.pkg1 package with simple name "Target",
-        // and com.pkg1.Target is NOT in sourcePathMapping but com.pkg2.Target IS,
-        // it would be a UNIQUE match (not package-aware) to com.pkg2.Target.
-        // The package-aware logic only applies when BOTH candidates are in sourcePathMapping.
+        // Every edge intact with its original weight — nothing redirected
+        assertTrue(classGraph.containsEdge("com.pkg1.Caller", "com.pkg1.Target"));
+        assertEquals(
+                2.0,
+                classGraph.getEdgeWeight(classGraph.getEdge("com.pkg1.Caller", "com.pkg1.Target")),
+                "Edge to real declaration must keep its weight");
+        assertTrue(classGraph.containsEdge("com.pkg1.Target", "com.pkg2.Target"));
+        assertEquals(
+                3.0,
+                classGraph.getEdgeWeight(classGraph.getEdge("com.pkg1.Target", "com.pkg2.Target")),
+                "Edge between real declarations must keep its weight");
+
+        // Contraction would have collapsed com.pkg1.Target into com.pkg2.Target,
+        // turning its incoming edges into edges on com.pkg2.Target (and its
+        // outgoing edge into a self-loop). Neither may exist.
+        assertFalse(
+                classGraph.containsEdge("com.pkg2.Target", "com.pkg2.Target"),
+                "No self-loop may appear from contracting a real declaration into its same-named sibling");
+        assertFalse(
+                classGraph.containsEdge("com.pkg1.Caller", "com.pkg2.Target"),
+                "Caller edge must not be redirected to the other same-named class");
     }
 
     // ===================== Merge Edge Ownership Tests =====================
@@ -420,10 +501,8 @@ class CompositeGraphBuilderReconciliationTest {
         // The package self-edge comes from the dependency collector, not mergeGraph.
         // In mergeGraph, self-edges from source graphs ARE copied.
         DefaultWeightedEdge mergedPkgEdge = mergedPkgGraph.getEdge("com.shared", "com.shared");
-        if (mergedPkgEdge != null) {
-            // If self-edge exists, weight should be sum
-            assertEquals(5.0, mergedPkgGraph.getEdgeWeight(mergedPkgEdge));
-        }
+        assertNotNull(mergedPkgEdge, "mergeGraph must copy the intra-package self-edge");
+        assertEquals(5.0, mergedPkgGraph.getEdgeWeight(mergedPkgEdge));
     }
 
     /**

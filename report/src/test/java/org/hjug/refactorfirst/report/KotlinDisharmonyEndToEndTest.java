@@ -78,8 +78,15 @@ class KotlinDisharmonyEndToEndTest {
         assertTrue(html.contains("id=\"DATA_CLASS_WITH_LOGIC\""), "Report should have Data Class with Logic anchor");
         assertTrue(html.contains("Money"), "Report should reference Money class");
 
-        // Verify control class (PureData) does NOT appear in Data Class with Logic
-        assertFalse(html.contains("PureData"), "PureData should not be flagged as Data Class with Logic");
+        // Verify control class (PureData) does NOT appear in Data Class with Logic section
+        // Extract the DATA_CLASS_WITH_LOGIC section to avoid false positives from
+        // class map DOT, source hyperlinks, or relationship tables mentioning PureData
+        int sectionStart = html.indexOf("id=\"DATA_CLASS_WITH_LOGIC\"");
+        assertTrue(sectionStart >= 0, "DATA_CLASS_WITH_LOGIC section should exist");
+        int sectionEnd = html.indexOf("id=\"", sectionStart + 1);
+        String dataClassSection =
+                (sectionEnd >= 0) ? html.substring(sectionStart, sectionEnd) : html.substring(sectionStart);
+        assertFalse(dataClassSection.contains("PureData"), "PureData should not be flagged as Data Class with Logic");
 
         // Verify menu contains all three
         assertTrue(html.contains("<a href=\"#EXCESSIVE_EXTENSIONS\">Excessive Extensions</a>"));
@@ -114,11 +121,12 @@ class KotlinDisharmonyEndToEndTest {
         ProcessBuilder pb = new ProcessBuilder();
         pb.command(command);
         pb.directory(dir);
+        pb.redirectErrorStream(true);
         Process process = pb.start();
+        String output = new String(process.getInputStream().readAllBytes());
         int exitCode = process.waitFor();
         if (exitCode != 0) {
-            String error = new String(process.getErrorStream().readAllBytes());
-            throw new RuntimeException("Command failed: " + String.join(" ", command) + " - " + error);
+            throw new RuntimeException("Command failed: " + String.join(" ", command) + " - " + output);
         }
     }
 }

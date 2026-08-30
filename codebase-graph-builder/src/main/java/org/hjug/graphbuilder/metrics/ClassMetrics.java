@@ -266,94 +266,54 @@ public class ClassMetrics {
         this.hasExplicitLogic = hasExplicitLogic;
     }
 
-    // --- Collection getters: lazy-cached unmodifiable views ----------------
+    // --- Collection getters: eager unmodifiable views ----------------------
 
-    private Set<String> dependenciesView;
+    private final Set<String> dependenciesView = Collections.unmodifiableSet(dependencies);
 
     public Set<String> getDependencies() {
-        Set<String> v = dependenciesView;
-        if (v == null) {
-            v = Collections.unmodifiableSet(dependencies);
-            dependenciesView = v;
-        }
-        return v;
+        return dependenciesView;
     }
 
-    private Map<String, MethodMetrics> methodsView;
+    private final Map<String, MethodMetrics> methodsView = Collections.unmodifiableMap(methods);
 
     public Map<String, MethodMetrics> getMethods() {
-        Map<String, MethodMetrics> v = methodsView;
-        if (v == null) {
-            v = Collections.unmodifiableMap(methods);
-            methodsView = v;
-        }
-        return v;
+        return methodsView;
     }
 
-    private Set<String> attributesView;
+    private final Set<String> attributesView = Collections.unmodifiableSet(attributes);
 
     public Set<String> getAttributes() {
-        Set<String> v = attributesView;
-        if (v == null) {
-            v = Collections.unmodifiableSet(attributes);
-            attributesView = v;
-        }
-        return v;
+        return attributesView;
     }
 
-    private Set<String> overriddenMethodsView;
+    private final Set<String> overriddenMethodsView = Collections.unmodifiableSet(overriddenMethods);
 
     public Set<String> getOverriddenMethods() {
-        Set<String> v = overriddenMethodsView;
-        if (v == null) {
-            v = Collections.unmodifiableSet(overriddenMethods);
-            overriddenMethodsView = v;
-        }
-        return v;
+        return overriddenMethodsView;
     }
 
-    private Set<String> usedParentMembersView;
+    private final Set<String> usedParentMembersView = Collections.unmodifiableSet(usedParentMembers);
 
     public Set<String> getUsedParentMembers() {
-        Set<String> v = usedParentMembersView;
-        if (v == null) {
-            v = Collections.unmodifiableSet(usedParentMembers);
-            usedParentMembersView = v;
-        }
-        return v;
+        return usedParentMembersView;
     }
 
-    private Set<String> typeParameterFqnsView;
+    private final Set<String> typeParameterFqnsView = Collections.unmodifiableSet(typeParameterFqns);
 
     public Set<String> getTypeParameterFqns() {
-        Set<String> v = typeParameterFqnsView;
-        if (v == null) {
-            v = Collections.unmodifiableSet(typeParameterFqns);
-            typeParameterFqnsView = v;
-        }
-        return v;
+        return typeParameterFqnsView;
     }
 
-    private Set<String> extensionReceiverTypesView;
+    private final Set<String> extensionReceiverTypesView = Collections.unmodifiableSet(extensionReceiverTypes);
 
     public Set<String> getExtensionReceiverTypes() {
-        Set<String> v = extensionReceiverTypesView;
-        if (v == null) {
-            v = Collections.unmodifiableSet(extensionReceiverTypes);
-            extensionReceiverTypesView = v;
-        }
-        return v;
+        return extensionReceiverTypesView;
     }
 
-    private Set<String> sealedHierarchyAncestorsView;
+    private final Set<String> sealedHierarchyAncestorsView = Collections.unmodifiableSet(sealedHierarchyAncestors);
 
     public Set<String> getSealedHierarchyAncestors() {
-        Set<String> v = sealedHierarchyAncestorsView;
-        if (v == null) {
-            v = Collections.unmodifiableSet(sealedHierarchyAncestors);
-            sealedHierarchyAncestorsView = v;
-        }
-        return v;
+        return sealedHierarchyAncestorsView;
     }
 
     // --- Adders (guarded) --------------------------------------------------
