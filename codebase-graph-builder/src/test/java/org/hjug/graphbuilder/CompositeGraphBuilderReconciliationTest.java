@@ -389,6 +389,119 @@ class CompositeGraphBuilderReconciliationTest {
                 "Caller edge must not be redirected to the other same-named class");
     }
 
+    /**
+     * Tests that Java anonymous inner classes (e.g., {@code Outer$1}) are mapped to their
+     * enclosing class's source path and are NOT removed as fabricated external vertices.
+     * <p>
+     * Scenario: {@code com.example.Outer} creates an anonymous class {@code com.example.Outer$1}
+     * via {@code new Runnable() { ... }}. The anonymous class vertex enters the graph but has
+     * no source mapping (no {@code J.ClassDeclaration}). Before reconciliation, this method
+     * maps {@code Outer$1} to {@code Outer}'s source path. Thus {@code Outer$1} is present in
+     * the source mapping and is excluded from fabricated-vertex processing entirely.
+     * </p>
+     */
+    @Test
+    void reconcileUnattributedVertices_javaAnonymousInnerClass_preservedViaEnclosingSourcePath() {
+        Graph<String, DefaultWeightedEdge> classGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        classGraph.addVertex("com.example.Outer"); // real declaration
+        classGraph.addVertex("com.example.Outer$1"); // anonymous inner class (no source mapping initially)
+        classGraph.addVertex("com.example.Caller"); // real caller
+
+        classGraph.addEdge("com.example.Caller", "com.example.Outer");
+        classGraph.addEdge("com.example.Outer", "com.example.Outer$1"); // Outer depends on its anonymous class
+
+        Map<String, String> sourcePathMapping = new HashMap<>();
+        sourcePathMapping.put("com.example.Outer", "/src/main/java/com/example/Outer.java");
+        sourcePathMapping.put("com.example.Caller", "/src/main/java/com/example/Caller.java");
+
+        // Apply the anonymous vertex mapping step (normally done in merge())
+        CompositeGraphBuilder.mapAnonymousVerticesToEnclosingSourcePath(classGraph, sourcePathMapping);
+
+        CompositeGraphBuilder.reconcileUnattributedVertices(
+                classGraph, new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class), sourcePathMapping);
+
+        // Anonymous class should be preserved (mapped to enclosing class's source path)
+        assertTrue(
+                classGraph.containsVertex("com.example.Outer$1"),
+                "Anonymous inner class should be preserved via enclosing class source mapping");
+
+        // Edge from Outer to anonymous should remain
+        assertTrue(
+                classGraph.containsEdge("com.example.Outer", "com.example.Outer$1"),
+                "Edge to anonymous inner class should remain");
+    }
+
+    /**
+     * Tests that Java synthetic classes (e.g., {@code Outer$}) are mapped to their
+     * enclosing class's source path and preserved.
+     */
+    @Test
+    void reconcileUnattributedVertices_javaSyntheticClass_preservedViaEnclosingSourcePath() {
+        Graph<String, DefaultWeightedEdge> classGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        classGraph.addVertex("com.example.Outer");
+        classGraph.addVertex("com.example.Outer$"); // synthetic class
+
+        Map<String, String> sourcePathMapping = new HashMap<>();
+        sourcePathMapping.put("com.example.Outer", "/src/main/java/com/example/Outer.java");
+
+        CompositeGraphBuilder.mapAnonymousVerticesToEnclosingSourcePath(classGraph, sourcePathMapping);
+
+        CompositeGraphBuilder.reconcileUnattributedVertices(
+                classGraph, new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class), sourcePathMapping);
+
+        assertTrue(
+                classGraph.containsVertex("com.example.Outer$"),
+                "Synthetic class should be preserved via enclosing class source mapping");
+    }
+
+    /**
+     * Tests that Kotlin anonymous objects (e.g., {@code pkg.Outer.<anonymous>}) are mapped
+     * to their enclosing class's source path and preserved.
+     */
+    @Test
+    void reconcileUnattributedVertices_kotlinAnonymousObject_preservedViaEnclosingSourcePath() {
+        Graph<String, DefaultWeightedEdge> classGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        classGraph.addVertex("com.example.Outer");
+        classGraph.addVertex("com.example.Outer.<anonymous>"); // Kotlin anonymous object
+
+        Map<String, String> sourcePathMapping = new HashMap<>();
+        sourcePathMapping.put("com.example.Outer", "/src/main/kotlin/com/example/Outer.kt");
+
+        CompositeGraphBuilder.mapAnonymousVerticesToEnclosingSourcePath(classGraph, sourcePathMapping);
+
+        CompositeGraphBuilder.reconcileUnattributedVertices(
+                classGraph, new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class), sourcePathMapping);
+
+        assertTrue(
+                classGraph.containsVertex("com.example.Outer.<anonymous>"),
+                "Kotlin anonymous object should be preserved via enclosing class source mapping");
+    }
+
+    /**
+     * Tests that top-level Kotlin anonymous (just {@code "<anonymous>"}) with no enclosing
+     * class is NOT preserved (no source mapping possible) and would be treated as external
+     * if no matching declaration exists.
+     */
+    @Test
+    void reconcileUnattributedVertices_topLevelKotlinAnonymous_noEnclosingClass_notMapped() {
+        Graph<String, DefaultWeightedEdge> classGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        classGraph.addVertex("<anonymous>"); // Top-level Kotlin anonymous, no enclosing class
+
+        Map<String, String> sourcePathMapping = new HashMap<>();
+        // No enclosing class in mapping
+
+        CompositeGraphBuilder.mapAnonymousVerticesToEnclosingSourcePath(classGraph, sourcePathMapping);
+
+        CompositeGraphBuilder.reconcileUnattributedVertices(
+                classGraph, new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class), sourcePathMapping);
+
+        // Top-level <anonymous> has no enclosing class to map to, so it's not in source mapping
+        // and would be removed as external (zero match)
+        assertFalse(
+                classGraph.containsVertex("<anonymous>"),
+                "Top-level Kotlin anonymous with no enclosing class should be removed as external");
+    }
+
     // ===================== Merge Edge Ownership Tests =====================
 
     /**
@@ -599,6 +712,79 @@ class CompositeGraphBuilderReconciliationTest {
         assertTrue(mergedClassGraph.containsEdge(redirectedEdge), "Redirected edge must belong to merged class graph");
         assertEquals("com.java.Caller", mergedClassGraph.getEdgeSource(redirectedEdge));
         assertEquals("com.kotlin.Target", mergedClassGraph.getEdgeTarget(redirectedEdge));
+    }
+
+    /**
+     * End-to-end test: Java DTO has an anonymous inner class (Outer$1) that only exists
+     * in the class graph (via NewClass) but NOT in the source mapping. Kotlin DTO has
+     * the real enclosing class. Through merge, the anonymous class should be mapped to
+     * the enclosing class's source path and preserved (not removed as external).
+     */
+    @Test
+    void merge_javaAnonymousInnerClass_preservedThroughMergePipeline() {
+        // Java DTO: Outer class with anonymous inner class Outer$1
+        Graph<String, DefaultWeightedEdge> javaClassGraph =
+                new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        javaClassGraph.addVertex("com.example.Outer");
+        javaClassGraph.addVertex("com.example.Outer$1"); // anonymous inner class
+        javaClassGraph.addVertex("com.example.Caller");
+
+        DefaultWeightedEdge e1 = javaClassGraph.addEdge("com.example.Caller", "com.example.Outer");
+        javaClassGraph.setEdgeWeight(e1, 1);
+        DefaultWeightedEdge e2 = javaClassGraph.addEdge("com.example.Outer", "com.example.Outer$1");
+        javaClassGraph.setEdgeWeight(e2, 1);
+
+        Graph<String, DefaultWeightedEdge> javaPkgGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        javaPkgGraph.addVertex("com.example");
+        javaPkgGraph.addEdge("com.example", "com.example");
+
+        Map<DefaultWeightedEdge, Set<DefaultWeightedEdge>> javaClassRels = new HashMap<>();
+        javaClassRels.put(javaPkgGraph.getEdge("com.example", "com.example"), Set.of(e1, e2));
+
+        Map<String, String> javaSourceMapping = new HashMap<>();
+        javaSourceMapping.put("com.example.Outer", "/src/main/java/com/example/Outer.java");
+        javaSourceMapping.put("com.example.Caller", "/src/main/java/com/example/Caller.java");
+        // NOTE: Outer$1 is NOT in source mapping (no J.ClassDeclaration for anonymous class)
+
+        CodebaseGraphDTO javaDto = new CodebaseGraphDTO(
+                javaClassGraph, javaPkgGraph, javaClassRels, javaSourceMapping, new ArrayList<>(), new ArrayList<>());
+
+        // Kotlin DTO: just another class in a different package
+        Graph<String, DefaultWeightedEdge> kotlinClassGraph =
+                new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        kotlinClassGraph.addVertex("com.other.KotlinClass");
+
+        Graph<String, DefaultWeightedEdge> kotlinPkgGraph =
+                new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        kotlinPkgGraph.addVertex("com.other");
+
+        Map<DefaultWeightedEdge, Set<DefaultWeightedEdge>> kotlinClassRels = new HashMap<>();
+
+        Map<String, String> kotlinSourceMapping = new HashMap<>();
+        kotlinSourceMapping.put("com.other.KotlinClass", "/src/main/kotlin/com/other/KotlinClass.kt");
+
+        CodebaseGraphDTO kotlinDto = new CodebaseGraphDTO(
+                kotlinClassGraph,
+                kotlinPkgGraph,
+                kotlinClassRels,
+                kotlinSourceMapping,
+                new ArrayList<>(),
+                new ArrayList<>());
+
+        // Merge - anonymous class mapping should happen before reconciliation
+        CodebaseGraphDTO merged = CompositeGraphBuilder.merge(javaDto, kotlinDto);
+
+        Graph<String, DefaultWeightedEdge> mergedClassGraph = merged.getClassReferencesGraph();
+
+        // Anonymous class should be preserved (mapped to Outer's source path during merge)
+        assertTrue(
+                mergedClassGraph.containsVertex("com.example.Outer$1"),
+                "Anonymous inner class should be preserved through merge pipeline");
+
+        // Edge to anonymous class should remain
+        assertTrue(
+                mergedClassGraph.containsEdge("com.example.Outer", "com.example.Outer$1"),
+                "Edge to anonymous inner class should remain after merge");
     }
 
     /**

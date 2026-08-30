@@ -157,6 +157,12 @@ public class CompositeGraphBuilder {
         mergedMethodDisharmonies.addAll(javaDto.getMethodDisharmonies());
         mergedMethodDisharmonies.addAll(kotlinDto.getMethodDisharmonies());
 
+        // Map anonymous/synthetic class vertices to their enclosing class's source path
+        // so they are not treated as fabricated external vertices during reconciliation.
+        // Anonymous classes (Outer$1, Outer$) and Kotlin <anonymous> are first-class
+        // graph members with known source origins (the enclosing class's file).
+        mapAnonymousVerticesToEnclosingSourcePath(mergedClassGraph, mergedSourcePathMapping);
+
         // Reconcile fabricated cross-language vertices against real declarations
         reconcileUnattributedVertices(mergedClassGraph, mergedPackageGraph, mergedSourcePathMapping);
 
@@ -459,5 +465,91 @@ public class CompositeGraphBuilder {
 
         mergedClassRelationships.clear();
         mergedClassRelationships.putAll(rebuilt);
+    }
+    /**
+     * Maps anonymous/synthetic class vertices to their enclosing class's source path.
+     * <p>
+     * Java anonymous inner classes (e.g., {@code Outer$1}, {@code Outer$2}) and synthetic
+     * classes (e.g., {@code Outer$}) are added to the class graph via {@link J.NewClass}
+     * but do not have their own {@link J.ClassDeclaration}, so their source location is
+     * never recorded. Kotlin anonymous objects/functions have FQNs ending in
+     * {@code "<anonymous>"} and similarly lack independent source mappings.
+     * </p>
+     * <p>
+     * This method finds such vertices and maps them to the same source file as their
+     * enclosing class, ensuring they are present in {@code sourcePathMapping} before
+     * {@link #reconcileUnattributedVertices} runs. This prevents them from being
+     * misclassified as fabricated external vertices and incorrectly removed.
+     * </p>
+     *
+     * @param classGraph the merged class graph
+     * @param sourcePathMapping the source path mapping to populate for anonymous vertices
+     */
+    static void mapAnonymousVerticesToEnclosingSourcePath(
+            Graph<String, DefaultWeightedEdge> classGraph, Map<String, String> sourcePathMapping) {
+        for (String vertex : classGraph.vertexSet()) {
+            // Skip if already mapped
+            if (sourcePathMapping.containsKey(vertex)) {
+                continue;
+            }
+
+            String enclosingFqn = getEnclosingClassFqn(vertex);
+            if (enclosingFqn != null && sourcePathMapping.containsKey(enclosingFqn)) {
+                // Map anonymous/synthetic vertex to enclosing class's source path
+                sourcePathMapping.put(vertex, sourcePathMapping.get(enclosingFqn));
+            }
+        }
+    }
+
+    /**
+     * Returns the enclosing class FQN for an anonymous/synthetic class vertex, or {@code null}
+     * if the vertex is not an anonymous/synthetic class.
+     * <p>
+     * Handles:
+     * <ul>
+     *   <li>Java anonymous inner classes: {@code pkg.Outer$1} -> {@code pkg.Outer}</li>
+     *   <li>Java synthetic classes: {@code pkg.Outer$} -> {@code pkg.Outer}</li>
+     *   <li>Kotlin anonymous: {@code pkg.Outer.<anonymous>} -> {@code pkg.Outer}</li>
+     *   <li>Kotlin top-level anonymous: {@code <anonymous>} -> {@code null} (no enclosing class)</li>
+     * </ul>
+     *
+     * @param vertex the class graph vertex FQN
+     * @return the enclosing class FQN, or {@code null} if not an anonymous/synthetic class
+     */
+    private static String getEnclosingClassFqn(String vertex) {
+        if (vertex == null) {
+            return null;
+        }
+
+        // Kotlin anonymous: trailing segment starts with "<"
+        int lastDot = vertex.lastIndexOf('.');
+        String simpleName = lastDot >= 0 ? vertex.substring(lastDot + 1) : vertex;
+
+        if (simpleName.startsWith("<")) {
+            // Kotlin anonymous: "pkg.Outer.<anonymous>" or "<anonymous>"
+            if (lastDot > 0) {
+                // Has enclosing class/package: strip the ".<anonymous>" suffix
+                return vertex.substring(0, lastDot);
+            }
+            return null; // Top-level "<anonymous>" has no enclosing class
+        }
+
+        // Java anonymous/synthetic: check for $ suffix after the last .
+        int lastDollar = simpleName.lastIndexOf('$');
+        if (lastDollar >= 0) {
+            String afterDollar = simpleName.substring(lastDollar + 1);
+            // Anonymous inner class: numeric suffix (Outer$1, Outer$2)
+            // Synthetic class: empty suffix (Outer$)
+            if (afterDollar.isEmpty() || afterDollar.matches("\\d+")) {
+                // Strip the $N or $ suffix to get enclosing class
+                String enclosingSimple = simpleName.substring(0, lastDollar);
+                if (lastDot >= 0) {
+                    return vertex.substring(0, lastDot + 1) + enclosingSimple;
+                }
+                return enclosingSimple; // Default package
+            }
+        }
+
+        return null; // Not an anonymous/synthetic class
     }
 }
