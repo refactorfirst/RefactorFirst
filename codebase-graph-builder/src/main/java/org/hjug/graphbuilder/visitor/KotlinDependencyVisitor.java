@@ -163,21 +163,6 @@ public class KotlinDependencyVisitor<P> extends KotlinIsoVisitor<P> {
             DependencyVisitorLogic.recordClassLocation(state, owningFqn, sourcePath);
         }
 
-        // Delegate J-level class declaration processing to shared logic
-        // Note: Kotlin doesn't have record components in the same way
-        var snapshot = DependencyVisitorLogic.enterClassDeclaration(
-                state,
-                jcd,
-                false, // processRecordComponents = false for Kotlin
-                cursor -> {
-                    J.CompilationUnit jcu = cursor.firstEnclosing(J.CompilationUnit.class);
-                    if (jcu != null) {
-                        return jcu.getSourcePath().toUri().toString();
-                    }
-                    K.CompilationUnit kcu = cursor.firstEnclosing(K.CompilationUnit.class);
-                    return kcu != null ? kcu.getSourcePath().toUri().toString() : null;
-                });
-
         // Process Kotlin-specific: type constraints
         if (classDeclaration.getTypeConstraints() != null) {
             for (J.TypeParameter typeParameter :
@@ -186,7 +171,6 @@ public class KotlinDependencyVisitor<P> extends KotlinIsoVisitor<P> {
             }
         }
 
-        DependencyVisitorLogic.leaveClassDeclaration(state, snapshot);
         return result;
     }
 
