@@ -3,6 +3,7 @@ package org.hjug.graphbuilder.metrics;
 import java.util.*;
 import lombok.AccessLevel;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.Setter;
 
 /**
@@ -24,6 +25,7 @@ public class MethodMetrics {
     private String signature;
 
     @Setter(AccessLevel.NONE)
+    @EqualsAndHashCode.Exclude
     private boolean finalized;
 
     @Setter(AccessLevel.NONE)
@@ -37,8 +39,13 @@ public class MethodMetrics {
     @Setter(AccessLevel.NONE)
     private Set<String> accessedVariables = new HashSet<>();
 
+    @Setter(AccessLevel.NONE)
     private Set<String> accessedForeignClasses = new HashSet<>();
+
+    @Setter(AccessLevel.NONE)
     private Set<String> accessedForeignAttributes = new HashSet<>();
+
+    @Setter(AccessLevel.NONE)
     private Set<String> accessedOwnAttributes = new HashSet<>();
 
     @Setter(AccessLevel.NONE)
@@ -204,6 +211,7 @@ public class MethodMetrics {
     // --- Collection getters: lazy-cached unmodifiable views ----------------
 
     @Setter(AccessLevel.NONE)
+    @EqualsAndHashCode.Exclude
     private Set<String> accessedVariablesView;
 
     public Set<String> getAccessedVariables() {
@@ -216,6 +224,7 @@ public class MethodMetrics {
     }
 
     @Setter(AccessLevel.NONE)
+    @EqualsAndHashCode.Exclude
     private Set<String> accessedForeignClassesView;
 
     public Set<String> getAccessedForeignClasses() {
@@ -228,6 +237,7 @@ public class MethodMetrics {
     }
 
     @Setter(AccessLevel.NONE)
+    @EqualsAndHashCode.Exclude
     private Set<String> accessedForeignAttributesView;
 
     public Set<String> getAccessedForeignAttributes() {
@@ -240,6 +250,7 @@ public class MethodMetrics {
     }
 
     @Setter(AccessLevel.NONE)
+    @EqualsAndHashCode.Exclude
     private Set<String> accessedOwnAttributesView;
 
     public Set<String> getAccessedOwnAttributes() {
@@ -252,6 +263,7 @@ public class MethodMetrics {
     }
 
     @Setter(AccessLevel.NONE)
+    @EqualsAndHashCode.Exclude
     private Set<String> calledForeignMethodsView;
 
     public Set<String> getCalledForeignMethods() {
@@ -264,6 +276,7 @@ public class MethodMetrics {
     }
 
     @Setter(AccessLevel.NONE)
+    @EqualsAndHashCode.Exclude
     private Set<String> calledForeignMethodClassesView;
 
     public Set<String> getCalledForeignMethodClasses() {
@@ -276,6 +289,7 @@ public class MethodMetrics {
     }
 
     @Setter(AccessLevel.NONE)
+    @EqualsAndHashCode.Exclude
     private Set<String> changingMethodsView;
 
     public Set<String> getChangingMethods() {
@@ -288,6 +302,7 @@ public class MethodMetrics {
     }
 
     @Setter(AccessLevel.NONE)
+    @EqualsAndHashCode.Exclude
     private Set<String> changingClassesView;
 
     public Set<String> getChangingClasses() {
@@ -300,6 +315,7 @@ public class MethodMetrics {
     }
 
     @Setter(AccessLevel.NONE)
+    @EqualsAndHashCode.Exclude
     private Set<String> typeParameterFqnsView;
 
     public Set<String> getTypeParameterFqns() {
@@ -312,6 +328,7 @@ public class MethodMetrics {
     }
 
     @Setter(AccessLevel.NONE)
+    @EqualsAndHashCode.Exclude
     private List<String> normalizedBodyLinesView;
 
     public List<String> getNormalizedBodyLines() {

@@ -1,6 +1,7 @@
 package org.hjug.graphbuilder.graphbuilder;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import org.hjug.graphbuilder.CodebaseGraphDTO;
 import org.hjug.graphbuilder.GraphBuilderConfig;
 
@@ -9,6 +10,12 @@ import org.hjug.graphbuilder.GraphBuilderConfig;
  * specific language (Java, Kotlin, etc.).
  */
 public interface SourceFileGraphBuilder {
+
+    static boolean isInConfiguredDirectory(Path file, String directory) {
+        String normalizedFile = "/" + file.toString().replace('\\', '/') + "/";
+        String normalizedDirectory = directory.replace('\\', '/').replaceAll("^/+|/+$", "");
+        return normalizedFile.contains("/" + normalizedDirectory + "/");
+    }
 
     /**
      * Build a {@link CodebaseGraphDTO} representing class/package dependency

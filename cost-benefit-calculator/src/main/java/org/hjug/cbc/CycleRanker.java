@@ -27,6 +27,10 @@ public class CycleRanker {
     @Getter
     private CodebaseGraphDTO codebaseGraphDTO;
 
+    public CycleRanker(String repositoryPath) {
+        this(repositoryPath, repositoryPath);
+    }
+
     /**
      * Build a unified {@link CodebaseGraphDTO} from a directory that may contain
      * both Java and Kotlin source files.

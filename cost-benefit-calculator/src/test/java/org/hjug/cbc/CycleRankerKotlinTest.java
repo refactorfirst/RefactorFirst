@@ -57,6 +57,11 @@ import org.junit.jupiter.api.io.TempDir;
  */
 class CycleRankerKotlinTest {
 
+    @Test
+    void singlePathConstructorRemainsAvailable() {
+        assertNotNull(new CycleRanker("repository"));
+    }
+
     @TempDir
     public File tempFolder;
 
