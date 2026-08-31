@@ -12,7 +12,7 @@ based on the existing Java analysis architecture in the `codebase-graph-builder`
 - **KotlinParser.builder().build()** - Analogous to `JavaParser.fromJavaVersion().build()`
 - Returns `Stream<SourceFile>` from `parseInputs()`
 - Supports `.kt` and `.kts` file extensions
-- Uses `org.openrewrite.kotlin.KotlinParser.KotlinLanguageLevel` enum (default: `KOTLIN_2_2`)
+- Uses `org.openrewrite.kotlin.KotlinParser.KotlinLanguageLevel` enum (configured as `KOTLIN_2_4`)
 
 ### Visitor Architecture
 
@@ -28,8 +28,9 @@ based on the existing Java analysis architecture in the `codebase-graph-builder`
 
 ### Dependency Management
 
-- `rewrite-bom:8.86.0` (imported via `rewrite-recipe-bom:3.34.0`) manages `org.openrewrite:rewrite-kotlin:8.86.0`
-- Kotlin compiler-embeddable is a transitive dependency (~30 MB) — make optional
+- `rewrite-bom:8.90.4` manages `org.openrewrite:rewrite-kotlin:8.90.4`
+- `rewrite-kotlin` is a required compile dependency of `codebase-graph-builder`; its Kotlin compiler transitives are
+  therefore present for every consumer
 - Java 17 compatible (Kotlin stdlib targets JVM 1.8)
 
 ## Design Strategy
@@ -63,15 +64,15 @@ based on the existing Java analysis architecture in the `codebase-graph-builder`
 **Production**:
 
 - `CompositeGraphBuilder` walks `.java` and `.kt` files
-- Reflectively probes `KotlinParser` presence (optional jar support)
-- `GraphBuilderConfig.analyzeKotlin` default `true`
+- Runs Java and Kotlin analysis unconditionally and merges both results
+- Uses `rewrite-kotlin` directly; there is no reflective parser probe or `GraphBuilderConfig.analyzeKotlin` switch
 
 ### Phase 3 — Kotlin Metrics Collection
 
 **Red Test**: `KotlinMetricsCollectionTest` — LOC/NOM/NOA/WMC/ATFD/TCC on Kotlin fixtures  
 **Production**:
 
-- Refactor `MetricsCollectingVisitor` → `AbstractMetricsCollectingVisitor` (protected hooks)
+- Extract shared metric handling into `MetricsVisitorLogic` with traversal state held by `MetricsVisitorState`
 - Create `KotlinMetricsCollectingVisitor extends KotlinIsoVisitor<ExecutionContext>`
 - Handle `K.Property` (top-level properties, extension properties)
 
@@ -149,7 +150,8 @@ Four new disharmony types:
 ## Locked Design Decisions
 
 1. **Refactor** J-level logic into protected hooks on abstract bases (no fork-and-drift)
-2. **Optional Maven dependency** — `rewrite-kotlin` marked `<optional>true</optional>`
-3. **Kotlin language level**: `KOTLIN_2_2` (parser default), configurable via `GraphBuilderConfig`
+2. **Required Maven dependency** — `rewrite-kotlin` is a non-optional compile dependency of
+   `codebase-graph-builder`; `CompositeGraphBuilder` runs Kotlin analysis unconditionally
+3. **Kotlin language level**: `KOTLIN_2_4`, configurable via `GraphBuilderConfig`
 4. **Kotlin disharmonies as ClassDisharmony** — reuses existing downstream plumbing
 5. **Callable references & type parameters feed BOTH graph edges AND metrics**

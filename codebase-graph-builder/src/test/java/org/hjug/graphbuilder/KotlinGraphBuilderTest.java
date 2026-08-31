@@ -65,6 +65,21 @@ class KotlinGraphBuilderTest {
                         "com.ideacrest.parser.testclasses.D"));
     }
 
+    @DisplayName("Kotlin class-header dependencies are recorded exactly once.")
+    @Test
+    void classHeaderDependencyHasWeightOne() throws IOException {
+        File srcDirectory = new File("src/test/resources/kotlinClassHeaderSrcDirectory");
+        CodebaseGraphDTO dto = compositeGraphBuilder.getCodebaseGraphDTO(srcDirectory.getAbsolutePath(), false, "");
+        Graph<String, DefaultWeightedEdge> classReferencesGraph = dto.getClassReferencesGraph();
+        String source = "com.ideacrest.parser.classheader.HeaderImplementation";
+        String target = "com.ideacrest.parser.classheader.HeaderContract";
+
+        assertTrue(classReferencesGraph.containsVertex(source));
+        assertTrue(classReferencesGraph.containsVertex(target));
+        assertTrue(classReferencesGraph.containsEdge(source, target));
+        assertEquals(1.0, getEdgeWeight(classReferencesGraph, source, target));
+    }
+
     @DisplayName("Kotlin callable references produce edges between caller and target's declaring class.")
     @Test
     void parseKotlinCallableReferenceTest() throws IOException {
