@@ -23,6 +23,14 @@ import org.junit.jupiter.api.io.TempDir;
  */
 class SourceFileGraphBuilderTestPathExclusionTest {
 
+    @Test
+    void directoryMatchingDoesNotExcludeLongerDirectoryNames() {
+        assertTrue(SourceFileGraphBuilder.isInConfiguredDirectory(
+                Path.of("project/src/test/java/Example.java"), "src/test"));
+        assertFalse(SourceFileGraphBuilder.isInConfiguredDirectory(
+                Path.of("project/src/testFixtures/java/Example.java"), "src/test"));
+    }
+
     @DisplayName("Java builder excludes test files with forward-slash testSourceDirectory on Windows-style paths")
     @Test
     void javaBuilder_excludesTestsWithForwardSlashPatternOnWindowsPaths(@TempDir Path tempDir) throws IOException {

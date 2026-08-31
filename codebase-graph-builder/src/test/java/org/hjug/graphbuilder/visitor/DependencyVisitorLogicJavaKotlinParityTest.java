@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import org.hjug.graphbuilder.GraphDependencyCollector;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultDirectedWeightedGraph;
@@ -214,35 +216,24 @@ class DependencyVisitorLogicJavaKotlinParityTest {
                 .collect(java.util.stream.Collectors.toMap(
                         v -> v.substring(kotlinPkgPrefix.length()), v -> v, (a, b) -> a));
 
-        // Compare edge pairs and weights
-        for (var entry : javaNormalized.entrySet()) {
-            String normV = entry.getKey();
-            String javaV = entry.getValue();
+        assertEquals(
+                normalizedEdges(javaGraph, javaNormalized),
+                normalizedEdges(kotlinGraph, kotlinNormalized),
+                "Java and Kotlin project edges and weights should match exactly");
+    }
 
-            for (String normT : javaNormalized.keySet()) {
-                String javaT = javaNormalized.get(normT);
-                DefaultWeightedEdge javaEdge = javaGraph.getEdge(javaV, javaT);
-                if (javaEdge != null) {
-                    double javaWeight = javaGraph.getEdgeWeight(javaEdge);
-
-                    // Find corresponding Kotlin vertices
-                    String kotlinV = kotlinNormalized.get(normV);
-                    String kotlinT = kotlinNormalized.get(normT);
-
-                    assertNotNull(kotlinV, "Kotlin vertex missing for normalized: " + normV);
-                    assertNotNull(kotlinT, "Kotlin vertex missing for normalized: " + normT);
-
-                    DefaultWeightedEdge kotlinEdge = kotlinGraph.getEdge(kotlinV, kotlinT);
-                    assertNotNull(kotlinEdge, "Kotlin edge missing for: " + normV + " -> " + normT);
-
-                    double kotlinWeight = kotlinGraph.getEdgeWeight(kotlinEdge);
-                    assertEquals(
-                            javaWeight,
-                            kotlinWeight,
-                            "Edge weight mismatch for " + normV + " -> " + normT + ": Java=" + javaWeight + " Kotlin="
-                                    + kotlinWeight);
-                }
+    private Map<String, Double> normalizedEdges(
+            Graph<String, DefaultWeightedEdge> graph, Map<String, String> normalizedVertices) {
+        Map<String, Double> edges = new HashMap<>();
+        Map<String, String> vertexNames = new HashMap<>();
+        normalizedVertices.forEach((normalized, vertex) -> vertexNames.put(vertex, normalized));
+        for (DefaultWeightedEdge edge : graph.edgeSet()) {
+            String source = vertexNames.get(graph.getEdgeSource(edge));
+            String target = vertexNames.get(graph.getEdgeTarget(edge));
+            if (source != null && target != null) {
+                edges.put(source + " -> " + target, graph.getEdgeWeight(edge));
             }
         }
+        return edges;
     }
 }

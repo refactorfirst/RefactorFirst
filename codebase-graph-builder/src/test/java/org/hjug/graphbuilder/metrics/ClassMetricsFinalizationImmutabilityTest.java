@@ -6,6 +6,7 @@ import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
@@ -24,6 +25,31 @@ import org.junit.jupiter.api.function.Executable;
  * view only.
  */
 class ClassMetricsFinalizationImmutabilityTest {
+
+    @Test
+    void methodMetricsDoesNotExposeBackingCollectionSetters() {
+        Set<String> forbiddenSetters = Set.of(
+                "setAccessedForeignClasses", "setAccessedForeignAttributes", "setAccessedOwnAttributes");
+
+        assertTrue(Stream.of(MethodMetrics.class.getMethods())
+                .map(java.lang.reflect.Method::getName)
+                .noneMatch(forbiddenSetters::contains));
+    }
+
+    @Test
+    void methodMetricsEqualityDoesNotChangeWhenViewsAreCachedOrMetricsAreFrozen() {
+        MethodMetrics first = new MethodMetrics("method", "method()V");
+        MethodMetrics second = new MethodMetrics("method", "method()V");
+        first.addAccessedForeignClass("com.example.Foreign");
+        second.addAccessedForeignClass("com.example.Foreign");
+
+        int initialHashCode = first.hashCode();
+        first.getAccessedForeignClasses();
+        first.freeze();
+
+        assertEquals(second, first);
+        assertEquals(initialHashCode, first.hashCode());
+    }
 
     private static ClassMetrics newPopulated(String fqn) {
         ClassMetrics m = new ClassMetrics(fqn);
