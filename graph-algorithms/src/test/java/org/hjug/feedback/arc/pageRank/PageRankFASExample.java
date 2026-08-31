@@ -1,5 +1,8 @@
 package org.hjug.feedback.arc.pageRank;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 import java.util.Set;
 import org.hjug.feedback.SuperTypeToken;
 import org.jgrapht.Graph;
@@ -159,8 +162,8 @@ public class PageRankFASExample {
             double fasRatio = 100.0 * feedbackArcSet.size() / graph.edgeSet().size();
 
             System.out.printf(
-                    "%d\t%d\t%d\t\t%d\t\t%.2f%%\n",
-                    size, graph.edgeSet().size(), feedbackArcSet.size(), (endTime - startTime), fasRatio);
+                    "%d\t%d\t%d\t\t%d\t\t%.2f%%%n",
+                    size, graph.edgeSet().size(), feedbackArcSet.size(), endTime - startTime, fasRatio);
         }
     }
 
@@ -185,7 +188,7 @@ public class PageRankFASExample {
             Set<DefaultEdge> feedbackArcSet = pageRankFAS.computeFeedbackArcSet();
             long endTime = System.currentTimeMillis();
 
-            System.out.printf("%d\t\t%d\t\t%d\n", iter, feedbackArcSet.size(), (endTime - startTime));
+            System.out.printf("%d\t\t%d\t\t%d%n", iter, feedbackArcSet.size(), endTime - startTime);
         }
     }
 
@@ -247,8 +250,8 @@ public class PageRankFASExample {
         }
 
         // Add random edges
-        java.util.Random random = new java.util.Random(42); // Fixed seed for reproducibility
-        java.util.List<String> vertices = new java.util.ArrayList<>(graph.vertexSet());
+        Random random = new Random(42); // Fixed seed for reproducibility
+        List<String> vertices = new ArrayList<>(graph.vertexSet());
 
         int edgesAdded = 0;
         int attempts = 0;

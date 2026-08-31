@@ -7,7 +7,7 @@ import org.jgrapht.alg.cycle.JohnsonSimpleCycles;
 import org.jgrapht.graph.AsSubgraph;
 
 public class OptimalBackEdgeRemover<V, E> {
-    private Graph<V, E> graph;
+    private final Graph<V, E> graph;
 
     /**
      * Constructor initializing with the target graph.

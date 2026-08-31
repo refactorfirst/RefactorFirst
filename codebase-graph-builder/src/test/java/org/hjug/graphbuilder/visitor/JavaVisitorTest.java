@@ -18,6 +18,7 @@ import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultDirectedWeightedGraph;
 import org.jgrapht.graph.DefaultWeightedEdge;
 import org.jgrapht.graph.SimpleDirectedWeightedGraph;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.InMemoryExecutionContext;
@@ -34,6 +35,7 @@ class JavaVisitorTest {
     private static final String TRY_CATCH = TESTCLASSES + "/tryCatch";
     private static final String JAVADOC_TESTCLASSES = TESTCLASSES + "/javadoc";
     private static final String RECORD = TESTCLASSES + "/record";
+    private static final String ANONYMOUS = TESTCLASSES + "/anonymous";
 
     private static String repoFrom(String pathString) {
         return new File(pathString).toURI().toString().replace("/" + pathString, "");
@@ -51,7 +53,7 @@ class JavaVisitorTest {
         Graph<String, DefaultWeightedEdge> classGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
         Graph<String, DefaultWeightedEdge> pkgGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
         GraphDependencyCollector collector = new GraphDependencyCollector(classGraph, pkgGraph);
-        JavaVisitor<ExecutionContext> visitor = new JavaVisitor<>(repoFrom(pathString), collector);
+        JavaVisitor<ExecutionContext> visitor = new JavaVisitor<>(repoFrom(pathString), "", collector);
         visitAll(visitor, pathString);
         return classGraph;
     }
@@ -60,7 +62,7 @@ class JavaVisitorTest {
         Graph<String, DefaultWeightedEdge> classGraph = new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
         Graph<String, DefaultWeightedEdge> pkgGraph = new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
         GraphDependencyCollector collector = new GraphDependencyCollector(classGraph, pkgGraph);
-        JavaVisitor<ExecutionContext> visitor = new JavaVisitor<>(repoFrom(pathString), collector);
+        JavaVisitor<ExecutionContext> visitor = new JavaVisitor<>(repoFrom(pathString), "", collector);
         visitAll(visitor, pathString);
         return classGraph;
     }
@@ -69,7 +71,7 @@ class JavaVisitorTest {
         GraphDependencyCollector collector = new GraphDependencyCollector(
                 new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class),
                 new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class));
-        return new JavaVisitor<>(repo, collector);
+        return new JavaVisitor<>(repo, "", collector);
     }
 
     @Test
@@ -80,10 +82,10 @@ class JavaVisitorTest {
         GraphDependencyCollector dependencyCollector = new GraphDependencyCollector(
                 new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class),
                 new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class));
-        JavaVisitor<ExecutionContext> javaVisitor = new JavaVisitor<>(repoFrom(TESTCLASSES), dependencyCollector);
+        JavaVisitor<ExecutionContext> javaVisitor = new JavaVisitor<>(repoFrom(TESTCLASSES), "", dependencyCollector);
         List<Path> list = Files.walk(Path.of(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
         javaParser.parse(list, Path.of(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> javaVisitor.visit(cu, ctx));
-        assertEquals(9, dependencyCollector.getPackagesInCodebase().size());
+        assertEquals(10, dependencyCollector.getPackagesInCodebase().size());
     }
 
     @Test
@@ -123,7 +125,7 @@ class JavaVisitorTest {
     @Test
     void recordClassLocationIsCalledForEachInnerClass() throws IOException {
         DependencyCollector mockCollector = mock(DependencyCollector.class);
-        JavaVisitor<ExecutionContext> visitor = new JavaVisitor<>(repoFrom(TESTCLASSES), mockCollector);
+        JavaVisitor<ExecutionContext> visitor = new JavaVisitor<>(repoFrom(TESTCLASSES), "", mockCollector);
         visitAll(visitor, TESTCLASSES);
         verify(mockCollector)
                 .recordClassLocation(eq("org.hjug.graphbuilder.visitor.testclasses.A$InnerClass"), anyString());
@@ -447,6 +449,28 @@ class JavaVisitorTest {
                 visitor.getClassToSourceFilePathMapping()
                         .containsKey("org.hjug.graphbuilder.visitor.testclasses.record.ComplexRecord$NestedRecord"),
                 "NestedRecord should have source file mapping");
+    }
+
+    @DisplayName("Anonymous inner classes (Outer$<digit>) enter the graph as first-class vertices")
+    @Test
+    void anonymousInnerClasses_enterTheGraphAsVertices() throws IOException {
+        Graph<String, DefaultWeightedEdge> graph = buildAndVisit(ANONYMOUS);
+
+        // owner + target (named classes) must still be present
+        assertTrue(
+                graph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.anonymous.AnonymousOwner"),
+                "AnonymousOwner (named) must be a vertex");
+        assertTrue(
+                graph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.anonymous.AnonymousTarget"),
+                "AnonymousTarget (named) must be a vertex");
+
+        // anonymous inner classes serialise as Outer$1 / Outer$2 — they ARE first-class graph members now
+        assertTrue(
+                graph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.anonymous.AnonymousOwner$1"),
+                "AnonymousOwner$1 (anonymous inner class) must enter the graph as a vertex");
+        assertTrue(
+                graph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.anonymous.AnonymousOwner$2"),
+                "AnonymousOwner$2 (anonymous inner class) must enter the graph as a vertex");
     }
 
     private static double getEdgeWeight(

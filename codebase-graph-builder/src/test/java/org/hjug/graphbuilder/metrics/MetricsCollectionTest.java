@@ -33,9 +33,9 @@ class MetricsCollectionTest {
         MetricsCollectingVisitor metricsVisitor = new MetricsCollectingVisitor(metricsCollector);
 
         List<Path> list = Files.walk(Path.of(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
-        javaParser.parse(list, Path.of(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> {
-            metricsVisitor.visit(cu, ctx);
-        });
+        javaParser
+                .parse(list, Path.of(srcDirectory.getAbsolutePath()), ctx)
+                .forEach(cu -> metricsVisitor.visit(cu, ctx));
 
         metricsCollector.finalizeMetrics();
 
@@ -80,9 +80,9 @@ class MetricsCollectionTest {
         MetricsCollectingVisitor metricsVisitor = new MetricsCollectingVisitor(metricsCollector);
 
         List<Path> list = Files.walk(Path.of(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
-        javaParser.parse(list, Path.of(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> {
-            metricsVisitor.visit(cu, ctx);
-        });
+        javaParser
+                .parse(list, Path.of(srcDirectory.getAbsolutePath()), ctx)
+                .forEach(cu -> metricsVisitor.visit(cu, ctx));
 
         metricsCollector.finalizeMetrics();
 
@@ -92,7 +92,7 @@ class MetricsCollectionTest {
 
         boolean foundBrainMethod = false;
         for (MethodMetrics method : brainMethodClass.getMethods().values()) {
-            if (method.getMethodName() != null && method.getMethodName().equals("brainMethod")) {
+            if ("brainMethod".equals(method.getMethodName())) {
                 foundBrainMethod = true;
                 Assertions.assertTrue(method.getLinesOfCode() > 50, "Brain method should have high LOC");
                 Assertions.assertTrue(method.getCyclomaticComplexity() > 5, "Brain method should have high complexity");
@@ -127,9 +127,9 @@ class MetricsCollectionTest {
         MetricsCollectingVisitor metricsVisitor = new MetricsCollectingVisitor(metricsCollector);
 
         List<Path> list = Files.walk(Path.of(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
-        javaParser.parse(list, Path.of(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> {
-            metricsVisitor.visit(cu, ctx);
-        });
+        javaParser
+                .parse(list, Path.of(srcDirectory.getAbsolutePath()), ctx)
+                .forEach(cu -> metricsVisitor.visit(cu, ctx));
 
         metricsCollector.finalizeMetrics();
 
@@ -187,9 +187,9 @@ class MetricsCollectionTest {
         MetricsCollectingVisitor metricsVisitor = new MetricsCollectingVisitor(metricsCollector);
 
         List<Path> list = Files.walk(Path.of(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
-        javaParser.parse(list, Path.of(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> {
-            metricsVisitor.visit(cu, ctx);
-        });
+        javaParser
+                .parse(list, Path.of(srcDirectory.getAbsolutePath()), ctx)
+                .forEach(cu -> metricsVisitor.visit(cu, ctx));
 
         metricsCollector.finalizeMetrics();
 
@@ -240,9 +240,9 @@ class MetricsCollectionTest {
         MetricsCollectingVisitor metricsVisitor = new MetricsCollectingVisitor(metricsCollector);
 
         List<Path> list = Files.walk(Path.of(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
-        javaParser.parse(list, Path.of(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> {
-            metricsVisitor.visit(cu, ctx);
-        });
+        javaParser
+                .parse(list, Path.of(srcDirectory.getAbsolutePath()), ctx)
+                .forEach(cu -> metricsVisitor.visit(cu, ctx));
 
         metricsCollector.finalizeMetrics();
 
@@ -256,7 +256,7 @@ class MetricsCollectionTest {
                     + disharmony.getDescription());
         }
 
-        Assertions.assertTrue(brainMethods.size() > 0, "Should detect at least one Brain Method");
+        Assertions.assertTrue(!brainMethods.isEmpty(), "Should detect at least one Brain Method");
     }
 
     @Test
@@ -276,9 +276,9 @@ class MetricsCollectionTest {
         MetricsCollectingVisitor metricsVisitor = new MetricsCollectingVisitor(metricsCollector);
 
         List<Path> list = Files.walk(Path.of(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
-        javaParser.parse(list, Path.of(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> {
-            metricsVisitor.visit(cu, ctx);
-        });
+        javaParser
+                .parse(list, Path.of(srcDirectory.getAbsolutePath()), ctx)
+                .forEach(cu -> metricsVisitor.visit(cu, ctx));
 
         metricsCollector.finalizeMetrics();
 
@@ -312,7 +312,7 @@ class MetricsCollectionTest {
                 brainMethodsInClass > 1,
                 "BrainClassExample should have > 1 Brain Methods (Term 1 path), found: " + brainMethodsInClass);
 
-        Assertions.assertTrue(brainClasses.size() > 0, "Should detect at least one Brain Class");
+        Assertions.assertTrue(!brainClasses.isEmpty(), "Should detect at least one Brain Class");
         Assertions.assertTrue(
                 brainClass.getLinesOfCode() >= 195,
                 "BrainClassExample LOC should be >= 195 (VERY_HIGH), was: " + brainClass.getLinesOfCode());
@@ -351,9 +351,9 @@ class MetricsCollectionTest {
         MetricsCollectingVisitor metricsVisitor = new MetricsCollectingVisitor(metricsCollector);
 
         List<Path> list = Files.walk(Path.of(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
-        javaParser.parse(list, Path.of(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> {
-            metricsVisitor.visit(cu, ctx);
-        });
+        javaParser
+                .parse(list, Path.of(srcDirectory.getAbsolutePath()), ctx)
+                .forEach(cu -> metricsVisitor.visit(cu, ctx));
 
         metricsCollector.finalizeMetrics();
 
@@ -364,7 +364,7 @@ class MetricsCollectionTest {
         // Verify that methodWithFeatureEnvy meets the per-method thresholds
         MethodMetrics envyMethod = null;
         for (MethodMetrics m : featureEnvyClass.getMethods().values()) {
-            if (m.getMethodName().equals("methodWithFeatureEnvy")) {
+            if ("methodWithFeatureEnvy".equals(m.getMethodName())) {
                 envyMethod = m;
                 break;
             }
@@ -398,7 +398,7 @@ class MetricsCollectionTest {
                     + disharmony.getDescription());
         }
 
-        Assertions.assertTrue(featureEnvyMethods.size() > 0, "Should detect at least one Feature Envy method");
+        Assertions.assertTrue(!featureEnvyMethods.isEmpty(), "Should detect at least one Feature Envy method");
 
         boolean foundFeatureEnvy = false;
         for (DisharmonyDetector.MethodDisharmony disharmony : featureEnvyMethods) {
@@ -433,9 +433,9 @@ class MetricsCollectionTest {
         MetricsCollectingVisitor metricsVisitor = new MetricsCollectingVisitor(metricsCollector);
 
         List<Path> list = Files.walk(Path.of(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
-        javaParser.parse(list, Path.of(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> {
-            metricsVisitor.visit(cu, ctx);
-        });
+        javaParser
+                .parse(list, Path.of(srcDirectory.getAbsolutePath()), ctx)
+                .forEach(cu -> metricsVisitor.visit(cu, ctx));
 
         metricsCollector.finalizeMetrics();
 
@@ -455,7 +455,7 @@ class MetricsCollectionTest {
         Assertions.assertNotNull(intensiveClass, "IntensiveCouplingExample should be collected");
         MethodMetrics intensiveMethod = null;
         for (MethodMetrics m : intensiveClass.getMethods().values()) {
-            if (m.getMethodName().equals("methodWithIntensiveCoupling")) {
+            if ("methodWithIntensiveCoupling".equals(m.getMethodName())) {
                 intensiveMethod = m;
                 break;
             }
@@ -476,7 +476,7 @@ class MetricsCollectionTest {
                 "MAXNESTING should be > SHALLOW(1), was: " + intensiveMethod.getMaxNestingDepth());
 
         Assertions.assertTrue(
-                intensivelyCoupledMethods.size() > 0, "Should detect at least one Intensive Coupling method");
+                !intensivelyCoupledMethods.isEmpty(), "Should detect at least one Intensive Coupling method");
 
         boolean foundIntensiveCoupling = false;
         for (DisharmonyDetector.MethodDisharmony disharmony : intensivelyCoupledMethods) {
@@ -509,9 +509,9 @@ class MetricsCollectionTest {
         MetricsCollectingVisitor metricsVisitor = new MetricsCollectingVisitor(metricsCollector);
 
         List<Path> list = Files.walk(Path.of(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
-        javaParser.parse(list, Path.of(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> {
-            metricsVisitor.visit(cu, ctx);
-        });
+        javaParser
+                .parse(list, Path.of(srcDirectory.getAbsolutePath()), ctx)
+                .forEach(cu -> metricsVisitor.visit(cu, ctx));
 
         metricsCollector.finalizeMetrics();
 
@@ -531,7 +531,7 @@ class MetricsCollectionTest {
         Assertions.assertNotNull(dispersedClass, "DispersedCouplingExample should be collected");
         MethodMetrics dispersedMethod = null;
         for (MethodMetrics m : dispersedClass.getMethods().values()) {
-            if (m.getMethodName().equals("methodWithDispersedCoupling")) {
+            if ("methodWithDispersedCoupling".equals(m.getMethodName())) {
                 dispersedMethod = m;
                 break;
             }
@@ -552,7 +552,7 @@ class MetricsCollectionTest {
                 "MAXNESTING should be > SHALLOW(1), was: " + dispersedMethod.getMaxNestingDepth());
 
         Assertions.assertTrue(
-                dispersedCoupledMethods.size() > 0, "Should detect at least one Dispersed Coupling method");
+                !dispersedCoupledMethods.isEmpty(), "Should detect at least one Dispersed Coupling method");
 
         boolean foundDispersedCoupling = false;
         for (DisharmonyDetector.MethodDisharmony disharmony : dispersedCoupledMethods) {
@@ -585,9 +585,9 @@ class MetricsCollectionTest {
         MetricsCollectingVisitor metricsVisitor = new MetricsCollectingVisitor(metricsCollector);
 
         List<Path> list = Files.walk(Path.of(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
-        javaParser.parse(list, Path.of(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> {
-            metricsVisitor.visit(cu, ctx);
-        });
+        javaParser
+                .parse(list, Path.of(srcDirectory.getAbsolutePath()), ctx)
+                .forEach(cu -> metricsVisitor.visit(cu, ctx));
 
         metricsCollector.finalizeMetrics();
 
@@ -597,7 +597,7 @@ class MetricsCollectionTest {
         Assertions.assertNotNull(shotgunClass, "ShotgunSurgeryExample should be collected");
         MethodMetrics performService = null;
         for (MethodMetrics m : shotgunClass.getMethods().values()) {
-            if (m.getMethodName().equals("performService")) {
+            if ("performService".equals(m.getMethodName())) {
                 performService = m;
                 break;
             }
@@ -623,7 +623,7 @@ class MetricsCollectionTest {
                     + disharmony.getDescription());
         }
 
-        Assertions.assertTrue(shotgunSurgeryMethods.size() > 0, "Should detect at least one Shotgun Surgery method");
+        Assertions.assertTrue(!shotgunSurgeryMethods.isEmpty(), "Should detect at least one Shotgun Surgery method");
 
         boolean foundShotgunSurgery = false;
         for (DisharmonyDetector.MethodDisharmony disharmony : shotgunSurgeryMethods) {
@@ -657,9 +657,9 @@ class MetricsCollectionTest {
         MetricsCollectingVisitor metricsVisitor = new MetricsCollectingVisitor(metricsCollector);
 
         List<Path> list = Files.walk(Path.of(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
-        javaParser.parse(list, Path.of(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> {
-            metricsVisitor.visit(cu, ctx);
-        });
+        javaParser
+                .parse(list, Path.of(srcDirectory.getAbsolutePath()), ctx)
+                .forEach(cu -> metricsVisitor.visit(cu, ctx));
 
         metricsCollector.finalizeMetrics();
 
@@ -689,7 +689,7 @@ class MetricsCollectionTest {
         }
 
         Assertions.assertTrue(
-                refusedBequestClasses.size() > 0, "Should detect at least one Refused Parent Bequest class");
+                !refusedBequestClasses.isEmpty(), "Should detect at least one Refused Parent Bequest class");
 
         boolean foundRefusedBequest = false;
         for (DisharmonyDetector.ClassDisharmony classDisharmony : refusedBequestClasses) {
@@ -747,9 +747,9 @@ class MetricsCollectionTest {
         MetricsCollectingVisitor metricsVisitor = new MetricsCollectingVisitor(metricsCollector);
 
         List<Path> list = Files.walk(Path.of(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
-        javaParser.parse(list, Path.of(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> {
-            metricsVisitor.visit(cu, ctx);
-        });
+        javaParser
+                .parse(list, Path.of(srcDirectory.getAbsolutePath()), ctx)
+                .forEach(cu -> metricsVisitor.visit(cu, ctx));
 
         metricsCollector.finalizeMetrics();
 
@@ -771,7 +771,7 @@ class MetricsCollectionTest {
             System.out.println(classDisharmony.getClassName() + ": " + classDisharmony.getDescription());
         }
 
-        Assertions.assertTrue(traditionBreakerClasses.size() > 0, "Should detect at least one Tradition Breaker class");
+        Assertions.assertTrue(!traditionBreakerClasses.isEmpty(), "Should detect at least one Tradition Breaker class");
 
         boolean foundTraditionBreaker = false;
         for (DisharmonyDetector.ClassDisharmony classDisharmony : traditionBreakerClasses) {
@@ -830,9 +830,9 @@ class MetricsCollectionTest {
         MetricsCollectingVisitor metricsVisitor = new MetricsCollectingVisitor(metricsCollector);
 
         List<Path> list = Files.walk(Path.of(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
-        javaParser.parse(list, Path.of(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> {
-            metricsVisitor.visit(cu, ctx);
-        });
+        javaParser
+                .parse(list, Path.of(srcDirectory.getAbsolutePath()), ctx)
+                .forEach(cu -> metricsVisitor.visit(cu, ctx));
 
         metricsCollector.finalizeMetrics();
 
@@ -901,9 +901,9 @@ class MetricsCollectionTest {
         MetricsCollectingVisitor metricsVisitor = new MetricsCollectingVisitor(metricsCollector);
 
         List<Path> list = Files.walk(Path.of(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
-        javaParser.parse(list, Path.of(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> {
-            metricsVisitor.visit(cu, ctx);
-        });
+        javaParser
+                .parse(list, Path.of(srcDirectory.getAbsolutePath()), ctx)
+                .forEach(cu -> metricsVisitor.visit(cu, ctx));
 
         metricsCollector.finalizeMetrics();
 

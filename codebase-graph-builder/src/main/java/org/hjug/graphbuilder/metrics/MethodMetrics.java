@@ -1,82 +1,346 @@
 package org.hjug.graphbuilder.metrics;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import lombok.AccessLevel;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Setter;
 
+/**
+ * Per-method metrics accumulator. Mutable during the parse-time visitor
+ * walk (single-threaded write phase); frozen in place alongside its owning
+ * {@link ClassMetrics} by {@link GraphMetricsCollector#finalizeMetrics()}.
+ * Once frozen, every setter/mutator rejects mutation with
+ * {@link IllegalStateException} and collection getters return unmodifiable
+ * views (review item #9). {@code @Data} is retained for
+ * equals/hashCode/toString and the plain getters; the guarded hand-written
+ * setters/adders below shadow the Lombok-generated ones.
+ */
 @Data
 public class MethodMetrics {
+    @Setter(AccessLevel.NONE)
     private String methodName;
+
+    @Setter(AccessLevel.NONE)
     private String signature;
+
+    @Setter(AccessLevel.NONE)
+    @EqualsAndHashCode.Exclude
+    private boolean finalized;
+
+    @Setter(AccessLevel.NONE)
+    private int numberOfCallableReferences;
+
     private int linesOfCode;
     private int cyclomaticComplexity = 1;
     private int maxNestingDepth;
     private int numberOfParameters;
-    private Set<String> accessedVariables = new HashSet<>();
-    private Set<String> accessedForeignClasses = new HashSet<>();
-    private Set<String> accessedForeignAttributes = new HashSet<>();
-    private Set<String> accessedOwnAttributes = new HashSet<>();
     /** CINT: distinct foreign methods called by this method (method invocations, not field accesses). */
+    @Setter(AccessLevel.NONE)
+    private Set<String> accessedVariables = new HashSet<>();
+
+    @Setter(AccessLevel.NONE)
+    private Set<String> accessedForeignClasses = new HashSet<>();
+
+    @Setter(AccessLevel.NONE)
+    private Set<String> accessedForeignAttributes = new HashSet<>();
+
+    @Setter(AccessLevel.NONE)
+    private Set<String> accessedOwnAttributes = new HashSet<>();
+
+    @Setter(AccessLevel.NONE)
     private Set<String> calledForeignMethods = new HashSet<>();
     /** Distinct classes that own the foreign methods called by this method (for CDISP numerator). */
+    @Setter(AccessLevel.NONE)
     private Set<String> calledForeignMethodClasses = new HashSet<>();
     /** CM: distinct foreign methods that call this method (Changing Methods — incoming coupling). */
+    @Setter(AccessLevel.NONE)
     private Set<String> changingMethods = new HashSet<>();
     /** CC: distinct foreign classes whose methods call this method (Changing Classes — incoming coupling). */
+    @Setter(AccessLevel.NONE)
     private Set<String> changingClasses = new HashSet<>();
+    /**
+     * FQNs of classes referenced by this method's type-parameter bounds
+     * (Kotlin generic methods, Java generic methods). Populated by the
+     * metrics visitor while walking {@link org.openrewrite.java.tree.J.TypeParameter}
+     * bounds on the method declaration.
+     */
+    @Setter(AccessLevel.NONE)
+    private Set<String> typeParameterFqns = new HashSet<>();
 
+    @Setter(AccessLevel.NONE)
     private boolean isAccessor;
+
+    @Setter(AccessLevel.NONE)
     private boolean isConstructor;
+
+    @Setter(AccessLevel.NONE)
     private List<String> normalizedBodyLines = new ArrayList<>();
+
+    private void requireMutable() {
+        if (finalized) {
+            throw new IllegalStateException("MethodMetrics is final for signature=" + signature);
+        }
+    }
+
+    /** Package-private freeze entry point, called by {@link GraphMetricsCollector}. Idempotent. */
+    void freeze() {
+        finalized = true;
+    }
 
     public MethodMetrics(String methodName, String signature) {
         this.methodName = methodName;
         this.signature = signature;
     }
 
+    // --- Guarded setters (shadow Lombok-generated ones) -------------------
+
+    public void setLinesOfCode(int linesOfCode) {
+        requireMutable();
+        this.linesOfCode = linesOfCode;
+    }
+
+    public void setCyclomaticComplexity(int cyclomaticComplexity) {
+        requireMutable();
+        this.cyclomaticComplexity = cyclomaticComplexity;
+    }
+
+    public void setMaxNestingDepth(int maxNestingDepth) {
+        requireMutable();
+        this.maxNestingDepth = maxNestingDepth;
+    }
+
+    public void setNumberOfParameters(int numberOfParameters) {
+        requireMutable();
+        this.numberOfParameters = numberOfParameters;
+    }
+
+    public void setAccessor(boolean isAccessor) {
+        requireMutable();
+        this.isAccessor = isAccessor;
+    }
+
+    public void setConstructor(boolean isConstructor) {
+        requireMutable();
+        this.isConstructor = isConstructor;
+    }
+
+    public void setNormalizedBodyLines(List<String> normalizedBodyLines) {
+        requireMutable();
+        this.normalizedBodyLines =
+                normalizedBodyLines != null ? new ArrayList<>(normalizedBodyLines) : new ArrayList<>();
+        this.normalizedBodyLinesView = null;
+    }
+
+    public void setFinalized(boolean finalized) {
+        requireMutable();
+        this.finalized = finalized;
+    }
+
+    public void setNumberOfCallableReferences(int numberOfCallableReferences) {
+        requireMutable();
+        this.numberOfCallableReferences = numberOfCallableReferences;
+    }
+
+    // --- Guarded mutators --------------------------------------------------
+
     public void incrementComplexity() {
+        requireMutable();
         this.cyclomaticComplexity++;
     }
 
     public void updateMaxNesting(int depth) {
+        requireMutable();
         if (depth > this.maxNestingDepth) {
             this.maxNestingDepth = depth;
         }
     }
 
     public void addAccessedVariable(String variable) {
+        requireMutable();
         this.accessedVariables.add(variable);
     }
 
     public void addAccessedForeignClass(String className) {
+        requireMutable();
         this.accessedForeignClasses.add(className);
     }
 
     public void addAccessedForeignAttribute(String qualifiedAttributeName) {
+        requireMutable();
         this.accessedForeignAttributes.add(qualifiedAttributeName);
     }
 
     public void addAccessedOwnAttribute(String attributeName) {
+        requireMutable();
         this.accessedOwnAttributes.add(attributeName);
     }
 
     public void addCalledForeignMethod(String qualifiedSignature) {
+        requireMutable();
         this.calledForeignMethods.add(qualifiedSignature);
     }
 
     public void addCalledForeignMethodClass(String className) {
+        requireMutable();
         this.calledForeignMethodClasses.add(className);
     }
 
     public void addChangingMethod(String callerMethodSig) {
+        requireMutable();
         this.changingMethods.add(callerMethodSig);
     }
 
     public void addChangingClass(String callerClassFqn) {
+        requireMutable();
         this.changingClasses.add(callerClassFqn);
     }
+
+    public void incrementCallableReferences() {
+        requireMutable();
+        this.numberOfCallableReferences++;
+    }
+
+    public void addTypeParameterFqn(String fqn) {
+        requireMutable();
+        if (fqn != null && !fqn.isEmpty()) {
+            this.typeParameterFqns.add(fqn);
+        }
+    }
+
+    // --- Collection getters: lazy-cached unmodifiable views ----------------
+
+    @Setter(AccessLevel.NONE)
+    @EqualsAndHashCode.Exclude
+    private Set<String> accessedVariablesView;
+
+    public Set<String> getAccessedVariables() {
+        Set<String> v = accessedVariablesView;
+        if (v == null) {
+            v = Collections.unmodifiableSet(accessedVariables);
+            accessedVariablesView = v;
+        }
+        return v;
+    }
+
+    @Setter(AccessLevel.NONE)
+    @EqualsAndHashCode.Exclude
+    private Set<String> accessedForeignClassesView;
+
+    public Set<String> getAccessedForeignClasses() {
+        Set<String> v = accessedForeignClassesView;
+        if (v == null) {
+            v = Collections.unmodifiableSet(accessedForeignClasses);
+            accessedForeignClassesView = v;
+        }
+        return v;
+    }
+
+    @Setter(AccessLevel.NONE)
+    @EqualsAndHashCode.Exclude
+    private Set<String> accessedForeignAttributesView;
+
+    public Set<String> getAccessedForeignAttributes() {
+        Set<String> v = accessedForeignAttributesView;
+        if (v == null) {
+            v = Collections.unmodifiableSet(accessedForeignAttributes);
+            accessedForeignAttributesView = v;
+        }
+        return v;
+    }
+
+    @Setter(AccessLevel.NONE)
+    @EqualsAndHashCode.Exclude
+    private Set<String> accessedOwnAttributesView;
+
+    public Set<String> getAccessedOwnAttributes() {
+        Set<String> v = accessedOwnAttributesView;
+        if (v == null) {
+            v = Collections.unmodifiableSet(accessedOwnAttributes);
+            accessedOwnAttributesView = v;
+        }
+        return v;
+    }
+
+    @Setter(AccessLevel.NONE)
+    @EqualsAndHashCode.Exclude
+    private Set<String> calledForeignMethodsView;
+
+    public Set<String> getCalledForeignMethods() {
+        Set<String> v = calledForeignMethodsView;
+        if (v == null) {
+            v = Collections.unmodifiableSet(calledForeignMethods);
+            calledForeignMethodsView = v;
+        }
+        return v;
+    }
+
+    @Setter(AccessLevel.NONE)
+    @EqualsAndHashCode.Exclude
+    private Set<String> calledForeignMethodClassesView;
+
+    public Set<String> getCalledForeignMethodClasses() {
+        Set<String> v = calledForeignMethodClassesView;
+        if (v == null) {
+            v = Collections.unmodifiableSet(calledForeignMethodClasses);
+            calledForeignMethodClassesView = v;
+        }
+        return v;
+    }
+
+    @Setter(AccessLevel.NONE)
+    @EqualsAndHashCode.Exclude
+    private Set<String> changingMethodsView;
+
+    public Set<String> getChangingMethods() {
+        Set<String> v = changingMethodsView;
+        if (v == null) {
+            v = Collections.unmodifiableSet(changingMethods);
+            changingMethodsView = v;
+        }
+        return v;
+    }
+
+    @Setter(AccessLevel.NONE)
+    @EqualsAndHashCode.Exclude
+    private Set<String> changingClassesView;
+
+    public Set<String> getChangingClasses() {
+        Set<String> v = changingClassesView;
+        if (v == null) {
+            v = Collections.unmodifiableSet(changingClasses);
+            changingClassesView = v;
+        }
+        return v;
+    }
+
+    @Setter(AccessLevel.NONE)
+    @EqualsAndHashCode.Exclude
+    private Set<String> typeParameterFqnsView;
+
+    public Set<String> getTypeParameterFqns() {
+        Set<String> v = typeParameterFqnsView;
+        if (v == null) {
+            v = Collections.unmodifiableSet(typeParameterFqns);
+            typeParameterFqnsView = v;
+        }
+        return v;
+    }
+
+    @Setter(AccessLevel.NONE)
+    @EqualsAndHashCode.Exclude
+    private List<String> normalizedBodyLinesView;
+
+    public List<String> getNormalizedBodyLines() {
+        List<String> v = normalizedBodyLinesView;
+        if (v == null) {
+            v = Collections.unmodifiableList(normalizedBodyLines);
+            normalizedBodyLinesView = v;
+        }
+        return v;
+    }
+
+    // --- Derived counts (read-only) ---------------------------------------
 
     /** CM: number of distinct foreign methods that call this method. */
     public int getChangingMethodCount() {
@@ -111,7 +375,9 @@ public class MethodMetrics {
      */
     public double getCouplingDispersion() {
         int cint = getCouplingIntensity();
-        if (cint == 0) return 0.0;
+        if (cint == 0) {
+            return 0.0;
+        }
         return (double) calledForeignMethodClasses.size() / cint;
     }
 
@@ -124,7 +390,9 @@ public class MethodMetrics {
         int own = accessedOwnAttributes.size();
         int foreign = accessedForeignAttributes.size();
         int total = own + foreign;
-        if (total == 0) return 1.0;
+        if (total == 0) {
+            return 1.0;
+        }
         return (double) own / total;
     }
 }

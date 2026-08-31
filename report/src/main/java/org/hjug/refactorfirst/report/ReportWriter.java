@@ -8,7 +8,7 @@ import java.nio.file.Files;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class ReportWriter {
+public final class ReportWriter {
 
     public static void writeReportToDisk(
             final String reportOutputDirectory, final String filename, final String string) {
@@ -36,4 +36,6 @@ public class ReportWriter {
 
         log.info("Done! View the report at target/site/{}", filename);
     }
+
+    private ReportWriter() {}
 }

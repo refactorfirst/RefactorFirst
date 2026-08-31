@@ -25,7 +25,7 @@ import org.hjug.refactorfirst.report.HtmlReport;
 public class RefactorFirstMavenReport extends AbstractMavenReport {
 
     @Parameter(property = "showDetails")
-    private boolean showDetails = false;
+    private boolean showDetails;
 
     @Parameter(property = "backEdgeAnalysisCount")
     protected int backEdgeAnalysisCount = 50;

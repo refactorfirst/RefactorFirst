@@ -91,9 +91,7 @@ public class FeedbackVertexSetSolver<V, E> {
 
         scAlg.stronglyConnectedSets().parallelStream()
                 .filter(this::isInterestingComponent)
-                .forEach(scc -> {
-                    scc.parallelStream().forEach(v -> counts.merge(v, 1L, Long::sum));
-                });
+                .forEach(scc -> scc.parallelStream().forEach(v -> counts.merge(v, 1L, Long::sum)));
 
         return counts;
     }
@@ -247,7 +245,9 @@ public class FeedbackVertexSetSolver<V, E> {
                 .filter(v -> Math.abs(distances.get(v) - cutDistance) < 1e-10)
                 .collect(Collectors.toSet());
 
-        if (cut.isEmpty()) return null;
+        if (cut.isEmpty()) {
+            return null;
+        }
 
         double actualWeight = cut.parallelStream()
                 .mapToDouble(v -> vertexWeights.getOrDefault(v, 1.0))
@@ -257,7 +257,9 @@ public class FeedbackVertexSetSolver<V, E> {
                 .mapToDouble(v -> fractionalSolution.getOrDefault(v, 0.0))
                 .sum();
 
-        if (fractionalWeight <= 1e-10) return null;
+        if (fractionalWeight <= 1e-10) {
+            return null;
+        }
 
         return new CutCandidate<>(cut, actualWeight / fractionalWeight, cutDistance);
     }
@@ -284,7 +286,9 @@ public class FeedbackVertexSetSolver<V, E> {
      * Checks for interesting cycles in a subgraph[9]
      */
     private boolean hasInterestingCycleInSubgraph(Graph<V, E> subgraph, Set<V> special) {
-        if (subgraph.vertexSet().isEmpty()) return false;
+        if (subgraph.vertexSet().isEmpty()) {
+            return false;
+        }
 
         StrongConnectivityAlgorithm<V, E> scAlg = new KosarajuStrongConnectivityInspector<>(subgraph);
 

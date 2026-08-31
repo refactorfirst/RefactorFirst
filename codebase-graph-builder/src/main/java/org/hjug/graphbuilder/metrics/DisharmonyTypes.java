@@ -13,6 +13,9 @@ public final class DisharmonyTypes {
     public static final String REFUSED_PARENT_BEQUEST = "Refused Parent Bequest";
     public static final String TRADITION_BREAKER = "Tradition Breaker";
     public static final String SIGNIFICANT_DUPLICATION = "Significant Duplication";
+    public static final String EXCESSIVE_EXTENSIONS = "Excessive Extensions";
+    public static final String LARGE_SEALED_HIERARCHY = "Large Sealed Hierarchy";
+    public static final String DATA_CLASS_WITH_LOGIC = "Data Class with Logic";
 
     private DisharmonyTypes() {}
 }

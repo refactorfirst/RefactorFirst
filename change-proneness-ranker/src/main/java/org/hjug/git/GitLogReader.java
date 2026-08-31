@@ -21,6 +21,7 @@ import org.eclipse.jgit.util.io.NullOutputStream;
 public class GitLogReader implements AutoCloseable {
 
     static final String JAVA_FILE_TYPE = ".java";
+    static final String KOTLIN_FILE_TYPE = ".kt";
 
     private Repository gitRepository;
 
@@ -173,7 +174,9 @@ public class GitLogReader implements AutoCloseable {
                 int count = 0;
                 for (DiffEntry entry : getDiffEntries(newer, older)) {
                     if (entry.getNewPath().endsWith(JAVA_FILE_TYPE)
-                            || entry.getOldPath().endsWith(JAVA_FILE_TYPE)) {
+                            || entry.getOldPath().endsWith(JAVA_FILE_TYPE)
+                            || entry.getNewPath().endsWith(KOTLIN_FILE_TYPE)
+                            || entry.getOldPath().endsWith(KOTLIN_FILE_TYPE)) {
                         count++;
                     }
                 }
@@ -212,7 +215,8 @@ public class GitLogReader implements AutoCloseable {
                 if (treeWalk.isSubtree()) {
                     treeWalk.enterSubtree();
                 } else {
-                    if (treeWalk.getPathString().endsWith(JAVA_FILE_TYPE)) {
+                    if (treeWalk.getPathString().endsWith(JAVA_FILE_TYPE)
+                            || treeWalk.getPathString().endsWith(KOTLIN_FILE_TYPE)) {
                         firstCommitCount++;
                     }
                 }

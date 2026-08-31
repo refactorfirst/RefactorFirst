@@ -47,9 +47,9 @@ class SignificantDuplicationTest {
         MetricsCollectingVisitor metricsVisitor = new MetricsCollectingVisitor(metricsCollector);
 
         List<Path> list = Files.walk(Path.of(srcDirectory.getAbsolutePath())).collect(Collectors.toList());
-        javaParser.parse(list, Path.of(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> {
-            metricsVisitor.visit(cu, ctx);
-        });
+        javaParser
+                .parse(list, Path.of(srcDirectory.getAbsolutePath()), ctx)
+                .forEach(cu -> metricsVisitor.visit(cu, ctx));
 
         metricsCollector.finalizeMetrics();
 
@@ -69,8 +69,7 @@ class SignificantDuplicationTest {
         Assertions.assertNotNull(intraClass, "IntraClass fixture should be collected");
 
         for (MethodMetrics method : intraClass.getMethods().values()) {
-            if (method.getMethodName().equals("methodA")
-                    || method.getMethodName().equals("methodB")) {
+            if ("methodA".equals(method.getMethodName()) || "methodB".equals(method.getMethodName())) {
                 System.out.println(method.getMethodName() + " body lines: "
                         + method.getNormalizedBodyLines().size());
                 Assertions.assertFalse(
@@ -86,11 +85,11 @@ class SignificantDuplicationTest {
 
     @Test
     void detectsIntraClassSignificantDuplication() {
-        boolean found = detected.stream().anyMatch(d -> d.getClassName().equals(INTRA_CLASS_FQN));
+        boolean found = detected.stream().anyMatch(d -> INTRA_CLASS_FQN.equals(d.getClassName()));
         Assertions.assertTrue(found, "SignificantDuplicationIntraClass should be flagged (intra-class chain)");
 
         detected.stream()
-                .filter(d -> d.getClassName().equals(INTRA_CLASS_FQN))
+                .filter(d -> INTRA_CLASS_FQN.equals(d.getClassName()))
                 .findFirst()
                 .ifPresent(d -> {
                     Assertions.assertEquals(DisharmonyTypes.SIGNIFICANT_DUPLICATION, d.getDisharmonyType());
@@ -98,12 +97,12 @@ class SignificantDuplicationTest {
                     Assertions.assertTrue(d.getDescription().contains("SDC="), "Description should include SDC=");
 
                     double sec = d.getMetricValues().stream()
-                            .filter(m -> m.getName().equals("SEC"))
+                            .filter(m -> "SEC".equals(m.getName()))
                             .findFirst()
                             .map(DisharmonyMetric::getValue)
                             .orElse(0.0);
                     double sdc = d.getMetricValues().stream()
-                            .filter(m -> m.getName().equals("SDC"))
+                            .filter(m -> "SDC".equals(m.getName()))
                             .findFirst()
                             .map(DisharmonyMetric::getValue)
                             .orElse(0.0);
@@ -116,19 +115,19 @@ class SignificantDuplicationTest {
 
     @Test
     void detectsCrossClassSignificantDuplication() {
-        boolean foundA = detected.stream().anyMatch(d -> d.getClassName().equals(CROSS_CLASS_A_FQN));
-        boolean foundB = detected.stream().anyMatch(d -> d.getClassName().equals(CROSS_CLASS_B_FQN));
+        boolean foundA = detected.stream().anyMatch(d -> CROSS_CLASS_A_FQN.equals(d.getClassName()));
+        boolean foundB = detected.stream().anyMatch(d -> CROSS_CLASS_B_FQN.equals(d.getClassName()));
 
         Assertions.assertTrue(foundA, "SignificantDuplicationCrossClassA should be flagged");
         Assertions.assertTrue(foundB, "SignificantDuplicationCrossClassB should be flagged");
 
         detected.stream()
-                .filter(d -> d.getClassName().equals(CROSS_CLASS_A_FQN))
+                .filter(d -> CROSS_CLASS_A_FQN.equals(d.getClassName()))
                 .findFirst()
                 .ifPresent(d -> {
                     Assertions.assertEquals(DisharmonyTypes.SIGNIFICANT_DUPLICATION, d.getDisharmonyType());
                     double sdc = d.getMetricValues().stream()
-                            .filter(m -> m.getName().equals("SDC"))
+                            .filter(m -> "SDC".equals(m.getName()))
                             .findFirst()
                             .map(DisharmonyMetric::getValue)
                             .orElse(0.0);
@@ -150,14 +149,14 @@ class SignificantDuplicationTest {
                             + method.getNormalizedBodyLines().size());
         }
 
-        boolean found = detected.stream().anyMatch(d -> d.getClassName().equals(CLEAN_CLASS_FQN));
+        boolean found = detected.stream().anyMatch(d -> CLEAN_CLASS_FQN.equals(d.getClassName()));
         Assertions.assertFalse(found, "SignificantDuplicationCleanClass should not be flagged");
     }
 
     @Test
     void detectedDuplicationPartnersIncludesMethodNames() {
         DisharmonyDetector.ClassDisharmony intraClass = detected.stream()
-                .filter(d -> d.getClassName().equals(INTRA_CLASS_FQN))
+                .filter(d -> INTRA_CLASS_FQN.equals(d.getClassName()))
                 .findFirst()
                 .orElse(null);
         Assertions.assertNotNull(intraClass, "SignificantDuplicationIntraClass must be detected");
@@ -172,7 +171,7 @@ class SignificantDuplicationTest {
     @Test
     void detectedDuplicationPartnersIncludesPartnerClassForCrossClass() {
         DisharmonyDetector.ClassDisharmony crossA = detected.stream()
-                .filter(d -> d.getClassName().equals(CROSS_CLASS_A_FQN))
+                .filter(d -> CROSS_CLASS_A_FQN.equals(d.getClassName()))
                 .findFirst()
                 .orElse(null);
         Assertions.assertNotNull(crossA, "SignificantDuplicationCrossClassA must be detected");
@@ -197,10 +196,8 @@ class SignificantDuplicationTest {
             Assertions.assertNotNull(d.getMetricValues(), "Metric values should not be null");
             Assertions.assertEquals(2, d.getMetricValues().size(), "Should have exactly 2 metrics (SEC and SDC)");
 
-            boolean hasSEC =
-                    d.getMetricValues().stream().anyMatch(m -> m.getName().equals("SEC"));
-            boolean hasSDC =
-                    d.getMetricValues().stream().anyMatch(m -> m.getName().equals("SDC"));
+            boolean hasSEC = d.getMetricValues().stream().anyMatch(m -> "SEC".equals(m.getName()));
+            boolean hasSDC = d.getMetricValues().stream().anyMatch(m -> "SDC".equals(m.getName()));
             Assertions.assertTrue(hasSEC, "Should have SEC metric for " + d.getClassName());
             Assertions.assertTrue(hasSDC, "Should have SDC metric for " + d.getClassName());
 

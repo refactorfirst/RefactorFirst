@@ -166,14 +166,10 @@ public class SimpleHtmlReport {
         log.info("Project Base Dir: {} ", projectBaseDir);
         log.info("Parent of Git Dir: {}", parentOfGitDir);
 
-        if (!projectBaseDir.equals(parentOfGitDir)) {
-            log.warn("Project Base Directory does not match Git Parent Directory");
-            stringBuilder.append("Project Base Directory does not match Git Parent Directory.  "
-                    + "Please refer to the report at the root of the site directory.");
-            return stringBuilder;
-        }
-
-        CycleRanker cycleRanker = new CycleRanker(projectBaseDir);
+        // In multi-module projects, projectBaseDir is the module directory (e.g., fxgl-core)
+        // and parentOfGitDir is the Git repo root (e.g., FXGL root)
+        // Pass both to CycleRanker so it can use repo root for URL canonicalization
+        CycleRanker cycleRanker = new CycleRanker(projectBaseDir, parentOfGitDir);
         List<RankedCycle> rankedClassCycles = List.of();
         //        List<RankedCycle> rankedPackageCycles = List.of();
         CodebaseGraphDTO codebaseGraphDTO;
@@ -295,7 +291,28 @@ public class SimpleHtmlReport {
                         true,
                         "Method is called by many methods in many classes",
                         "- Move the method closer to the calling classes (move the behavior closer to the data) if it is small.<br>"
-                                + "- If it is a large method, treat is as a Brain Method and decompose it into two or more smaller methods."));
+                                + "- If it is a large method, treat it as a Brain Method and decompose it into two or more smaller methods."),
+                new DisharmonySpec(
+                        DisharmonyTypes.EXCESSIVE_EXTENSIONS,
+                        "EXCESSIVE_EXTENSIONS",
+                        "Excessive Extensions",
+                        false,
+                        "Class declares many extension functions across many receiver types, indicating it's trying to extend too many unrelated types.",
+                        "Consider moving extension functions closer to the types they extend. Group related extensions into separate files or classes."),
+                new DisharmonySpec(
+                        DisharmonyTypes.LARGE_SEALED_HIERARCHY,
+                        "LARGE_SEALED_HIERARCHY",
+                        "Large Sealed Hierarchy",
+                        false,
+                        "Sealed class has many permitted subtypes, making the hierarchy hard to maintain and exhaustive when expressions become unwieldy.",
+                        "Re-evaluate the domain model. Consider grouping subtypes into intermediate sealed classes or using a different pattern."),
+                new DisharmonySpec(
+                        DisharmonyTypes.DATA_CLASS_WITH_LOGIC,
+                        "DATA_CLASS_WITH_LOGIC",
+                        "Data Class with Logic",
+                        false,
+                        "Data class contains non-accessor methods with business logic, violating the data carrier principle.",
+                        "Move business logic to separate service classes. Keep data classes as pure data holders with only accessor methods."));
 
         Map<String, List<RankedDisharmony>> rankedDisharmoniesByAnchor = new LinkedHashMap<>();
 
@@ -617,8 +634,10 @@ public class SimpleHtmlReport {
         Set<DefaultWeightedEdge> classRelationshipsInPackageRelationship =
                 codebaseGraphDTO.getClassRelationshipsInPackageRelationship().get(edgeInfo.getEdge());
         Set<String> classEdges = new HashSet<>();
-        for (DefaultWeightedEdge defaultWeightedEdge : classRelationshipsInPackageRelationship) {
-            classEdges.add(renderClassEdge(defaultWeightedEdge, repoUrl, codebaseGraphDTO));
+        if (classRelationshipsInPackageRelationship != null) {
+            for (DefaultWeightedEdge defaultWeightedEdge : classRelationshipsInPackageRelationship) {
+                classEdges.add(renderClassEdge(defaultWeightedEdge, repoUrl, codebaseGraphDTO));
+            }
         }
 
         return new String[] {
@@ -671,7 +690,8 @@ public class SimpleHtmlReport {
 
         // &#8594; is HTML "Right Arrow" code
         return edgesToCut
-                .append(getClassName(startVertex) + " &#8594; " + getClassName(endVertex) + " : "
+                .append(escapeHtmlLabel(getClassName(startVertex)) + " &#8594; "
+                        + escapeHtmlLabel(getClassName(endVertex)) + " : "
                         + (int) classGraph.getEdgeWeight(edge))
                 .toString();
     }
@@ -729,10 +749,21 @@ public class SimpleHtmlReport {
     }
 
     String hyperlinkClass(String className, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
-        StringBuilder sb = new StringBuilder();
         String path = codebaseGraphDTO.getClassToSourceFilePathMapping().get(className);
-        return sb.append("<a href=" + repoUrl + path + " target=\"_blank\">" + getClassName(className) + "</a>")
-                .toString();
+        if (path == null || path.isBlank()) {
+            return escapeHtmlLabel(getClassName(className));
+        }
+        return "<a href=" + repoUrl + path + " target=\"_blank\">" + escapeHtmlLabel(getClassName(className)) + "</a>";
+    }
+
+    /**
+     * Escapes HTML-significant characters in a class-name label for non-DOT HTML table contexts
+     * (cycle/edge relationship tables). Most importantly the Kotlin literal {@code "<anonymous>"}
+     * must be HTML-escaped to {@code <anonymous>} so the {@code <}/{@code >} do not break the
+     * surrounding anchor/table markup.
+     */
+    static String escapeHtmlLabel(String label) {
+        return label.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
     }
 
     private String[] getClassCycleSummaryTableHeadings() {
@@ -758,8 +789,10 @@ public class SimpleHtmlReport {
         stringBuilder.append("<br/>\n");
         stringBuilder.append("<br/>\n");
 
-        stringBuilder.append("<h2 align=\"center\"><a id=\"CYCLEMAP\">Largest Class Cycle : "
-                + getClassName(cycle.getCycleName()) + "</a></h2>\n");
+        stringBuilder
+                .append("<h2 align=\"center\"><a id=\"CYCLEMAP\">Largest Class Cycle : ")
+                .append(getClassName(cycle.getCycleName()))
+                .append("</a></h2>\n");
         stringBuilder.append(
                 "<h3 align=\"center\">Limiting number of cycles displayed to 1 to keep page load time fast</h3>\n");
         stringBuilder.append(renderClassCycleVisuals(cycle, repoUrl, codebaseGraphDTO));
@@ -771,8 +804,12 @@ public class SimpleHtmlReport {
         stringBuilder.append("</strong>");
         int classCount = cycle.getCycleNodes().size();
         int relationshipCount = cycle.getEdgeSet().size();
-        stringBuilder.append("<div align=\"center\">Number of classes: " + classCount + "  Number of relationships: "
-                + relationshipCount + "<br></div>");
+        stringBuilder
+                .append("<div align=\"center\">Number of classes: ")
+                .append(classCount)
+                .append("  Number of relationships: ")
+                .append(relationshipCount)
+                .append("<br></div>");
         stringBuilder.append("</div>\n");
 
         stringBuilder.append("<div align=\"center\">");
@@ -837,17 +874,9 @@ public class SimpleHtmlReport {
 
     String drawTableCell(String rowData) {
         if (isNumber(rowData) || isDateTime(rowData)) {
-            return new StringBuilder()
-                    .append("<td align=\"right\">")
-                    .append(rowData)
-                    .append("</td>\n")
-                    .toString();
+            return "<td align=\"right\">" + rowData + "</td>\n";
         } else {
-            return new StringBuilder()
-                    .append("<td align=\"left\">")
-                    .append(rowData)
-                    .append("</td>\n")
-                    .toString();
+            return "<td align=\"left\">" + rowData + "</td>\n";
         }
     }
 
@@ -1025,7 +1054,7 @@ public class SimpleHtmlReport {
             if (showDetails) {
                 for (DisharmonyMetric m : rd.getRankedMetrics()) {
                     double v = m.getValue();
-                    String formatted = (v == Math.floor(v)) ? String.valueOf((long) v) : String.valueOf(v);
+                    String formatted = v == Math.floor(v) ? String.valueOf((long) v) : String.valueOf(v);
                     sb.append(drawTableCell(formatted));
                     sb.append(drawTableCell(m.getRank() != null ? m.getRank().toString() : ""));
                 }

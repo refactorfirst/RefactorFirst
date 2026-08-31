@@ -35,4 +35,12 @@ public interface DependencyCollector {
      * @param packageName The package name to register
      */
     void registerPackage(String packageName);
+
+    /**
+     * Ensures a class is registered as a vertex in the class reference graph,
+     * even if the class has no outgoing dependencies.
+     *
+     * @param classFqn The fully qualified name of the class
+     */
+    void registerClassVertex(String classFqn);
 }

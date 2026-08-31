@@ -9,6 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.transport.URIish;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,7 +41,7 @@ class GitLogReaderGetRepoUrlTest {
     void testGetRepoUrlWithGitHubSshOrigin() throws Exception {
         git.remoteAdd()
                 .setName("origin")
-                .setUri(new org.eclipse.jgit.transport.URIish("git@github.com:user/repo.git"))
+                .setUri(new URIish("git@github.com:user/repo.git"))
                 .call();
 
         try (GitLogReader gitLogReader = new GitLogReader(projectBaseDir)) {
@@ -54,7 +55,7 @@ class GitLogReaderGetRepoUrlTest {
     void testGetRepoUrlWithGitLabSshOrigin() throws Exception {
         git.remoteAdd()
                 .setName("origin")
-                .setUri(new org.eclipse.jgit.transport.URIish("git@gitlab.com:user/repo.git"))
+                .setUri(new URIish("git@gitlab.com:user/repo.git"))
                 .call();
 
         try (GitLogReader gitLogReader = new GitLogReader(projectBaseDir)) {
@@ -68,7 +69,7 @@ class GitLogReaderGetRepoUrlTest {
     void testGetRepoUrlWithBitBucketSshOrigin() throws Exception {
         git.remoteAdd()
                 .setName("origin")
-                .setUri(new org.eclipse.jgit.transport.URIish("git@bitbucket.org:user/repo.git"))
+                .setUri(new URIish("git@bitbucket.org:user/repo.git"))
                 .call();
 
         try (GitLogReader gitLogReader = new GitLogReader(projectBaseDir)) {
@@ -82,7 +83,7 @@ class GitLogReaderGetRepoUrlTest {
     void testGetRepoUrlWithHttpsOrigin() throws Exception {
         git.remoteAdd()
                 .setName("origin")
-                .setUri(new org.eclipse.jgit.transport.URIish("https://github.com/user/repo.git"))
+                .setUri(new URIish("https://github.com/user/repo.git"))
                 .call();
 
         try (GitLogReader gitLogReader = new GitLogReader(projectBaseDir)) {

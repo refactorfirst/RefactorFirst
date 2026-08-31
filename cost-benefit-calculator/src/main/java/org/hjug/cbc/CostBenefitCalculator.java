@@ -117,12 +117,13 @@ public class CostBenefitCalculator implements AutoCloseable {
 
     public List<GodClass> getGodClasses(CodebaseGraphDTO codebaseGraphDTO) {
         List<ClassDisharmony> raw = codebaseGraphDTO.getClassDisharmoniesOfType(DisharmonyTypes.GOD_CLASS);
+        Map<String, String> classToSourceFilePathMapping = codebaseGraphDTO.getClassToSourceFilePathMapping();
 
         List<GodClass> godClasses = raw.stream()
                 .map(classDisharmony -> new GodClass(
                         classDisharmony.getMetrics().getClassName(),
-                        canonicaliseURIStringForRepoLookup(
-                                classDisharmony.getMetrics().getSourceFilePath()),
+                        classToSourceFilePathMapping.get(
+                                classDisharmony.getMetrics().getFullyQualifiedName()),
                         classDisharmony.getMetrics().getPackageName(),
                         classDisharmony.getDescription()))
                 .collect(Collectors.toList());
@@ -145,7 +146,7 @@ public class CostBenefitCalculator implements AutoCloseable {
                                     d.getMetrics().getSourceFilePath().replace("\\", "/")),
                             d.getMetrics().getPackageName(),
                             null,
-                            new java.util.ArrayList<>(d.getMetricValues()));
+                            new ArrayList<>(d.getMetricValues()));
                     instance.setDescription(d.getDescription());
                     instance.setDuplicationPartners(d.getDuplicationPartners());
                     return instance;
@@ -176,7 +177,7 @@ public class CostBenefitCalculator implements AutoCloseable {
                             filePath,
                             "",
                             d.getMethodSignature(),
-                            new java.util.ArrayList<>(d.getMetricValues()));
+                            new ArrayList<>(d.getMetricValues()));
                     instance.setDescription(d.getDescription());
                     return instance;
                 })
@@ -342,7 +343,9 @@ public class CostBenefitCalculator implements AutoCloseable {
 
         for (DefaultWeightedEdge edge : classGraph.edgeSet()) {
             // shouldn't have to check for null edges & counts :-(
-            if (null == edge || null == edgeToRemoveCycleCounts.get(edge)) continue;
+            if (null == edge || null == edgeToRemoveCycleCounts.get(edge)) {
+                continue;
+            }
 
             String edgeSource = classGraph.getEdgeSource(edge);
             String edgeTarget = classGraph.getEdgeTarget(edge);

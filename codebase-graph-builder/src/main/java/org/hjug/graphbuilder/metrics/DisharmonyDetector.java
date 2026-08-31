@@ -1,11 +1,6 @@
 package org.hjug.graphbuilder.metrics;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import lombok.Data;
 import org.hjug.graphbuilder.metrics.DisharmonyMetric.Direction;
 
@@ -48,6 +43,12 @@ public class DisharmonyDetector {
     // God Class thresholds (Lanza & Marinescu, Chapter 5)
     private static final int GOD_CLASS_ATFD_FEW = 5;
     private static final int GOD_CLASS_WMC_VERY_HIGH = 47;
+
+    // Kotlin-specific disharmony thresholds
+    private static final int EXCESSIVE_EXTENSIONS_COUNT = 10;
+    private static final int EXCESSIVE_EXTENSIONS_RECEIVER_TYPES = 5;
+    private static final int LARGE_SEALED_HIERARCHY_SUBTYPES = 12;
+    private static final int DATA_CLASS_WITH_LOGIC_WMC = 14;
 
     @Data
     public static class ClassDisharmony {
@@ -582,7 +583,9 @@ public class DisharmonyDetector {
                 for (Clone clone : clones) {
                     if (clone.size > systemAvgMethodLoc) {
                         significant = true;
-                        if (clone.size > maxSEC) maxSEC = clone.size;
+                        if (clone.size > maxSEC) {
+                            maxSEC = clone.size;
+                        }
                     }
                 }
 
@@ -593,20 +596,30 @@ public class DisharmonyDetector {
                     int chainMaxSEC = 0;
                     for (Clone clone : chain) {
                         sdc += clone.size;
-                        if (clone.size < minSEC) minSEC = clone.size;
-                        if (clone.size > chainMaxSEC) chainMaxSEC = clone.size;
+                        if (clone.size < minSEC) {
+                            minSEC = clone.size;
+                        }
+                        if (clone.size > chainMaxSEC) {
+                            chainMaxSEC = clone.size;
+                        }
                     }
                     for (int k = 0; k < chain.size() - 1; k++) {
                         Clone c1 = chain.get(k);
                         Clone c2 = chain.get(k + 1);
                         int lb = Math.min(c2.startA - (c1.startA + c1.size), c2.startB - (c1.startB + c1.size));
                         sdc += lb;
-                        if (lb > maxLB) maxLB = lb;
+                        if (lb > maxLB) {
+                            maxLB = lb;
+                        }
                     }
                     if (sdc >= 2 * (FEW + 1) + 1 && minSEC > FEW && maxLB <= FEW) {
                         significant = true;
-                        if (sdc > maxSDC) maxSDC = sdc;
-                        if (chainMaxSEC > maxSEC) maxSEC = chainMaxSEC;
+                        if (sdc > maxSDC) {
+                            maxSDC = sdc;
+                        }
+                        if (chainMaxSEC > maxSEC) {
+                            maxSEC = chainMaxSEC;
+                        }
                     }
                 }
 
@@ -634,7 +647,9 @@ public class DisharmonyDetector {
             String fqn = entry.getKey();
             FlaggedClassData data = entry.getValue();
             ClassMetrics cm = classMetricsMap.get(fqn);
-            if (cm == null) continue;
+            if (cm == null) {
+                continue;
+            }
             String description = String.format("Significant Duplication: SEC=%d, SDC=%d", data.maxSEC, data.maxSDC);
             List<DisharmonyMetric> metricValues = List.of(
                     new DisharmonyMetric("SEC", data.maxSEC, Direction.ASCENDING),
@@ -645,6 +660,140 @@ public class DisharmonyDetector {
             results.add(cd);
         }
         return results;
+    }
+
+    // -------------------- Kotlin-specific disharmonies --------------------
+
+    /**
+     * Flags classes that declare ≥10 extension functions across ≥5 distinct
+     * foreign receiver types. Such classes fan out side-effect logic across
+     * many foreign types, which the existing Java-only disharmony detectors
+     * cannot detect (Java has no language-level extension-function
+     * construct).
+     *
+     * <p>Receiver type set is populated by the metrics visitor from
+     * {@link org.openrewrite.kotlin.tree.K.MethodDeclaration}'s
+     * {@code Extension} marker / first-parameter type. Top-level extension
+     * functions (file-scope, no enclosing class) are skipped by the visitor
+     * and therefore contribute to no class's set.
+     */
+    public List<ClassDisharmony> detectExcessiveExtensions(List<ClassMetrics> allMetrics) {
+        List<ClassDisharmony> flagged = new ArrayList<>();
+        for (ClassMetrics metrics : allMetrics) {
+            if (isExcessiveExtensions(metrics)) {
+                int extCount = metrics.getNumberOfExtensionFunctions();
+                int receiverTypes = metrics.getExtensionReceiverTypes().size();
+                String description = String.format(
+                        "Excessive Extensions detected: %d extension functions across %d foreign receiver types",
+                        extCount, receiverTypes);
+                List<DisharmonyMetric> metricValues = List.of(
+                        new DisharmonyMetric("NumberOfExtensionFunctions", extCount, Direction.ASCENDING),
+                        new DisharmonyMetric("ExtensionReceiverTypes", receiverTypes, Direction.ASCENDING));
+                flagged.add(new ClassDisharmony(
+                        metrics.getFullyQualifiedName(),
+                        DisharmonyTypes.EXCESSIVE_EXTENSIONS,
+                        description,
+                        metrics,
+                        metricValues));
+            }
+        }
+        return flagged;
+    }
+
+    /**
+     * Flags sealed classes/interfaces whose permitted subtype tree contains
+     * ≥12 distinct subtypes across the codebase. Counted as the number of
+     * classes whose {@link ClassMetrics#getSealedHierarchyAncestors()} set
+     * contains this sealed class's FQN.
+     *
+     * <p>Criterion: "Sealed type with ≥12 permitted subtypes in codebase".
+     */
+    public List<ClassDisharmony> detectLargeSealedHierarchy(List<ClassMetrics> allMetrics) {
+        Map<String, Integer> sealedRootToSubtypeCount = new HashMap<>();
+        for (ClassMetrics metrics : allMetrics) {
+            for (String ancestorFqn : metrics.getSealedHierarchyAncestors()) {
+                // Only count ancestors that are themselves sealed — protects
+                // against spurious counts from non-sealed implements clauses
+                // (e.g. a regular Java interface implemented by a Kotlin class).
+                for (ClassMetrics candidate : allMetrics) {
+                    if (candidate.getFullyQualifiedName().equals(ancestorFqn) && candidate.isSealed()) {
+                        sealedRootToSubtypeCount.merge(ancestorFqn, 1, Integer::sum);
+                    }
+                }
+            }
+        }
+        List<ClassDisharmony> flagged = new ArrayList<>();
+        for (ClassMetrics metrics : allMetrics) {
+            if (!metrics.isSealed()) {
+                continue;
+            }
+            int subtypeCount = sealedRootToSubtypeCount.getOrDefault(metrics.getFullyQualifiedName(), 0);
+            if (subtypeCount >= LARGE_SEALED_HIERARCHY_SUBTYPES) {
+                String description = String.format(
+                        "Large Sealed Hierarchy detected: %d permitted subtypes in codebase", subtypeCount);
+                List<DisharmonyMetric> metricValues =
+                        List.of(new DisharmonyMetric("PermittedSubtypes", subtypeCount, Direction.ASCENDING));
+                flagged.add(new ClassDisharmony(
+                        metrics.getFullyQualifiedName(),
+                        DisharmonyTypes.LARGE_SEALED_HIERARCHY,
+                        description,
+                        metrics,
+                        metricValues));
+            }
+        }
+        return flagged;
+    }
+
+    /**
+     * Flags Kotlin {@code data class}es that also carry non-trivial logic.
+     * Criterion: {@code isDataClass && (hasExplicitLogic || WMC > 14)}.
+     * Java records/classes always have {@code isDataClass == false} and so
+     * are never flagged.
+     */
+    public List<ClassDisharmony> detectDataClassWithLogic(List<ClassMetrics> allMetrics) {
+        List<ClassDisharmony> flagged = new ArrayList<>();
+        for (ClassMetrics metrics : allMetrics) {
+            if (isDataClassWithLogic(metrics)) {
+                int wmc = metrics.getWeightedMethodCount();
+                String description = String.format(
+                        "Data Class with Logic detected: hasExplicitLogic=%b, WMC=%d",
+                        metrics.isHasExplicitLogic(), wmc);
+                List<DisharmonyMetric> metricValues = List.of(
+                        new DisharmonyMetric(
+                                "HasExplicitLogic", metrics.isHasExplicitLogic() ? 1.0 : 0.0, Direction.ASCENDING),
+                        new DisharmonyMetric("WMC", wmc, Direction.ASCENDING));
+                flagged.add(new ClassDisharmony(
+                        metrics.getFullyQualifiedName(),
+                        DisharmonyTypes.DATA_CLASS_WITH_LOGIC,
+                        description,
+                        metrics,
+                        metricValues));
+            }
+        }
+        return flagged;
+    }
+
+    public boolean isExcessiveExtensions(ClassMetrics metrics) {
+        return metrics.getNumberOfExtensionFunctions() >= EXCESSIVE_EXTENSIONS_COUNT
+                && metrics.getExtensionReceiverTypes().size() >= EXCESSIVE_EXTENSIONS_RECEIVER_TYPES;
+    }
+
+    public boolean isLargeSealedHierarchy(ClassMetrics metrics, List<ClassMetrics> allMetrics) {
+        if (!metrics.isSealed()) {
+            return false;
+        }
+        int subtypeCount = 0;
+        for (ClassMetrics candidate : allMetrics) {
+            if (candidate.getSealedHierarchyAncestors().contains(metrics.getFullyQualifiedName())) {
+                subtypeCount++;
+            }
+        }
+        return subtypeCount >= LARGE_SEALED_HIERARCHY_SUBTYPES;
+    }
+
+    public boolean isDataClassWithLogic(ClassMetrics metrics) {
+        return metrics.isDataClass()
+                && (metrics.isHasExplicitLogic() || metrics.getWeightedMethodCount() > DATA_CLASS_WITH_LOGIC_WMC);
     }
 
     private List<Clone> findExactClones(List<String> linesA, List<String> linesB) {
@@ -670,7 +819,9 @@ public class DisharmonyDetector {
 
     private List<List<Clone>> buildChains(List<Clone> clones) {
         List<List<Clone>> chains = new ArrayList<>();
-        if (clones.isEmpty()) return chains;
+        if (clones.isEmpty()) {
+            return chains;
+        }
 
         List<Clone> current = new ArrayList<>();
         current.add(clones.get(0));
@@ -697,13 +848,17 @@ public class DisharmonyDetector {
     }
 
     private static final class FlaggedClassData {
-        int maxSEC = 0;
-        int maxSDC = 0;
+        int maxSEC;
+        int maxSDC;
         final Set<String> partnerDescriptions = new LinkedHashSet<>();
 
         void update(int sec, int sdc, String partnerDescription) {
-            if (sec > maxSEC) maxSEC = sec;
-            if (sdc > maxSDC) maxSDC = sdc;
+            if (sec > maxSEC) {
+                maxSEC = sec;
+            }
+            if (sdc > maxSDC) {
+                maxSDC = sdc;
+            }
             partnerDescriptions.add(partnerDescription);
         }
     }

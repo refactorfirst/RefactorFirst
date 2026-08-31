@@ -371,8 +371,12 @@ class LineVertex<V, E> {
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj) return true;
-        if (!(obj instanceof LineVertex)) return false;
+        if (this == obj) {
+            return true;
+        }
+        if (!(obj instanceof LineVertex)) {
+            return false;
+        }
         LineVertex<?, ?> other = (LineVertex<?, ?>) obj;
         return Objects.equals(originalEdge, other.originalEdge);
     }
