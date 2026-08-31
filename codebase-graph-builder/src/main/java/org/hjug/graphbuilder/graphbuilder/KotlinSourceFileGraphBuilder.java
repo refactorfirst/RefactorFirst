@@ -78,8 +78,8 @@ public class KotlinSourceFileGraphBuilder implements SourceFileGraphBuilder {
             if (config.isExcludeTests()
                     && config.getTestSourceDirectory() != null
                     && !config.getTestSourceDirectory().isEmpty()) {
-                filteredStream = filteredStream.filter(file -> !SourceFileGraphBuilder.isInConfiguredDirectory(
-                        file, config.getTestSourceDirectory()));
+                filteredStream = filteredStream.filter(
+                        file -> !SourceFileGraphBuilder.isInConfiguredDirectory(file, config.getTestSourceDirectory()));
             }
             List<Path> list = filteredStream.collect(Collectors.toList());
 

@@ -28,8 +28,8 @@ class ClassMetricsFinalizationImmutabilityTest {
 
     @Test
     void methodMetricsDoesNotExposeBackingCollectionSetters() {
-        Set<String> forbiddenSetters = Set.of(
-                "setAccessedForeignClasses", "setAccessedForeignAttributes", "setAccessedOwnAttributes");
+        Set<String> forbiddenSetters =
+                Set.of("setAccessedForeignClasses", "setAccessedForeignAttributes", "setAccessedOwnAttributes");
 
         assertTrue(Stream.of(MethodMetrics.class.getMethods())
                 .map(java.lang.reflect.Method::getName)
