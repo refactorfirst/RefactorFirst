@@ -139,11 +139,18 @@ public class CostBenefitCalculator implements AutoCloseable {
 
         List<DisharmonyInstance> instances = raw.stream()
                 .map(d -> {
+                    String filePath = classToSourceFilePathMapping.get(d.getClassName());
+                    if (filePath == null && d.getClassName().contains("$")) {
+                        filePath = classToSourceFilePathMapping.get(
+                                d.getClassName().substring(0, d.getClassName().indexOf("$")));
+                    }
+                    if (filePath == null) {
+                        log.warn("No source file mapping found for class disharmony in class: {}", d.getClassName());
+                    }
                     DisharmonyInstance instance = new DisharmonyInstance(
                             disharmonyType,
                             d.getClassName(),
-                            canonicaliseURIStringForRepoLookup(
-                                    d.getMetrics().getSourceFilePath().replace("\\", "/")),
+                            filePath,
                             d.getMetrics().getPackageName(),
                             null,
                             new ArrayList<>(d.getMetricValues()));
@@ -460,9 +467,22 @@ public class CostBenefitCalculator implements AutoCloseable {
     }
 
     String canonicaliseURIStringForRepoLookup(String uriString) {
-        if (repositoryPath.startsWith("/") || repositoryPath.startsWith("\\")) {
-            return uriString.replace("file://" + repositoryPath.replace("\\", "/") + "/", "");
+        String normalizedRepoPath = repositoryPath.replace("\\", "/");
+        // Handle both absolute (file:///C:/...) and relative (file:...) URIs
+        if (uriString.startsWith("file:///")) {
+            // Absolute path URI
+            return uriString.replace("file:///" + normalizedRepoPath + "/", "");
+        } else if (uriString.startsWith("file://")) {
+            // Absolute path URI (alternative format)
+            return uriString.replace("file://" + normalizedRepoPath + "/", "");
+        } else if (uriString.startsWith("file:")) {
+            // Relative path URI - make it relative to repo root
+            String relativePath = uriString.substring("file:".length());
+            if (relativePath.startsWith("/")) {
+                relativePath = relativePath.substring(1);
+            }
+            return relativePath;
         }
-        return uriString.replace("file:///" + repositoryPath.replace("\\", "/") + "/", "");
+        return uriString;
     }
 }

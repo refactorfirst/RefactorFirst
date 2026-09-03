@@ -96,6 +96,12 @@ public class GitLogReader implements AutoCloseable {
             return "";
         }
 
+        // Only web URLs may be embedded in generated reports as source links;
+        // anything else (javascript:, data:, file:, ...) is rejected outright.
+        if (!originUrl.startsWith("https://") && !originUrl.startsWith("http://")) {
+            return "";
+        }
+
         repoUrl = originUrl.replace(".git", "");
 
         if (repoUrl.contains("gitlab")) {
@@ -105,7 +111,11 @@ public class GitLogReader implements AutoCloseable {
         } else {
             repoUrl = repoUrl + "/blob/" + getCurrentCommitHash() + "/";
         }
-        return repoUrl;
+
+        // Keep only RFC 3986 URL characters: drops every char that is markup- or
+        // JS-significant outside a URL (space, ", ', <, >, `, {, }, \), so the value
+        // cannot break out of an attribute or a <script> template literal downstream.
+        return repoUrl.replaceAll("[^A-Za-z0-9._~:/?#\\[\\]@!$&'()*+,;=%-]", "");
     }
 
     // log --follow implementation may be worth adopting in the future

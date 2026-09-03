@@ -8,6 +8,7 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
 import org.hjug.refactorfirst.report.CsvReport;
+import org.hjug.refactorfirst.report.ReportWriter;
 
 @Mojo(
         name = "csvreport",
@@ -40,10 +41,8 @@ public class RefactorFirstMavenCsvReport extends AbstractMojo {
                 showDetails,
                 projectName,
                 projectVersion,
-                project.getModel()
-                        .getReporting()
-                        .getOutputDirectory()
-                        .replace("${project.basedir}" + File.separator, ""),
+                ReportWriter.containReportDirectory(
+                        project.getBasedir(), project.getModel().getReporting().getOutputDirectory()),
                 project.getBasedir());
     }
 }

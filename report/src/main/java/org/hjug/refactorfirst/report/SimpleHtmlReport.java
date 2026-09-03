@@ -1034,8 +1034,8 @@ public class SimpleHtmlReport {
         sb.append("<tbody>\n");
         for (RankedDisharmony rd : ranked) {
             sb.append("<tr>\n");
-            sb.append(drawTableCell(
-                    "<a href=" + repoUrl + rd.getPath() + " target=\"_blank\">" + rd.getFileName() + "</a>"));
+            sb.append(drawTableCell("<a href=\"" + escapeHtmlLabel(repoUrl + rd.getPath()) + "\" target=\"_blank\">"
+                    + escapeHtmlLabel(rd.getFileName()) + "</a>"));
             if (methodLevel) {
                 String sig = rd.getMethodSignature();
                 if (!showDetails && sig != null) {

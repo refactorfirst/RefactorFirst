@@ -498,4 +498,17 @@ class HtmlReportTest {
         String nodeId3 = htmlReport.renderSafeNodeId(anon2, dto);
         assertEquals("DeveloperWASDControl_anonymous_302290128", nodeId3);
     }
+
+    @Test
+    void printTitle_escapesProjectNameAndVersionInTitleTag() {
+        HtmlReport htmlReport = new HtmlReport();
+        String projectName = "Test<script>Project";
+        String projectVersion = "1.0\"onload=alert(1)";
+
+        String result = htmlReport.printTitle(projectName, projectVersion);
+
+        // The project name and version should be escaped in the title tag
+        assertTrue(result.contains("Test<script>Project"), "Project name should be escaped in title: " + result);
+        assertTrue(result.contains("1.0\"onload=alert(1)"), "Project version should be escaped in title: " + result);
+    }
 }

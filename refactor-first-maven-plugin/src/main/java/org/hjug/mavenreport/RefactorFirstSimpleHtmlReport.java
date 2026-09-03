@@ -8,6 +8,7 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
+import org.hjug.refactorfirst.report.ReportWriter;
 import org.hjug.refactorfirst.report.SimpleHtmlReport;
 
 @Slf4j
@@ -68,9 +69,7 @@ public class RefactorFirstSimpleHtmlReport extends AbstractMojo {
                 projectName,
                 projectVersion,
                 project.getBasedir(),
-                project.getModel()
-                        .getReporting()
-                        .getOutputDirectory()
-                        .replace("${project.basedir}" + File.separator, ""));
+                ReportWriter.containReportDirectory(
+                        project.getBasedir(), project.getModel().getReporting().getOutputDirectory()));
     }
 }
