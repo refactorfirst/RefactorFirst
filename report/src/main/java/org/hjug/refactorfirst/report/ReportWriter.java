@@ -82,7 +82,7 @@ public final class ReportWriter {
             // Try to use secure directory streams (Unix-like)
             Path current = outputDirectory;
             while (current != null) {
-                if (Files.exists(current)) {
+                if (Files.exists(current, NOFOLLOW_LINKS) && !Files.isSymbolicLink(current)) {
                     try (DirectoryStream<Path> stream = Files.newDirectoryStream(current)) {
                         if (stream instanceof SecureDirectoryStream<?>) {
                             return new SecureDirectoryOpsImpl(current, outputDirectory);
