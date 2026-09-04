@@ -111,8 +111,8 @@ public final class ReportWriter {
 
         @Override
         public void writeAtomically(Path reportName, String content) throws IOException {
-            SecureDirectoryStream<Path> current = openSecurePath();
             try {
+                SecureDirectoryStream<Path> current = openSecurePath();
                 writeAtomicallySecure(current, reportName, content);
             } finally {
                 closeDirectories(openedDirectories);
@@ -126,6 +126,9 @@ public final class ReportWriter {
             Path currentPath = startPath;
 
             for (Path component : startPath.relativize(outputDirectory)) {
+                if (component.toString().isEmpty()) {
+                    continue;
+                }
                 SecureDirectoryStream<Path> child;
                 try {
                     child = current.newDirectoryStream(component, NOFOLLOW_LINKS);
@@ -194,10 +197,11 @@ public final class ReportWriter {
 
         @Override
         public void writeAtomically(Path reportName, String content) throws IOException {
+            Path targetFile = outputDirectory.resolve(reportName);
+            rejectExistingSymbolicLinkComponents(targetFile);
+
             // Ensure parent directories exist
             Files.createDirectories(outputDirectory);
-
-            Path targetFile = outputDirectory.resolve(reportName);
 
             // Check if target exists and is a symlink or directory
             if (Files.exists(targetFile, NOFOLLOW_LINKS)) {
@@ -205,9 +209,6 @@ public final class ReportWriter {
                 if (attrs.isSymbolicLink() || attrs.isDirectory()) {
                     throw new IOException("Refusing to replace non-regular report path: " + reportName);
                 }
-            } else {
-                // Verify no symlink in path components
-                rejectExistingSymbolicLinkComponents(targetFile);
             }
 
             // Write to temporary file then atomically move
