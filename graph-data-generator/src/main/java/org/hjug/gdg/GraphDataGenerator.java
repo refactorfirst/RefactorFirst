@@ -42,7 +42,7 @@ public class GraphDataGenerator {
             RankedDisharmony rankedDisharmony = rankedDisharmonies.get(i);
             chartData.append("[");
             chartData.append("'");
-            chartData.append(rankedDisharmony.getFileName());
+            chartData.append(escapeJavaScriptString(rankedDisharmony.getFileName()));
             chartData.append("',");
             chartData.append(rankedDisharmony.getEffortRank());
             chartData.append(",");
@@ -57,5 +57,17 @@ public class GraphDataGenerator {
             }
         }
         return chartData.toString();
+    }
+
+    static String escapeJavaScriptString(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.replace("\\", "\\\\")
+                .replace("'", "\\'")
+                .replace("\n", "\\n")
+                .replace("\r", "\\r")
+                .replace("<", "\\u003C")
+                .replace(">", "\\u003E");
     }
 }

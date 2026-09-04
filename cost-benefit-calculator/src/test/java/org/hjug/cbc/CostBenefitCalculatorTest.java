@@ -44,6 +44,13 @@ class CostBenefitCalculatorTest {
     }
 
     @Test
+    void canonicaliseURIStringForRepoLookup_relativizesAbsoluteUnixPath() {
+        Assertions.assertEquals(
+                "src/Foo.java",
+                CostBenefitCalculator.canonicaliseURIStringForRepoLookup("/tmp/repo", "file:///tmp/repo/src/Foo.java"));
+    }
+
+    @Test
     void testCBOViolation() throws IOException, GitAPIException, InterruptedException {
         // Has CBO violation
         String user = "User.java";

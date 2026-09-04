@@ -9,7 +9,6 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
 import org.hjug.refactorfirst.report.HtmlReport;
-import org.hjug.refactorfirst.report.ReportWriter;
 
 @Slf4j
 @Mojo(
@@ -57,7 +56,6 @@ public class RefactorFirstHtmlReport extends AbstractMojo {
     @Override
     public void execute() {
 
-        log.info(outputDirectory.getPath());
         HtmlReport htmlReport = new HtmlReport();
         htmlReport.execute(
                 backEdgeAnalysisCount,
@@ -69,7 +67,6 @@ public class RefactorFirstHtmlReport extends AbstractMojo {
                 projectName,
                 projectVersion,
                 project.getBasedir(),
-                ReportWriter.containReportDirectory(
-                        project.getBasedir(), project.getModel().getReporting().getOutputDirectory()));
+                MavenReportOutputDirectory.resolve(project, outputDirectory));
     }
 }

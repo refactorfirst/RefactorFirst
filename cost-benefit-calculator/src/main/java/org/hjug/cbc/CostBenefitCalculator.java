@@ -5,6 +5,8 @@ import static net.sourceforge.pmd.RuleViolation.PACKAGE_NAME;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -467,21 +469,26 @@ public class CostBenefitCalculator implements AutoCloseable {
     }
 
     String canonicaliseURIStringForRepoLookup(String uriString) {
-        String normalizedRepoPath = repositoryPath.replace("\\", "/");
-        // Handle both absolute (file:///C:/...) and relative (file:...) URIs
-        if (uriString.startsWith("file:///")) {
-            // Absolute path URI
-            return uriString.replace("file:///" + normalizedRepoPath + "/", "");
-        } else if (uriString.startsWith("file://")) {
-            // Absolute path URI (alternative format)
-            return uriString.replace("file://" + normalizedRepoPath + "/", "");
-        } else if (uriString.startsWith("file:")) {
-            // Relative path URI - make it relative to repo root
-            String relativePath = uriString.substring("file:".length());
-            if (relativePath.startsWith("/")) {
-                relativePath = relativePath.substring(1);
+        return canonicaliseURIStringForRepoLookup(repositoryPath, uriString);
+    }
+
+    static String canonicaliseURIStringForRepoLookup(String repositoryPath, String uriString) {
+        try {
+            URI fileUri = new URI(uriString);
+            if (!"file".equalsIgnoreCase(fileUri.getScheme())) {
+                return uriString;
             }
-            return relativePath;
+            if (fileUri.isOpaque()) {
+                return fileUri.getSchemeSpecificPart().replace("\\", "/");
+            }
+
+            Path repository = Path.of(repositoryPath).toAbsolutePath().normalize();
+            Path file = Path.of(fileUri).toAbsolutePath().normalize();
+            if (file.startsWith(repository)) {
+                return repository.relativize(file).toString().replace("\\", "/");
+            }
+        } catch (IllegalArgumentException | URISyntaxException e) {
+            log.debug("Unable to canonicalize file URI {}", uriString, e);
         }
         return uriString;
     }

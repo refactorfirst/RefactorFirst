@@ -59,13 +59,13 @@ public class CsvReport {
         } else {
             log.info(
                     "Done! No Git repository found!  Please initialize a Git repository and perform an initial commit.");
-            contentBuilder
-                    .append("No Git repository found in project ")
-                    .append(projectName)
-                    .append(" ")
-                    .append(projectVersion)
-                    .append(". ");
-            contentBuilder.append("Please initialize a Git repository and perform an initial commit.");
+            addsRow(contentBuilder, new String[] {
+                "No Git repository found in project",
+                projectName,
+                projectVersion,
+                "Please initialize a Git repository and perform an initial commit."
+            });
+            contentBuilder.append("\n");
             writeReportToDisk(outputDirectory, filename, contentBuilder.toString());
             return;
         }
@@ -97,12 +97,9 @@ public class CsvReport {
 
         // perfect score: no god classes
         if (rankedDisharmonies.isEmpty()) {
-            contentBuilder
-                    .append("Congratulations!  ")
-                    .append(projectName)
-                    .append(" ")
-                    .append(projectVersion)
-                    .append(" has no God classes!");
+            addsRow(contentBuilder, new String[] {"Congratulations!", projectName, projectVersion, "has no God classes!"
+            });
+            contentBuilder.append("\n");
             log.info("Done! No God classes found!");
 
             writeReportToDisk(outputDirectory, filename, contentBuilder.toString());
@@ -118,9 +115,9 @@ public class CsvReport {
         for (RankedDisharmony rankedDisharmony : rankedDisharmonies) {
             final String[] rankedDisharmonyData = getDataList(rankedDisharmony, showDetails);
 
-            contentBuilder.append(projectVersion).append(",");
+            addsRow(contentBuilder, new String[] {projectVersion});
             addsRow(contentBuilder, rankedDisharmonyData);
-            contentBuilder.append("eol" + "\n");
+            contentBuilder.append(sanitizeCsvCell("eol")).append("\n");
         }
 
         log.info(contentBuilder.toString());
@@ -205,10 +202,29 @@ public class CsvReport {
         return showDetails ? detailedTableHeadings : simpleTableHeadings;
     }
 
-    private void addsRow(StringBuilder contentBuilder, String[] rankedDisharmonyData) {
+    void addsRow(StringBuilder contentBuilder, String[] rankedDisharmonyData) {
         for (String rowData : rankedDisharmonyData) {
-            contentBuilder.append(rowData).append(",");
+            contentBuilder.append(sanitizeCsvCell(rowData)).append(",");
         }
+    }
+
+    static String sanitizeCsvCell(String value) {
+        String input = value == null ? "" : value;
+        StringBuilder neutralized = new StringBuilder(input.length() + 1);
+        boolean lineStart = true;
+        for (int i = 0; i < input.length(); i++) {
+            char current = input.charAt(i);
+            if (lineStart && isFormulaTrigger(current)) {
+                neutralized.append('\'');
+            }
+            neutralized.append(current);
+            lineStart = current == '\n' || current == '\r';
+        }
+        return "\"" + neutralized.toString().replace("\"", "\"\"") + "\"";
+    }
+
+    private static boolean isFormulaTrigger(char value) {
+        return value == '=' || value == '+' || value == '-' || value == '@' || value == '\t' || value == '\r';
     }
 
     public String getOutputNamePrefix() {

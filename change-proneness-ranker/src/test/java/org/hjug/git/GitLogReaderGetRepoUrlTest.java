@@ -1,6 +1,7 @@
 package org.hjug.git;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
@@ -155,21 +156,14 @@ class GitLogReaderGetRepoUrlTest {
 
     @Test
     void testGetRepoUrl_sanitizesUrl_removingMarkupCharacters() throws Exception {
-        // URL with various markup characters that could be used for XSS
-        git.remoteAdd()
-                .setName("origin")
-                .setUri(new URIish("https://example.com/repo.git"))
-                .call();
+        git.getRepository().getConfig().setString("remote", "origin", "url", "https://example.com/repo\"<unsafe>.git");
+        git.getRepository().getConfig().save();
 
-        // Manually set a config with markup characters (simulating attacker-controlled config)
-        // We can't easily test this through the public API since getOriginUrl() reads from config
-        // But we can test the sanitization logic directly by checking the behavior
         try (GitLogReader gitLogReader = new GitLogReader(projectBaseDir)) {
             String repoUrl = gitLogReader.getRepoUrl();
-            // The URL should only contain RFC 3986 allowed characters
-            assertTrue(
-                    repoUrl.matches("[A-Za-z0-9._~:/?#\\[\\]@!$&'()*+,;=%-]*"),
-                    "URL should only contain RFC 3986 characters: " + repoUrl);
+            assertTrue(repoUrl.startsWith("https://example.com/repounsafe"));
+            assertFalse(repoUrl.contains("\""), "URL must not retain quotes: " + repoUrl);
+            assertFalse(repoUrl.contains("<"), "URL must not retain angle brackets: " + repoUrl);
         }
     }
 

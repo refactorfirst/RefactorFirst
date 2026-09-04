@@ -223,16 +223,18 @@ This plan addresses all 13 security findings from the OpenVuln report using Test
 @Test void generate2DPopup_escapesCycleNameInOnclickAndElementBody() throws IOException
 @Test void generateForce3DPopup_escapesCycleNameInOnclickAndElementBody() throws IOException
 @Test void generateHidePopup_escapesCycleNameInDivIds() throws IOException
+@Test void renderClassCycleVisuals_usesFallbackIdentifierForEmptyName() throws IOException
+@Test void renderClassCycleVisuals_prefixesIdentifierStartingWithDigit() throws IOException
 ```
 
 #### 6.2 Implement fix
-- In `renderClassCycleVisuals()`: sanitize cycle name to identifier-safe charset `[A-Za-z0-9_]`
-- Apply sanitization before all 7 downstream positions:
+- In `renderClassCycleVisuals()`, derive a separate, non-empty graph identifier using the identifier-safe charset `[A-Za-z0-9_]`, prefixing values that could start with a digit
+- Keep the original cycle name separate and HTML-escape it for visible popup/button text
+- Apply the graph identifier to identifier-bearing downstream positions:
   - JS identifier in `const <name>_dot`
   - HTML `id` attributes
   - JS string literals in `onclick`
-  - Element body text in popup buttons
-- Replace `$` → `_` and strip all non-identifier characters
+- Include a stable suffix so distinct names that sanitize to the same text do not collide
 
 ---
 
@@ -254,15 +256,20 @@ This plan addresses all 13 security findings from the OpenVuln report using Test
 @Test void writeReportToDisk_throwsWhenOutputFileIsSymlink() throws IOException
 @Test void writeReportToDisk_throwsWhenOutputDirIsDanglingSymlink() throws IOException
 @Test void writeReportToDisk_throwsWhenOutputFileIsDanglingSymlink() throws IOException
+@Test void writeReportToDisk_throwsWhenIntermediateDirectoryIsSymlink() throws IOException
+@Test void writeReportToDisk_throwsWhenNestedAncestorIsSymlink() throws IOException
+@Test void writeReportToDisk_failsIfPathComponentIsReplacedDuringWrite() throws IOException
+@Test void writeReportToDisk_atomicallyReplacesExistingReport() throws IOException
 @Test void writeReportToDisk_writesNormallyWhenNoSymlinks() throws IOException
 @Test void writeReportToDisk_createsParentDirectories() throws IOException
+@Test void reportCommand_returnsFailureWhenReportWriteIsBlocked() throws IOException
 ```
 
 #### 7.2 Implement fix
-- Check `Files.isSymbolicLink(outputDir.toPath())` before `mkdirs()`
-- Check `Files.isSymbolicLink(reportFile.toPath())` before `createNewFile()`
-- Log error and return early (don't throw to avoid breaking existing callers)
-- Use `Files.newBufferedWriter` with `LinkOption.NOFOLLOW_LINKS`
+- Validate or create each path component without following symbolic links, rejecting symlinks in every ancestor as well as the final directory and report file
+- Use descriptor-relative `SecureDirectoryStream` operations where supported so a path-component replacement cannot redirect the report write
+- Write to a securely created temporary file and atomically rename it into place with no-follow checks
+- Log errors early and propagate a controlled write failure so CLI commands return nonzero and Maven mojos fail instead of reporting success
 
 ---
 
@@ -284,6 +291,7 @@ This plan addresses all 13 security findings from the OpenVuln report using Test
 @Test void generateBubbleChartData_escapesBackslashesInFileName() throws IOException
 @Test void generateBubbleChartData_escapesNewlinesInFileName() throws IOException
 @Test void generateBubbleChartData_escapesCarriageReturnsInFileName() throws IOException
+@Test void generateBubbleChartData_escapesScriptClosingSequenceInFileName() throws IOException
 @Test void escapeJavaScriptString_handlesNull() throws IOException
 @Test void escapeJavaScriptString_handlesEmpty() throws IOException
 ```
@@ -294,6 +302,7 @@ This plan addresses all 13 security findings from the OpenVuln report using Test
   - Escape `'` → `\'`
   - Escape `\n` → `\n`
   - Escape `\r` → `\r`
+  - Encode `<` → `\u003C` and `>` → `\u003E` so a file name cannot terminate the enclosing script
 - Apply to `rankedDisharmony.getFileName()` in `generateBubbleChartData()` (line ~44-46)
 
 ---
@@ -320,22 +329,18 @@ This plan addresses all 13 security findings from the OpenVuln report using Test
 @Test void renderSafePackageNodeId_handlesBraces() throws IOException
 @Test void escapeDotQuoted_escapesBackslash() throws IOException
 @Test void escapeDotQuoted_escapesDoubleQuote() throws IOException
-@Test void escapeDotQuoted_escapesDollarForTemplateLiteral() throws IOException
+@Test void packageGraph_escapesScriptClosingSequence() throws IOException
+@Test void packageGraph_escapesBackslashes() throws IOException
+@Test void renderSafePackageNodeId_handlesLeadingDigit() throws IOException
+@Test void renderSafePackageNodeId_avoidsSanitizationCollisions() throws IOException
 ```
 
 #### 9.2 Implement fix
-- Add `renderSafePackageNodeId(String packageName)`:
-  - Replace `.` → `_`
-  - Replace `$` → `_`
-  - Replace `"` → `_`
-  - Replace `{` → `_`
-  - Replace `}` → `_`
-- Add `escapeDotQuoted(String value)`:
-  - Escape `\` → `\\`
-  - Escape `"` → `\"`
-  - Escape `$` → `\$` (prevent `${...}` interpolation)
-- Apply in `renderPackageVertices()` and `renderPackageGraphEdge()`
-- Also apply `escapeDotQuoted` to class labels in `renderClassVertices()`
+- Use separate encoders for each output context rather than reusing one partial sanitizer
+- Add a stable, collision-resistant DOT node-ID encoder with a non-digit prefix for package edge endpoints and vertices
+- Add complete DOT quoted-string escaping for package and class labels, including quotes, backslashes, and control characters
+- Encode the completed DOT value for the JavaScript/raw-script template context, including backticks, interpolation markers, backslashes, and `<`/`>`
+- Apply these encoders consistently in `buildPackageGraphDot()`, `renderPackageGraphEdge()`, `renderPackageVertices()`, and `renderClassVertices()`
 
 ---
 
@@ -371,7 +376,7 @@ This plan addresses all 13 security findings from the OpenVuln report using Test
 ```
 
 #### 10.2 Implement fix
-- Add `sanitizeCsvCell(String value)` method:
+- Define one canonical `sanitizeCsvCell(String value)` method:
   - Escape embedded `"` → `""`
   - Prefix with `'` if value starts with `=`, `+`, `-`, `@`, `\t`, `\r` (or after `\n`/`\r`)
   - Wrap entire value in `"`
@@ -379,7 +384,7 @@ This plan addresses all 13 security findings from the OpenVuln report using Test
   - `projectVersion` in data row loop (line ~121)
   - `projectName`/`projectVersion` in no-git fallback (line ~63-70)
   - `projectName`/`projectVersion` in no-god-classes fallback (line ~99-100)
-  - All cells in `addsRow()` (line ~208)
+  - Every cell emitted by `addsRow()` (line ~208), including headers and fallback rows
 
 ---
 
@@ -400,18 +405,15 @@ This plan addresses all 13 security findings from the OpenVuln report using Test
 @Test void getDataList_escapesFileNameInClassCell() throws IOException
 @Test void getDataList_escapesFullPathInDetailedMode() throws IOException
 @Test void addsRow_escapesAllCellsWithSanitizeCsvCell() throws IOException
-@Test void escapeCsvCell_quotesAndEscapesFormulaTriggers() throws IOException
-@Test void escapeCsvCell_escapesEmbeddedQuotes() throws IOException
-@Test void escapeCsvCell_handlesCommaInValue() throws IOException
+@Test void sanitizeCsvCell_quotesAndEscapesFormulaTriggers() throws IOException
+@Test void sanitizeCsvCell_escapesEmbeddedQuotes() throws IOException
+@Test void sanitizeCsvCell_handlesCommaInValue() throws IOException
+@Test void addsRow_sanitizesEachCellExactlyOnce() throws IOException
 ```
 
 #### 11.2 Implement fix
-- Add `escapeCsvCell(String value)` method (RFC 4180 compliant + formula neutralization):
-  - Escape `"` → `""`
-  - Prefix `'` if starts with formula trigger
-  - Wrap in `"`
-- Apply in `addsRow()` for all `rankedDisharmonyData` cells
-- Apply in `getDataList()` for fileName and path cells
+- Reuse the canonical `sanitizeCsvCell(String value)` from Finding 10; do not add a second encoder
+- Route file names, paths, project metadata, fallback rows, and every other value through `addsRow()` so each cell is sanitized exactly once
 
 ---
 
@@ -425,6 +427,7 @@ This plan addresses all 13 security findings from the OpenVuln report using Test
 - `../refactor-first-maven-plugin/src/main/java/org/hjug/mavenreport/RefactorFirstSimpleHtmlReport.java`
 - `../refactor-first-maven-plugin/src/main/java/org/hjug/mavenreport/RefactorFirstMavenJsonReport.java`
 - `../refactor-first-maven-plugin/src/main/java/org/hjug/mavenreport/RefactorFirstMavenCsvReport.java`
+- `../cli/src/main/java/org/hjug/cli/ReportCommand.java`
 - `../report/src/main/java/org/hjug/refactorfirst/report/ReportWriter.java`
 
 ### TDD Tasks
@@ -436,6 +439,7 @@ This plan addresses all 13 security findings from the OpenVuln report using Test
 @Test void containReportDirectory_allowsNormalTargetSite() throws IOException
 @Test void containReportDirectory_rejectsAbsolutePath() throws IOException
 @Test void containReportDirectory_rejectsTraversalPath() throws IOException
+@Test void containReportDirectory_rejectsSymlinkTraversal() throws IOException
 @Test void containReportDirectory_rejectsEmptyValue_usesDefault() throws IOException
 @Test void containReportDirectory_usesBaseDirAsRoot() throws IOException
 ```
@@ -444,6 +448,10 @@ This plan addresses all 13 security findings from the OpenVuln report using Test
 // refactor-first-maven-plugin/src/test/java/org/hjug/mavenreport/RefactorFirstHtmlReportTest.java
 
 @Test void execute_usesContainedOutputDirectory() throws IOException
+@Test void resolveOutputDirectory_defaultsWhenReportingIsAbsent() throws IOException
+@Test void resolveOutputDirectory_defaultsWhenReportingOutputIsAbsent() throws IOException
+@Test void reportCommand_rejectsTraversalBeforeDispatch() throws IOException
+@Test void reportCommand_rejectsSymlinkEscapeBeforeDispatch() throws IOException
 ```
 
 #### 12.2 Implement fix
@@ -451,8 +459,11 @@ This plan addresses all 13 security findings from the OpenVuln report using Test
   - Resolve configured dir against baseDir
   - Normalize and verify it starts with baseDir
   - Default to `target/site` if empty/null
+  - Reject existing symbolic links in every path component
   - Throw `IllegalArgumentException` if escapes baseDir
-- Update all 4 mojos to call `containReportDirectory(project.getBasedir(), ...)`
+- Resolve Maven's effective reporting output directory without dereferencing absent reporting configuration; when reporting or its output directory is absent, use `${project.build.directory}/site`
+- Update all 4 mojos to contain the effective directory against `project.getBasedir()`
+- Normalize and contain the CLI output directory against its project base before dispatching to any of the four report executors
 
 ---
 
