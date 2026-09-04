@@ -1,5 +1,8 @@
 package org.hjug.refactorfirst.report;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import lombok.extern.slf4j.Slf4j;
 import org.hjug.cbc.RankedCycle;
@@ -486,7 +489,7 @@ public class HtmlReport extends SimpleHtmlReport {
 
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append("<h1 align=\"center\"><a id=\"CLASSMAP\">Class Map</a></h1>");
-        stringBuilder.append(generateGraphButtons(classGraphName, dot));
+        stringBuilder.append(generateGraphButtons(classGraphName, classGraphName, dot));
 
         stringBuilder.append(
                 "<div align=\"center\">Clicking on a node in the DOT graph (if present below) will open its source file in the repo.  Right/Alt click to open in a new browser tab.<br>Excludes classes that have no incoming and outgoing edges<br></div>");
@@ -509,19 +512,19 @@ public class HtmlReport extends SimpleHtmlReport {
         return stringBuilder.toString();
     }
 
-    private StringBuilder generateGraphButtons(String graphName, String dot) {
+    private StringBuilder generateGraphButtons(String graphIdentifier, String displayName, String dot) {
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append("<script>\n");
         stringBuilder
                 .append("const ")
-                .append(graphName)
+                .append(graphIdentifier)
                 .append("_dot = ")
                 .append(dot)
                 .append("\n");
         stringBuilder.append("</script>\n");
-        stringBuilder.append(generateForce3DPopup(graphName));
-        stringBuilder.append(generate2DPopup(graphName));
-        stringBuilder.append(generateHidePopup(graphName));
+        stringBuilder.append(generateForce3DPopup(graphIdentifier, displayName));
+        stringBuilder.append(generate2DPopup(graphIdentifier, displayName));
+        stringBuilder.append(generateHidePopup(graphIdentifier));
 
         stringBuilder.append("<div align=\"center\">\nRed lines represent relationships to remove.<br>\n");
         stringBuilder.append("Red nodes represent classes to remove.<br>\n");
@@ -561,7 +564,7 @@ public class HtmlReport extends SimpleHtmlReport {
     String buildClassGraphDot(
             Graph<String, DefaultWeightedEdge> classGraph, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
         StringBuilder dot = new StringBuilder();
-        dot.append("`strict digraph G {\n");
+        dot.append("strict digraph G {\n");
 
         for (DefaultWeightedEdge edge : classGraph.edgeSet()) {
             renderClassGraphEdge(classGraph, edge, codebaseGraphDTO, dot);
@@ -579,8 +582,8 @@ public class HtmlReport extends SimpleHtmlReport {
         // render vertices
         renderClassVertices(classGraph, repoUrl, codebaseGraphDTO, vertexesToRender, dot);
 
-        dot.append("}`;");
-        return dot.toString();
+        dot.append("}");
+        return toJavaScriptTemplateLiteral(dot.toString());
     }
 
     private void renderClassVertices(
@@ -603,12 +606,12 @@ public class HtmlReport extends SimpleHtmlReport {
             dot.append(" [");
             dot.append(hyperlinkClassForDot(vertex, repoUrl, codebaseGraphDTO));
             if (className.contains("$")) {
-                dot.append(" label=\"").append(className.replace("$", "\\$")).append("\"");
+                dot.append(" label=\"").append(escapeDotQuoted(className)).append("\"");
             } else if (isAnonymousFqn(vertex)) {
                 // Kotlin "<anonymous>" renders under the enclosing source file's base name as the
                 // owner with $ as the enclosing-class separator (escaped for DOT).
                 dot.append(" label=\"")
-                        .append(anonymousOwnerLabel(vertex, codebaseGraphDTO).replace("$", "\\$"))
+                        .append(escapeDotQuoted(anonymousOwnerLabel(vertex, codebaseGraphDTO)))
                         .append("\"");
             }
 
@@ -628,7 +631,7 @@ public class HtmlReport extends SimpleHtmlReport {
         if (path == null || path.isBlank()) {
             return "";
         }
-        return "URL=\"" + repoUrl + path + "\" target=\"_blank\"";
+        return "URL=\"" + escapeDotQuoted(repoUrl + path) + "\" target=\"_blank\"";
     }
 
     /**
@@ -916,17 +919,18 @@ public class HtmlReport extends SimpleHtmlReport {
     public String renderClassCycleVisuals(RankedCycle cycle, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
         String dot = buildClassCycleDot(classGraph, cycle, repoUrl, codebaseGraphDTO);
 
-        String cycleName = getClassName(cycle.getCycleName()).replace("$", "_");
+        String cycleName = getClassName(cycle.getCycleName());
+        String cycleIdentifier = graphIdentifier(cycleName);
 
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append("<h1 align=\"center\">Cycle Map</h1>");
-        stringBuilder.append(generateGraphButtons(cycleName, dot));
+        stringBuilder.append(generateGraphButtons(cycleIdentifier, cycleName, dot));
 
         stringBuilder.append(
                 "<div align=\"center\">Clicking on a node in the DOT graph (if present below) will open its source file in the repo.  Right/Alt click to open in a new browser tab.<br></div>");
 
         if (cycle.getCycleNodes().size() + cycle.getEdgeSet().size() < dotGraphThreshold) {
-            stringBuilder.append(generateDotImage(cycleName));
+            stringBuilder.append(generateDotImage(cycleIdentifier));
         } else {
             // revisit and add DOT SVG popup button
             stringBuilder.append("<div align=\"center\">\nSVG is too big to render quickly</div>\n");
@@ -944,7 +948,7 @@ public class HtmlReport extends SimpleHtmlReport {
             String repoUrl,
             CodebaseGraphDTO codebaseGraphDTO) {
         StringBuilder dot = new StringBuilder();
-        dot.append("`strict digraph G {\n");
+        dot.append("strict digraph G {\n");
 
         for (DefaultWeightedEdge edge : cycle.getEdgeSet()) {
             renderClassGraphEdge(classGraph, edge, codebaseGraphDTO, dot);
@@ -954,8 +958,8 @@ public class HtmlReport extends SimpleHtmlReport {
         Set<String> vertexSet = cycle.getVertexSet();
         renderClassVertices(classGraph, repoUrl, codebaseGraphDTO, vertexSet, dot);
 
-        dot.append("}`;");
-        return dot.toString();
+        dot.append("}");
+        return toJavaScriptTemplateLiteral(dot.toString());
     }
 
     @Override
@@ -969,7 +973,7 @@ public class HtmlReport extends SimpleHtmlReport {
 
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append("<h1 align=\"center\"><a id=\"PACKAGEMAP\">Package Map</a></h1>");
-        stringBuilder.append(generateGraphButtons(packageGraphName, dot));
+        stringBuilder.append(generateGraphButtons(packageGraphName, packageGraphName, dot));
 
         stringBuilder.append(
                 "<div align=\"center\">Excludes packages that have no incoming and outgoing edges<br></div>");
@@ -995,7 +999,7 @@ public class HtmlReport extends SimpleHtmlReport {
     String buildPackageGraphDot(
             Graph<String, DefaultWeightedEdge> packageGraph, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
         StringBuilder dot = new StringBuilder();
-        dot.append("`strict digraph G {\n");
+        dot.append("strict digraph G {\n");
 
         for (DefaultWeightedEdge edge : packageGraph.edgeSet()) {
             renderPackageGraphEdge(packageGraph, edge, dot);
@@ -1012,8 +1016,8 @@ public class HtmlReport extends SimpleHtmlReport {
         // render vertices
         renderPackageVertices(packageGraph, repoUrl, codebaseGraphDTO, vertexesToRender, dot);
 
-        dot.append("}`;");
-        return dot.toString();
+        dot.append("}");
+        return toJavaScriptTemplateLiteral(dot.toString());
     }
 
     private void renderPackageGraphEdge(
@@ -1021,8 +1025,8 @@ public class HtmlReport extends SimpleHtmlReport {
         // render edge
         String[] vertexes = extractVertexes(edge);
 
-        String start = vertexes[0].trim().replace(".", "_");
-        String end = vertexes[1].trim().replace(".", "_");
+        String start = renderSafePackageNodeId(vertexes[0].trim());
+        String end = renderSafePackageNodeId(vertexes[1].trim());
 
         log.debug("Rendering edge: {} -> {}", start, end);
         dot.append(start);
@@ -1053,10 +1057,10 @@ public class HtmlReport extends SimpleHtmlReport {
             Set<String> vertexesToRender,
             StringBuilder dot) {
         for (String packageName : vertexesToRender) {
-            dot.append(packageName.replace(".", "_"));
+            dot.append(renderSafePackageNodeId(packageName));
 
             dot.append(" [label=\"");
-            dot.append(packageName);
+            dot.append(escapeDotQuoted(packageName));
             dot.append("\"");
 
             if (packagesToRemove.contains(packageName)) {
@@ -1067,17 +1071,84 @@ public class HtmlReport extends SimpleHtmlReport {
         }
     }
 
+    static String renderSafePackageNodeId(String packageName) {
+        try {
+            byte[] digest = MessageDigest.getInstance("SHA-256").digest(packageName.getBytes(StandardCharsets.UTF_8));
+            return "package_" + HexFormat.of().formatHex(digest, 0, 12);
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 is required by the Java runtime", e);
+        }
+    }
+
+    static String escapeDotQuoted(String value) {
+        if (value == null) {
+            return "";
+        }
+        StringBuilder escaped = new StringBuilder(value.length());
+        for (int i = 0; i < value.length(); i++) {
+            char current = value.charAt(i);
+            switch (current) {
+                case '\\' -> escaped.append("\\\\");
+                case '"' -> escaped.append("\\\"");
+                case '\n' -> escaped.append("\\n");
+                case '\r' -> escaped.append("\\r");
+                case '\t' -> escaped.append("\\t");
+                default -> escaped.append(current);
+            }
+        }
+        return escaped.toString();
+    }
+
+    private static String toJavaScriptTemplateLiteral(String dot) {
+        String escaped = dot.replace("\\", "\\\\")
+                .replace("`", "\\`")
+                .replace("$", "\\$")
+                .replace("<", "\\u003C")
+                .replace(">", "\\u003E");
+        return "`" + escaped + "`;";
+    }
+
+    private static String graphIdentifier(String value) {
+        String original = value == null ? "" : value;
+        String sanitized = original.replaceAll("[^A-Za-z0-9_]", "_");
+        if (sanitized.isEmpty()) {
+            sanitized = "cycle";
+        }
+        return "graph_" + sanitized + "_" + Integer.toUnsignedString(original.hashCode(), 36);
+    }
+
+    private static String escapeHtml(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&#39;");
+    }
+
     String generate2DPopup(String cycleName) {
+        return generate2DPopup(cycleName, cycleName);
+    }
+
+    private String generate2DPopup(String cycleIdentifier, String displayName) {
         // Created by generative AI and modified
-        return "<button style=\"display: block; margin: 0 auto;\" onclick=\"showPopup('popup-" + cycleName
-                + "', 'graph-container-" + cycleName + "', " + cycleName + "_dot )\">Show " + cycleName
+        return "<button style=\"display: block; margin: 0 auto;\" onclick=\"showPopup('popup-" + cycleIdentifier
+                + "', 'graph-container-" + cycleIdentifier + "', " + cycleIdentifier + "_dot )\">Show "
+                + escapeHtml(displayName)
                 + " 2D Popup</button>\n";
     }
 
     String generateForce3DPopup(String cycleName) {
+        return generateForce3DPopup(cycleName, cycleName);
+    }
+
+    private String generateForce3DPopup(String cycleIdentifier, String displayName) {
         // Created by generative AI and modified
-        return "<button style=\"display: block; margin: 0 auto;\" onclick=\"createForceGraph('popup-" + cycleName
-                + "', 'graph-container-" + cycleName + "', " + cycleName + "_dot )\">Show " + cycleName
+        return "<button style=\"display: block; margin: 0 auto;\" onclick=\"createForceGraph('popup-"
+                + cycleIdentifier + "', 'graph-container-" + cycleIdentifier + "', " + cycleIdentifier
+                + "_dot )\">Show " + escapeHtml(displayName)
                 + " 3D Popup</button>\n";
     }
 

@@ -92,9 +92,9 @@ class HtmlReportKotlinTest {
         String expectedDot =
                 """
                 `strict digraph G {
-                KotlinCycleA -> KotlinCycleB [ label = "2" weight = "2" ];
-                KotlinCycleB -> KotlinCycleC [ label = "1" weight = "1" ];
-                KotlinCycleC -> KotlinCycleA [ label = "1" weight = "1" ];
+                KotlinCycleA -\\u003E KotlinCycleB [ label = "2" weight = "2" ];
+                KotlinCycleB -\\u003E KotlinCycleC [ label = "1" weight = "1" ];
+                KotlinCycleC -\\u003E KotlinCycleA [ label = "1" weight = "1" ];
                 KotlinCycleA [URL="https://github.com/refactorfirst/RefactorFirst/blob/src/main/kotlin/com/kotlin/cycles/KotlinCycleA.kt" target="_blank"];
                 KotlinCycleB [URL="https://github.com/refactorfirst/RefactorFirst/blob/src/main/kotlin/com/kotlin/cycles/KotlinCycleB.kt" target="_blank"];
                 KotlinCycleC [URL="https://github.com/refactorfirst/RefactorFirst/blob/src/main/kotlin/com/kotlin/cycles/KotlinCycleC.kt" target="_blank"];

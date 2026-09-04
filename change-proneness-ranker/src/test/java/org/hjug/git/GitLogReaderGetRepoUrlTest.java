@@ -1,6 +1,7 @@
 package org.hjug.git;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
@@ -98,6 +99,130 @@ class GitLogReaderGetRepoUrlTest {
         try (GitLogReader gitLogReader = new GitLogReader(projectBaseDir)) {
             String repoUrl = gitLogReader.getRepoUrl();
             assertEquals("", repoUrl);
+        }
+    }
+
+    @Test
+    void testGetRepoUrl_returnsEmpty_whenOriginUrlIsJavascriptScheme() throws Exception {
+        git.remoteAdd()
+                .setName("origin")
+                .setUri(new URIish("javascript:alert(1)"))
+                .call();
+
+        try (GitLogReader gitLogReader = new GitLogReader(projectBaseDir)) {
+            String repoUrl = gitLogReader.getRepoUrl();
+            assertEquals("", repoUrl, "javascript: scheme should be rejected");
+        }
+    }
+
+    @Test
+    void testGetRepoUrl_returnsEmpty_whenOriginUrlIsDataScheme() throws Exception {
+        git.remoteAdd()
+                .setName("origin")
+                .setUri(new URIish("data:text/html,<script>alert(1)</script>"))
+                .call();
+
+        try (GitLogReader gitLogReader = new GitLogReader(projectBaseDir)) {
+            String repoUrl = gitLogReader.getRepoUrl();
+            assertEquals("", repoUrl, "data: scheme should be rejected");
+        }
+    }
+
+    @Test
+    void testGetRepoUrl_returnsEmpty_whenOriginUrlIsFileScheme() throws Exception {
+        git.remoteAdd()
+                .setName("origin")
+                .setUri(new URIish("file:///etc/passwd"))
+                .call();
+
+        try (GitLogReader gitLogReader = new GitLogReader(projectBaseDir)) {
+            String repoUrl = gitLogReader.getRepoUrl();
+            assertEquals("", repoUrl, "file: scheme should be rejected");
+        }
+    }
+
+    @Test
+    void testGetRepoUrl_returnsEmpty_whenOriginUrlIsNotHttpOrHttps() throws Exception {
+        git.remoteAdd()
+                .setName("origin")
+                .setUri(new URIish("ssh://git@example.com/repo.git"))
+                .call();
+
+        try (GitLogReader gitLogReader = new GitLogReader(projectBaseDir)) {
+            String repoUrl = gitLogReader.getRepoUrl();
+            assertEquals("", repoUrl, "ssh: scheme should be rejected");
+        }
+    }
+
+    @Test
+    void testGetRepoUrl_sanitizesUrl_removingMarkupCharacters() throws Exception {
+        git.getRepository().getConfig().setString("remote", "origin", "url", "https://example.com/repo\"<unsafe>.git");
+        git.getRepository().getConfig().save();
+
+        try (GitLogReader gitLogReader = new GitLogReader(projectBaseDir)) {
+            String repoUrl = gitLogReader.getRepoUrl();
+            assertTrue(repoUrl.startsWith("https://example.com/repounsafe"));
+            assertFalse(repoUrl.contains("\""), "URL must not retain quotes: " + repoUrl);
+            assertFalse(repoUrl.contains("<"), "URL must not retain angle brackets: " + repoUrl);
+        }
+    }
+
+    @Test
+    void testGetRepoUrl_allowsValidHttpsUrl() throws Exception {
+        git.remoteAdd()
+                .setName("origin")
+                .setUri(new URIish("https://github.com/user/repo.git"))
+                .call();
+
+        try (GitLogReader gitLogReader = new GitLogReader(projectBaseDir)) {
+            String repoUrl = gitLogReader.getRepoUrl();
+            assertTrue(
+                    repoUrl.startsWith("https://github.com/user/repo/blob/"),
+                    "Valid HTTPS URL should be allowed: " + repoUrl);
+        }
+    }
+
+    @Test
+    void testGetRepoUrl_allowsValidHttpUrl() throws Exception {
+        git.remoteAdd()
+                .setName("origin")
+                .setUri(new URIish("http://example.com/repo.git"))
+                .call();
+
+        try (GitLogReader gitLogReader = new GitLogReader(projectBaseDir)) {
+            String repoUrl = gitLogReader.getRepoUrl();
+            assertTrue(
+                    repoUrl.startsWith("http://example.com/repo/blob/"),
+                    "Valid HTTP URL should be allowed: " + repoUrl);
+        }
+    }
+
+    @Test
+    void testGetRepoUrl_stripsGitSuffix() throws Exception {
+        git.remoteAdd()
+                .setName("origin")
+                .setUri(new URIish("https://github.com/user/repo.git"))
+                .call();
+
+        try (GitLogReader gitLogReader = new GitLogReader(projectBaseDir)) {
+            String repoUrl = gitLogReader.getRepoUrl();
+            assertTrue(!repoUrl.contains(".git"), "URL should not contain .git suffix");
+        }
+    }
+
+    @Test
+    void testGetRepoUrl_appendsBlobPath_forNonGithubHosts() throws Exception {
+        git.remoteAdd()
+                .setName("origin")
+                .setUri(new URIish("https://example.com/user/repo.git"))
+                .call();
+
+        try (GitLogReader gitLogReader = new GitLogReader(projectBaseDir)) {
+            String repoUrl = gitLogReader.getRepoUrl();
+            String commitHash = git.log().call().iterator().next().getName();
+            assertTrue(
+                    repoUrl.endsWith("/blob/" + commitHash + "/"),
+                    "Non-GitHub hosts should get /blob/ path: " + repoUrl);
         }
     }
 }

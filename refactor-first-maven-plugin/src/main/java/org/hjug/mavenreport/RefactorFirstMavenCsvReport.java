@@ -40,10 +40,7 @@ public class RefactorFirstMavenCsvReport extends AbstractMojo {
                 showDetails,
                 projectName,
                 projectVersion,
-                project.getModel()
-                        .getReporting()
-                        .getOutputDirectory()
-                        .replace("${project.basedir}" + File.separator, ""),
+                MavenReportOutputDirectory.resolve(project, outputDirectory),
                 project.getBasedir());
     }
 }

@@ -5,6 +5,8 @@ import static net.sourceforge.pmd.RuleViolation.PACKAGE_NAME;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -139,11 +141,18 @@ public class CostBenefitCalculator implements AutoCloseable {
 
         List<DisharmonyInstance> instances = raw.stream()
                 .map(d -> {
+                    String filePath = classToSourceFilePathMapping.get(d.getClassName());
+                    if (filePath == null && d.getClassName().contains("$")) {
+                        filePath = classToSourceFilePathMapping.get(
+                                d.getClassName().substring(0, d.getClassName().indexOf("$")));
+                    }
+                    if (filePath == null) {
+                        log.warn("No source file mapping found for class disharmony in class: {}", d.getClassName());
+                    }
                     DisharmonyInstance instance = new DisharmonyInstance(
                             disharmonyType,
                             d.getClassName(),
-                            canonicaliseURIStringForRepoLookup(
-                                    d.getMetrics().getSourceFilePath().replace("\\", "/")),
+                            filePath,
                             d.getMetrics().getPackageName(),
                             null,
                             new ArrayList<>(d.getMetricValues()));
@@ -460,9 +469,27 @@ public class CostBenefitCalculator implements AutoCloseable {
     }
 
     String canonicaliseURIStringForRepoLookup(String uriString) {
-        if (repositoryPath.startsWith("/") || repositoryPath.startsWith("\\")) {
-            return uriString.replace("file://" + repositoryPath.replace("\\", "/") + "/", "");
+        return canonicaliseURIStringForRepoLookup(repositoryPath, uriString);
+    }
+
+    static String canonicaliseURIStringForRepoLookup(String repositoryPath, String uriString) {
+        try {
+            URI fileUri = new URI(uriString);
+            if (!"file".equalsIgnoreCase(fileUri.getScheme())) {
+                return uriString;
+            }
+            if (fileUri.isOpaque()) {
+                return fileUri.getSchemeSpecificPart().replace("\\", "/");
+            }
+
+            Path repository = Path.of(repositoryPath).toAbsolutePath().normalize();
+            Path file = Path.of(fileUri).toAbsolutePath().normalize();
+            if (file.startsWith(repository)) {
+                return repository.relativize(file).toString().replace("\\", "/");
+            }
+        } catch (IllegalArgumentException | URISyntaxException e) {
+            log.debug("Unable to canonicalize file URI {}", uriString, e);
         }
-        return uriString.replace("file:///" + repositoryPath.replace("\\", "/") + "/", "");
+        return uriString;
     }
 }

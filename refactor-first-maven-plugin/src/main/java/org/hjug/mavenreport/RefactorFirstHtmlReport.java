@@ -56,7 +56,6 @@ public class RefactorFirstHtmlReport extends AbstractMojo {
     @Override
     public void execute() {
 
-        log.info(outputDirectory.getPath());
         HtmlReport htmlReport = new HtmlReport();
         htmlReport.execute(
                 backEdgeAnalysisCount,
@@ -68,9 +67,6 @@ public class RefactorFirstHtmlReport extends AbstractMojo {
                 projectName,
                 projectVersion,
                 project.getBasedir(),
-                project.getModel()
-                        .getReporting()
-                        .getOutputDirectory()
-                        .replace("${project.basedir}" + File.separator, ""));
+                MavenReportOutputDirectory.resolve(project, outputDirectory));
     }
 }

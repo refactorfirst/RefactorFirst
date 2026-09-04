@@ -79,6 +79,23 @@ class GraphDataGeneratorTest {
         assertTrue(data.startsWith("[ 'ID', 'Effort', 'Change Proneness', 'Priority', 'Priority (Visual)']"));
     }
 
+    @Test
+    void generateBubbleChartData_escapesScriptClosingSequence() {
+        RankedDisharmony disharmony = makeRankedDisharmony(1);
+        disharmony.setFileName("</script><script>alert(1)</script>");
+
+        String data = gen.generateBubbleChartData(List.of(disharmony), 1, "Effort");
+
+        assertFalse(data.contains("</script>"));
+        assertTrue(data.contains("\\u003C/script\\u003E"));
+    }
+
+    @Test
+    void escapeJavaScriptString_escapesQuotesBackslashesAndLineBreaks() {
+        assertEquals("a\\\\b\\'c\\nd\\re", GraphDataGenerator.escapeJavaScriptString("a\\b'c\nd\re"));
+        assertEquals("", GraphDataGenerator.escapeJavaScriptString(null));
+    }
+
     // ── helper ─────────────────────────────────────────────────────────────────
 
     private RankedDisharmony makeRankedDisharmony(int priority) {

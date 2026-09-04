@@ -25,14 +25,12 @@ public class RefactorFirstMavenJsonReport extends AbstractMojo {
     @Parameter(readonly = true, defaultValue = "${project}")
     private MavenProject project;
 
+    @Parameter(property = "project.build.directory")
+    protected File outputDirectory;
+
     @Override
     public void execute() {
         JsonReportExecutor jsonReportExecutor = new JsonReportExecutor();
-        jsonReportExecutor.execute(
-                project.getBasedir(),
-                project.getModel()
-                        .getReporting()
-                        .getOutputDirectory()
-                        .replace("${project.basedir}" + File.separator, ""));
+        jsonReportExecutor.execute(project.getBasedir(), MavenReportOutputDirectory.resolve(project, outputDirectory));
     }
 }

@@ -63,9 +63,9 @@ class HtmlReportTest {
         String repoUrl = "https://github.com/refactorfirst/RefactorFirst/blob";
         String dot = htmlReport.buildClassCycleDot(classGraph, rankedCycle, repoUrl, dto);
         String expectedDot = "`strict digraph G {\n"
-                + "A -> B [ label = \"2\" weight = \"2\" ];\n"
-                + "B -> C [ label = \"1\" weight = \"1\" ];\n"
-                + "C -> A [ label = \"1\" weight = \"1\" ];\n"
+                + "A -\\u003E B [ label = \"2\" weight = \"2\" ];\n"
+                + "B -\\u003E C [ label = \"1\" weight = \"1\" ];\n"
+                + "C -\\u003E A [ label = \"1\" weight = \"1\" ];\n"
                 + "A [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/src/main/java/org/hjug/refactorfirst/A.java\" target=\"_blank\"];\n"
                 + "B [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/src/main/java/org/hjug/refactorfirst/B.java\" target=\"_blank\"];\n"
                 + "C [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/src/main/java/org/hjug/refactorfirst/C.java\" target=\"_blank\"];\n"
@@ -276,6 +276,56 @@ class HtmlReportTest {
         assertFalse(result.contains("null"), "result must not contain the literal 'null'");
         // Should return empty string
         assertEquals("", result);
+    }
+
+    @Test
+    void renderClassCycleVisuals_usesSafeIdentifierAndEscapedDisplayName() {
+        HtmlReport htmlReport = new HtmlReport();
+        htmlReport.classGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        RankedCycle leadingDigit = new RankedCycle("1<cycle>", Set.of(), Set.of(), List.of());
+
+        String result = htmlReport.renderClassCycleVisuals(leadingDigit, "", null);
+
+        assertTrue(result.contains("const graph_1_cycle_"));
+        assertFalse(result.contains("const 1"));
+        assertTrue(result.contains("Show 1&lt;cycle&gt; 2D Popup"));
+        assertFalse(result.contains("Show 1<cycle>"));
+    }
+
+    @Test
+    void renderClassCycleVisuals_usesNonEmptyIdentifierForEmptyName() {
+        HtmlReport htmlReport = new HtmlReport();
+        htmlReport.classGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        RankedCycle emptyName = new RankedCycle("", Set.of(), Set.of(), List.of());
+
+        String result = htmlReport.renderClassCycleVisuals(emptyName, "", null);
+
+        assertTrue(result.contains("const graph_cycle_0_dot"));
+        assertFalse(result.contains("const _dot"));
+    }
+
+    @Test
+    void buildPackageGraphDot_usesDistinctIdsAndEscapesRawScriptContext() {
+        Graph<String, DefaultWeightedEdge> graph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        String dotted = "1.a.b";
+        String underscored = "1.a_b\\name</script>";
+        graph.addVertex(dotted);
+        graph.addVertex(underscored);
+        graph.addEdge(dotted, underscored);
+
+        String dot = new HtmlReport().buildPackageGraphDot(graph, "", null);
+
+        assertNotEquals(HtmlReport.renderSafePackageNodeId(dotted), HtmlReport.renderSafePackageNodeId(underscored));
+        assertTrue(dot.contains(HtmlReport.renderSafePackageNodeId(dotted)));
+        assertTrue(dot.contains(HtmlReport.renderSafePackageNodeId(underscored)));
+        assertFalse(dot.contains("</script>"));
+        assertTrue(dot.contains("\\u003C/script\\u003E"));
+        assertTrue(dot.contains("\\\\\\\\name"), "DOT and template-literal escaping must both preserve backslashes");
+    }
+
+    @Test
+    void escapeDotQuoted_escapesQuotesBackslashesAndLineBreaks() {
+        assertEquals("a\\\\b\\\"c\\nd", HtmlReport.escapeDotQuoted("a\\b\"c\nd"));
     }
 
     /**
@@ -497,5 +547,18 @@ class HtmlReportTest {
 
         String nodeId3 = htmlReport.renderSafeNodeId(anon2, dto);
         assertEquals("DeveloperWASDControl_anonymous_302290128", nodeId3);
+    }
+
+    @Test
+    void printTitle_escapesProjectNameAndVersionInTitleTag() {
+        HtmlReport htmlReport = new HtmlReport();
+        String projectName = "Test<script>Project";
+        String projectVersion = "1.0\"onload=alert(1)";
+
+        String result = htmlReport.printTitle(projectName, projectVersion);
+
+        // The project name and version should be escaped in the title tag
+        assertTrue(result.contains("Test<script>Project"), "Project name should be escaped in title: " + result);
+        assertTrue(result.contains("1.0\"onload=alert(1)"), "Project version should be escaped in title: " + result);
     }
 }
