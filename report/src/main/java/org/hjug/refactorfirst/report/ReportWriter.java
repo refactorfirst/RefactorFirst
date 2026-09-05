@@ -10,7 +10,7 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.nio.channels.Channels;
 import java.nio.channels.SeekableByteChannel;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
@@ -162,7 +162,7 @@ public final class ReportWriter {
             try {
                 try (SeekableByteChannel channel = directory.newByteChannel(temporaryName, options);
                         BufferedWriter writer = new BufferedWriter(
-                                new OutputStreamWriter(Channels.newOutputStream(channel), Charset.defaultCharset()))) {
+                                new OutputStreamWriter(Channels.newOutputStream(channel), StandardCharsets.UTF_8))) {
                     writer.write(content);
                 }
                 directory.move(temporaryName, directory, reportName);
@@ -218,7 +218,7 @@ public final class ReportWriter {
             try {
                 try (SeekableByteChannel channel = Files.newByteChannel(temporaryName, options);
                         BufferedWriter writer = new BufferedWriter(
-                                new OutputStreamWriter(Channels.newOutputStream(channel), Charset.defaultCharset()))) {
+                                new OutputStreamWriter(Channels.newOutputStream(channel), StandardCharsets.UTF_8))) {
                     writer.write(content);
                 }
                 // Verify temp file is not a symlink before move

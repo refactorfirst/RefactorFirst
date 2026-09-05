@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardWatchEventKinds;
@@ -278,5 +279,21 @@ class ReportWriterTest {
         assertThrows(
                 IllegalArgumentException.class,
                 () -> ReportWriter.containReportDirectory(tempDir.toFile(), "linked/site"));
+    }
+
+    @Test
+    void writeReportToDisk_emitsUtf8ForNonAsciiContent(@TempDir Path tempDir) throws IOException {
+        String nonAsciiContent = "café 漢字 😀";
+        Path outputDir = tempDir.resolve("output");
+        Files.createDirectories(outputDir);
+
+        ReportWriter.writeReportToDisk(outputDir.toString(), "test.html", nonAsciiContent);
+
+        Path outputFile = outputDir.resolve("test.html");
+        assertTrue(Files.exists(outputFile));
+
+        byte[] writtenBytes = Files.readAllBytes(outputFile);
+        byte[] expectedBytes = nonAsciiContent.getBytes(StandardCharsets.UTF_8);
+        assertArrayEquals(expectedBytes, writtenBytes, "ReportWriter must emit UTF-8 bytes");
     }
 }
