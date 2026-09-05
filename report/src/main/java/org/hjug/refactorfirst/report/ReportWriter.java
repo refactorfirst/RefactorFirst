@@ -52,17 +52,14 @@ public final class ReportWriter {
             final String reportOutputDirectory, final String filename, final String string) {
         Path outputDirectory = Path.of(reportOutputDirectory).toAbsolutePath().normalize();
         Path reportName = validateFilename(filename);
-        List<DirectoryStream<Path>> openedDirectories = new ArrayList<>();
 
         try {
-            SecureDirectoryStream<Path> outputStream = openSecureDirectoryPath(outputDirectory, openedDirectories);
-            writeAtomically(outputStream, reportName, string);
+            SecureDirectoryOps ops = SecureDirectoryOps.create(outputDirectory);
+            ops.writeAtomically(reportName, string);
             log.info("Done! View the report at {}", outputDirectory.resolve(reportName));
         } catch (IOException | UnsupportedOperationException e) {
             log.error("Unable to write report {}", outputDirectory.resolve(reportName), e);
             throw new ReportWriteException("Unable to write report " + outputDirectory.resolve(reportName), e);
-        } finally {
-            closeDirectories(openedDirectories);
         }
     }
 
@@ -80,73 +77,162 @@ public final class ReportWriter {
         return reportName;
     }
 
-    private static SecureDirectoryStream<Path> openSecureDirectoryPath(
-            Path outputDirectory, List<DirectoryStream<Path>> openedDirectories) throws IOException {
-        Path root = outputDirectory.getRoot();
-        if (root == null) {
-            throw new IOException("Report output directory has no filesystem root: " + outputDirectory);
+    private interface SecureDirectoryOps {
+        static SecureDirectoryOps create(Path outputDirectory) throws IOException {
+            // Try to use secure directory streams (Unix-like)
+            Path current = outputDirectory;
+            while (current != null) {
+                if (Files.exists(current, NOFOLLOW_LINKS) && !Files.isSymbolicLink(current)) {
+                    try (DirectoryStream<Path> stream = Files.newDirectoryStream(current)) {
+                        if (stream instanceof SecureDirectoryStream<?>) {
+                            return new SecureDirectoryOpsImpl(current, outputDirectory);
+                        }
+                    } catch (IOException | UnsupportedOperationException ignored) {
+                    }
+                }
+                current = current.getParent();
+            }
+            // Fallback for Windows
+            return new FallbackDirectoryOps(outputDirectory);
         }
 
-        DirectoryStream<Path> rootStream = Files.newDirectoryStream(root);
-        openedDirectories.add(rootStream);
-        SecureDirectoryStream<Path> current = asSecureDirectoryStream(rootStream, root);
-        Path currentPath = root;
+        void writeAtomically(Path reportName, String content) throws IOException;
+    }
 
-        for (Path component : root.relativize(outputDirectory)) {
-            SecureDirectoryStream<Path> child;
+    private static final class SecureDirectoryOpsImpl implements SecureDirectoryOps {
+        private final Path startPath;
+        private final Path outputDirectory;
+        private final List<DirectoryStream<Path>> openedDirectories = new ArrayList<>();
+
+        SecureDirectoryOpsImpl(Path startPath, Path outputDirectory) {
+            this.startPath = startPath;
+            this.outputDirectory = outputDirectory;
+        }
+
+        @Override
+        public void writeAtomically(Path reportName, String content) throws IOException {
             try {
-                child = current.newDirectoryStream(component, NOFOLLOW_LINKS);
-            } catch (NoSuchFileException e) {
-                Path directoryToCreate = currentPath.resolve(component);
-                Files.createDirectory(directoryToCreate);
-                child = current.newDirectoryStream(component, NOFOLLOW_LINKS);
+                SecureDirectoryStream<Path> current = openSecurePath();
+                writeAtomicallySecure(current, reportName, content);
+            } finally {
+                closeDirectories(openedDirectories);
             }
-            openedDirectories.add(child);
-            current = child;
-            currentPath = currentPath.resolve(component);
-        }
-        return current;
-    }
-
-    @SuppressWarnings("unchecked")
-    private static SecureDirectoryStream<Path> asSecureDirectoryStream(DirectoryStream<Path> stream, Path directory) {
-        if (!(stream instanceof SecureDirectoryStream<?>)) {
-            throw new UnsupportedOperationException(
-                    "Secure directory operations are unavailable for report output: " + directory);
-        }
-        return (SecureDirectoryStream<Path>) stream;
-    }
-
-    private static void writeAtomically(SecureDirectoryStream<Path> directory, Path reportName, String content)
-            throws IOException {
-        BasicFileAttributeView targetView =
-                directory.getFileAttributeView(reportName, BasicFileAttributeView.class, NOFOLLOW_LINKS);
-        try {
-            BasicFileAttributes attributes = targetView.readAttributes();
-            if (attributes.isSymbolicLink() || attributes.isDirectory()) {
-                throw new IOException("Refusing to replace non-regular report path: " + reportName);
-            }
-        } catch (NoSuchFileException ignored) {
-            // The normal first-write case.
         }
 
-        Path temporaryName = Path.of("." + reportName + "." + UUID.randomUUID() + ".tmp");
-        Set<OpenOption> options = Set.of(CREATE_NEW, WRITE, NOFOLLOW_LINKS);
-        boolean moved = false;
-        try {
-            try (SeekableByteChannel channel = directory.newByteChannel(temporaryName, options);
-                    BufferedWriter writer = new BufferedWriter(
-                            new OutputStreamWriter(Channels.newOutputStream(channel), Charset.defaultCharset()))) {
-                writer.write(content);
-            }
-            directory.move(temporaryName, directory, reportName);
-            moved = true;
-        } finally {
-            if (!moved) {
+        private SecureDirectoryStream<Path> openSecurePath() throws IOException {
+            DirectoryStream<Path> startStream = Files.newDirectoryStream(startPath);
+            openedDirectories.add(startStream);
+            SecureDirectoryStream<Path> current = asSecureDirectoryStream(startStream, startPath);
+            Path currentPath = startPath;
+
+            for (Path component : startPath.relativize(outputDirectory)) {
+                if (component.toString().isEmpty()) {
+                    continue;
+                }
+                SecureDirectoryStream<Path> child;
                 try {
-                    directory.deleteFile(temporaryName);
-                } catch (NoSuchFileException ignored) {
-                    // Nothing to clean up.
+                    child = current.newDirectoryStream(component, NOFOLLOW_LINKS);
+                } catch (NoSuchFileException e) {
+                    Path directoryToCreate = currentPath.resolve(component);
+                    Files.createDirectory(directoryToCreate);
+                    child = current.newDirectoryStream(component, NOFOLLOW_LINKS);
+                }
+                openedDirectories.add(child);
+                current = child;
+                currentPath = currentPath.resolve(component);
+            }
+            return current;
+        }
+
+        private void writeAtomicallySecure(SecureDirectoryStream<Path> directory, Path reportName, String content)
+                throws IOException {
+            BasicFileAttributeView targetView =
+                    directory.getFileAttributeView(reportName, BasicFileAttributeView.class, NOFOLLOW_LINKS);
+            try {
+                BasicFileAttributes attributes = targetView.readAttributes();
+                if (attributes.isSymbolicLink() || attributes.isDirectory()) {
+                    throw new IOException("Refusing to replace non-regular report path: " + reportName);
+                }
+            } catch (NoSuchFileException ignored) {
+            }
+
+            Path temporaryName = Path.of("." + reportName + "." + UUID.randomUUID() + ".tmp");
+            Set<OpenOption> options = Set.of(CREATE_NEW, WRITE, NOFOLLOW_LINKS);
+            boolean moved = false;
+            try {
+                try (SeekableByteChannel channel = directory.newByteChannel(temporaryName, options);
+                        BufferedWriter writer = new BufferedWriter(
+                                new OutputStreamWriter(Channels.newOutputStream(channel), Charset.defaultCharset()))) {
+                    writer.write(content);
+                }
+                directory.move(temporaryName, directory, reportName);
+                moved = true;
+            } finally {
+                if (!moved) {
+                    try {
+                        directory.deleteFile(temporaryName);
+                    } catch (NoSuchFileException ignored) {
+                    }
+                }
+            }
+        }
+
+        @SuppressWarnings("unchecked")
+        private static SecureDirectoryStream<Path> asSecureDirectoryStream(
+                DirectoryStream<Path> stream, Path directory) {
+            if (!(stream instanceof SecureDirectoryStream<?>)) {
+                throw new UnsupportedOperationException(
+                        "Secure directory operations are unavailable for report output: " + directory);
+            }
+            return (SecureDirectoryStream<Path>) stream;
+        }
+    }
+
+    private static final class FallbackDirectoryOps implements SecureDirectoryOps {
+        private final Path outputDirectory;
+
+        FallbackDirectoryOps(Path outputDirectory) {
+            this.outputDirectory = outputDirectory;
+        }
+
+        @Override
+        public void writeAtomically(Path reportName, String content) throws IOException {
+            Path targetFile = outputDirectory.resolve(reportName);
+            rejectExistingSymbolicLinkComponents(targetFile);
+
+            // Ensure parent directories exist
+            Files.createDirectories(outputDirectory);
+
+            // Check if target exists and is a symlink or directory
+            if (Files.exists(targetFile, NOFOLLOW_LINKS)) {
+                BasicFileAttributes attrs = Files.readAttributes(targetFile, BasicFileAttributes.class, NOFOLLOW_LINKS);
+                if (attrs.isSymbolicLink() || attrs.isDirectory()) {
+                    throw new IOException("Refusing to replace non-regular report path: " + reportName);
+                }
+            }
+
+            // Write to temporary file then atomically move
+            Path temporaryName = outputDirectory.resolve("." + reportName + "." + UUID.randomUUID() + ".tmp");
+            Set<OpenOption> options = Set.of(CREATE_NEW, WRITE);
+            boolean moved = false;
+            try {
+                try (SeekableByteChannel channel = Files.newByteChannel(temporaryName, options);
+                        BufferedWriter writer = new BufferedWriter(
+                                new OutputStreamWriter(Channels.newOutputStream(channel), Charset.defaultCharset()))) {
+                    writer.write(content);
+                }
+                // Verify temp file is not a symlink before move
+                if (Files.isSymbolicLink(temporaryName)) {
+                    throw new IOException("Temporary file is a symbolic link");
+                }
+                Files.move(temporaryName, targetFile, java.nio.file.StandardCopyOption.ATOMIC_MOVE);
+                moved = true;
+            } finally {
+                if (!moved) {
+                    try {
+                        Files.deleteIfExists(temporaryName);
+                    } catch (IOException ignored) {
+                    }
                 }
             }
         }

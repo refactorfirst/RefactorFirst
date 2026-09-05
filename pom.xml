@@ -77,7 +77,7 @@
         <!--<module>refactor-first-gradle-plugin</module>-->
         <module>coverage</module>
         <module>report</module>
-        <module>cli</module>
+        <!--<module>cli</module>-->
     </modules>
 
     <dependencyManagement>
