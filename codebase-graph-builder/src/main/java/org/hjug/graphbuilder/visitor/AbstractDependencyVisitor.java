@@ -30,6 +30,13 @@ public abstract class AbstractDependencyVisitor<P> extends JavaIsoVisitor<P> {
     @Getter
     private final DependencyVisitorState state;
 
+    /**
+     * Creates a new AbstractDependencyVisitor.
+     *
+     * @param repositoryPath       path to the source directory
+     * @param repositoryRoot       path to the repository root
+     * @param dependencyCollector  the dependency collector to use
+     */
     protected AbstractDependencyVisitor(
             String repositoryPath, String repositoryRoot, DependencyCollector dependencyCollector) {
         BaseTypeProcessor typeProcessor = new BaseTypeProcessor() {
@@ -61,6 +68,8 @@ public abstract class AbstractDependencyVisitor<P> extends JavaIsoVisitor<P> {
      * Source-file extension used when synthetic source paths are produced for junit-based
      * tests (where the parser's URI is not usable as a repo path). Java returns {@code ".java"},
      * Kotlin returns {@code ".kt"}.
+     *
+     * @return the source file extension
      */
     protected String sourceFileExtension() {
         return ".java";
@@ -191,6 +200,8 @@ public abstract class AbstractDependencyVisitor<P> extends JavaIsoVisitor<P> {
     /**
      * Returns the class-to-source-file-path mapping collected during the visit.
      * Delegates to the internal state.
+     *
+     * @return the class-to-source-file-path mapping
      */
     public Map<String, String> getClassToSourceFilePathMapping() {
         return state.getClassToSourceFilePathMapping();

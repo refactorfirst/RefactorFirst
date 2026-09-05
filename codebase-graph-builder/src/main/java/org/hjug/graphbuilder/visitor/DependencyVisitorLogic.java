@@ -32,6 +32,10 @@ public final class DependencyVisitorLogic {
 
     /**
      * Called on entering a compilation unit. Records the package name and source path.
+     *
+     * @param state       the visitor state
+     * @param packageName the package name
+     * @param sourcePath  the source path
      */
     public static void enterCompilationUnit(DependencyVisitorState state, String packageName, String sourcePath) {
         state.setOwningPackageName(packageName);
@@ -40,6 +44,9 @@ public final class DependencyVisitorLogic {
 
     /**
      * Registers a package with the dependency collector.
+     *
+     * @param state       the visitor state
+     * @param packageName the package name
      */
     public static void registerPackage(DependencyVisitorState state, String packageName) {
         state.getTypeProcessor().getDependencyCollector().registerPackage(packageName);
@@ -149,6 +156,9 @@ public final class DependencyVisitorLogic {
 
     /**
      * Called when leaving a class declaration. Restores the previous owner FQN.
+     *
+     * @param state    the visitor state
+     * @param snapshot the class snapshot
      */
     public static void leaveClassDeclaration(DependencyVisitorState state, ClassSnapshot snapshot) {
         if (snapshot == null) {
@@ -162,6 +172,9 @@ public final class DependencyVisitorLogic {
     /**
      * Called when visiting a method declaration. Processes return type, annotations,
      * type parameters, throws clauses.
+     *
+     * @param state  the visitor state
+     * @param method the method declaration
      */
     public static void handleMethodDeclaration(DependencyVisitorState state, J.MethodDeclaration method) {
         J.MethodDeclaration methodDeclaration = method;
@@ -210,6 +223,9 @@ public final class DependencyVisitorLogic {
     /**
      * Called when visiting variable declarations. Processes the type and annotations.
      * Falls back to UnattributedTypeFqnResolver when the type is not attributed.
+     *
+     * @param state         the visitor state
+     * @param multiVariable the variable declarations
      */
     public static void handleVariableDeclarations(DependencyVisitorState state, J.VariableDeclarations multiVariable) {
         if (state.getCurrentOwnerFqn() == null) {
@@ -252,6 +268,9 @@ public final class DependencyVisitorLogic {
 
     /**
      * Called when visiting a method invocation. Records the declaring type and type parameters.
+     *
+     * @param state  the visitor state
+     * @param method the method invocation
      */
     public static void handleMethodInvocation(DependencyVisitorState state, J.MethodInvocation method) {
         if (state.getCurrentOwnerFqn() == null) {
@@ -274,6 +293,9 @@ public final class DependencyVisitorLogic {
 
     /**
      * Called when visiting a new class instantiation. Records the instantiated type.
+     *
+     * @param state    the visitor state
+     * @param newClass the new class expression
      */
     public static void handleNewClass(DependencyVisitorState state, J.NewClass newClass) {
         if (state.getCurrentOwnerFqn() != null) {
@@ -285,6 +307,9 @@ public final class DependencyVisitorLogic {
 
     /**
      * Called when visiting a lambda expression. Records the lambda's type.
+     *
+     * @param state  the visitor state
+     * @param lambda the lambda expression
      */
     public static void handleLambda(DependencyVisitorState state, J.Lambda lambda) {
         if (state.getCurrentOwnerFqn() != null && lambda.getType() != null) {
@@ -296,6 +321,9 @@ public final class DependencyVisitorLogic {
 
     /**
      * Called when visiting an instanceof expression. Records the checked type.
+     *
+     * @param state      the visitor state
+     * @param instanceOf the instanceof expression
      */
     public static void handleInstanceOf(DependencyVisitorState state, J.InstanceOf instanceOf) {
         if (state.getCurrentOwnerFqn() != null && instanceOf.getClazz() instanceof TypeTree) {
@@ -308,6 +336,9 @@ public final class DependencyVisitorLogic {
 
     /**
      * Called when visiting a type cast. Records the cast type.
+     *
+     * @param state    the visitor state
+     * @param typeCast the type cast
      */
     public static void handleTypeCast(DependencyVisitorState state, J.TypeCast typeCast) {
         if (state.getCurrentOwnerFqn() != null && typeCast.getClazz() != null) {
@@ -322,6 +353,9 @@ public final class DependencyVisitorLogic {
 
     /**
      * Called when visiting a new array expression. Records the array element type.
+     *
+     * @param state    the visitor state
+     * @param newArray the new array expression
      */
     public static void handleNewArray(DependencyVisitorState state, J.NewArray newArray) {
         if (state.getCurrentOwnerFqn() != null && newArray.getType() != null) {
@@ -333,6 +367,9 @@ public final class DependencyVisitorLogic {
 
     /**
      * Called when visiting a method/field reference. Records the declaring type.
+     *
+     * @param state      the visitor state
+     * @param memberRef  the member reference
      */
     public static void handleMemberReference(DependencyVisitorState state, J.MemberReference memberRef) {
         if (state.getCurrentOwnerFqn() == null) {
@@ -360,6 +397,10 @@ public final class DependencyVisitorLogic {
      * file name from the sourcePathUri rather than deriving a synthetic path from the
      * class FQN. This ensures that classes in files with different names (e.g.,
      * {@code GameSettings} in {@code Settings.kt}) map correctly.
+     *
+     * @param state         the visitor state
+     * @param classFqn      the fully qualified class name
+     * @param sourcePathUri the source path URI
      */
     public static void recordClassLocation(DependencyVisitorState state, String classFqn, String sourcePathUri) {
         boolean isAnonymous = isAnonymousFqn(classFqn);
@@ -443,6 +484,10 @@ public final class DependencyVisitorLogic {
 
     /**
      * Canonicalises a file:// URI against the repository path.
+     *
+     * @param repositoryPath the repository path
+     * @param uriString      the URI string
+     * @return the canonicalised path
      */
     public static String canonicaliseUriStringForRepoLookup(String repositoryPath, String uriString) {
         if (repositoryPath.startsWith("/") || repositoryPath.startsWith("\\")) {

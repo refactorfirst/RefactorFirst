@@ -2,6 +2,11 @@ package org.hjug.graphbuilder;
 
 import org.jgrapht.graph.DefaultWeightedEdge;
 
+/**
+ * Interface for collecting dependencies between classes and packages during
+ * source file analysis. Implementations build the class and package reference
+ * graphs used by the graph builder.
+ */
 // TODO: Revisit - I don't think this is really needed
 public interface DependencyCollector {
 
@@ -18,6 +23,7 @@ public interface DependencyCollector {
      *
      * @param fromPackageName The package that depends on another
      * @param toPackageName The package being depended upon
+     * @return the edge representing the package dependency
      */
     DefaultWeightedEdge addPackageDependency(String fromPackageName, String toPackageName);
 

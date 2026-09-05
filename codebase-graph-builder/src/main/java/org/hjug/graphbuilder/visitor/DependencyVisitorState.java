@@ -54,6 +54,13 @@ public class DependencyVisitorState {
     @Setter
     private Cursor cursor;
 
+    /**
+     * Creates a new DependencyVisitorState.
+     *
+     * @param repositoryPath  path to the source directory
+     * @param repositoryRoot  path to the Git repository root
+     * @param typeProcessor   the type processor for dependency collection
+     */
     public DependencyVisitorState(String repositoryPath, String repositoryRoot, BaseTypeProcessor typeProcessor) {
         this.repositoryPath = repositoryPath;
         this.repositoryRoot = repositoryRoot;

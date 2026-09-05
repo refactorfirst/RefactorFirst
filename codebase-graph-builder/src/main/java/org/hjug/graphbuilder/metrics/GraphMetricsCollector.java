@@ -204,6 +204,9 @@ public class GraphMetricsCollector implements DependencyCollector {
      * {@link #getOrCreateClassMetrics(String)} from visitor logic that
      * intends to mutate the returned instance and have the mutation
      * reflected by {@link #getAllClassMetrics()}.
+     *
+     * @param className the class name
+     * @return the class metrics, or {@code null} if not found
      */
     public ClassMetrics getClassMetrics(String className) {
         return classMetrics.get(className);
@@ -329,6 +332,9 @@ public class GraphMetricsCollector implements DependencyCollector {
      * {@link #getAllClassMetrics()}. Any get-or-create path that builds an
      * instance without storing it would silently discard every class's
      * metrics.
+     *
+     * @param className the class name
+     * @return the class metrics (existing or newly created)
      */
     public ClassMetrics getOrCreateClassMetrics(String className) {
         return classMetrics.computeIfAbsent(className, ClassMetrics::new);

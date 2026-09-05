@@ -371,6 +371,8 @@ public class ClassMetrics {
      * ({@code Klass::method}) across all declared methods. Returns the sum
      * of {@link MethodMetrics#getNumberOfCallableReferences()} across every
      * method on this class.
+     *
+     * @return the total number of callable references
      */
     public int getNumberOfCallableReferences() {
         return methods.values().stream()
