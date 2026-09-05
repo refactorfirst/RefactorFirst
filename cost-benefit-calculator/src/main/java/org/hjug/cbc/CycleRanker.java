@@ -38,7 +38,6 @@ public class CycleRanker {
      * @param excludeTests      whether to exclude test files
      * @param testSourceDirectory test source directory pattern
      * @return a merged CodebaseGraphDTO
-     * @throws IOException if parsing fails
      */
     // TODO: should this method belong in this class?
     public CodebaseGraphDTO generateClassReferencesGraph(boolean excludeTests, String testSourceDirectory) {

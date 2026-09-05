@@ -4,16 +4,31 @@ import org.openrewrite.ExecutionContext;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.J;
 
+/**
+ * Calculates cyclomatic complexity and maximum nesting depth for a method
+ * by visiting its AST nodes. Extends {@link JavaIsoVisitor} to traverse
+ * the OpenRewrite Java AST.
+ */
 public class ComplexityCalculator extends JavaIsoVisitor<ExecutionContext> {
 
     private int cyclomaticComplexity = 1;
     private int nestingLevel = 0;
     private int maxNestingDepth = 0;
 
+    /**
+     * Provides the calculated cyclomatic complexity.
+     *
+     * @return the cyclomatic complexity
+     */
     public int getCyclomaticComplexity() {
         return cyclomaticComplexity;
     }
 
+    /**
+     * Returns the calculated maximum nesting depth.
+     *
+     * @return the maximum nesting depth
+     */
     public int getMaxNestingDepth() {
         return maxNestingDepth;
     }
