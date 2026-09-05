@@ -383,11 +383,10 @@ public class DisharmonyDetector {
     }
 
     /**
-     * Feature Envy (Fig. 5.4): method accesses more foreign data than local data.
-     * ATFD &gt; FEW AND LAA &lt; ONE_THIRD AND FDP &lt;= FEW
+     * Identifies methods that access substantially more foreign data than local data.
      *
-     * @param metrics the method metrics to check
-     * @return if the method has feature envy
+     * @param metrics the method metrics to evaluate
+     * @return {@code true} if the method has feature envy, {@code false} otherwise
      */
     public boolean hasFeatureEnvy(MethodMetrics metrics) {
         return metrics.getAccessToForeignData() > FEW

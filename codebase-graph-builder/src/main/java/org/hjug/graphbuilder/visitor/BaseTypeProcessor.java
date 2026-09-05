@@ -43,11 +43,11 @@ public abstract class BaseTypeProcessor {
     }
 
     /**
-     * Processes an annotation and extracts class dependencies.
+     * Processes an annotation and records its class and argument type dependencies.
      *
-     * @param ownerFqn  the fully qualified name of the type owner
+     * @param ownerFqn   the fully qualified name of the owning type
      * @param annotation the annotation to process
-     * @param cursor    the cursor for context
+     * @param cursor     the cursor providing processing context
      */
     protected void processAnnotation(String ownerFqn, J.Annotation annotation, Cursor cursor) {
         if (annotation.getType() instanceof JavaType.Unknown) {

@@ -16,7 +16,7 @@ public class ComplexityCalculator extends JavaIsoVisitor<ExecutionContext> {
     private int maxNestingDepth = 0;
 
     /**
-     * Returns the calculated cyclomatic complexity.
+     * Provides the calculated cyclomatic complexity.
      *
      * @return the cyclomatic complexity
      */

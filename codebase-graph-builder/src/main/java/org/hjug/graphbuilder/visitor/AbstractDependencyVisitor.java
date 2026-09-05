@@ -198,8 +198,7 @@ public abstract class AbstractDependencyVisitor<P> extends JavaIsoVisitor<P> {
     }
 
     /**
-     * Returns the class-to-source-file-path mapping collected during the visit.
-     * Delegates to the internal state.
+     * Provides the source file path associated with each visited class.
      *
      * @return the class-to-source-file-path mapping
      */
