@@ -38,7 +38,7 @@ and the CLI fat-jar bundle the Kotlin compiler —
 `kotlinx-coroutines-core-jvm` transitives — into **every** consumer's runtime,
 including pure-Java projects that never contain a `.kt` file. As of this branch
 the CLI fat-jar is `cli/target/cli-<version>.jar` and measures **~144 MB**
-(verified via `du -sh cli/target/cli-0.10.0-SNAPSHOT.jar` after
+(verified via `du -sh cli/target/cli-0.10.0.jar` after
 `mvn clean install -DskipTests`); the Kotlin compiler and its transitives are a
 material fraction of that. A pure-Java consumer therefore pays this size/cost
 (the dependency is always on the classpath regardless).
