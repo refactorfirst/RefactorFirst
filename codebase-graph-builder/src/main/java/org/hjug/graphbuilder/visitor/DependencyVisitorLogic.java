@@ -31,11 +31,11 @@ public final class DependencyVisitorLogic {
     // ===================== Compilation Unit =====================
 
     /**
-     * Called on entering a compilation unit. Records the package name and source path.
+     * Called on entering a compilation unit. Stores the package name in the visitor state.
      *
      * @param state       the visitor state
      * @param packageName the package name
-     * @param sourcePath  the source path
+     * @param sourcePath  the source path (currently unused)
      */
     public static void enterCompilationUnit(DependencyVisitorState state, String packageName, String sourcePath) {
         state.setOwningPackageName(packageName);

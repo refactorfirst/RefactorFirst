@@ -23,7 +23,7 @@ public interface DependencyCollector {
      *
      * @param fromPackageName The package that depends on another
      * @param toPackageName The package being depended upon
-     * @return the edge representing the package dependency
+     * @return the package dependency edge, or {@code null} when no package edge is created
      */
     DefaultWeightedEdge addPackageDependency(String fromPackageName, String toPackageName);
 

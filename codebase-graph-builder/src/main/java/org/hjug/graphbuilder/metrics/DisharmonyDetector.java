@@ -387,7 +387,7 @@ public class DisharmonyDetector {
      * ATFD &gt; FEW AND LAA &lt; ONE_THIRD AND FDP &lt;= FEW
      *
      * @param metrics the method metrics to check
-     * @return if the method method has feature envy
+     * @return if the method has feature envy
      */
     public boolean hasFeatureEnvy(MethodMetrics metrics) {
         return metrics.getAccessToForeignData() > FEW
