@@ -170,8 +170,7 @@ public final class DependencyVisitorLogic {
     // ===================== Method Declaration =====================
 
     /**
-     * Called when visiting a method declaration. Processes return type, annotations,
-     * type parameters, throws clauses.
+     * Processes a method declaration's return type, annotations, type parameters, and declared exceptions.
      *
      * @param state  the visitor state
      * @param method the method declaration
@@ -221,11 +220,11 @@ public final class DependencyVisitorLogic {
     // ===================== Variable Declarations =====================
 
     /**
-     * Called when visiting variable declarations. Processes the type and annotations.
-     * Falls back to UnattributedTypeFqnResolver when the type is not attributed.
+     * Processes the annotations and declared type of variable declarations for the current class.
+     * Resolves unattributed types using the surrounding package and import context.
      *
      * @param state         the visitor state
-     * @param multiVariable the variable declarations
+     * @param multiVariable the variable declarations to process
      */
     public static void handleVariableDeclarations(DependencyVisitorState state, J.VariableDeclarations multiVariable) {
         if (state.getCurrentOwnerFqn() == null) {
@@ -267,10 +266,10 @@ public final class DependencyVisitorLogic {
     // ===================== Method Invocation =====================
 
     /**
-     * Called when visiting a method invocation. Records the declaring type and type parameters.
+     * Records the declaring type and explicit type parameters referenced by a method invocation.
      *
      * @param state  the visitor state
-     * @param method the method invocation
+     * @param method the method invocation to process
      */
     public static void handleMethodInvocation(DependencyVisitorState state, J.MethodInvocation method) {
         if (state.getCurrentOwnerFqn() == null) {
@@ -335,10 +334,10 @@ public final class DependencyVisitorLogic {
     // ===================== Type Cast =====================
 
     /**
-     * Called when visiting a type cast. Records the cast type.
+     * Records the type used by a cast expression.
      *
      * @param state    the visitor state
-     * @param typeCast the type cast
+     * @param typeCast the cast expression
      */
     public static void handleTypeCast(DependencyVisitorState state, J.TypeCast typeCast) {
         if (state.getCurrentOwnerFqn() != null && typeCast.getClazz() != null) {
@@ -352,7 +351,7 @@ public final class DependencyVisitorLogic {
     // ===================== New Array =====================
 
     /**
-     * Called when visiting a new array expression. Records the array element type.
+     * Records the type associated with a new array expression.
      *
      * @param state    the visitor state
      * @param newArray the new array expression
@@ -366,10 +365,10 @@ public final class DependencyVisitorLogic {
     // ===================== Member Reference =====================
 
     /**
-     * Called when visiting a method/field reference. Records the declaring type.
+     * Records the referenced member type and its declaring type when available.
      *
      * @param state      the visitor state
-     * @param memberRef  the member reference
+     * @param memberRef  the member reference to process
      */
     public static void handleMemberReference(DependencyVisitorState state, J.MemberReference memberRef) {
         if (state.getCurrentOwnerFqn() == null) {
@@ -388,19 +387,11 @@ public final class DependencyVisitorLogic {
     // ===================== Class Location Recording =====================
 
     /**
-     * Records a class's source file location. Handles the junit synthetic path branch.
-     * For anonymous classes (FQN containing {@code <anonymous>}), the actual source file
-     * path is used even in the junit branch, since synthetic paths derived from the
-     * anonymous FQN are not meaningful.
-     * <p>
-     * For non-anonymous classes in the junit branch, we now also use the actual source
-     * file name from the sourcePathUri rather than deriving a synthetic path from the
-     * class FQN. This ensures that classes in files with different names (e.g.,
-     * {@code GameSettings} in {@code Settings.kt}) map correctly.
+     * Records the source file location associated with a class.
      *
      * @param state         the visitor state
      * @param classFqn      the fully qualified class name
-     * @param sourcePathUri the source path URI
+     * @param sourcePathUri the source file URI
      */
     public static void recordClassLocation(DependencyVisitorState state, String classFqn, String sourcePathUri) {
         boolean isAnonymous = isAnonymousFqn(classFqn);
@@ -483,11 +474,11 @@ public final class DependencyVisitorLogic {
     }
 
     /**
-     * Canonicalises a file:// URI against the repository path.
+     * Converts a file URI into a repository-relative path.
      *
-     * @param repositoryPath the repository path
-     * @param uriString      the URI string
-     * @return the canonicalised path
+     * @param repositoryPath the repository path to remove from the URI
+     * @param uriString      the file URI to canonicalise
+     * @return the repository-relative path
      */
     public static String canonicaliseUriStringForRepoLookup(String repositoryPath, String uriString) {
         if (repositoryPath.startsWith("/") || repositoryPath.startsWith("\\")) {

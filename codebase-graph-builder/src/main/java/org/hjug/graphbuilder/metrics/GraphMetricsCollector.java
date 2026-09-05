@@ -199,14 +199,9 @@ public class GraphMetricsCollector implements DependencyCollector {
     }
 
     /**
-     * Read-only lookup of a class's metrics. Returns {@code null} when the
-     * class has never been registered with this collector. Prefer
-     * {@link #getOrCreateClassMetrics(String)} from visitor logic that
-     * intends to mutate the returned instance and have the mutation
-     * reflected by {@link #getAllClassMetrics()}.
+     * Looks up the metrics recorded for a class.
      *
-     * @param className the class name
-     * @return the class metrics, or {@code null} if not found
+     * @return the class metrics, or {@code null} if no metrics are recorded
      */
     public ClassMetrics getClassMetrics(String className) {
         return classMetrics.get(className);
@@ -318,23 +313,10 @@ public class GraphMetricsCollector implements DependencyCollector {
     }
 
     /**
-     * Canonical get-or-create entry point used by {@link MetricsVisitorLogic}
-     * and the metrics-collecting visitors. Returns the existing
-     * {@link ClassMetrics} for {@code className} if present, otherwise
-     * creates one, stores it in {@link #getAllClassMetrics()}, and returns
-     * it.
-     * <p>The returned instance is the <em>same object</em> later returned by
-     * {@link #getAllClassMetrics()}. This is the invariant the historical
-     * {@code instanceof GraphMetricsCollector} branch in
-     * {@link MetricsVisitorLogic#enterClass} emulated: the
-     * {@link ClassMetrics} the visitor mutates during the walk is the
-     * instance the downstream disharmony detectors read from
-     * {@link #getAllClassMetrics()}. Any get-or-create path that builds an
-     * instance without storing it would silently discard every class's
-     * metrics.
+     * Retrieves or creates metrics for a class.
      *
      * @param className the class name
-     * @return the class metrics (existing or newly created)
+     * @return the existing or newly created class metrics
      */
     public ClassMetrics getOrCreateClassMetrics(String className) {
         return classMetrics.computeIfAbsent(className, ClassMetrics::new);
