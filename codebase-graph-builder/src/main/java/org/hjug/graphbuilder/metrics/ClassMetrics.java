@@ -369,7 +369,7 @@ public class ClassMetrics {
     /**
      * Aggregated class-level count of Kotlin/Java callable references
      * ({@code Klass::method}) across all declared methods. Returns the sum
-     * of {@link MethodMetrics#getNumberOfCallableReferences()} across every
+     * of {@code MethodMetrics#getNumberOfCallableReferences()} across every
      * method on this class.
      *
      * @return the total number of callable references

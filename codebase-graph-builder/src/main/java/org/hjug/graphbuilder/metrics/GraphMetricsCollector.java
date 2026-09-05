@@ -153,8 +153,8 @@ public class GraphMetricsCollector implements DependencyCollector {
 
     /**
      * Returns {@code true} iff at least one collected {@link ClassMetrics}
-     * carries a Kotlin-specific signal — i.e. {@link ClassMetrics#isDataClass()},
-     * {@link ClassMetrics#isSealed()}, {@link ClassMetrics#getNumberOfExtensionFunctions()}
+     * carries a Kotlin-specific signal — i.e. {@code ClassMetrics#isDataClass()},
+     * {@code ClassMetrics#isSealed()}, {@code ClassMetrics#getNumberOfExtensionFunctions()}
      * > 0, a non-empty {@link ClassMetrics#getExtensionReceiverTypes()}, or a
      * non-empty {@link ClassMetrics#getSealedHierarchyAncestors()}.
      *
@@ -174,7 +174,7 @@ public class GraphMetricsCollector implements DependencyCollector {
      * only after {@link #finalizeMetrics()} has run (detection always runs
      * post-finalization); before finalization the cached value is still
      * computed on demand but may not reflect {@link #computeKotlinDerivedMetrics()}
-     * derived flags such as {@link ClassMetrics#isHasExplicitLogic()}.
+     * derived flags such as {@code ClassMetrics#isHasExplicitLogic()}.
      *
      * @return {@code true} if any class carries a Kotlin-specific metric signal,
      *         {@code false} for an empty or Java-only collector
