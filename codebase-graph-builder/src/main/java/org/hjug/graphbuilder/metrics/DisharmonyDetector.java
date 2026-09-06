@@ -4,6 +4,18 @@ import java.util.*;
 import lombok.Data;
 import org.hjug.graphbuilder.metrics.DisharmonyMetric.Direction;
 
+/**
+ * Detects disharmonies (code smells / antipatterns) in the collected class and
+ * method metrics. Based on the HIDOOP / DECOR / Lanza-Marinescu catalog.
+ *
+ * <p>This class is a pure function of the {@link ClassMetrics} and {@link
+ * MethodMetrics} populations produced by {@link GraphMetricsCollector}. It has
+ * no side effects and no external dependencies.
+ *
+ * <p>Threshold constants (FEW, HALF, ONE_THIRD, etc.) are defined at the top
+ * of the class and tuned to the literature values cited in the Lanza-Marinescu
+ * book. They can be adjusted for specific codebase characteristics if needed.
+ */
 public class DisharmonyDetector {
 
     // Linguistic quantifiers (Lanza & Marinescu, Table 2.4)
@@ -371,8 +383,10 @@ public class DisharmonyDetector {
     }
 
     /**
-     * Feature Envy (Fig. 5.4): method accesses more foreign data than local data.
-     * ATFD &gt; FEW AND LAA &lt; ONE_THIRD AND FDP &lt;= FEW
+     * Identifies methods that access substantially more foreign data than local data.
+     *
+     * @param metrics the method metrics to evaluate
+     * @return {@code true} if the method has feature envy, {@code false} otherwise
      */
     public boolean hasFeatureEnvy(MethodMetrics metrics) {
         return metrics.getAccessToForeignData() > FEW

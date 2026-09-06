@@ -26,14 +26,14 @@ import org.jgrapht.graph.DefaultWeightedEdge;
 public class CompositeGraphBuilder {
 
     /**
-     * Build a unified {@link CodebaseGraphDTO} from a directory that may contain
-     * both Java and Kotlin source files.
+     * Builds a unified graph for Java and Kotlin source files in a repository.
      *
-     * @param repositoryPath     path to the source directory
-     * @param excludeTests      whether to exclude test files
+     * @param repositoryPath      path to the source directory
+     * @param excludeTests        whether to exclude test files
      * @param testSourceDirectory test source directory pattern
-     * @return a merged CodebaseGraphDTO
-     * @throws IOException if parsing fails
+     * @return the combined Java and Kotlin codebase graph
+     * @throws IllegalArgumentException if {@code repositoryPath} is null or empty
+     * @throws IOException if source analysis fails
      */
     public CodebaseGraphDTO getCodebaseGraphDTO(String repositoryPath, boolean excludeTests, String testSourceDirectory)
             throws IOException {
@@ -49,6 +49,15 @@ public class CompositeGraphBuilder {
         return getCodebaseGraphDTO(repositoryPath, config);
     }
 
+    /**
+     * Build a unified {@link CodebaseGraphDTO} from a directory that may contain
+     * both Java and Kotlin source files.
+     *
+     * @param repositoryPath path to the source directory
+     * @param config         graph-builder configuration
+     * @return a merged CodebaseGraphDTO
+     * @throws IOException if parsing fails
+     */
     public CodebaseGraphDTO getCodebaseGraphDTO(String repositoryPath, GraphBuilderConfig config) throws IOException {
         String repositoryRoot = config.getRepositoryRoot() != null ? config.getRepositoryRoot() : "";
         return getCodebaseGraphDTO(repositoryPath, repositoryRoot, config);

@@ -27,7 +27,7 @@ import org.openrewrite.tree.ParseError;
 
 /**
  * Kotlin-language source-file graph builder. Invoked unconditionally by
- * {@link CompositeGraphBuilder} (Kotlin analysis is always on). This
+ * {@link org.hjug.graphbuilder.CompositeGraphBuilder} (Kotlin analysis is always on). This
  * module declares a compile dependency on
  * {@code org.openrewrite:rewrite-kotlin}, so the Kotlin parser is always
  * on the classpath of any consumer of this builder.
