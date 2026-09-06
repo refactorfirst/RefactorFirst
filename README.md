@@ -20,7 +20,7 @@ View the report at ```target/site/refactor-first-report.html``` in your project.
 Full instructions for various usage scenarios are below.
 Great effort has been taken to make both the analysis and page rendering times as fast as possible.
 
-Take a look at the [JUnit 4 sample report](https://rawcdn.githack.com/refactorfirst/RefactorFirst/10b56c18463b5aab4487de750a72ea4e09188457/junit4-report.html)!
+Take a look at the [JUnit 4 sample report](https://rawcdn.githack.com/refactorfirst/RefactorFirst/10b56c18463b5aab4487de750a72ea4e09188457/junit4-report.html) and [FXGL sample report](https://rawcdn.githack.com/refactorfirst/RefactorFirst/605a59e49884b9b0e03d20cc390f5d476b469a84/fxgl-report.html) (Java + Kotlin)
 
 ## Decomposing and Removing Cycles
 Cycle analysis is performed with cutting-edge [Directed Feedback Vertex Set](https://dl.acm.org/doi/10.1145/3711669) and [Directed Feedback Arc Set](https://arxiv.org/abs/2208.09234) 
