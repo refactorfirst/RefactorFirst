@@ -14,7 +14,7 @@ Code map viewers are powered by [3D Force Graph](https://vasturiano.github.io/3d
 ## How to Use RefactorFirst Quickly
 Run the command below in your Java project's top-level directory.  You'll need Git, Java 11 (or newer) and Maven 3 installed.  This command will analyze Maven and non-Maven projects:
 ```bash
-mvn org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.9.0:htmlReport
+mvn org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.10.0:htmlReport
 ```
 View the report at ```target/site/refactor-first-report.html``` in your project.
 Full instructions for various usage scenarios are below.
@@ -53,7 +53,7 @@ If you use an old JDK release of your chosen Java version, you may encounter iss
 Run the following command from the root of your project (the source code does not need to be built):
 
 ```bash
-mvn org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.9.0:htmlReport
+mvn org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.10.0:htmlReport
 ```
 View the report at `target/site/refactor-first-report.html`
 
@@ -61,7 +61,7 @@ View the report at `target/site/refactor-first-report.html`
 This will generate a simplified HTML report (no graphs or images) as the output of a GitHub Action step
 ```bash
 mvn -B clean test \
-org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.9.0:simpleHtmlReport \
+org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.10.0:simpleHtmlReport \
 && echo "$(cat target/site/refactor-first-report.html)" >> $GITHUB_STEP_SUMMARY
 ```
 
@@ -74,7 +74,7 @@ Add the following to your project in the build section.  **showDetails** will sh
         <plugin>
             <groupId>org.hjug.refactorfirst.plugin</groupId>
             <artifactId>refactor-first-maven-plugin</artifactId>
-            <version>0.9.0</version>       
+            <version>0.10.0</version>       
             <!-- optional -->
             <configuration>
                 <showDetails>false</showDetails>
@@ -95,7 +95,7 @@ A RefactorFirst report will show up in the site report when you run ```mvn site`
         <plugin>
             <groupId>org.hjug.refactorfirst.plugin</groupId>
             <artifactId>refactor-first-maven-plugin</artifactId>
-            <version>0.9.0</version>       
+            <version>0.10.0</version>       
         </plugin>
         ...
     </plugins>
@@ -135,7 +135,7 @@ I plan to create a Gradle plugin and (possibly) support non-conventional project
 and then (assuming Maven is installed) run
 
 ```bash
-mvn org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.9.0:htmlReport
+mvn org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.10.0:htmlReport
 ```
 
 ### Seeing Errors?
@@ -190,6 +190,6 @@ If you find this plugin useful, please star this repository and share with your 
 * Incorporate additional meaningful metrics.
 
 ## Note:
-If you are a user of Version 0.8.0 or older, you may notice that the list of God classes found by the plugin has changed starting in version 0.9.0.  This is due to the fact that the God class metric used starting with version 0.9.0 is faithful to the metric parameters defined in Object Oriented Metrics in Practice.
+If you are a user of Version 0.8.0 or older, you may notice that the list of God classes found by the plugin has changed starting in version 0.10.0.  This is due to the fact that the God class metric used starting with version 0.10.0 is faithful to the metric parameters defined in Object Oriented Metrics in Practice.
 
 # Thank You!  Enjoy!
