@@ -42,7 +42,7 @@ The table is sorted by the number of cycles that a relationship exists in and th
 The graphs generated in the report will look similar to this one:
 ![image info](./RefactorFirst_Sample_Report.png)
 
-## Please Note: Java 11 (or newer) required to run RefactorFirst
+## Please Note: Java 17 (or newer) required to run RefactorFirst
 **Java 25 codebase analysis is supported!**
 Please use a recent JDK release of the Java version you are using.  
 If you use an old JDK release of your chosen Java version, you may encounter issues during analysis.
