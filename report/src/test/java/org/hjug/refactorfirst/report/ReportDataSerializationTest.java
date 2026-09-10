@@ -11,6 +11,7 @@ class ReportDataSerializationTest {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    /** Verifies project metadata JSON serialization and deserialization. */
     @Test
     void testProjectMetadataSerialization() throws Exception {
         ProjectMetadataDTO project = ProjectMetadataDTO.builder()
@@ -36,6 +37,7 @@ class ReportDataSerializationTest {
         assertTrue(deserialized.getProject().isHasAnyDisharmony());
     }
 
+    /** Verifies disharmony chart JSON serialization and deserialization. */
     @Test
     void testDisharmonyBubbleChartSerialization() throws Exception {
         ChartJsBubbleDTO bubble = ChartJsBubbleDTO.builder()
@@ -91,6 +93,7 @@ class ReportDataSerializationTest {
                         .getR());
     }
 
+    /** Verifies disharmony table JSON serialization and deserialization. */
     @Test
     void testTableRowsSerialization() throws Exception {
         DisharmonyTableCellDTO cell1 = DisharmonyTableCellDTO.builder()
@@ -135,6 +138,7 @@ class ReportDataSerializationTest {
                         .getContent());
     }
 
+    /** Verifies JSON serialization for a report with no findings. */
     @Test
     void testEmptyReportSerialization() throws Exception {
         ProjectMetadataDTO project = ProjectMetadataDTO.builder()

@@ -47,6 +47,7 @@ public class RefactorFirstMavenJsonGenerator extends AbstractMojo {
     @Parameter(property = "project.build.directory")
     protected File outputDirectory;
 
+    /** Generates the RefactorFirst JSON report for the current Maven project. */
     @Override
     public void execute() {
         JsonGenerator generator = new JsonGenerator();

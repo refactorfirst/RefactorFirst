@@ -12,6 +12,7 @@ class DotLanguageEscapingTest {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    /** Verifies that JSON round-trips DOT quotes and line breaks. */
     @Test
     void testDotDigraphWithQuotesAndNewlines() throws Exception {
         String rawDot = "strict digraph G {\n"
@@ -40,6 +41,7 @@ class DotLanguageEscapingTest {
         assertEquals(rawDot, deserialized.getClassMap().getDot());
     }
 
+    /** Verifies that JSON preserves Java inner-class dollar signs in DOT. */
     @Test
     void testDotDigraphWithJavaInnerClassDollarSign() throws Exception {
         String rawDot = "strict digraph G {\n"
@@ -63,6 +65,7 @@ class DotLanguageEscapingTest {
         assertEquals(rawDot, deserialized.getClassMap().getDot());
     }
 
+    /** Verifies that JSON preserves Kotlin anonymous-class labels in DOT. */
     @Test
     void testDotDigraphWithKotlinAnonymousLiteral() throws Exception {
         String rawDot = "strict digraph G {\n"
@@ -85,6 +88,7 @@ class DotLanguageEscapingTest {
         assertEquals(rawDot, deserialized.getClassMap().getDot());
     }
 
+    /** Verifies that JSON round-trips DOT hyperlink attributes. */
     @Test
     void testDotDigraphWithHyperlinkAttributes() throws Exception {
         String rawDot = "strict digraph G {\n"

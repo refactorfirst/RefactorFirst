@@ -561,6 +561,7 @@ public class HtmlReport extends SimpleHtmlReport {
                 + "    }\n" + "</script>\n";
     }
 
+    /** Builds raw DOT source for the complete class relationship graph. */
     String buildRawClassGraphDot(
             Graph<String, DefaultWeightedEdge> classGraph, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
         StringBuilder dot = new StringBuilder();
@@ -586,6 +587,7 @@ public class HtmlReport extends SimpleHtmlReport {
         return dot.toString();
     }
 
+    /** Builds escaped class-graph DOT suitable for a JavaScript template literal. */
     String buildClassGraphDot(
             Graph<String, DefaultWeightedEdge> classGraph, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
         return toJavaScriptTemplateLiteral(buildRawClassGraphDot(classGraph, repoUrl, codebaseGraphDTO));
@@ -947,6 +949,7 @@ public class HtmlReport extends SimpleHtmlReport {
         return stringBuilder.toString();
     }
 
+    /** Builds raw DOT source for a ranked class cycle. */
     String buildRawClassCycleDot(
             Graph<String, DefaultWeightedEdge> classGraph,
             RankedCycle cycle,
@@ -967,6 +970,7 @@ public class HtmlReport extends SimpleHtmlReport {
         return dot.toString();
     }
 
+    /** Builds escaped class-cycle DOT suitable for a JavaScript template literal. */
     String buildClassCycleDot(
             Graph<String, DefaultWeightedEdge> classGraph,
             RankedCycle cycle,
@@ -1009,6 +1013,7 @@ public class HtmlReport extends SimpleHtmlReport {
         return stringBuilder.toString();
     }
 
+    /** Builds raw DOT source for the package relationship graph. */
     String buildRawPackageGraphDot(
             Graph<String, DefaultWeightedEdge> packageGraph, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
         StringBuilder dot = new StringBuilder();
@@ -1033,6 +1038,7 @@ public class HtmlReport extends SimpleHtmlReport {
         return dot.toString();
     }
 
+    /** Builds escaped package-graph DOT suitable for a JavaScript template literal. */
     String buildPackageGraphDot(
             Graph<String, DefaultWeightedEdge> packageGraph, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
         return toJavaScriptTemplateLiteral(buildRawPackageGraphDot(packageGraph, repoUrl, codebaseGraphDTO));

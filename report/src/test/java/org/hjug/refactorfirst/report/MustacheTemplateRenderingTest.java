@@ -18,6 +18,7 @@ class MustacheTemplateRenderingTest {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    /** Loads the bundled report template for rendering tests. */
     private String loadTemplate() throws Exception {
         try (InputStream is = getClass().getResourceAsStream("/templates/refactor-first-report.mustache")) {
             if (is == null) {
@@ -30,6 +31,7 @@ class MustacheTemplateRenderingTest {
     // HTML entity for > is \u0026gt; (rendered from "A -> B -> C -> A" where > is escaped)
     private static final String CYCLE_NAME_ESCAPED = "A -\u0026gt; B -\u0026gt; C -\u0026gt; A";
 
+    /** Verifies that the template renders project metadata and navigation. */
     @Test
     void testTemplateRendersProjectHeaderAndNav() throws Exception {
         String template = loadTemplate();
@@ -89,6 +91,7 @@ class MustacheTemplateRenderingTest {
         assertTrue(rendered.contains("<a href=\"#CLASSMAP\">Class Map</a>"));
     }
 
+    /** Verifies that the template renders class relationship data. */
     @Test
     void testTemplateRendersClassRelationshipTable() throws Exception {
         String template = loadTemplate();
@@ -158,6 +161,7 @@ class MustacheTemplateRenderingTest {
         assertTrue(rendered.contains("<strong>true</strong>"));
     }
 
+    /** Verifies that the template renders disharmony charts and tables. */
     @Test
     void testTemplateRendersDisharmonyCanvases() throws Exception {
         String template = loadTemplate();
@@ -267,6 +271,7 @@ class MustacheTemplateRenderingTest {
         assertTrue(rendered.contains("<th>Priority</th>"));
     }
 
+    /** Verifies that the template renders cycle maps and breakdown data. */
     @Test
     void testTemplateRendersCycleMapAndBreakdown() throws Exception {
         String template = loadTemplate();
@@ -358,6 +363,7 @@ class MustacheTemplateRenderingTest {
         assertTrue(rendered.contains("<strong>*</strong>"));
     }
 
+    /** Renders a template with the supplied report data. */
     private String renderTemplate(String template, RefactorFirstReportDTO data) throws Exception {
         MustacheFactory mf = new DefaultMustacheFactory();
         Mustache mustache = mf.compile(new StringReader(template), "test");

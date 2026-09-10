@@ -33,6 +33,7 @@ public class JsonGenerator extends HtmlReport {
 
     private final ObjectMapper objectMapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
 
+    /** Generates report data and writes it with the bundled viewer resources. */
     @SneakyThrows
     public void execute(
             int edgeAnalysisCount,
@@ -77,6 +78,7 @@ public class JsonGenerator extends HtmlReport {
         copyViewerResources(dotRefactorFirstDir);
     }
 
+    /** Copies the Mustache template and browser viewer into the report directory. */
     private void copyViewerResources(Path targetDir) {
         try {
             // Copy Mustache template
@@ -106,6 +108,7 @@ public class JsonGenerator extends HtmlReport {
         }
     }
 
+    /** Analyzes a project and converts its findings into serializable report data. */
     public RefactorFirstReportDTO generateReportData(
             boolean showDetails,
             int edgeAnalysisCount,
@@ -420,6 +423,7 @@ public class JsonGenerator extends HtmlReport {
         }
     }
 
+    /** Converts ranked instances of one disharmony type into chart and table data. */
     private DisharmonySectionDTO buildDisharmonySection(
             DisharmonySpec spec, boolean showDetails, List<RankedDisharmony> ranked, String repoUrl) {
 
@@ -592,6 +596,7 @@ public class JsonGenerator extends HtmlReport {
                 .build();
     }
 
+    /** Creates a chart bubble whose size and color reflect the finding priority. */
     public ChartJsBubbleDTO createBubble(
             String id, String label, int effortRank, int changePronenessRank, int priority, int maxPriority) {
 
@@ -636,6 +641,7 @@ public class JsonGenerator extends HtmlReport {
                 .build();
     }
 
+    /** Creates a stable HTML-safe graph identifier from a display value. */
     private static String graphIdentifier(String value) {
         String original = value == null ? "" : value;
         String sanitized = original.replaceAll("[^A-Za-z0-9_]", "_");

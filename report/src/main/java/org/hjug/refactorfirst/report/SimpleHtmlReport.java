@@ -225,6 +225,7 @@ public class SimpleHtmlReport {
         log.info("Done! View the report at target/site/{}", filename);
     }
 
+    /** Analyzes a project and renders the findings as a complete HTML report. */
     public StringBuilder generateReport(
             boolean showDetails,
             int edgeAnalysisCount,
@@ -616,6 +617,7 @@ public class SimpleHtmlReport {
         };
     }
 
+    /** Builds the table cells for a ranked class relationship. */
     String[] getClassRelationshipDisharmony(
             RankedDisharmony edgeInfo, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
         boolean removePkgRel = edgeInfo.isPackageRelationshipShouldBeRemoved();
@@ -629,6 +631,7 @@ public class SimpleHtmlReport {
         };
     }
 
+    /** Builds the table cells for a ranked package relationship. */
     String[] getPackageRelationshipDisharmony(
             RankedDisharmony edgeInfo, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
 
@@ -683,6 +686,7 @@ public class SimpleHtmlReport {
         return stringBuilder.toString();
     }
 
+    /** Renders a class edge without repository links for serialized report data. */
     String renderClassEdge(DefaultWeightedEdge edge) {
         StringBuilder edgesToCut = new StringBuilder();
         String[] vertexes = extractVertexes(edge);
@@ -771,6 +775,7 @@ public class SimpleHtmlReport {
         return new String[] {"Cycle Name", "Priority", "Class Count", "Relationship Count"};
     }
 
+    /** Builds the summary-table cells for a ranked class cycle. */
     String[] getRankedCycleSummaryData(RankedCycle rankedCycle) {
         return new String[] {
             // "Cycle Name", "Priority", "Class Count", "Relationship Count"

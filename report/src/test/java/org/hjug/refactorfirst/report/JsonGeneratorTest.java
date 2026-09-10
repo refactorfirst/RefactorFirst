@@ -18,11 +18,13 @@ class JsonGeneratorTest {
     private Path tempDir;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    /** Creates an isolated project directory for each test. */
     @BeforeEach
     void setUp() throws Exception {
         tempDir = Files.createTempDirectory("jsonGeneratorTest");
     }
 
+    /** Removes the isolated project directory after each test. */
     @AfterEach
     void tearDown() throws Exception {
         if (tempDir != null && Files.exists(tempDir)) {
@@ -33,6 +35,7 @@ class JsonGeneratorTest {
         }
     }
 
+    /** Verifies that generation creates the report directory and JSON file. */
     @Test
     void testDirectoryAndFileCreatedIfNotExist() throws Exception {
         JsonGenerator generator = new JsonGenerator();
@@ -52,6 +55,7 @@ class JsonGeneratorTest {
         assertEquals("1.0.0", report.getProject().getVersion());
     }
 
+    /** Verifies that generation atomically replaces an existing report file. */
     @Test
     void testFileReplacedIfAlreadyExists() throws Exception {
         Path dotRefactorFirstDir = tempDir.resolve(".refactorfirst");
@@ -73,6 +77,7 @@ class JsonGeneratorTest {
         assertEquals("2.0.0", report.getProject().getVersion());
     }
 
+    /** Verifies that bubble size and color reflect priority. */
     @Test
     void testCalculateBubbleRadiusAndColor() {
         JsonGenerator generator = new JsonGenerator();
@@ -98,6 +103,7 @@ class JsonGeneratorTest {
                 "Lowest priority should be green");
     }
 
+    /** Verifies report generation against a minimal Git repository fixture. */
     @Test
     void testGenerateReportDataWithGitRepoFixture() throws Exception {
         File repoDir = tempDir.toFile();
