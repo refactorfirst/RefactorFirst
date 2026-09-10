@@ -16,4 +16,5 @@ public class ProjectMetadataDTO {
     private String baseDir;
     private String scanTimestamp;
     private boolean hasAnyDisharmony;
+    private boolean analysisFailed;
 }

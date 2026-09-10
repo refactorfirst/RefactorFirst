@@ -734,17 +734,17 @@ public class SimpleHtmlReport {
         String startVertex = vertexes[0].trim();
         String start;
         if (packagesToRemove.contains(startVertex)) {
-            start = startVertex + "<strong>*</strong>";
+            start = escapeHtmlLabel(startVertex) + "<strong>*</strong>";
         } else {
-            start = startVertex;
+            start = escapeHtmlLabel(startVertex);
         }
 
         String endVertex = vertexes[1].trim();
         String end;
         if (packagesToRemove.contains(endVertex)) {
-            end = endVertex + "<strong>*</strong>";
+            end = escapeHtmlLabel(endVertex) + "<strong>*</strong>";
         } else {
-            end = endVertex;
+            end = escapeHtmlLabel(endVertex);
         }
 
         // &#8594; is HTML "Right Arrow" code
@@ -758,7 +758,8 @@ public class SimpleHtmlReport {
         if (path == null || path.isBlank()) {
             return escapeHtmlLabel(getClassName(className));
         }
-        return "<a href=" + repoUrl + path + " target=\"_blank\">" + escapeHtmlLabel(getClassName(className)) + "</a>";
+        return "<a href=\"" + escapeHtmlAttribute(repoUrl + path) + "\" target=\"_blank\">"
+                + escapeHtmlLabel(getClassName(className)) + "</a>";
     }
 
     /**
@@ -768,7 +769,15 @@ public class SimpleHtmlReport {
      * surrounding anchor/table markup.
      */
     static String escapeHtmlLabel(String label) {
+        if (label == null) {
+            return "";
+        }
         return label.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
+    }
+
+    /** Escapes repository-derived values for use in a quoted HTML attribute. */
+    static String escapeHtmlAttribute(String value) {
+        return escapeHtmlLabel(value).replace("\"", "&quot;").replace("'", "&#39;");
     }
 
     private String[] getClassCycleSummaryTableHeadings() {

@@ -22,8 +22,9 @@
         <h2>Loading RefactorFirst Report...</h2>
         <div id="drop-zone" style="display:none;">
             <p><strong>CORS Notice:</strong> Opening directly from <code>file:///</code> prevents automatic loading.</p>
-            <p>Click here or drag and drop <code>refactor-first.json</code> to view:</p>
-            <input type="file" id="file-input" accept=".json" style="display:none;"/>
+            <p>Click here and select both <code>refactor-first.json</code> and
+                <code>refactor-first-report.mustache</code> to view:</p>
+            <input type="file" id="file-input" accept=".json,.mustache" multiple style="display:none;"/>
         </div>
     </div>
     
@@ -343,21 +344,22 @@
                 render(template, data);
             } catch (err) {
                 console.warn("Auto-fetch blocked or failed, enabling file picker fallback:", err);
-                document.getElementById('loader').querySelector('h2').innerText = "Select RefactorFirst JSON";
+                const loaderHeading = document.getElementById('loader').querySelector('h2');
+                loaderHeading.innerText = "Select RefactorFirst report files";
                 const dropZone = document.getElementById('drop-zone');
                 dropZone.style.display = 'block';
                 const fileInput = document.getElementById('file-input');
                 dropZone.onclick = () => fileInput.click();
                 fileInput.onchange = async (e) => {
-                    const file = e.target.files[0];
-                    if (file) {
-                        const text = await file.text();
-                        const data = JSON.parse(text);
-                        // Fetch template or use inline fallback
-                        const templateRes = await fetch('./refactor-first-report.mustache').catch(() => null);
-                        const template = templateRes && templateRes.ok ? await templateRes.text() : getFallbackTemplate();
-                        render(template, data);
+                    const files = Array.from(e.target.files);
+                    const jsonFile = files.find(file => file.name.endsWith('.json'));
+                    const templateFile = files.find(file => file.name.endsWith('.mustache'));
+                    if (!jsonFile || !templateFile) {
+                        loaderHeading.innerText = "Select both the JSON report and Mustache template";
+                        return;
                     }
+                    const [json, template] = await Promise.all([jsonFile.text(), templateFile.text()]);
+                    render(template, JSON.parse(json));
                 };
             }
         }
@@ -516,15 +518,6 @@
             } catch (wasmErr) {
                 console.warn("WASM layout renderer unavailable:", wasmErr);
             }
-        }
-
-        function getFallbackTemplate() {
-            return `
-<!DOCTYPE html>
-<html>
-<head><title>RefactorFirst Report</title></head>
-<body><div id="app">Template not found. Please ensure refactor-first-report.mustache is in the same directory.</div></body>
-</html>`;
         }
 
         loadReport();

@@ -50,7 +50,9 @@ public class JsonGenerator extends HtmlReport {
                 ? baseDir.toPath().toAbsolutePath().normalize()
                 : Path.of("").toAbsolutePath().normalize();
 
-        Path dotRefactorFirstDir = projectPath.resolve(DIRECTORY_NAME);
+        Path reportRoot =
+                outputDir != null ? outputDir.toPath().toAbsolutePath().normalize() : projectPath;
+        Path dotRefactorFirstDir = reportRoot.resolve(DIRECTORY_NAME);
         if (!Files.exists(dotRefactorFirstDir)) {
             Files.createDirectories(dotRefactorFirstDir);
         }
@@ -146,6 +148,7 @@ public class JsonGenerator extends HtmlReport {
                             .repoUrl("")
                             .scanTimestamp(scanTimestamp)
                             .hasAnyDisharmony(false)
+                            .analysisFailed(true)
                             .build())
                     .build();
         }
@@ -247,7 +250,6 @@ public class JsonGenerator extends HtmlReport {
             // 2. Class Relationships To Remove
             List<ClassRelationshipDTO> classRelList = new ArrayList<>();
             for (RankedDisharmony edgeInfo : classRelationshipDisharmonies) {
-                String[] cells = getClassRelationshipDisharmony(edgeInfo, repoUrl, codebaseGraphDTO);
                 String[] vertexes = extractVertexes(edgeInfo.getEdge());
                 String startVertex = vertexes[0].trim();
                 String endVertex = vertexes[1].trim();
@@ -258,7 +260,7 @@ public class JsonGenerator extends HtmlReport {
                         .sourceMarked(classesToRemove.contains(startVertex))
                         .targetMarked(classesToRemove.contains(endVertex))
                         .weight((int) classGraph.getEdgeWeight(edgeInfo.getEdge()))
-                        .renderedLabel(cells[0])
+                        .renderedLabel(renderPlainClassEdge(edgeInfo.getEdge()))
                         .priority(edgeInfo.getPriority())
                         .cycleCount(edgeInfo.getCycleCount())
                         .effortRank(edgeInfo.getEffortRank())
@@ -409,7 +411,7 @@ public class JsonGenerator extends HtmlReport {
                     .classCycles(classCyclesDTO)
                     .build();
         } catch (Exception e) {
-            log.warn("Analysis failed or git history unavailable: {}", e.getMessage());
+            log.warn("Analysis failed or git history unavailable", e);
             return RefactorFirstReportDTO.builder()
                     .project(ProjectMetadataDTO.builder()
                             .name(projectName)
@@ -418,9 +420,21 @@ public class JsonGenerator extends HtmlReport {
                             .repoUrl("")
                             .scanTimestamp(scanTimestamp)
                             .hasAnyDisharmony(false)
+                            .analysisFailed(true)
                             .build())
                     .build();
         }
+    }
+
+    /** Renders a relationship label as plain text for Mustache's escaped interpolation. */
+    private String renderPlainClassEdge(DefaultWeightedEdge edge) {
+        String[] vertexes = extractVertexes(edge);
+        String startVertex = vertexes[0].trim();
+        String endVertex = vertexes[1].trim();
+        String startMarker = classesToRemove.contains(startVertex) ? "*" : "";
+        String endMarker = classesToRemove.contains(endVertex) ? "*" : "";
+        return getClassName(startVertex) + startMarker + " → " + getClassName(endVertex) + endMarker + " : "
+                + (int) classGraph.getEdgeWeight(edge);
     }
 
     /** Converts ranked instances of one disharmony type into chart and table data. */
@@ -487,7 +501,7 @@ public class JsonGenerator extends HtmlReport {
 
             // Class link
             cells.add(DisharmonyTableCellDTO.builder()
-                    .content("<a href=\"" + escapeHtmlLabel(repoUrl + rd.getPath()) + "\" target=\"_blank\">"
+                    .content("<a href=\"" + escapeHtmlAttribute(repoUrl + rd.getPath()) + "\" target=\"_blank\">"
                             + escapeHtmlLabel(rd.getFileName()) + "</a>")
                     .align("left")
                     .build());
@@ -499,7 +513,7 @@ public class JsonGenerator extends HtmlReport {
                     sig = getSimpleMethodSignature(sig);
                 }
                 cells.add(DisharmonyTableCellDTO.builder()
-                        .content(sig != null ? sig.replace("<", "&lt;").replace(">", "&gt;") : "")
+                        .content(escapeHtmlLabel(sig))
                         .align("left")
                         .build());
             }
@@ -516,7 +530,7 @@ public class JsonGenerator extends HtmlReport {
                         .align("right")
                         .build());
                 cells.add(DisharmonyTableCellDTO.builder()
-                        .content(rd.getDescription() != null ? rd.getDescription() : "")
+                        .content(escapeHtmlLabel(rd.getDescription()))
                         .align("left")
                         .build());
             }
@@ -552,7 +566,10 @@ public class JsonGenerator extends HtmlReport {
                     duplicationPartners = simplifyDuplicatePartners(duplicationPartners);
                 }
                 cells.add(DisharmonyTableCellDTO.builder()
-                        .content(duplicationPartners != null ? duplicationPartners.replace(";", "<br>") : "")
+                        .content(
+                                duplicationPartners != null
+                                        ? escapeHtmlLabel(duplicationPartners).replace(";", "<br>")
+                                        : "")
                         .align("left")
                         .build());
             }
@@ -572,7 +589,7 @@ public class JsonGenerator extends HtmlReport {
                         .align("right")
                         .build());
                 cells.add(DisharmonyTableCellDTO.builder()
-                        .content(rd.getPath())
+                        .content(escapeHtmlLabel(rd.getPath()))
                         .align("left")
                         .build());
             }

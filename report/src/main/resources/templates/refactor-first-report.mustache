@@ -143,6 +143,13 @@
     </nav>
 </header>
 
+{{#project.analysisFailed}}
+    <div role="alert" align="center">
+        <strong>Analysis incomplete:</strong> RefactorFirst could not finish scanning this project.
+        The absence of findings below does not mean the project is clean.
+    </div>
+{{/project.analysisFailed}}
+
 <!-- Class Map Section -->
 <h1 align="center"><a id="CLASSMAP">Class Map</a></h1>
 <button style="display: block; margin: 0 auto;"
@@ -203,7 +210,7 @@
             <tbody>
             {{#classRelationshipsToRemove.relationships}}
                 <tr>
-                    <td align="left">{{{renderedLabel}}}</td>
+                    <td align="left">{{renderedLabel}}</td>
                     <td align="right">{{priority}}</td>
                     <td align="right">{{cycleCount}}</td>
                     <td align="right">{{effortRank}}</td>

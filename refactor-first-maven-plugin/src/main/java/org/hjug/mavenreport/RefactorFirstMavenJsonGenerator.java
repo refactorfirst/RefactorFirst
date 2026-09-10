@@ -15,7 +15,7 @@ import org.hjug.refactorfirst.report.JsonGenerator;
         name = "jsonReport",
         defaultPhase = LifecyclePhase.SITE,
         requiresDependencyResolution = ResolutionScope.RUNTIME,
-        requiresProject = false,
+        requiresProject = true,
         threadSafe = true,
         inheritByDefault = false)
 public class RefactorFirstMavenJsonGenerator extends AbstractMojo {

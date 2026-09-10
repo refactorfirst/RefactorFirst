@@ -43,6 +43,7 @@ class MustacheTemplateRenderingTest {
                 .baseDir("/test")
                 .scanTimestamp("9/8/26, 7:34 PM")
                 .hasAnyDisharmony(true)
+                .analysisFailed(true)
                 .build();
 
         GraphVisualDTO classMap = GraphVisualDTO.builder()
@@ -90,6 +91,8 @@ class MustacheTemplateRenderingTest {
 
         // Verify navigation
         assertTrue(rendered.contains("<a href=\"#CLASSMAP\">Class Map</a>"));
+        assertTrue(rendered.contains("Analysis incomplete:"));
+        assertTrue(rendered.contains("does not mean the project is clean"));
     }
 
     /** Verifies that the template renders class relationship data. */
@@ -120,7 +123,7 @@ class MustacheTemplateRenderingTest {
                 .sourceMarked(true)
                 .targetMarked(false)
                 .weight(5)
-                .renderedLabel("<a href=\"...\">A</a> &rarr; <a href=\"...\">B</a>")
+                .renderedLabel("A <script>alert(1)</script> → B")
                 .priority(1)
                 .cycleCount(3)
                 .effortRank(2)
@@ -162,6 +165,8 @@ class MustacheTemplateRenderingTest {
 
         // Verify table data - alsoRemovesPackageRelationship renders <strong>true</strong>
         assertTrue(rendered.contains("<strong>true</strong>"));
+        assertTrue(rendered.contains("A &lt;script&gt;alert(1)&lt;/script&gt; → B"));
+        assertFalse(rendered.contains("<script>alert(1)</script>"));
     }
 
     /** Verifies that the template renders disharmony charts and tables. */

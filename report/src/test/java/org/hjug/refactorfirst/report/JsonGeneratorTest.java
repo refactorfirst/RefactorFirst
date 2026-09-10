@@ -53,6 +53,41 @@ class JsonGeneratorTest {
         assertNotNull(report);
         assertEquals("TestProject", report.getProject().getName());
         assertEquals("1.0.0", report.getProject().getVersion());
+        assertTrue(report.getProject().isAnalysisFailed());
+    }
+
+    /** Verifies that a configured output directory controls where report artifacts are written. */
+    @Test
+    void testConfiguredOutputDirectoryIsHonored() throws Exception {
+        Path outputDir = tempDir.resolve("custom-output");
+
+        new JsonGenerator()
+                .execute(
+                        50,
+                        true,
+                        false,
+                        true,
+                        "src/test",
+                        "TestProject",
+                        "1.0.0",
+                        tempDir.toFile(),
+                        outputDir.toFile());
+
+        assertTrue(Files.exists(outputDir.resolve(".refactorfirst/refactor-first.json")));
+        assertFalse(Files.exists(tempDir.resolve(".refactorfirst/refactor-first.json")));
+
+        String viewer = Files.readString(outputDir.resolve(".refactorfirst/index.html"));
+        assertTrue(viewer.contains("accept=\".json,.mustache\" multiple"));
+        assertFalse(viewer.contains("getFallbackTemplate"));
+    }
+
+    /** Verifies HTML encoding used for repository-derived text and attribute values. */
+    @Test
+    void testRepositoryTextEncoding() {
+        assertEquals("&lt;script&gt;&amp;", SimpleHtmlReport.escapeHtmlLabel("<script>&"));
+        assertEquals(
+                "path&quot; onclick=&quot;alert(1)&#39;",
+                SimpleHtmlReport.escapeHtmlAttribute("path\" onclick=\"alert(1)'"));
     }
 
     /** Verifies that generation atomically replaces an existing report file. */
@@ -151,6 +186,7 @@ class JsonGeneratorTest {
         RefactorFirstReportDTO report = objectMapper.readValue(jsonFile.toFile(), RefactorFirstReportDTO.class);
         assertNotNull(report);
         assertEquals("SampleProject", report.getProject().getName());
+        assertFalse(report.getProject().isAnalysisFailed());
         assertNotNull(report.getClassMap());
         assertTrue(report.getClassMap().getClassCount() >= 1);
         assertNotNull(report.getClassMap().getDot());

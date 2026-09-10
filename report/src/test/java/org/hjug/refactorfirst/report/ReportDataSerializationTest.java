@@ -21,6 +21,7 @@ class ReportDataSerializationTest {
                 .baseDir("/repo")
                 .scanTimestamp("9/8/26, 7:34 PM")
                 .hasAnyDisharmony(true)
+                .analysisFailed(true)
                 .build();
 
         RefactorFirstReportDTO report =
@@ -30,11 +31,13 @@ class ReportDataSerializationTest {
         assertTrue(json.contains("\"name\":\"JUnit\""));
         assertTrue(json.contains("\"version\":\"4.13.3-SNAPSHOT\""));
         assertTrue(json.contains("\"hasAnyDisharmony\":true"));
+        assertTrue(json.contains("\"analysisFailed\":true"));
 
         RefactorFirstReportDTO deserialized = objectMapper.readValue(json, RefactorFirstReportDTO.class);
         assertEquals("JUnit", deserialized.getProject().getName());
         assertEquals("4.13.3-SNAPSHOT", deserialized.getProject().getVersion());
         assertTrue(deserialized.getProject().isHasAnyDisharmony());
+        assertTrue(deserialized.getProject().isAnalysisFailed());
     }
 
     /** Verifies disharmony chart JSON serialization and deserialization. */
