@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <title>Refactor First Report for {{project.name}} {{project.version}}</title>
+    <!-- CDN Dependencies -->
+    <script async defer src="https://buttons.github.io/buttons.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sigma.js/2.4.0/sigma.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/graphology/0.25.4/graphology.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/graphlib-dot@0.6.4/dist/graphlib-dot.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/3d-force-graph"></script>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@vizdom/vizdom-ts-web@0.1.19/vizdom_ts.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/mvp.css">
+
+    <style>
+        main {
+            max-width: 100vw;
+            width: 100vw;
+            padding: 0px 0px;
+        }
+
+        nav {
+            justify-content: center;
+            padding: 0px 40px;
+            margin: 0px auto;
+        }
+
+        header {
+            padding: 0px 40px;
+        }
+
+        .fullscreen-svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .popup {
+            position: fixed;
+            display: none;
+            width: 95%;
+            height: 95%;
+            background-color: white;
+            border: 1px solid #ccc;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .overlay {
+            position: fixed;
+            display: none;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .chart-container {
+            max-width: 1100px;
+            margin: 20px auto;
+        }
+    </style>
+</head>
+<body class="composite">
+<div class="overlay" id="overlay" onclick="hidePopup()"></div>
+
+<!-- Header & Navigation -->
+<header>
+    <h1 align="center">
+        <a href="https://github.com/refactorfirst/refactorfirst" target="_blank">RefactorFirst</a> Report for
+        <a href="{{project.repoUrl}}" target="_blank">{{project.name}} {{project.version}}</a>
+    </h1>
+
+    <!-- GitHub Support Badges -->
+    <div align="center">
+        <h2>Show RefactorFirst some &#10084;&#65039;</h2>
+        <a class="github-button" href="https://github.com/refactorfirst/refactorfirst" data-icon="octicon-star"
+           data-size="large" data-show-count="true" aria-label="Star refactorfirst/refactorfirst on GitHub">Star</a>
+        <a class="github-button" href="https://github.com/refactorfirst/refactorfirst/fork"
+           data-icon="octicon-repo-forked" data-size="large" data-show-count="true" aria-label="Fork refactorfirst/refactorfirst on GitHub">Fork</a>
+        <a class="github-button" href="https://github.com/refactorfirst/refactorfirst/subscription"
+           data-icon="octicon-eye" data-size="large" data-show-count="true" aria-label="Watch refactorfirst/refactorfirst on GitHub">Watch</a>
+        <a class="github-button" href="https://github.com/refactorfirst/refactorfirst/issues"
+           data-icon="octicon-issue-opened" data-size="large" data-show-count="false" aria-label="Issue refactorfirst/refactorfirst on GitHub">Issue</a>
+        <a class="github-button" href="https://github.com/sponsors/jimbethancourt" data-icon="octicon-heart"
+           data-size="large" aria-label="Sponsor @jimbethancourt on GitHub">Sponsor</a>
+    </div>
+
+    <nav>
+        <ul>
+            <li><a href="#">Classes</a>
+                <ul>
+                    <li><a href="#CLASSMAP">Class Map</a></li>
+                    {{#classRelationshipsToRemove.hasRelationships}}
+                        <li><a href="#CLASSEDGES">Class Relationships To Remove</a></li>
+                    {{/classRelationshipsToRemove.hasRelationships}}
+                </ul>
+            </li>
+            {{#packageMap.hasEdges}}
+                <li><a href="#">Packages</a>
+                    <ul>
+                        <li><a href="#PACKAGEMAP">Package Map</a></li>
+                        {{#packageRelationshipsToRemove.hasRelationships}}
+                            <li><a href="#PACKAGEEDGES">Package Relationships To Remove</a></li>
+                        {{/packageRelationshipsToRemove.hasRelationships}}
+                    </ul>
+                </li>
+            {{/packageMap.hasEdges}}
+            {{#hasDisharmonies}}
+                <li><a href="#">Disharmonies</a>
+                    <ul>
+                        {{#disharmonies}}
+                            <li><a href="#{{anchorId}}">{{title}}</a></li>
+                        {{/disharmonies}}
+                    </ul>
+                </li>
+            {{/hasDisharmonies}}
+            {{#classCycles.hasCycles}}
+                <li><a href="#">Cycles</a>
+                    <ul>
+                        <li><a href="#CYCLES">Class Cycles</a></li>
+                        <li><a href="#CYCLEMAP">Cycle Map</a></li>
+                    </ul>
+                </li>
+            {{/classCycles.hasCycles}}
+        </ul>
+    </nav>
+</header>
+
+<!-- Class Map Section -->
+<h1 align="center"><a id="CLASSMAP">Class Map</a></h1>
+<button style="display: block; margin: 0 auto;"
+        onclick="createForceGraph('popup-classGraph', 'graph-container-classGraph', classGraph_dot)">Show classGraph
+    3D Popup
+</button>
+<button style="display: block; margin: 0 auto;"
+        onclick="showPopup('popup-classGraph', 'graph-container-classGraph', classGraph_dot)">Show classGraph 2D
+    Popup
+</button>
+
+<div class="popup" id="popup-classGraph">
+    <span class="close-btn" onclick="hidePopup()">&times;</span>
+    <div id="graph-container-classGraph" style="width: 100%; height: 100%;"></div>
+</div>
+
+<div align="center">
+    Red lines represent relationships to remove.<br>
+    Red nodes represent classes to remove.<br>
+    Zoom in / out with your mouse wheel and click/move to drag the image.<br>
+    Number of classes: {{classMap.classCount}} Number of relationships: {{classMap.relationshipCount}}<br>
+</div>
+
+{{#classMap.dotThresholdExceeded}}
+    <div align="center">SVG is too big to render quickly</div>
+{{/classMap.dotThresholdExceeded}}
+{{^classMap.dotThresholdExceeded}}
+    <div id="classGraph" style="width: 95%; height: 70vh; margin: auto; border: thin solid black"></div>
+{{/classMap.dotThresholdExceeded}}
+
+<br/>
+<hr/>
+<br/>
+<br/>
+
+<!-- Class Relationships To Remove Table -->
+{{#classRelationshipsToRemove.hasRelationships}}
+    <div style="text-align: center;"><a id="CLASSEDGES"><h1>Class Relationship Removal Priority</h1></a></div>
+    <h2 align="center">Refactor Starting with Priority 1</h2>
+    <div style="text-align: center;">
+        Current Class Cycle Count: {{classRelationshipsToRemove.cycleCount}}<br>
+        Number of Class Relationships to Remove: {{classRelationshipsToRemove.relationshipsToRemoveCount}}<br>
+        Classes with <strong>*</strong> should be broken apart<br>
+        Removing class relationships below will eliminate class cycles
+    </div>
+    <div align="center">
+        <table align="center" border="5px">
+            <thead>
+            <tr>
+                <th>Class Relationship</th>
+                <th>Priority</th>
+                <th>In Class<br>Cycles</th>
+                <th>Relationship<br>Strength</th>
+                <th>Also Removes Pkg<br>Cycle Relationship</th>
+                <th>In Package<br>Cycles</th>
+            </tr>
+            </thead>
+            <tbody>
+            {{#classRelationshipsToRemove.relationships}}
+                <tr>
+                    <td align="left">{{{renderedLabel}}}</td>
+                    <td align="right">{{priority}}</td>
+                    <td align="right">{{cycleCount}}</td>
+                    <td align="right">{{effortRank}}</td>
+                    <td align="left">{{#alsoRemovesPackageRelationship}}
+                        <strong>true</strong>{{/alsoRemovesPackageRelationship}}{{^alsoRemovesPackageRelationship}}
+                        false{{/alsoRemovesPackageRelationship}}</td>
+                    <td align="right">{{packageCycleCount}}</td>
+                </tr>
+            {{/classRelationshipsToRemove.relationships}}
+            </tbody>
+        </table>
+    </div>
+{{/classRelationshipsToRemove.hasRelationships}}
+
+<br/>
+<hr/>
+<br/>
+<br/>
+
+<!-- Package Map Section -->
+{{#packageMap.hasEdges}}
+    <h1 align="center"><a id="PACKAGEMAP">Package Map</a></h1>
+    <button style="display: block; margin: 0 auto;"
+            onclick="createForceGraph('popup-packageGraph', 'graph-container-packageGraph', packageGraph_dot)">Show
+        packageGraph
+        3D Popup
+    </button>
+    <button style="display: block; margin: 0 auto;"
+            onclick="showPopup('popup-packageGraph', 'graph-container-packageGraph', packageGraph_dot)">Show
+        packageGraph 2D
+        Popup
+    </button>
+
+    <div class="popup" id="popup-packageGraph">
+        <span class="close-btn" onclick="hidePopup()">&times;</span>
+        <div id="graph-container-packageGraph" style="width: 100%; height: 100%;"></div>
+    </div>
+
+    <div align="center">
+        Red lines represent relationships to remove.<br>
+        Red nodes represent packages to remove.<br>
+        Zoom in / out with your mouse wheel and click/move to drag the image.<br>
+        Number of packages: {{packageMap.classCount}} Number of relationships: {{packageMap.relationshipCount}}<br>
+    </div>
+
+    {{#packageMap.dotThresholdExceeded}}
+        <div align="center">SVG is too big to render quickly</div>
+    {{/packageMap.dotThresholdExceeded}}
+    {{^packageMap.dotThresholdExceeded}}
+        <div id="packageGraph" style="width: 95%; height: 70vh; margin: auto; border: thin solid black"></div>
+    {{/packageMap.dotThresholdExceeded}}
+{{/packageMap.hasEdges}}
+
+<br/>
+<hr/>
+<br/>
+<br/>
+
+<!-- Package Relationships To Remove Table -->
+{{#packageRelationshipsToRemove.hasRelationships}}
+    <div style="text-align: center;"><a id="PACKAGEEDGES"><h1>Package Relationship Removal Priority</h1></a></div>
+    <h2 align="center">Refactor Starting with Priority 1</h2>
+    <div style="text-align: center;">
+        Current Package Cycle Count: {{packageRelationshipsToRemove.cycleCount}}<br>
+        Number of Package Relationships to Remove: {{packageRelationshipsToRemove.relationshipsToRemoveCount}}<br>
+        Packages and classes with <strong>*</strong> should be broken apart<br>
+        Removing package relationships below will eliminate package cycles
+    </div>
+    <div align="center">
+        <table align="center" border="5px">
+            <thead>
+            <tr>
+                <th>Package Relationship</th>
+                <th>Priority</th>
+                <th>In Pkg<br>Cycles</th>
+                <th>Relationship<br>Strength</th>
+                <th>Class Relationships to Remove<br>To Break Package Relationship</th>
+            </tr>
+            </thead>
+            <tbody>
+            {{#packageRelationshipsToRemove.relationships}}
+                <tr>
+                    <td align="left">{{{renderedLabel}}}</td>
+                    <td align="right">{{priority}}</td>
+                    <td align="right">{{cycleCount}}</td>
+                    <td align="right">{{effortRank}}</td>
+                    <td align="left">{{#classRelationshipsToBreakPackage}}
+                        {{{.}}}<br/>{{/classRelationshipsToBreakPackage}}</td>
+                </tr>
+            {{/packageRelationshipsToRemove.relationships}}
+            </tbody>
+        </table>
+    </div>
+{{/packageRelationshipsToRemove.hasRelationships}}
+
+<!-- Disharmonies Sections with Chart.js Canvas -->
+{{#disharmonies}}
+    <br/>
+    <hr/>
+    <br/>
+    <br/>
+    <div style="text-align: center;"><a id="{{anchorId}}"><h1>{{title}}</h1></a></div>
+    <div align="center">
+        <table border="5px">
+            <tr>
+                <td><strong>Problem:</strong></td>
+                <td>{{problem}}</td>
+            </tr>
+            <tr>
+                <td><strong>Solution:</strong></td>
+                <td>{{{solution}}}</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- Chart.js Canvas -->
+    <div class="chart-container" align="center">
+        <div style="position: relative; height: 500px; width: 1100px; margin: 0 auto;">
+            <canvas id="chart_{{anchorId}}"></canvas>
+        </div>
+    </div>
+
+    <br/>
+
+    <h2 align="center">{{title}} by the numbers: (Refactor Starting with Priority 1)</h2>
+    <div align="center">
+        <table align="center" border="5px">
+            <thead>
+            <tr>
+                {{#table.headers}}
+                    <th>{{.}}</th>
+                {{/table.headers}}
+            </tr>
+            </thead>
+            <tbody>
+            {{#table.rows}}
+                <tr>
+                    {{#cells}}
+                        <td align="{{align}}">{{{content}}}</td>
+                    {{/cells}}
+                </tr>
+            {{/table.rows}}
+            </tbody>
+        </table>
+    </div>
+{{/disharmonies}}
+
+<br/>
+<hr/>
+<br/>
+<br/>
+
+<!-- Cycles Summary Table & Cycle Map -->
+{{#classCycles.hasCycles}}
+    <div style="text-align: center;"><a id="CYCLES"><h1>Class Cycles</h1></a></div>
+    <h2 align="center">Class Cycles by the numbers:</h2>
+    <div align="center">
+        <table align="center" border="5px">
+            <thead>
+            <tr>
+                <th>Cycle Name</th>
+                <th>Priority</th>
+                <th>Class Count</th>
+                <th>Relationship Count</th>
+            </tr>
+            </thead>
+            <tbody>
+            {{#classCycles.summary}}
+                <tr>
+                    <td align="left">{{cycleName}}</td>
+                    <td align="right">{{priority}}</td>
+                    <td align="right">{{classCount}}</td>
+                    <td align="right">{{relationshipCount}}</td>
+                </tr>
+            {{/classCycles.summary}}
+            </tbody>
+        </table>
+    </div>
+
+    {{#classCycles.largestCycle.hasCycleMap}}
+        <h2 align="center"><a id="CYCLEMAP">Largest Class Cycle : {{classCycles.largestCycle.cycleName}}</a></h2>
+        <h3 align="center">Limiting number of cycles displayed to 1 to keep page load time fast</h3>
+
+        <button style="display: block; margin: 0 auto;"
+                onclick="createForceGraph('popup-{{classCycles.largestCycle.cycleIdentifier}}', 'graph-container-{{classCycles.largestCycle.cycleIdentifier}}', {{classCycles.largestCycle.cycleIdentifier}}_dot)">
+            Show {{classCycles.largestCycle.cycleName}} 3D Popup
+        </button>
+        <button style="display: block; margin: 0 auto;"
+                onclick="showPopup('popup-{{classCycles.largestCycle.cycleIdentifier}}', 'graph-container-{{classCycles.largestCycle.cycleIdentifier}}', {{classCycles.largestCycle.cycleIdentifier}}_dot)">
+            Show {{classCycles.largestCycle.cycleName}} 2D Popup
+        </button>
+
+        <div class="popup" id="popup-{{classCycles.largestCycle.cycleIdentifier}}">
+            <span class="close-btn" onclick="hidePopup()">&times;</span>
+            <div id="graph-container-{{classCycles.largestCycle.cycleIdentifier}}"
+                 style="width: 100%; height: 100%;"></div>
+        </div>
+
+        <div id="{{classCycles.largestCycle.cycleIdentifier}}"
+             style="width: 95%; height: 70vh; margin: auto; border: thin solid black"></div>
+
+        <!-- Cycle Breakdown Table -->
+        <div align="center">
+            <table align="center" border="5px">
+                <thead>
+                <tr>
+                    <th>Classes</th>
+                    <th>Relationships</th>
+                </tr>
+                </thead>
+                <tbody>
+                {{#classCycles.largestCycle.breakdown}}
+                    <tr>
+                        <td align="left">{{{className}}}</td>
+                        <td align="left">{{{edgesHtml}}}</td>
+                    </tr>
+                {{/classCycles.largestCycle.breakdown}}
+                </tbody>
+            </table>
+        </div>
+    {{/classCycles.largestCycle.hasCycleMap}}
+{{/classCycles.hasCycles}}
+
+<footer>
+    <div class="clear">
+        <hr/>
+    </div>
+    <span id="publishDate">Last Published: {{project.scanTimestamp}}</span>
+</footer>
+</body>
+</html>
