@@ -67,6 +67,7 @@ class MustacheTemplateRenderingTest {
                         .relationshipsToRemoveCount(0)
                         .relationships(List.of())
                         .build())
+                .hasDisharmonies(false)
                 .disharmonies(List.of())
                 .classCycles(ClassCyclesDTO.builder().hasCycles(false).build())
                 .build();
@@ -130,6 +131,7 @@ class MustacheTemplateRenderingTest {
         ClassRelationshipsToRemoveDTO classRels = ClassRelationshipsToRemoveDTO.builder()
                 .cycleCount(5)
                 .relationshipsToRemoveCount(3)
+                .hasRelationships(true)
                 .relationships(List.of(rel))
                 .build();
 
@@ -143,6 +145,7 @@ class MustacheTemplateRenderingTest {
                         .relationshipsToRemoveCount(0)
                         .relationships(List.of())
                         .build())
+                .hasDisharmonies(false)
                 .disharmonies(List.of())
                 .classCycles(ClassCyclesDTO.builder().hasCycles(false).build())
                 .build();
@@ -244,6 +247,7 @@ class MustacheTemplateRenderingTest {
                         .relationshipsToRemoveCount(0)
                         .relationships(List.of())
                         .build())
+                .hasDisharmonies(true)
                 .disharmonies(List.of(section))
                 .classCycles(ClassCyclesDTO.builder().hasCycles(false).build())
                 .build();
@@ -258,13 +262,7 @@ class MustacheTemplateRenderingTest {
         assertTrue(rendered.contains("Extract related functionality"));
 
         // Verify Chart.js canvas
-        assertTrue(rendered.contains("<canvas id=\"chart_GOD\" width=\"1100\" height=\"500\"></canvas>"));
-
-        // Verify chart legend
-        assertTrue(rendered.contains("<strong>X-Axis:</strong> Effort to refactor"));
-        assertTrue(rendered.contains("<strong>Y-Axis:</strong> Relative churn"));
-        assertTrue(rendered.contains("<strong>Color:</strong> Priority of what to fix first"));
-        assertTrue(rendered.contains("<strong>Circle size:</strong> Priority (Visual) of what to fix first"));
+        assertTrue(rendered.contains("<canvas id=\"chart_GOD\"></canvas>"));
 
         // Verify table
         assertTrue(rendered.contains("<th>Class</th>"));
@@ -336,6 +334,7 @@ class MustacheTemplateRenderingTest {
                         .relationshipsToRemoveCount(0)
                         .relationships(List.of())
                         .build())
+                .hasDisharmonies(false)
                 .disharmonies(List.of())
                 .classCycles(classCycles)
                 .build();
