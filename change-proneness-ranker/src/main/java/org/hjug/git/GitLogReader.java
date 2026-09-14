@@ -10,6 +10,8 @@ import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.diff.DiffFormatter;
+import org.eclipse.jgit.errors.MissingObjectException;
+import org.eclipse.jgit.errors.RevWalkException;
 import org.eclipse.jgit.lib.*;
 import org.eclipse.jgit.revwalk.*;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
@@ -131,28 +133,65 @@ public class GitLogReader implements AutoCloseable {
      */
     public ScmLogInfo fileLog(String path) throws GitAPIException, IOException {
         ObjectId branchId = gitRepository.resolve("HEAD");
-        Iterable<RevCommit> revCommits = git.log().add(branchId).addPath(path).call();
+        CommitWalkStats stats =
+                walkCommits(git.log().add(branchId).addPath(path).call());
 
+        if (stats.commitCount == 0) {
+            return new ScmLogInfo(path, null, stats.earliestCommit, stats.earliestCommit, stats.commitCount);
+        }
+
+        return new ScmLogInfo(path, null, stats.earliestCommit, stats.mostRecentCommit, stats.commitCount);
+    }
+
+    /**
+     * Counts commits over the given walk.  A missing Git object (e.g. in a shallow or
+     * partial clone) must not fail the whole walk; the walk is truncated and the
+     * commits read so far are returned instead.
+     */
+    private static CommitWalkStats walkCommits(Iterable<RevCommit> revCommits) {
+        CommitWalkStats stats = new CommitWalkStats();
+
+        try {
+            for (RevCommit revCommit : revCommits) {
+                int commitTime = revCommit.getCommitTime();
+                if (stats.commitCount == 0) {
+                    stats.mostRecentCommit = commitTime;
+                }
+                if (commitTime < stats.earliestCommit) {
+                    stats.earliestCommit = commitTime;
+                }
+                stats.commitCount++;
+            }
+        } catch (RevWalkException e) {
+            // JGit wraps checked exceptions thrown mid-walk in a RevWalkException.
+            if (isCausedByMissingObject(e)) {
+                log.warn(
+                        "Missing Git object while reading history (shallow or partial clone?); "
+                                + "reporting the {} commit(s) that could be read. Cause: {}",
+                        stats.commitCount,
+                        e.getMessage());
+            } else {
+                throw e;
+            }
+        }
+
+        return stats;
+    }
+
+    private static boolean isCausedByMissingObject(Throwable throwable) {
+        while (throwable != null) {
+            if (throwable instanceof MissingObjectException) {
+                return true;
+            }
+            throwable = throwable.getCause();
+        }
+        return false;
+    }
+
+    private static class CommitWalkStats {
         int commitCount = 0;
         int earliestCommit = Integer.MAX_VALUE;
         int mostRecentCommit = 0;
-
-        for (RevCommit revCommit : revCommits) {
-            int commitTime = revCommit.getCommitTime();
-            if (commitCount == 0) {
-                mostRecentCommit = commitTime;
-            }
-            if (commitTime < earliestCommit) {
-                earliestCommit = commitTime;
-            }
-            commitCount++;
-        }
-
-        if (commitCount == 0) {
-            return new ScmLogInfo(path, null, earliestCommit, earliestCommit, commitCount);
-        }
-
-        return new ScmLogInfo(path, null, earliestCommit, mostRecentCommit, commitCount);
     }
 
     // based on https://stackoverflow.com/questions/27361538/how-to-show-changes-between-commits-with-jgit
