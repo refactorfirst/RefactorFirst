@@ -125,25 +125,17 @@ public class GitLogReaderTest {
     }
 
     /**
-     * A Git whose successive log commands return the given iterables; the underlying
+     * A Git whose log command returns the given iterable; the underlying
      * repository is real so that HEAD resolution works.
      */
-    @SafeVarargs
-    private final Git gitWithLogs(Iterable<RevCommit>... iterables) throws IOException, GitAPIException {
+    private final Git gitWithLogs(Iterable<RevCommit> revCommits) throws IOException, GitAPIException {
         Git mockGit = mock(Git.class);
         when(mockGit.getRepository()).thenReturn(repository);
-        List<LogCommand> logCommands = new ArrayList<>();
-        for (Iterable<RevCommit> revCommits : iterables) {
-            LogCommand logCommand = mock(LogCommand.class);
-            when(logCommand.add(any(ObjectId.class))).thenReturn(logCommand);
-            when(logCommand.addPath(anyString())).thenReturn(logCommand);
-            when(logCommand.call()).thenReturn(revCommits);
-            logCommands.add(logCommand);
-        }
-        when(mockGit.log())
-                .thenReturn(
-                        logCommands.get(0),
-                        logCommands.subList(1, logCommands.size()).toArray(new LogCommand[0]));
+        LogCommand logCommand = mock(LogCommand.class);
+        when(logCommand.add(any(ObjectId.class))).thenReturn(logCommand);
+        when(logCommand.addPath(anyString())).thenReturn(logCommand);
+        when(logCommand.call()).thenReturn(revCommits);
+        when(mockGit.log()).thenReturn(logCommand);
         return mockGit;
     }
 
@@ -173,7 +165,8 @@ public class GitLogReaderTest {
     }
 
     @Test
-    void testFileLogFallsBackToTotalCommitCountWhenFilteredWalkYieldsNothingDueToMissingObjects() throws Exception {
+    void testFileLogReturnsOnlyVerifiedPartialPathHistoryWhenFilteredWalkYieldsNothingDueToMissingObjects()
+            throws Exception {
         String attributeHandler = "AttributeHandler.java";
         InputStream resourceAsStream = getClass().getClassLoader().getResourceAsStream(attributeHandler);
         writeFile(attributeHandler, convertInputStreamToString(resourceAsStream));
@@ -183,21 +176,20 @@ public class GitLogReaderTest {
         Iterable<RevCommit> failingFilteredWalk = walkYieldingThenThrowing(
                 Collections.emptyList(),
                 new RevWalkException(new MissingObjectException(headId(), Constants.OBJ_TREE)));
-        Iterable<RevCommit> pathlessWalk = Collections.singletonList(onlyCommit);
 
-        GitLogReader gitLogReader = new GitLogReader(gitWithLogs(failingFilteredWalk, pathlessWalk));
+        GitLogReader gitLogReader = new GitLogReader(gitWithLogs(failingFilteredWalk));
 
         ScmLogInfo scmLogInfo = Assertions.assertDoesNotThrow(() -> gitLogReader.fileLog(attributeHandler));
 
-        Assertions.assertEquals(1, scmLogInfo.getCommitCount());
-        Assertions.assertEquals(onlyCommit.getCommitTime(), scmLogInfo.getEarliestCommit());
-        Assertions.assertEquals(onlyCommit.getCommitTime(), scmLogInfo.getMostRecentCommit());
+        // When the filtered walk yields nothing due to missing objects, return only the verified partial results
+        // (which in this case is zero commits) rather than falling back to total repository history
+        Assertions.assertEquals(0, scmLogInfo.getCommitCount());
     }
 
     @Test
-    void testFileLogWithMissingTreeFallsBackToTotalCommitCount() throws Exception {
+    void testFileLogReturnsOnlyVerifiedPartialPathHistoryWithMissingTree() throws Exception {
         // Simulates a shallow clone whose tree objects are missing:  the filtered walk
-        // yields nothing, so fileLog falls back to the total (tree-independent) history.
+        // may yield zero results due to missing objects, but should not fall back to total history.
         GitLogReader gitLogReader = new GitLogReader(git);
 
         String attributeHandler = "AttributeHandler.java";
@@ -218,9 +210,9 @@ public class GitLogReaderTest {
 
         ScmLogInfo scmLogInfo = Assertions.assertDoesNotThrow(() -> gitLogReader.fileLog(attributeHandler));
 
-        Assertions.assertEquals(2, scmLogInfo.getCommitCount());
-        Assertions.assertEquals(firstCommit.getCommitTime(), scmLogInfo.getEarliestCommit());
-        Assertions.assertEquals(secondCommit.getCommitTime(), scmLogInfo.getMostRecentCommit());
+        // With missing tree objects, the filtered walk may yield zero verified partial results
+        // rather than falling back to total repository history
+        Assertions.assertEquals(0, scmLogInfo.getCommitCount());
     }
 
     @Test

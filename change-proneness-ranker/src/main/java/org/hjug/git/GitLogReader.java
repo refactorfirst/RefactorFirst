@@ -136,17 +136,6 @@ public class GitLogReader implements AutoCloseable {
         CommitWalkStats stats =
                 walkCommits(git.log().add(branchId).addPath(path).call());
 
-        if (stats.commitCount == 0 && stats.truncatedByMissingObjects) {
-            // Shallow or partial clone: the path-filtered history is unreadable, but a
-            // pathless walk only needs commit objects, so fall back to the total commit
-            // history as a degraded change-proneness signal.
-            log.warn(
-                    "No commits could be read for {} due to missing Git objects; "
-                            + "falling back to the total repository commit count",
-                    path);
-            stats = walkCommits(git.log().add(branchId).call());
-        }
-
         if (stats.commitCount == 0) {
             return new ScmLogInfo(path, null, stats.earliestCommit, stats.earliestCommit, stats.commitCount);
         }
@@ -176,7 +165,6 @@ public class GitLogReader implements AutoCloseable {
         } catch (RevWalkException e) {
             // JGit wraps checked exceptions thrown mid-walk in a RevWalkException.
             if (isCausedByMissingObject(e)) {
-                stats.truncatedByMissingObjects = true;
                 log.warn(
                         "Missing Git object while reading history (shallow or partial clone?); "
                                 + "reporting the {} commit(s) that could be read. Cause: {}",
@@ -204,7 +192,6 @@ public class GitLogReader implements AutoCloseable {
         int commitCount = 0;
         int earliestCommit = Integer.MAX_VALUE;
         int mostRecentCommit = 0;
-        boolean truncatedByMissingObjects = false;
     }
 
     // based on https://stackoverflow.com/questions/27361538/how-to-show-changes-between-commits-with-jgit
