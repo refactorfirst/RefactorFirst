@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>RefactorFirst Interactive Report Viewer</title>
+    <!-- Mustache & Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/mustache@4.2.0/mustache.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sigma.js/2.4.0/sigma.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/graphology/0.25.4/graphology.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/graphlib-dot@0.6.4/dist/graphlib-dot.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/3d-force-graph"></script>
+    <link rel="stylesheet" href="https://unpkg.com/mvp.css">
+    <style>
+        #loader { text-align: center; padding: 40px; }
+        #drop-zone { border: 2px dashed #999; padding: 30px; border-radius: 8px; margin: 20px auto; max-width: 600px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div id="loader">
+        <h2>Loading RefactorFirst Report...</h2>
+        <div id="drop-zone" style="display:none;">
+            <p><strong>CORS Notice:</strong> Opening directly from <code>file:///</code> prevents automatic loading.</p>
+            <p>Click here and select both <code>refactor-first.json</code> and
+                <code>refactor-first-report.mustache</code> to view:</p>
+            <input type="file" id="file-input" accept=".json,.mustache" multiple style="display:none;"/>
+        </div>
+    </div>
+    
+    <!-- Render Target -->
+    <div id="app"></div>
+
+    <!-- Popup Graph JavaScript Functions -->
+    <script>
+    function sugiyamaLayout(graph) {
+        var layers = [];
+        var nodeLevels = {};
+        var nodes = graph.nodes();
+
+        // Step 1: Assign levels to nodes
+        function assignLevels() {
+            var visited = {};
+            var stack = [];
+
+            function visit(node, level) {
+                if (visited[node]) return;
+                visited[node] = true;
+                nodeLevels[node] = level;
+                if (!layers[level]) layers[level] = [];
+                layers[level].push(node);
+                stack.push(node);
+                graph.forEachNeighbor(node, function (neighbor) {
+                    visit(neighbor, level + 1);
+                });
+            }
+
+            nodes.forEach(function (node) {
+                if (!visited[node]) visit(node, 0);
+            });
+        }
+
+        // Step 2: Reduce edge crossings
+        function reduceCrossings() {
+            for (var i = 0; i < layers.length - 1; i++) {
+                var layer = layers[i];
+                var nextLayer = layers[i + 1];
+                var positions = {};
+
+                nextLayer.forEach(function (node, index) {
+                    positions[node] = index;
+                });
+
+                layer.sort(function (a, b) {
+                    var aPos = 0, bPos = 0;
+                    graph.forEachNeighbor(a, function (neighbor) {
+                        aPos += positions[neighbor] || 0;
+                    });
+                    graph.forEachNeighbor(b, function (neighbor) {
+                        bPos += positions[neighbor] || 0;
+                    });
+                    return aPos - bPos;
+                });
+            }
+        }
+
+        // Step 3: Assign positions to nodes
+        function assignPositions() {
+            var yStep = 100;
+            var xStep = 2000;
+
+            layers.forEach(function (layer, level) {
+                var layerWidth = layer.length * xStep;
+                var offsetX = ((screen.width - 200) - layerWidth) / 2; // Centering the nodes
+
+                layer.forEach(function (node, index) {
+                    graph.setNodeAttribute(node, 'x', offsetX + index * xStep);
+                    graph.setNodeAttribute(node, 'y', -level * yStep);
+                });
+            });
+        }
+
+        assignLevels();
+        reduceCrossings();
+        assignPositions();
+    }
+
+    function renderGraph(dot) {
+        // Parse the DOT graph using graphlib-dot
+        const graphlibGraph = graphlibDot.read(dot);
+
+        // Convert graphlib graph to graphology graph
+        const graphologyGraph = new graphology.Graph();
+        graphlibGraph.nodes().forEach(node => {
+            const attrs = graphlibGraph.node(node);
+            graphologyGraph.addNode(node, {
+                label: attrs.label || node,
+                color: attrs.color,
+                size: 5,
+            });
+        });
+
+        graphlibGraph.edges().forEach(edge => {
+            const attrs = graphlibGraph.edge(edge);
+            graphologyGraph.addEdge(edge.v, edge.w, {
+                color: attrs.color,
+                size: 1,
+                type: 'arrow',
+            });
+        });
+
+        sugiyamaLayout(graphologyGraph);
+
+        return graphologyGraph;
+    }
+    </script>
+
+    <script type="module">
+        // SpriteText will only work as import
+        // this script block requires type=module since we are using an import
+        import SpriteText from "https://esm.sh/three-spritetext";
+
+        function createForceGraph(popupId, containerName, dot) {
+            // Add event listener for Escape key to close the popup
+            document.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape') {
+                    hidePopup();
+                }
+            });
+
+            document.getElementById('overlay').style.display = 'block';
+            document.getElementById(popupId).style.display = 'block';
+            var container = document.getElementById(containerName);
+
+            // Parse the DOT graph using graphlib-dot
+            const graphlibGraph = graphlibDot.read(dot);
+
+            var nodes = [];
+            var links = [];
+
+            graphlibGraph.nodes().forEach(function (node) {
+                var nodeData = graphlibGraph.node(node);
+                nodes.push({
+                    id: node,
+                    color: nodeData.color || 'white',
+                });
+            });
+
+            graphlibGraph.edges().forEach(function (edge) {
+                links.push({
+                    source: edge.v,
+                    target: edge.w,
+                    color: graphlibGraph.edge(edge).color || 'white',
+                    weight: graphlibGraph.edge(edge).weight,
+                });
+            });
+
+            const gData = {
+                nodes: nodes,
+                links: links
+            };
+
+            // cross-link node objects
+            gData.links.forEach(link => {
+                const a = gData.nodes.find(node => node.id === link.source);
+                const b = gData.nodes.find(node => node.id === link.target);
+                !a.neighbors && (a.neighbors = []);
+                !b.neighbors && (b.neighbors = []);
+                a.neighbors.push(b);
+                b.neighbors.push(a);
+
+                !a.links && (a.links = []);
+                !b.links && (b.links = []);
+                a.links.push(link);
+                b.links.push(link);
+            });
+
+            const Graph = new ForceGraph3D(container)
+                .graphData(gData)
+                .nodeLabel('id')
+                .width(container.clientWidth)
+                .height(container.clientHeight);
+
+            if(gData.links.length + gData.nodes.length < 4000) {
+                console.log(gData.links.length + gData.nodes.length);
+
+
+                // use node labels instead of spheres
+                Graph.nodeThreeObject(node => {
+                    const sprite = new SpriteText(node.id);
+                    sprite.material.depthWrite = false; // make sprite background transparent
+                    sprite.color = node.color;
+                    sprite.textHeight = 4;
+                    return sprite;
+                });
+
+                // code to display weight as link text
+                // may be too much for browsers to handle
+                // Graph
+                //     .linkThreeObjectExtend(true)
+                //     .linkThreeObject(link => {
+                //         // extend link with text sprite
+                //         const sprite = new SpriteText(`${link.weight}`);
+                //         sprite.color = 'lightgrey';
+                //         sprite.textHeight = 3;
+                //         return sprite;
+                //     })
+                //     .linkPositionUpdate((sprite, {start, end}) => {
+                //         const middlePos = Object.assign(...['x', 'y', 'z'].map(c => ({
+                //             [c]: start[c] + (end[c] - start[c]) / 2 // calc middle point
+                //         })));
+                //
+                //         // Position sprite
+                //         Object.assign(sprite.position, middlePos);
+                //     });
+
+
+                // code to highlight nodes & links
+                // TODO: enable via control - see Manipulate Link Force Distance for example
+                const highlightNodes = new Set();
+                const highlightLinks = new Set();
+                let hoverNode = null;
+                Graph
+                    .nodeColor(node => highlightNodes.has(node) ? node === hoverNode ? 'rgb(255,0,0,1)' : 'rgba(255,160,0,0.8)' : 'rgba(0,255,255,0.6)')
+                    .linkWidth(link => highlightLinks.has(link) ? 4 : 1)
+                    .linkDirectionalParticles(link => highlightLinks.has(link) ? 4 : 0)
+                    .linkDirectionalParticleWidth(4)
+                    .onNodeHover(node => {
+                        // no state change
+                        if ((!node && !highlightNodes.size) || (node && hoverNode === node)) return;
+
+                        highlightNodes.clear();
+                        highlightLinks.clear();
+                        if (node) {
+                            highlightNodes.add(node);
+                            node.neighbors.forEach(neighbor => highlightNodes.add(neighbor));
+                            node.links.forEach(link => highlightLinks.add(link));
+                        }
+
+                        hoverNode = node || null;
+
+                        updateHighlight(Graph);
+                    })
+                    .onLinkHover(link => {
+                        highlightNodes.clear();
+                        highlightLinks.clear();
+
+                        if (link) {
+                            highlightLinks.add(link);
+                            highlightNodes.add(link.source);
+                            highlightNodes.add(link.target);
+                        }
+
+                        updateHighlight(Graph);
+                    });
+
+            }
+        }
+
+        // used by highlighting functionality
+        function updateHighlight(Graph) {
+            // trigger update of highlighted objects in scene
+            Graph
+                .nodeColor(Graph.nodeColor())
+                .linkWidth(Graph.linkWidth())
+                .linkDirectionalParticles(Graph.linkDirectionalParticles());
+        }
+
+        // needed to allow the button to open the graph
+        window.createForceGraph = createForceGraph;
+    </script>
+
+    <script>
+    function showPopup(popupId, containerName, dot) {
+        // Add event listener for Escape key to close the popup
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') {
+                hidePopup();
+            }
+        });                document.getElementById('overlay').style.display = 'block';
+        document.getElementById(popupId).style.display = 'block';
+
+        var graph = renderGraph(dot);
+        var container = document.getElementById(containerName);
+
+        // Render with Sigma.js
+        new Sigma(graph, container);
+    }
+
+    function hidePopup() {
+        document.getElementById('overlay').style.display = 'none';
+        var popups = document.getElementsByClassName('popup');
+        for (var i = 0; i < popups.length; i++) {
+            popups[i].style.display = 'none';
+        }
+
+        // Clear the graph containers to remove the previous graphs
+        var containers = document.querySelectorAll('[id^="graph-container"]');
+        containers.forEach(function(container) {
+            while (container.firstChild) {
+                container.removeChild(container.firstChild);
+            }
+        });
+    // Remove the Escape key event listener
+            document.removeEventListener('keydown', function (event) {
+                if (event.key === 'Escape') {
+                    hidePopup();
+                }
+            });    }
+    </script>
+
+    <script type="module">
+        import init, { DotParser } from "https://cdn.jsdelivr.net/npm/@vizdom/vizdom-ts-web@0.1.19/vizdom_ts.min.js";
+
+        async function loadReport() {
+            try {
+                const [jsonRes, templateRes] = await Promise.all([
+                    fetch('./refactor-first.json'),
+                    fetch('./refactor-first-report.mustache')
+                ]);
+                if (!jsonRes.ok || !templateRes.ok) throw new Error("Fetch failed");
+                const data = await jsonRes.json();
+                const template = await templateRes.text();
+                render(template, data);
+            } catch (err) {
+                console.warn("Auto-fetch blocked or failed, enabling file picker fallback:", err);
+                const loaderHeading = document.getElementById('loader').querySelector('h2');
+                loaderHeading.innerText = "Select RefactorFirst report files";
+                const dropZone = document.getElementById('drop-zone');
+                dropZone.style.display = 'block';
+                const fileInput = document.getElementById('file-input');
+                dropZone.onclick = () => fileInput.click();
+                fileInput.onchange = async (e) => {
+                    const files = Array.from(e.target.files);
+                    const jsonFile = files.find(file => file.name.endsWith('.json'));
+                    const templateFile = files.find(file => file.name.endsWith('.mustache'));
+                    if (!jsonFile || !templateFile) {
+                        loaderHeading.innerText = "Select both the JSON report and Mustache template";
+                        return;
+                    }
+                    const [json, template] = await Promise.all([jsonFile.text(), templateFile.text()]);
+                    render(template, JSON.parse(json));
+                };
+            }
+        }
+
+        function render(template, data) {
+            document.getElementById('loader').style.display = 'none';
+
+            // Expose DOT strings globally for Sigma/Force3D popups
+            if (data.classMap && data.classMap.dot) {
+                window.classGraph_dot = data.classMap.dot;
+            }
+            if (data.packageMap && data.packageMap.dot) {
+                window.packageGraph_dot = data.packageMap.dot;
+            }
+            if (data.classCycles && data.classCycles.largestCycle && data.classCycles.largestCycle.dot) {
+                window[data.classCycles.largestCycle.cycleIdentifier + '_dot'] = data.classCycles.largestCycle.dot;
+            }
+
+            // 1. Render HTML via Mustache
+            const renderedHtml = Mustache.render(template, data);
+            document.getElementById('app').innerHTML = renderedHtml;
+
+            // Reload GitHub Buttons script to process dynamically added buttons
+            const script = document.createElement('script');
+            script.src = 'https://buttons.github.io/buttons.js';
+            script.async = true;
+            script.defer = true;
+            document.body.appendChild(script);
+
+            // 2. Initialize Chart.js Bubble Charts
+            if (data.disharmonies) {
+                data.disharmonies.forEach(d => {
+                    const canvas = document.getElementById(`chart_${d.anchorId}`);
+                    if (canvas && d.chart && d.chart.bubbles) {
+                        initBubbleChart(canvas, d.title, d.chart);
+                    }
+                });
+            }
+
+            // 3. Render Vizdom WASM Graphs
+            initWasmGraphs(data);
+        }
+
+        function initBubbleChart(canvas, title, chartData) {
+            const ctx = canvas.getContext('2d');
+            const ChartLib = window.Chart;
+            if (!ChartLib) {
+                console.error('Chart.js not loaded');
+                return;
+            }
+            try {
+                new ChartLib(ctx, {
+                    type: 'bubble',
+                    data: {
+                        datasets: [{
+                            label: title,
+                            data: chartData.bubbles.map(b => ({
+                                x: b.x,
+                                y: b.y,
+                                r: b.r,
+                                raw: b
+                            })),
+                            backgroundColor: chartData.bubbles.map(b => b.color),
+                            borderColor: chartData.bubbles.map(b => b.borderColor),
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'bottom',
+                                labels: {
+                                    font: {
+                                        size: 12
+                                    },
+                                    padding: 15,
+                                    boxWidth: 20,
+                                    boxHeight: 20,
+                                    generateLabels: function(chart) {
+                                        // Generate custom legend for priority colors
+                                        // Colors match the priority gradient: red (high) -> green (low)
+                                        const priorities = ['High Priority (1)', 'Medium Priority', 'Low Priority (max)'];
+                                        const colors = ['rgb(235, 64, 52)', 'rgb(137, 119, 74)', 'rgb(39, 174, 96)'];
+                                        
+                                        return priorities.map((label, i) => ({
+                                            text: label,
+                                            fillStyle: colors[i],
+                                            strokeStyle: colors[i],
+                                            lineWidth: 1,
+                                            hidden: false,
+                                            index: i
+                                        }));
+                                    }
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const raw = context.raw.raw;
+                                        return [
+                                            `File: ${raw.label}`,
+                                            `Priority: ${raw.priority}`,
+                                            `Effort Rank: ${raw.x}`,
+                                            `Change Proneness Rank: ${raw.y}`
+                                        ];
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                title: { display: true, text: chartData.xAxisLabel || 'Effort to refactor' },
+                                grid: { color: '#e0e0e0' }
+                            },
+                            y: {
+                                title: { display: true, text: chartData.yAxisLabel || 'Relative churn (impact)' },
+                                grid: { color: '#e0e0e0' }
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Error creating chart:', error);
+            }
+        }
+
+        async function initWasmGraphs(data) {
+            try {
+                await init();
+                const parser = new DotParser();
+
+                const renderGraph = (containerId, dotString) => {
+                    const el = document.getElementById(containerId);
+                    if (!el || !dotString) return;
+                    const parsed = parser.parse(dotString).to_directed().layout();
+                    let svg = parsed.to_svg().to_string();
+                    svg = svg.replace('<svg ', '<svg class="fullscreen-svg" ');
+                    el.innerHTML = svg;
+                    if (window.svgPanZoom) {
+                        svgPanZoom(`#${containerId} svg`, { zoomEnabled: true, controlIconsEnabled: true });
+                    }
+                };
+
+                if (data.classMap && !data.classMap.dotThresholdExceeded) {
+                    renderGraph('classGraph', data.classMap.dot);
+                }
+                if (data.packageMap && !data.packageMap.dotThresholdExceeded) {
+                    renderGraph('packageGraph', data.packageMap.dot);
+                }
+                if (data.classCycles && data.classCycles.largestCycle && !data.classCycles.largestCycle.dotThresholdExceeded) {
+                    renderGraph(data.classCycles.largestCycle.cycleIdentifier, data.classCycles.largestCycle.dot);
+                }
+            } catch (wasmErr) {
+                console.warn("WASM layout renderer unavailable:", wasmErr);
+            }
+        }
+
+        loadReport();
+    </script>
+</body>
+</html>

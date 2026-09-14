@@ -561,7 +561,8 @@ public class HtmlReport extends SimpleHtmlReport {
                 + "    }\n" + "</script>\n";
     }
 
-    String buildClassGraphDot(
+    /** Builds raw DOT source for the complete class relationship graph. */
+    String buildRawClassGraphDot(
             Graph<String, DefaultWeightedEdge> classGraph, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
         StringBuilder dot = new StringBuilder();
         dot.append("strict digraph G {\n");
@@ -583,7 +584,13 @@ public class HtmlReport extends SimpleHtmlReport {
         renderClassVertices(classGraph, repoUrl, codebaseGraphDTO, vertexesToRender, dot);
 
         dot.append("}");
-        return toJavaScriptTemplateLiteral(dot.toString());
+        return dot.toString();
+    }
+
+    /** Builds escaped class-graph DOT suitable for a JavaScript template literal. */
+    String buildClassGraphDot(
+            Graph<String, DefaultWeightedEdge> classGraph, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
+        return toJavaScriptTemplateLiteral(buildRawClassGraphDot(classGraph, repoUrl, codebaseGraphDTO));
     }
 
     private void renderClassVertices(
@@ -942,7 +949,8 @@ public class HtmlReport extends SimpleHtmlReport {
         return stringBuilder.toString();
     }
 
-    String buildClassCycleDot(
+    /** Builds raw DOT source for a ranked class cycle. */
+    String buildRawClassCycleDot(
             Graph<String, DefaultWeightedEdge> classGraph,
             RankedCycle cycle,
             String repoUrl,
@@ -959,7 +967,16 @@ public class HtmlReport extends SimpleHtmlReport {
         renderClassVertices(classGraph, repoUrl, codebaseGraphDTO, vertexSet, dot);
 
         dot.append("}");
-        return toJavaScriptTemplateLiteral(dot.toString());
+        return dot.toString();
+    }
+
+    /** Builds escaped class-cycle DOT suitable for a JavaScript template literal. */
+    String buildClassCycleDot(
+            Graph<String, DefaultWeightedEdge> classGraph,
+            RankedCycle cycle,
+            String repoUrl,
+            CodebaseGraphDTO codebaseGraphDTO) {
+        return toJavaScriptTemplateLiteral(buildRawClassCycleDot(classGraph, cycle, repoUrl, codebaseGraphDTO));
     }
 
     @Override
@@ -996,7 +1013,8 @@ public class HtmlReport extends SimpleHtmlReport {
         return stringBuilder.toString();
     }
 
-    String buildPackageGraphDot(
+    /** Builds raw DOT source for the package relationship graph. */
+    String buildRawPackageGraphDot(
             Graph<String, DefaultWeightedEdge> packageGraph, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
         StringBuilder dot = new StringBuilder();
         dot.append("strict digraph G {\n");
@@ -1017,7 +1035,13 @@ public class HtmlReport extends SimpleHtmlReport {
         renderPackageVertices(packageGraph, repoUrl, codebaseGraphDTO, vertexesToRender, dot);
 
         dot.append("}");
-        return toJavaScriptTemplateLiteral(dot.toString());
+        return dot.toString();
+    }
+
+    /** Builds escaped package-graph DOT suitable for a JavaScript template literal. */
+    String buildPackageGraphDot(
+            Graph<String, DefaultWeightedEdge> packageGraph, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
+        return toJavaScriptTemplateLiteral(buildRawPackageGraphDot(packageGraph, repoUrl, codebaseGraphDTO));
     }
 
     private void renderPackageGraphEdge(

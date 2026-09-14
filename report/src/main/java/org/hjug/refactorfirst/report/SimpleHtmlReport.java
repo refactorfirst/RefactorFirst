@@ -48,6 +48,117 @@ public class SimpleHtmlReport {
 
     public final String[] classCycleTableHeadings = {"Classes", "Relationships"};
 
+    public static final List<DisharmonySpec> DISHARMONY_SPECS = List.of(
+            new DisharmonySpec(
+                    DisharmonyTypes.GOD_CLASS,
+                    "GOD",
+                    "God Classes",
+                    false,
+                    "God Classes take on too much responsibility,",
+                    "Extract related islands of functionality into separate classes.  Leave God classes that don't change often alone."),
+            new DisharmonySpec(
+                    DisharmonyTypes.DATA_CLASS,
+                    "DATA_CLASS",
+                    "Data Classes",
+                    false,
+                    "Data Classes are dumb data holders that other classes rely on.",
+                    "Move the data/variable(s) to the same class as the operation."),
+            new DisharmonySpec(
+                    DisharmonyTypes.BRAIN_CLASS,
+                    "BRAIN_CLASS",
+                    "Brain Classes",
+                    false,
+                    "Brain Classes are complex, lack cohesion, and have at least one Brain Method.",
+                    "Decompose Brain Methods into smaller methods."),
+            new DisharmonySpec(
+                    DisharmonyTypes.REFUSED_PARENT_BEQUEST,
+                    "RPB",
+                    "Refused Parent Bequest",
+                    false,
+                    "Child class is large and often complex, but doesn't override or use many of the parent class's methods",
+                    "Do one or more of the following:<br>"
+                            + "- Extract the child class into a separate class.  Move the methods that are used from the parent class into the child class.<br>"
+                            + "- Make unused protected members private in the parent class.<br>"
+                            + "- If a parent class has multiple children, move methods not used by all descendants to another class."),
+            new DisharmonySpec(
+                    DisharmonyTypes.TRADITION_BREAKER,
+                    "TB",
+                    "Tradition Breakers",
+                    false,
+                    "Child class adds many new public methods, but doesn't override or use many of the parent class's methods",
+                    "Do one or more of the following:<br>"
+                            + "- Make public child methods unused outside of the class non-public.<br>"
+                            + "- Pull duplicated methods in child classes into the parent class.<br>"
+                            + "- Move methods in the child class that are unrelated to the parent class to another class.<br>"
+                            + "- Remove the child class from the hierarchy."),
+            new DisharmonySpec(
+                    DisharmonyTypes.SIGNIFICANT_DUPLICATION,
+                    "SIG_DUP",
+                    "Significant Duplication",
+                    false,
+                    "Nearly identical code is found in multiple classes, leading to increased maintenance costs.",
+                    "- Move duplicated code in the same class into a new method.<br>"
+                            + "- Move duplicated code into a separate or parent class.<br>"
+                            + "- Move duplicated code in two child classes or in parent/child classes into the parent class."),
+            new DisharmonySpec(
+                    DisharmonyTypes.BRAIN_METHOD,
+                    "BRAIN_METHOD",
+                    "Brain Methods",
+                    true,
+                    "Method is long, complicated, and uses many variables.",
+                    "- Decompose the method into two or more smaller methods.<br>"
+                            + "- If part of the method relies heavily on an outside class, extract that functionality out of the calling method and move it to the called class."),
+            new DisharmonySpec(
+                    DisharmonyTypes.FEATURE_ENVY,
+                    "FEATURE_ENVY",
+                    "Feature Envy",
+                    true,
+                    "Method is more interested in data in other classes than its own class.",
+                    "Move the method (or part of the method) to the class where it uses the most data."),
+            new DisharmonySpec(
+                    DisharmonyTypes.INTENSIVE_COUPLING,
+                    "INTENSIVE_COUPLING",
+                    "Intensive Coupling",
+                    true,
+                    "Method calls too many methods from a few unrelated classes (often in a separate package).",
+                    "Move the calling method to a class more closely related to the other classes that the original method can call."),
+            new DisharmonySpec(
+                    DisharmonyTypes.DISPERSED_COUPLING,
+                    "DISPERSED_COUPLING",
+                    "Dispersed Coupling",
+                    true,
+                    "Method calls a few methods in many classes",
+                    "Reduce the size of the calling method.  Extract methods from the calling method into the target classes."),
+            new DisharmonySpec(
+                    DisharmonyTypes.SHOTGUN_SURGERY,
+                    "SHOTGUN_SURGERY",
+                    "Shotgun Surgery",
+                    true,
+                    "Method is called by many methods in many classes",
+                    "- Move the method closer to the calling classes (move the behavior closer to the data) if it is small.<br>"
+                            + "- If it is a large method, treat it as a Brain Method and decompose it into two or more smaller methods."),
+            new DisharmonySpec(
+                    DisharmonyTypes.EXCESSIVE_EXTENSIONS,
+                    "EXCESSIVE_EXTENSIONS",
+                    "Excessive Extensions",
+                    false,
+                    "Class declares many extension functions across many receiver types, indicating it's trying to extend too many unrelated types.",
+                    "Consider moving extension functions closer to the types they extend. Group related extensions into separate files or classes."),
+            new DisharmonySpec(
+                    DisharmonyTypes.LARGE_SEALED_HIERARCHY,
+                    "LARGE_SEALED_HIERARCHY",
+                    "Large Sealed Hierarchy",
+                    false,
+                    "Sealed class has many permitted subtypes, making the hierarchy hard to maintain and exhaustive when expressions become unwieldy.",
+                    "Re-evaluate the domain model. Consider grouping subtypes into intermediate sealed classes or using a different pattern."),
+            new DisharmonySpec(
+                    DisharmonyTypes.DATA_CLASS_WITH_LOGIC,
+                    "DATA_CLASS_WITH_LOGIC",
+                    "Data Class with Logic",
+                    false,
+                    "Data class contains non-accessor methods with business logic, violating the data carrier principle.",
+                    "Move business logic to separate service classes. Keep data classes as pure data holders with only accessor methods."));
+
     Graph<String, DefaultWeightedEdge> classGraph;
     Graph<String, DefaultWeightedEdge> packageGraph;
     Map<String, AsSubgraph<String, DefaultWeightedEdge>> classCycles;
@@ -114,6 +225,7 @@ public class SimpleHtmlReport {
         log.info("Done! View the report at target/site/{}", filename);
     }
 
+    /** Analyzes a project and renders the findings as a complete HTML report. */
     public StringBuilder generateReport(
             boolean showDetails,
             int edgeAnalysisCount,
@@ -202,117 +314,7 @@ public class SimpleHtmlReport {
         packagesToRemove = packageCycleRemovalResult.getVertexesToRemove();
         packageCycles = packageCycleRemovalResult.getCycles();
 
-        // Ordered (type, anchorId, displayTitle, isMethodLevel) for all disharmonies
-        final List<DisharmonySpec> disharmonySpecs = List.of(
-                new DisharmonySpec(
-                        DisharmonyTypes.GOD_CLASS,
-                        "GOD",
-                        "God Classes",
-                        false,
-                        "God Classes take on too much responsibility,",
-                        "Extract related islands of functionality into separate classes.  Leave God classes that don't change often alone."),
-                new DisharmonySpec(
-                        DisharmonyTypes.DATA_CLASS,
-                        "DATA_CLASS",
-                        "Data Classes",
-                        false,
-                        "Data Classes are dumb data holders that other classes rely on.",
-                        "Move the data/variable(s) to the same class as the operation."),
-                new DisharmonySpec(
-                        DisharmonyTypes.BRAIN_CLASS,
-                        "BRAIN_CLASS",
-                        "Brain Classes",
-                        false,
-                        "Brain Classes are complex, lack cohesion, and have at least one Brain Method.",
-                        "Decompose Brain Methods into smaller methods."),
-                new DisharmonySpec(
-                        DisharmonyTypes.REFUSED_PARENT_BEQUEST,
-                        "RPB",
-                        "Refused Parent Bequest",
-                        false,
-                        "Child class is large and often complex, but doesn't override or use many of the parent class's methods",
-                        "Do one or more of the following:<br>"
-                                + "- Extract the child class into a separate class.  Move the methods that are used from the parent class into the child class.<br>"
-                                + "- Make unused protected members private in the parent class.<br>"
-                                + "- If a parent class has multiple children, move methods not used by all descendants to another class."),
-                new DisharmonySpec(
-                        DisharmonyTypes.TRADITION_BREAKER,
-                        "TB",
-                        "Tradition Breakers",
-                        false,
-                        "Child class adds many new public methods, but doesn't override or use many of the parent class's methods",
-                        "Do one or more of the following:<br>"
-                                + "- Make public child methods unused outside of the class non-public.<br>"
-                                + "- Pull duplicated methods in child classes into the parent class.<br>"
-                                + "- Move methods in the child class that are unrelated to the parent class to another class.<br>"
-                                + "- Remove the child class from the hierarchy."),
-                new DisharmonySpec(
-                        DisharmonyTypes.SIGNIFICANT_DUPLICATION,
-                        "SIG_DUP",
-                        "Significant Duplication",
-                        false,
-                        "Nearly identical code is found in multiple classes, leading to increased maintenance costs.",
-                        "- Move duplicated code in the same class into a new method.<br>"
-                                + "- Move duplicated code into a separate or parent class.<br>"
-                                + "- Move duplicated code in two child classes or in parent/child classes into the parent class."),
-                new DisharmonySpec(
-                        DisharmonyTypes.BRAIN_METHOD,
-                        "BRAIN_METHOD",
-                        "Brain Methods",
-                        true,
-                        "Method is long, complicated, and uses many variables.",
-                        "- Decompose the method into two or more smaller methods.<br>"
-                                + "- If part of the method relies heavily on an outside class, extract that functionality out of the calling method and move it to the called class."),
-                new DisharmonySpec(
-                        DisharmonyTypes.FEATURE_ENVY,
-                        "FEATURE_ENVY",
-                        "Feature Envy",
-                        true,
-                        "Method is more interested in data in other classes than its own class.",
-                        "Move the method (or part of the method) to the class where it uses the most data."),
-                new DisharmonySpec(
-                        DisharmonyTypes.INTENSIVE_COUPLING,
-                        "INTENSIVE_COUPLING",
-                        "Intensive Coupling",
-                        true,
-                        "Method calls too many methods from a few unrelated classes (often in a separate package).",
-                        "Move the calling method to a class more closely related to the other classes that the original method can call."),
-                new DisharmonySpec(
-                        DisharmonyTypes.DISPERSED_COUPLING,
-                        "DISPERSED_COUPLING",
-                        "Dispersed Coupling",
-                        true,
-                        "Method calls a few methods in many classes",
-                        "Reduce the size of the calling method.  Extract methods from the calling method into the target classes."),
-                new DisharmonySpec(
-                        DisharmonyTypes.SHOTGUN_SURGERY,
-                        "SHOTGUN_SURGERY",
-                        "Shotgun Surgery",
-                        true,
-                        "Method is called by many methods in many classes",
-                        "- Move the method closer to the calling classes (move the behavior closer to the data) if it is small.<br>"
-                                + "- If it is a large method, treat it as a Brain Method and decompose it into two or more smaller methods."),
-                new DisharmonySpec(
-                        DisharmonyTypes.EXCESSIVE_EXTENSIONS,
-                        "EXCESSIVE_EXTENSIONS",
-                        "Excessive Extensions",
-                        false,
-                        "Class declares many extension functions across many receiver types, indicating it's trying to extend too many unrelated types.",
-                        "Consider moving extension functions closer to the types they extend. Group related extensions into separate files or classes."),
-                new DisharmonySpec(
-                        DisharmonyTypes.LARGE_SEALED_HIERARCHY,
-                        "LARGE_SEALED_HIERARCHY",
-                        "Large Sealed Hierarchy",
-                        false,
-                        "Sealed class has many permitted subtypes, making the hierarchy hard to maintain and exhaustive when expressions become unwieldy.",
-                        "Re-evaluate the domain model. Consider grouping subtypes into intermediate sealed classes or using a different pattern."),
-                new DisharmonySpec(
-                        DisharmonyTypes.DATA_CLASS_WITH_LOGIC,
-                        "DATA_CLASS_WITH_LOGIC",
-                        "Data Class with Logic",
-                        false,
-                        "Data class contains non-accessor methods with business logic, violating the data carrier principle.",
-                        "Move business logic to separate service classes. Keep data classes as pure data holders with only accessor methods."));
+        final List<DisharmonySpec> disharmonySpecs = DISHARMONY_SPECS;
 
         Map<String, List<RankedDisharmony>> rankedDisharmoniesByAnchor = new LinkedHashMap<>();
 
@@ -615,7 +617,8 @@ public class SimpleHtmlReport {
         };
     }
 
-    private String[] getClassRelationshipDisharmony(
+    /** Builds the table cells for a ranked class relationship. */
+    String[] getClassRelationshipDisharmony(
             RankedDisharmony edgeInfo, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
         boolean removePkgRel = edgeInfo.isPackageRelationshipShouldBeRemoved();
         return new String[] {
@@ -628,7 +631,8 @@ public class SimpleHtmlReport {
         };
     }
 
-    private String[] getPackageRelationshipDisharmony(
+    /** Builds the table cells for a ranked package relationship. */
+    String[] getPackageRelationshipDisharmony(
             RankedDisharmony edgeInfo, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
 
         Set<DefaultWeightedEdge> classRelationshipsInPackageRelationship =
@@ -682,7 +686,8 @@ public class SimpleHtmlReport {
         return stringBuilder.toString();
     }
 
-    private String renderClassEdge(DefaultWeightedEdge edge) {
+    /** Renders a class edge without repository links for serialized report data. */
+    String renderClassEdge(DefaultWeightedEdge edge) {
         StringBuilder edgesToCut = new StringBuilder();
         String[] vertexes = extractVertexes(edge);
         String startVertex = vertexes[0].trim();
@@ -729,17 +734,17 @@ public class SimpleHtmlReport {
         String startVertex = vertexes[0].trim();
         String start;
         if (packagesToRemove.contains(startVertex)) {
-            start = startVertex + "<strong>*</strong>";
+            start = escapeHtmlLabel(startVertex) + "<strong>*</strong>";
         } else {
-            start = startVertex;
+            start = escapeHtmlLabel(startVertex);
         }
 
         String endVertex = vertexes[1].trim();
         String end;
         if (packagesToRemove.contains(endVertex)) {
-            end = endVertex + "<strong>*</strong>";
+            end = escapeHtmlLabel(endVertex) + "<strong>*</strong>";
         } else {
-            end = endVertex;
+            end = escapeHtmlLabel(endVertex);
         }
 
         // &#8594; is HTML "Right Arrow" code
@@ -753,7 +758,8 @@ public class SimpleHtmlReport {
         if (path == null || path.isBlank()) {
             return escapeHtmlLabel(getClassName(className));
         }
-        return "<a href=" + repoUrl + path + " target=\"_blank\">" + escapeHtmlLabel(getClassName(className)) + "</a>";
+        return "<a href=\"" + escapeHtmlAttribute(repoUrl + path) + "\" target=\"_blank\">"
+                + escapeHtmlLabel(getClassName(className)) + "</a>";
     }
 
     /**
@@ -763,14 +769,23 @@ public class SimpleHtmlReport {
      * surrounding anchor/table markup.
      */
     static String escapeHtmlLabel(String label) {
+        if (label == null) {
+            return "";
+        }
         return label.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
+    }
+
+    /** Escapes repository-derived values for use in a quoted HTML attribute. */
+    static String escapeHtmlAttribute(String value) {
+        return escapeHtmlLabel(value).replace("\"", "&quot;").replace("'", "&#39;");
     }
 
     private String[] getClassCycleSummaryTableHeadings() {
         return new String[] {"Cycle Name", "Priority", "Class Count", "Relationship Count"};
     }
 
-    private String[] getRankedCycleSummaryData(RankedCycle rankedCycle) {
+    /** Builds the summary-table cells for a ranked class cycle. */
+    String[] getRankedCycleSummaryData(RankedCycle rankedCycle) {
         return new String[] {
             // "Cycle Name", "Priority", "Class Count", "Relationship Count"
             getClassName(rankedCycle.getCycleName()),
