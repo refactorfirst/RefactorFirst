@@ -1,6 +1,5 @@
 package org.hjug.mavenreport;
 
-import java.io.File;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
@@ -15,7 +14,7 @@ import org.hjug.refactorfirst.report.JsonGenerator;
         name = "jsonReport",
         defaultPhase = LifecyclePhase.SITE,
         requiresDependencyResolution = ResolutionScope.RUNTIME,
-        requiresProject = true,
+        requiresProject = false,
         threadSafe = true,
         inheritByDefault = false)
 public class RefactorFirstMavenJsonGenerator extends AbstractMojo {
@@ -44,13 +43,11 @@ public class RefactorFirstMavenJsonGenerator extends AbstractMojo {
     @Parameter(readonly = true, defaultValue = "${project}")
     private MavenProject project;
 
-    @Parameter(property = "project.build.directory")
-    protected File outputDirectory;
-
     /** Generates the RefactorFirst JSON report for the current Maven project. */
     @Override
     public void execute() {
         JsonGenerator generator = new JsonGenerator();
+        // Pass null outputDirectory so the report is written to <project-root>/.refactorfirst/refactor-first.json
         generator.execute(
                 backEdgeAnalysisCount,
                 analyzeCycles,
@@ -60,6 +57,6 @@ public class RefactorFirstMavenJsonGenerator extends AbstractMojo {
                 projectName,
                 projectVersion,
                 project.getBasedir(),
-                outputDirectory);
+                null);
     }
 }
