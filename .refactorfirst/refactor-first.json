@@ -1,0 +1,2933 @@
+{
+  "project" : {
+    "name" : "RefactorFirst",
+    "version" : "0.11.0-SNAPSHOT",
+    "repoUrl" : "https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/",
+    "baseDir" : "C:\\Code\\RefactorFirst",
+    "scanTimestamp" : "9/14/26, 9:42 PM",
+    "hasAnyDisharmony" : true,
+    "analysisFailed" : false
+  },
+  "classMap" : {
+    "graphId" : "classGraph",
+    "classCount" : 148,
+    "relationshipCount" : 284,
+    "dotThreshold" : 4000,
+    "dotThresholdExceeded" : false,
+    "dot" : "strict digraph G {\nChangePronenessRanker -> ScmLogInfo [ label = \"5\" weight = \"5\" ];\nChangePronenessRanker -> GitLogReader [ label = \"2\" weight = \"2\" ];\nGitLogReader -> org_hjug_git_GitLogReader_CommitWalkStats [ label = \"4\" weight = \"4\" ];\nGitLogReader -> ScmLogInfo [ label = \"3\" weight = \"3\" ];\nMain -> ReportCommand [ label = \"1\" weight = \"1\" ];\nReportCommand -> ReportType [ label = \"1\" weight = \"1\" ];\nReportCommand -> ReportWriter [ label = \"1\" weight = \"1\" ];\nReportCommand -> SimpleHtmlReport [ label = \"4\" weight = \"4\" ];\nReportCommand -> HtmlReport [ label = \"2\" weight = \"2\" ];\nReportCommand -> JsonReportExecutor [ label = \"3\" weight = \"3\" ];\nReportCommand -> CsvReport [ label = \"3\" weight = \"3\" ];\nCodebaseGraphDTO -> org_hjug_graphbuilder_metrics_DisharmonyDetector_ClassDisharmony [ label = \"4\" weight = \"4\" ];\nCodebaseGraphDTO -> org_hjug_graphbuilder_metrics_DisharmonyDetector_MethodDisharmony [ label = \"4\" weight = \"4\" ];\nCompositeGraphBuilder -> GraphBuilderConfig [ label = \"4\" weight = \"4\" ];\nCompositeGraphBuilder -> CodebaseGraphDTO [ label = \"10\" weight = \"10\" ];\nCompositeGraphBuilder -> JavaSourceFileGraphBuilder [ label = \"3\" weight = \"3\" ];\nCompositeGraphBuilder -> KotlinSourceFileGraphBuilder [ label = \"3\" weight = \"3\" ];\nCompositeGraphBuilder -> org_hjug_graphbuilder_metrics_DisharmonyDetector_ClassDisharmony [ label = \"2\" weight = \"2\" ];\nCompositeGraphBuilder -> org_hjug_graphbuilder_metrics_DisharmonyDetector_MethodDisharmony [ label = \"2\" weight = \"2\" ];\nJavaSourceFileGraphBuilder -> SourceFileGraphBuilder [ label = \"2\" weight = \"2\" ];\nJavaSourceFileGraphBuilder -> GraphBuilderConfig [ label = \"1\" weight = \"1\" ];\nJavaSourceFileGraphBuilder -> GraphDependencyCollector [ label = \"2\" weight = \"2\" ];\nJavaSourceFileGraphBuilder -> JavaVisitor [ label = \"1\" weight = \"1\" ];\nJavaSourceFileGraphBuilder -> GraphMetricsCollector [ label = \"5\" weight = \"5\" ];\nJavaSourceFileGraphBuilder -> MetricsCollectingVisitor [ label = \"2\" weight = \"2\" ];\nJavaSourceFileGraphBuilder -> AbstractDependencyVisitor [ label = \"1\" weight = \"1\" ];\nJavaSourceFileGraphBuilder -> CodebaseGraphDTO [ label = \"2\" weight = \"2\" ];\nJavaSourceFileGraphBuilder -> DisharmonyDetector [ label = \"18\" weight = \"18\" ];\nJavaSourceFileGraphBuilder -> ClassMetrics [ label = \"3\" weight = \"3\" ];\nJavaSourceFileGraphBuilder -> org_hjug_graphbuilder_metrics_DisharmonyDetector_MethodDisharmony [ label = \"3\" weight = \"3\" ];\nJavaSourceFileGraphBuilder -> org_hjug_graphbuilder_metrics_DisharmonyDetector_ClassDisharmony [ label = \"3\" weight = \"3\" ];\nKotlinSourceFileGraphBuilder -> SourceFileGraphBuilder [ label = \"2\" weight = \"2\" ];\nKotlinSourceFileGraphBuilder -> GraphBuilderConfig [ label = \"1\" weight = \"1\" ];\nKotlinSourceFileGraphBuilder -> GraphDependencyCollector [ label = \"1\" weight = \"1\" ];\nKotlinSourceFileGraphBuilder -> KotlinDependencyVisitor [ label = \"2\" weight = \"2\" ];\nKotlinSourceFileGraphBuilder -> GraphMetricsCollector [ label = \"1\" weight = \"1\" ];\nKotlinSourceFileGraphBuilder -> KotlinMetricsCollectingVisitor [ label = \"2\" weight = \"2\" ];\nKotlinSourceFileGraphBuilder -> JavaSourceFileGraphBuilder [ label = \"1\" weight = \"1\" ];\nKotlinSourceFileGraphBuilder -> CodebaseGraphDTO [ label = \"1\" weight = \"1\" ];\nSourceFileGraphBuilder -> GraphBuilderConfig [ label = \"1\" weight = \"1\" ];\nSourceFileGraphBuilder -> CodebaseGraphDTO [ label = \"1\" weight = \"1\" ];\nGraphDependencyCollector -> DependencyCollector [ label = \"1\" weight = \"1\" ];\nClassMetrics -> MethodMetrics [ label = \"13\" weight = \"13\" ];\norg_hjug_graphbuilder_metrics_DisharmonyDetector_ClassDisharmony -> ClassMetrics [ label = \"1\" weight = \"1\" ];\norg_hjug_graphbuilder_metrics_DisharmonyDetector_ClassDisharmony -> DisharmonyMetric [ label = \"1\" weight = \"1\" ];\norg_hjug_graphbuilder_metrics_DisharmonyDetector_MethodDisharmony -> MethodMetrics [ label = \"1\" weight = \"1\" ];\norg_hjug_graphbuilder_metrics_DisharmonyDetector_MethodDisharmony -> DisharmonyMetric [ label = \"1\" weight = \"1\" ];\nDisharmonyDetector -> ClassMetrics [ label = \"99\" weight = \"99\" ];\nDisharmonyDetector -> org_hjug_graphbuilder_metrics_DisharmonyDetector_ClassDisharmony [ label = \"30\" weight = \"30\" ];\nDisharmonyDetector -> DisharmonyMetric [ label = \"44\" weight = \"44\" ];\nDisharmonyDetector -> org_hjug_graphbuilder_metrics_DisharmonyDetector_MethodDisharmony [ label = \"15\" weight = \"15\" ];\nDisharmonyDetector -> MethodMetrics [ label = \"40\" weight = \"40\" ];\nDisharmonyDetector -> org_hjug_graphbuilder_metrics_DisharmonyDetector_MethodEntry [ label = \"5\" weight = \"5\" ];\nDisharmonyDetector -> org_hjug_graphbuilder_metrics_DisharmonyDetector_FlaggedClassData [ label = \"10\" weight = \"10\" ];\nDisharmonyDetector -> org_hjug_graphbuilder_metrics_DisharmonyDetector_Clone [ label = \"20\" weight = \"20\" ];\norg_hjug_graphbuilder_metrics_DisharmonyDetector_MethodEntry -> ClassMetrics [ label = \"2\" weight = \"2\" ];\norg_hjug_graphbuilder_metrics_DisharmonyDetector_MethodEntry -> MethodMetrics [ label = \"2\" weight = \"2\" ];\nDisharmonyMetric -> org_hjug_graphbuilder_metrics_DisharmonyMetric_Direction [ label = \"1\" weight = \"1\" ];\nGraphMetricsCollector -> DependencyCollector [ label = \"1\" weight = \"1\" ];\nGraphMetricsCollector -> ClassMetrics [ label = \"32\" weight = \"32\" ];\nGraphMetricsCollector -> MethodMetrics [ label = \"10\" weight = \"10\" ];\nKotlinMetricsCollectingVisitor -> GraphMetricsCollector [ label = \"2\" weight = \"2\" ];\nKotlinMetricsCollectingVisitor -> MetricsVisitorState [ label = \"2\" weight = \"2\" ];\nKotlinMetricsCollectingVisitor -> MetricsVisitorLogic [ label = \"17\" weight = \"17\" ];\nKotlinMetricsCollectingVisitor -> org_hjug_graphbuilder_metrics_MetricsVisitorLogic_ClassStateSnapshot [ label = \"1\" weight = \"1\" ];\nKotlinMetricsCollectingVisitor -> org_hjug_graphbuilder_metrics_MetricsVisitorLogic_MethodStateSnapshot [ label = \"1\" weight = \"1\" ];\nKotlinMetricsCollectingVisitor -> ClassMetrics [ label = \"2\" weight = \"2\" ];\nMetricsCollectingVisitor -> GraphMetricsCollector [ label = \"2\" weight = \"2\" ];\nMetricsCollectingVisitor -> MetricsVisitorState [ label = \"2\" weight = \"2\" ];\nMetricsCollectingVisitor -> MetricsVisitorLogic [ label = \"10\" weight = \"10\" ];\nMetricsCollectingVisitor -> org_hjug_graphbuilder_metrics_MetricsVisitorLogic_ClassStateSnapshot [ label = \"1\" weight = \"1\" ];\nMetricsCollectingVisitor -> org_hjug_graphbuilder_metrics_MetricsVisitorLogic_MethodStateSnapshot [ label = \"1\" weight = \"1\" ];\nMetricsVisitorLogic -> MetricsVisitorState [ label = \"12\" weight = \"12\" ];\nMetricsVisitorLogic -> GraphMetricsCollector [ label = \"13\" weight = \"13\" ];\nMetricsVisitorLogic -> org_hjug_graphbuilder_metrics_MetricsVisitorLogic_ClassStateSnapshot [ label = \"4\" weight = \"4\" ];\nMetricsVisitorLogic -> ClassMetrics [ label = \"28\" weight = \"28\" ];\nMetricsVisitorLogic -> org_hjug_graphbuilder_metrics_MetricsVisitorLogic_OverridePredicate [ label = \"2\" weight = \"2\" ];\nMetricsVisitorLogic -> MethodMetrics [ label = \"31\" weight = \"31\" ];\nMetricsVisitorLogic -> ComplexityCalculator [ label = \"4\" weight = \"4\" ];\nMetricsVisitorLogic -> org_hjug_graphbuilder_metrics_MetricsVisitorLogic_MethodStateSnapshot [ label = \"3\" weight = \"3\" ];\norg_hjug_graphbuilder_metrics_MetricsVisitorLogic_ClassStateSnapshot -> ClassMetrics [ label = \"2\" weight = \"2\" ];\norg_hjug_graphbuilder_metrics_MetricsVisitorLogic_MethodStateSnapshot -> MethodMetrics [ label = \"2\" weight = \"2\" ];\nMetricsVisitorState -> ClassMetrics [ label = \"1\" weight = \"1\" ];\nMetricsVisitorState -> MethodMetrics [ label = \"1\" weight = \"1\" ];\nAbstractDependencyVisitor -> DependencyVisitorState [ label = \"2\" weight = \"2\" ];\nAbstractDependencyVisitor -> DependencyCollector [ label = \"1\" weight = \"1\" ];\norg_hjug_graphbuilder_visitor_AbstractDependencyVisitor_1 -> DependencyCollector [ label = \"1\" weight = \"1\" ];\nAbstractDependencyVisitor -> org_hjug_graphbuilder_visitor_AbstractDependencyVisitor_1 [ label = \"1\" weight = \"1\" ];\nAbstractDependencyVisitor -> BaseTypeProcessor [ label = \"1\" weight = \"1\" ];\nAbstractDependencyVisitor -> DependencyVisitorLogic [ label = \"14\" weight = \"14\" ];\nBaseTypeProcessor -> TypeDependencyExtractor [ label = \"3\" weight = \"3\" ];\nBaseTypeProcessor -> DependencyCollector [ label = \"3\" weight = \"3\" ];\nDependencyVisitorLogic -> DependencyVisitorState [ label = \"14\" weight = \"14\" ];\nDependencyVisitorLogic -> SourcePathResolver [ label = \"2\" weight = \"2\" ];\nDependencyVisitorLogic -> org_hjug_graphbuilder_visitor_DependencyVisitorLogic_ClassSnapshot [ label = \"3\" weight = \"3\" ];\nDependencyVisitorLogic -> UnattributedTypeFqnResolver [ label = \"1\" weight = \"1\" ];\nDependencyVisitorState -> BaseTypeProcessor [ label = \"2\" weight = \"2\" ];\nJavaVisitor -> AbstractDependencyVisitor [ label = \"2\" weight = \"2\" ];\nJavaVisitor -> DependencyCollector [ label = \"1\" weight = \"1\" ];\nKotlinDependencyVisitor -> DependencyCollector [ label = \"7\" weight = \"7\" ];\nKotlinDependencyVisitor -> BaseTypeProcessor [ label = \"8\" weight = \"8\" ];\nKotlinDependencyVisitor -> DependencyVisitorState [ label = \"2\" weight = \"2\" ];\norg_hjug_graphbuilder_visitor_KotlinDependencyVisitor_1 -> DependencyCollector [ label = \"1\" weight = \"1\" ];\nKotlinDependencyVisitor -> org_hjug_graphbuilder_visitor_KotlinDependencyVisitor_1 [ label = \"1\" weight = \"1\" ];\nKotlinDependencyVisitor -> DependencyVisitorLogic [ label = \"17\" weight = \"17\" ];\nCostBenefitCalculator -> GitLogReader [ label = \"4\" weight = \"4\" ];\nCostBenefitCalculator -> ChangePronenessRanker [ label = \"3\" weight = \"3\" ];\nCostBenefitCalculator -> CBORule [ label = \"1\" weight = \"1\" ];\nCostBenefitCalculator -> GodClass [ label = \"10\" weight = \"10\" ];\nCostBenefitCalculator -> ScmLogInfo [ label = \"16\" weight = \"16\" ];\nCostBenefitCalculator -> RankedDisharmony [ label = \"20\" weight = \"20\" ];\nCostBenefitCalculator -> CodebaseGraphDTO [ label = \"10\" weight = \"10\" ];\nCostBenefitCalculator -> org_hjug_graphbuilder_metrics_DisharmonyDetector_ClassDisharmony [ label = \"4\" weight = \"4\" ];\nCostBenefitCalculator -> GodClassRanker [ label = \"6\" weight = \"6\" ];\nCostBenefitCalculator -> DisharmonyInstance [ label = \"11\" weight = \"11\" ];\nCostBenefitCalculator -> DisharmonyRanker [ label = \"4\" weight = \"4\" ];\nCostBenefitCalculator -> org_hjug_graphbuilder_metrics_DisharmonyDetector_MethodDisharmony [ label = \"2\" weight = \"2\" ];\nCostBenefitCalculator -> Disharmony [ label = \"5\" weight = \"5\" ];\nCostBenefitCalculator -> CBOClass [ label = \"6\" weight = \"6\" ];\nCycleNode -> Disharmony [ label = \"1\" weight = \"1\" ];\nCycleNode -> ScmLogInfo [ label = \"1\" weight = \"1\" ];\nCycleRanker -> CodebaseGraphDTO [ label = \"2\" weight = \"2\" ];\nCycleRanker -> CompositeGraphBuilder [ label = \"3\" weight = \"3\" ];\nCycleRanker -> RankedCycle [ label = \"7\" weight = \"7\" ];\nCycleRanker -> CircularReferenceChecker [ label = \"2\" weight = \"2\" ];\nCycleRanker -> CycleNode [ label = \"3\" weight = \"3\" ];\nRankedCycle -> CycleNode [ label = \"2\" weight = \"2\" ];\nRankedDisharmony -> DisharmonyMetric [ label = \"1\" weight = \"1\" ];\nRankedDisharmony -> GodClass [ label = \"1\" weight = \"1\" ];\nRankedDisharmony -> ScmLogInfo [ label = \"3\" weight = \"3\" ];\nRankedDisharmony -> CBOClass [ label = \"1\" weight = \"1\" ];\nRankedDisharmony -> DisharmonyInstance [ label = \"1\" weight = \"1\" ];\nCBOClass -> Disharmony [ label = \"1\" weight = \"1\" ];\nDisharmonyInstance -> Disharmony [ label = \"1\" weight = \"1\" ];\nDisharmonyInstance -> DisharmonyMetric [ label = \"1\" weight = \"1\" ];\nDisharmonyRanker -> DisharmonyInstance [ label = \"7\" weight = \"7\" ];\nDisharmonyRanker -> DisharmonyMetric [ label = \"1\" weight = \"1\" ];\nDisharmonyRanker -> org_hjug_metrics_DisharmonyRanker_ValueExtractor [ label = \"3\" weight = \"3\" ];\nDisharmonyRanker -> org_hjug_metrics_DisharmonyRanker_RankSetter [ label = \"3\" weight = \"3\" ];\nGodClass -> Disharmony [ label = \"1\" weight = \"1\" ];\nGodClassRanker -> GodClass [ label = \"18\" weight = \"18\" ];\nEdgeRemovalCalculator -> DSM [ label = \"4\" weight = \"4\" ];\nEdgeRemovalCalculator -> CircularReferenceChecker [ label = \"6\" weight = \"6\" ];\nEdgeRemovalCalculator -> EdgeToRemoveInfo [ label = \"7\" weight = \"7\" ];\nSparseIntDWGEdgeRemovalCalculator -> EdgeToRemoveInfo [ label = \"3\" weight = \"3\" ];\nFeedbackArcSetSolver -> org_hjug_feedback_arc_approximate_FeedbackArcSetResult [ label = \"2\" weight = \"2\" ];\nEdgeInfoCalculator -> EdgeInfo [ label = \"4\" weight = \"4\" ];\nMinimumFeedbackArcSetSolver -> SuperTypeToken [ label = \"2\" weight = \"2\" ];\nMinimumFeedbackArcSetSolver -> org_hjug_feedback_arc_exact_FeedbackArcSetResult [ label = \"2\" weight = \"2\" ];\nLineDigraph -> LineVertex [ label = \"68\" weight = \"68\" ];\nPageRankFAS -> SuperTypeToken [ label = \"3\" weight = \"3\" ];\nPageRankFAS -> LineDigraph [ label = \"13\" weight = \"13\" ];\nPageRankFAS -> LineVertex [ label = \"25\" weight = \"25\" ];\nCycleRemovalComputer -> CircularReferenceChecker [ label = \"2\" weight = \"2\" ];\nCycleRemovalComputer -> EnhancedParameterComputer [ label = \"2\" weight = \"2\" ];\nCycleRemovalComputer -> org_hjug_feedback_vertex_kernelized_EnhancedParameterComputer_EnhancedParameters [ label = \"4\" weight = \"4\" ];\nCycleRemovalComputer -> DirectedFeedbackVertexSetSolver [ label = \"2\" weight = \"2\" ];\nCycleRemovalComputer -> DirectedFeedbackVertexSetResult [ label = \"2\" weight = \"2\" ];\nCycleRemovalComputer -> PageRankFAS [ label = \"2\" weight = \"2\" ];\nCycleRemovalComputer -> CycleRemovalResult [ label = \"1\" weight = \"1\" ];\nFeedbackVertexSetSolver -> FeedbackVertexSetResult [ label = \"16\" weight = \"16\" ];\nFeedbackVertexSetSolver -> org_hjug_feedback_vertex_approximate_FeedbackVertexSetSolver_CutCandidate [ label = \"5\" weight = \"5\" ];\nDirectedFeedbackVertexSetSolver -> SuperTypeToken [ label = \"2\" weight = \"2\" ];\nDirectedFeedbackVertexSetSolver -> DirectedFeedbackVertexSetResult [ label = \"4\" weight = \"4\" ];\nDirectedFeedbackVertexSetSolver -> org_hjug_feedback_vertex_kernelized_DirectedFeedbackVertexSetSolver_PathComputationStats [ label = \"4\" weight = \"4\" ];\nDirectedFeedbackVertexSetSolver -> org_hjug_feedback_vertex_kernelized_DirectedFeedbackVertexSetSolver_PathContext [ label = \"1\" weight = \"1\" ];\nEnhancedParameterComputer -> TreewidthComputer [ label = \"6\" weight = \"6\" ];\nEnhancedParameterComputer -> FeedbackVertexSetComputer [ label = \"6\" weight = \"6\" ];\nEnhancedParameterComputer -> ModulatorComputer [ label = \"5\" weight = \"5\" ];\nEnhancedParameterComputer -> SuperTypeToken [ label = \"2\" weight = \"2\" ];\nEnhancedParameterComputer -> org_hjug_feedback_vertex_kernelized_EnhancedParameterComputer_EnhancedParameters [ label = \"14\" weight = \"14\" ];\nEnhancedParameterComputer -> org_hjug_feedback_vertex_kernelized_ModulatorComputer_ModulatorResult [ label = \"6\" weight = \"6\" ];\nFeedbackVertexSetComputer -> SuperTypeToken [ label = \"4\" weight = \"4\" ];\nModulatorComputer -> TreewidthComputer [ label = \"14\" weight = \"14\" ];\nModulatorComputer -> FeedbackVertexSetComputer [ label = \"5\" weight = \"5\" ];\nModulatorComputer -> SuperTypeToken [ label = \"2\" weight = \"2\" ];\nModulatorComputer -> org_hjug_feedback_vertex_kernelized_ModulatorComputer_ModulatorResult [ label = \"2\" weight = \"2\" ];\nParameterComputer -> TreewidthComputer [ label = \"7\" weight = \"7\" ];\nParameterComputer -> FeedbackVertexSetComputer [ label = \"6\" weight = \"6\" ];\nParameterComputer -> SuperTypeToken [ label = \"2\" weight = \"2\" ];\nParameterComputer -> org_hjug_feedback_vertex_kernelized_ParameterComputer_Parameters [ label = \"4\" weight = \"4\" ];\nGraphDataGenerator -> RankedDisharmony [ label = \"2\" weight = \"2\" ];\nMavenReportOutputDirectory -> ReportWriter [ label = \"1\" weight = \"1\" ];\nRefactorFirstHtmlReport -> HtmlReport [ label = \"2\" weight = \"2\" ];\nRefactorFirstHtmlReport -> MavenReportOutputDirectory [ label = \"1\" weight = \"1\" ];\nRefactorFirstHtmlReport -> SimpleHtmlReport [ label = \"1\" weight = \"1\" ];\nRefactorFirstMavenCsvReport -> CsvReport [ label = \"3\" weight = \"3\" ];\nRefactorFirstMavenCsvReport -> MavenReportOutputDirectory [ label = \"1\" weight = \"1\" ];\nRefactorFirstMavenJsonGenerator -> JsonGenerator [ label = \"3\" weight = \"3\" ];\nRefactorFirstMavenJsonReport -> JsonReportExecutor [ label = \"3\" weight = \"3\" ];\nRefactorFirstMavenJsonReport -> MavenReportOutputDirectory [ label = \"1\" weight = \"1\" ];\nRefactorFirstMavenReport -> HtmlReport [ label = \"2\" weight = \"2\" ];\nRefactorFirstMavenReport -> SimpleHtmlReport [ label = \"1\" weight = \"1\" ];\nRefactorFirstSimpleHtmlReport -> SimpleHtmlReport [ label = \"3\" weight = \"3\" ];\nRefactorFirstSimpleHtmlReport -> MavenReportOutputDirectory [ label = \"1\" weight = \"1\" ];\nCsvReport -> GitLogReader [ label = \"4\" weight = \"4\" ];\nCsvReport -> ReportWriter [ label = \"3\" weight = \"3\" ];\nCsvReport -> RankedDisharmony [ label = \"3\" weight = \"3\" ];\nCsvReport -> CostBenefitCalculator [ label = \"5\" weight = \"5\" ];\nHtmlReport -> SimpleHtmlReport [ label = \"9\" weight = \"9\" ];\nHtmlReport -> RankedDisharmony [ label = \"1\" weight = \"1\" ];\nHtmlReport -> GraphDataGenerator [ label = \"5\" weight = \"5\" ];\nHtmlReport -> CodebaseGraphDTO [ label = \"17\" weight = \"17\" ];\nHtmlReport -> RankedCycle [ label = \"3\" weight = \"3\" ];\nJsonReport -> JsonReportDisharmonyEntry [ label = \"1\" weight = \"1\" ];\nJsonReportDisharmonyEntry -> RankedDisharmony [ label = \"1\" weight = \"1\" ];\nJsonReportExecutor -> CostBenefitCalculator [ label = \"5\" weight = \"5\" ];\nJsonReportExecutor -> RankedDisharmony [ label = \"2\" weight = \"2\" ];\nJsonReportExecutor -> JsonReportDisharmonyEntry [ label = \"2\" weight = \"2\" ];\nJsonReportExecutor -> JsonReport [ label = \"3\" weight = \"3\" ];\nJsonReportExecutor -> ReportWriter [ label = \"2\" weight = \"2\" ];\nJsonGenerator -> HtmlReport [ label = \"4\" weight = \"4\" ];\nJsonGenerator -> RefactorFirstReportDTO [ label = \"2\" weight = \"2\" ];\nJsonGenerator -> GitLogReader [ label = \"2\" weight = \"2\" ];\nJsonGenerator -> CycleRanker [ label = \"5\" weight = \"5\" ];\nJsonGenerator -> RankedCycle [ label = \"3\" weight = \"3\" ];\nJsonGenerator -> CodebaseGraphDTO [ label = \"1\" weight = \"1\" ];\nJsonGenerator -> CycleRemovalComputer [ label = \"4\" weight = \"4\" ];\nJsonGenerator -> CycleRemovalResult [ label = \"2\" weight = \"2\" ];\nJsonGenerator -> RankedDisharmony [ label = \"10\" weight = \"10\" ];\nJsonGenerator -> CostBenefitCalculator [ label = \"6\" weight = \"6\" ];\nJsonGenerator -> org_hjug_refactorfirst_report_SimpleHtmlReport_DisharmonySpec [ label = \"17\" weight = \"17\" ];\nJsonGenerator -> DisharmonyInstance [ label = \"1\" weight = \"1\" ];\nJsonGenerator -> SimpleHtmlReport [ label = \"21\" weight = \"21\" ];\nJsonGenerator -> ProjectMetadataDTO [ label = \"1\" weight = \"1\" ];\nJsonGenerator -> GraphVisualDTO [ label = \"2\" weight = \"2\" ];\nJsonGenerator -> ClassRelationshipDTO [ label = \"2\" weight = \"2\" ];\nJsonGenerator -> ClassRelationshipsToRemoveDTO [ label = \"1\" weight = \"1\" ];\nJsonGenerator -> PackageRelationshipDTO [ label = \"2\" weight = \"2\" ];\nJsonGenerator -> PackageRelationshipsToRemoveDTO [ label = \"1\" weight = \"1\" ];\nJsonGenerator -> DisharmonySectionDTO [ label = \"3\" weight = \"3\" ];\nJsonGenerator -> CycleSummaryDTO [ label = \"2\" weight = \"2\" ];\nJsonGenerator -> LargestCycleDTO [ label = \"1\" weight = \"1\" ];\nJsonGenerator -> CycleBreakdownRowDTO [ label = \"2\" weight = \"2\" ];\nJsonGenerator -> ClassCyclesDTO [ label = \"1\" weight = \"1\" ];\nJsonGenerator -> ChartJsBubbleDTO [ label = \"3\" weight = \"3\" ];\nJsonGenerator -> DisharmonyChartDTO [ label = \"1\" weight = \"1\" ];\nJsonGenerator -> DisharmonyMetric [ label = \"2\" weight = \"2\" ];\nJsonGenerator -> DisharmonyTableRowDTO [ label = \"2\" weight = \"2\" ];\nJsonGenerator -> DisharmonyTableCellDTO [ label = \"2\" weight = \"2\" ];\nJsonGenerator -> DisharmonyTableDTO [ label = \"1\" weight = \"1\" ];\nClassCyclesDTO -> CycleSummaryDTO [ label = \"2\" weight = \"2\" ];\nClassCyclesDTO -> LargestCycleDTO [ label = \"1\" weight = \"1\" ];\nClassRelationshipsToRemoveDTO -> ClassRelationshipDTO [ label = \"2\" weight = \"2\" ];\nDisharmonyChartDTO -> ChartJsBubbleDTO [ label = \"2\" weight = \"2\" ];\nDisharmonySectionDTO -> DisharmonyChartDTO [ label = \"1\" weight = \"1\" ];\nDisharmonySectionDTO -> DisharmonyTableDTO [ label = \"1\" weight = \"1\" ];\nDisharmonyTableDTO -> DisharmonyTableRowDTO [ label = \"2\" weight = \"2\" ];\nDisharmonyTableRowDTO -> DisharmonyTableCellDTO [ label = \"2\" weight = \"2\" ];\nLargestCycleDTO -> CycleBreakdownRowDTO [ label = \"2\" weight = \"2\" ];\nPackageRelationshipsToRemoveDTO -> PackageRelationshipDTO [ label = \"2\" weight = \"2\" ];\nRefactorFirstReportDTO -> ProjectMetadataDTO [ label = \"1\" weight = \"1\" ];\nRefactorFirstReportDTO -> GraphVisualDTO [ label = \"2\" weight = \"2\" ];\nRefactorFirstReportDTO -> ClassRelationshipsToRemoveDTO [ label = \"1\" weight = \"1\" ];\nRefactorFirstReportDTO -> PackageRelationshipsToRemoveDTO [ label = \"1\" weight = \"1\" ];\nRefactorFirstReportDTO -> DisharmonySectionDTO [ label = \"2\" weight = \"2\" ];\nRefactorFirstReportDTO -> ClassCyclesDTO [ label = \"1\" weight = \"1\" ];\nReportWriter -> org_hjug_refactorfirst_report_ReportWriter_SecureDirectoryOps [ label = \"3\" weight = \"3\" ];\nReportWriter -> org_hjug_refactorfirst_report_ReportWriter_ReportWriteException [ label = \"3\" weight = \"3\" ];\norg_hjug_refactorfirst_report_ReportWriter_SecureDirectoryOps -> org_hjug_refactorfirst_report_ReportWriter_SecureDirectoryOpsImpl [ label = \"1\" weight = \"1\" color = \"red\" ];\norg_hjug_refactorfirst_report_ReportWriter_SecureDirectoryOps -> org_hjug_refactorfirst_report_ReportWriter_FallbackDirectoryOps [ label = \"1\" weight = \"1\" color = \"red\" ];\norg_hjug_refactorfirst_report_ReportWriter_SecureDirectoryOpsImpl -> org_hjug_refactorfirst_report_ReportWriter_SecureDirectoryOps [ label = \"1\" weight = \"1\" ];\norg_hjug_refactorfirst_report_ReportWriter_SecureDirectoryOpsImpl -> ReportWriter [ label = \"1\" weight = \"1\" ];\norg_hjug_refactorfirst_report_ReportWriter_FallbackDirectoryOps -> org_hjug_refactorfirst_report_ReportWriter_SecureDirectoryOps [ label = \"1\" weight = \"1\" ];\norg_hjug_refactorfirst_report_ReportWriter_FallbackDirectoryOps -> ReportWriter [ label = \"1\" weight = \"1\" ];\nSimpleHtmlReport -> org_hjug_refactorfirst_report_SimpleHtmlReport_DisharmonySpec [ label = \"34\" weight = \"34\" ];\nSimpleHtmlReport -> ReportWriter [ label = \"1\" weight = \"1\" ];\nSimpleHtmlReport -> GitLogReader [ label = \"5\" weight = \"5\" ];\nSimpleHtmlReport -> CycleRanker [ label = \"5\" weight = \"5\" ];\nSimpleHtmlReport -> RankedCycle [ label = \"10\" weight = \"10\" ];\nSimpleHtmlReport -> CodebaseGraphDTO [ label = \"13\" weight = \"13\" ];\nSimpleHtmlReport -> CycleRemovalComputer [ label = \"4\" weight = \"4\" ];\nSimpleHtmlReport -> CycleRemovalResult [ label = \"2\" weight = \"2\" ];\nSimpleHtmlReport -> RankedDisharmony [ label = \"16\" weight = \"16\" ];\nSimpleHtmlReport -> CostBenefitCalculator [ label = \"6\" weight = \"6\" ];\nSimpleHtmlReport -> DisharmonyInstance [ label = \"1\" weight = \"1\" ];\nSimpleHtmlReport -> DisharmonyMetric [ label = \"3\" weight = \"3\" ];\nConsole -> io_confluent_ksql_cli_console_Console_RowCaptor [ label = \"4\" weight = \"4\" ];\nConsole -> io_confluent_ksql_cli_console_Console_NoOpRowCaptor [ label = \"1\" weight = \"1\" ];\nConsole -> io_confluent_ksql_cli_console_Console_CliCmdExecutor [ label = \"4\" weight = \"4\" ];\nio_confluent_ksql_cli_console_Console_NoOpRowCaptor -> io_confluent_ksql_cli_console_Console_RowCaptor [ label = \"1\" weight = \"1\" ];\norg_hjug_graphbuilder_visitor_AbstractDependencyVisitor_1 [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/visitor/AbstractDependencyVisitor.java\" target=\"_blank\" label=\"AbstractDependencyVisitor$1\"];\nCycleSummaryDTO [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/report/src/main/java/org/hjug/refactorfirst/report/model/CycleSummaryDTO.java\" target=\"_blank\"];\nJsonReport [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/report/src/main/java/org/hjug/refactorfirst/report/json/JsonReport.java\" target=\"_blank\"];\nDisharmonyTableCellDTO [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/report/src/main/java/org/hjug/refactorfirst/report/model/DisharmonyTableCellDTO.java\" target=\"_blank\"];\nEdgeRemovalCalculator [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/dsm/EdgeRemovalCalculator.java\" target=\"_blank\"];\nSimpleHtmlReport [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/report/src/main/java/org/hjug/refactorfirst/report/SimpleHtmlReport.java\" target=\"_blank\"];\nLineDigraph [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/arc/pageRank/LineDigraph.java\" target=\"_blank\"];\norg_hjug_refactorfirst_report_SimpleHtmlReport_DisharmonySpec [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/report/src/main/java/org/hjug/refactorfirst/report/SimpleHtmlReport.java\" target=\"_blank\" label=\"SimpleHtmlReport$DisharmonySpec\"];\nGraphMetricsCollector [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/metrics/GraphMetricsCollector.java\" target=\"_blank\"];\nDisharmonyInstance [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/effort-ranker/src/main/java/org/hjug/metrics/DisharmonyInstance.java\" target=\"_blank\"];\norg_hjug_feedback_vertex_kernelized_DirectedFeedbackVertexSetSolver_PathContext [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/vertex/kernelized/DirectedFeedbackVertexSetSolver.java\" target=\"_blank\" label=\"DirectedFeedbackVertexSetSolver$PathContext\"];\norg_hjug_graphbuilder_metrics_MetricsVisitorLogic_ClassStateSnapshot [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/metrics/MetricsVisitorLogic.java\" target=\"_blank\" label=\"MetricsVisitorLogic$ClassStateSnapshot\"];\nDisharmonySectionDTO [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/report/src/main/java/org/hjug/refactorfirst/report/model/DisharmonySectionDTO.java\" target=\"_blank\"];\nMavenReportOutputDirectory [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/refactor-first-maven-plugin/src/main/java/org/hjug/mavenreport/MavenReportOutputDirectory.java\" target=\"_blank\"];\nPackageRelationshipsToRemoveDTO [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/report/src/main/java/org/hjug/refactorfirst/report/model/PackageRelationshipsToRemoveDTO.java\" target=\"_blank\"];\nCompositeGraphBuilder [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/CompositeGraphBuilder.java\" target=\"_blank\"];\nPackageRelationshipDTO [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/report/src/main/java/org/hjug/refactorfirst/report/model/PackageRelationshipDTO.java\" target=\"_blank\"];\nMetricsCollectingVisitor [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/metrics/MetricsCollectingVisitor.java\" target=\"_blank\"];\nKotlinSourceFileGraphBuilder [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/graphbuilder/KotlinSourceFileGraphBuilder.java\" target=\"_blank\"];\nMethodMetrics [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/metrics/MethodMetrics.java\" target=\"_blank\"];\nCodebaseGraphDTO [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/CodebaseGraphDTO.java\" target=\"_blank\"];\nRankedDisharmony [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/cost-benefit-calculator/src/main/java/org/hjug/cbc/RankedDisharmony.java\" target=\"_blank\"];\nFeedbackVertexSetResult [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/vertex/approximate/FeedbackVertexSetResult.java\" target=\"_blank\"];\nRefactorFirstMavenJsonReport [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/refactor-first-maven-plugin/src/main/java/org/hjug/mavenreport/RefactorFirstMavenJsonReport.java\" target=\"_blank\"];\nCycleRemovalComputer [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/CycleRemovalComputer.java\" target=\"_blank\"];\nDSM [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/dsm/DSM.java\" target=\"_blank\"];\nJsonReportDisharmonyEntry [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/report/src/main/java/org/hjug/refactorfirst/report/json/JsonReportDisharmonyEntry.java\" target=\"_blank\"];\norg_hjug_graphbuilder_metrics_DisharmonyMetric_Direction [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/metrics/DisharmonyMetric.java\" target=\"_blank\" label=\"DisharmonyMetric$Direction\"];\nio_confluent_ksql_cli_console_Console_RowCaptor [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/test-resources/src/main/resources/Console.java\" target=\"_blank\" label=\"Console$RowCaptor\"];\nCycleBreakdownRowDTO [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/report/src/main/java/org/hjug/refactorfirst/report/model/CycleBreakdownRowDTO.java\" target=\"_blank\"];\nDisharmonyDetector [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/metrics/DisharmonyDetector.java\" target=\"_blank\"];\nCircularReferenceChecker [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/dsm/CircularReferenceChecker.java\" target=\"_blank\"];\nFeedbackArcSetSolver [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/arc/approximate/FeedbackArcSetSolver.java\" target=\"_blank\"];\nCycleRemovalResult [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/CycleRemovalResult.java\" target=\"_blank\"];\norg_hjug_refactorfirst_report_ReportWriter_ReportWriteException [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/report/src/main/java/org/hjug/refactorfirst/report/ReportWriter.java\" target=\"_blank\" label=\"ReportWriter$ReportWriteException\"];\nAbstractDependencyVisitor [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/visitor/AbstractDependencyVisitor.java\" target=\"_blank\"];\nProjectMetadataDTO [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/report/src/main/java/org/hjug/refactorfirst/report/model/ProjectMetadataDTO.java\" target=\"_blank\"];\norg_hjug_feedback_vertex_kernelized_ParameterComputer_Parameters [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/vertex/kernelized/ParameterComputer.java\" target=\"_blank\" label=\"ParameterComputer$Parameters\"];\nLargestCycleDTO [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/report/src/main/java/org/hjug/refactorfirst/report/model/LargestCycleDTO.java\" target=\"_blank\"];\nRankedCycle [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/cost-benefit-calculator/src/main/java/org/hjug/cbc/RankedCycle.java\" target=\"_blank\"];\nClassRelationshipDTO [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/report/src/main/java/org/hjug/refactorfirst/report/model/ClassRelationshipDTO.java\" target=\"_blank\"];\nDisharmonyRanker [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/effort-ranker/src/main/java/org/hjug/metrics/DisharmonyRanker.java\" target=\"_blank\"];\norg_hjug_git_GitLogReader_CommitWalkStats [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/change-proneness-ranker/src/main/java/org/hjug/git/GitLogReader.java\" target=\"_blank\" label=\"GitLogReader$CommitWalkStats\"];\nGraphVisualDTO [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/report/src/main/java/org/hjug/refactorfirst/report/model/GraphVisualDTO.java\" target=\"_blank\"];\nDisharmonyTableRowDTO [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/report/src/main/java/org/hjug/refactorfirst/report/model/DisharmonyTableRowDTO.java\" target=\"_blank\"];\nChangePronenessRanker [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/change-proneness-ranker/src/main/java/org/hjug/git/ChangePronenessRanker.java\" target=\"_blank\"];\nScmLogInfo [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/change-proneness-ranker/src/main/java/org/hjug/git/ScmLogInfo.java\" target=\"_blank\"];\nKotlinMetricsCollectingVisitor [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/metrics/KotlinMetricsCollectingVisitor.java\" target=\"_blank\"];\nEdgeToRemoveInfo [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/dsm/EdgeToRemoveInfo.java\" target=\"_blank\"];\nDirectedFeedbackVertexSetSolver [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/vertex/kernelized/DirectedFeedbackVertexSetSolver.java\" target=\"_blank\"];\nGraphBuilderConfig [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/GraphBuilderConfig.java\" target=\"_blank\"];\nMinimumFeedbackArcSetSolver [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/arc/exact/MinimumFeedbackArcSetSolver.java\" target=\"_blank\"];\norg_hjug_graphbuilder_visitor_DependencyVisitorLogic_ClassSnapshot [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/visitor/DependencyVisitorLogic.java\" target=\"_blank\" label=\"DependencyVisitorLogic$ClassSnapshot\"];\nRefactorFirstMavenReport [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/refactor-first-maven-plugin/src/main/java/org/hjug/mavenreport/RefactorFirstMavenReport.java\" target=\"_blank\"];\nEdgeInfoCalculator [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/arc/EdgeInfoCalculator.java\" target=\"_blank\"];\nRefactorFirstMavenJsonGenerator [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/refactor-first-maven-plugin/src/main/java/org/hjug/mavenreport/RefactorFirstMavenJsonGenerator.java\" target=\"_blank\"];\nCycleRanker [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/cost-benefit-calculator/src/main/java/org/hjug/cbc/CycleRanker.java\" target=\"_blank\"];\nReportCommand [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/cli/src/main/java/org/hjug/refactorfirst/ReportCommand.java\" target=\"_blank\"];\nDisharmonyChartDTO [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/report/src/main/java/org/hjug/refactorfirst/report/model/DisharmonyChartDTO.java\" target=\"_blank\"];\nDependencyCollector [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/DependencyCollector.java\" target=\"_blank\"];\nCostBenefitCalculator [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/cost-benefit-calculator/src/main/java/org/hjug/cbc/CostBenefitCalculator.java\" target=\"_blank\"];\nEdgeInfo [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/arc/EdgeInfo.java\" target=\"_blank\"];\nGitLogReader [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/change-proneness-ranker/src/main/java/org/hjug/git/GitLogReader.java\" target=\"_blank\"];\norg_hjug_graphbuilder_metrics_MetricsVisitorLogic_OverridePredicate [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/metrics/MetricsVisitorLogic.java\" target=\"_blank\" label=\"MetricsVisitorLogic$OverridePredicate\"];\nGraphDependencyCollector [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/GraphDependencyCollector.java\" target=\"_blank\"];\nDependencyVisitorLogic [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/visitor/DependencyVisitorLogic.java\" target=\"_blank\"];\nDisharmony [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/effort-ranker/src/main/java/org/hjug/metrics/Disharmony.java\" target=\"_blank\"];\nio_confluent_ksql_cli_console_Console_NoOpRowCaptor [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/test-resources/src/main/resources/Console.java\" target=\"_blank\" label=\"Console$NoOpRowCaptor\"];\nClassMetrics [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/metrics/ClassMetrics.java\" target=\"_blank\"];\nSparseIntDWGEdgeRemovalCalculator [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/dsm/SparseIntDWGEdgeRemovalCalculator.java\" target=\"_blank\"];\nRefactorFirstSimpleHtmlReport [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/refactor-first-maven-plugin/src/main/java/org/hjug/mavenreport/RefactorFirstSimpleHtmlReport.java\" target=\"_blank\"];\nClassRelationshipsToRemoveDTO [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/report/src/main/java/org/hjug/refactorfirst/report/model/ClassRelationshipsToRemoveDTO.java\" target=\"_blank\"];\nCsvReport [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/report/src/main/java/org/hjug/refactorfirst/report/CsvReport.java\" target=\"_blank\"];\nDisharmonyTableDTO [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/report/src/main/java/org/hjug/refactorfirst/report/model/DisharmonyTableDTO.java\" target=\"_blank\"];\nJsonGenerator [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/report/src/main/java/org/hjug/refactorfirst/report/JsonGenerator.java\" target=\"_blank\"];\norg_hjug_graphbuilder_metrics_DisharmonyDetector_FlaggedClassData [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/metrics/DisharmonyDetector.java\" target=\"_blank\" label=\"DisharmonyDetector$FlaggedClassData\"];\norg_hjug_metrics_DisharmonyRanker_RankSetter [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/effort-ranker/src/main/java/org/hjug/metrics/DisharmonyRanker.java\" target=\"_blank\" label=\"DisharmonyRanker$RankSetter\"];\norg_hjug_refactorfirst_report_ReportWriter_SecureDirectoryOps [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/report/src/main/java/org/hjug/refactorfirst/report/ReportWriter.java\" target=\"_blank\" label=\"ReportWriter$SecureDirectoryOps\"];\nChartJsBubbleDTO [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/report/src/main/java/org/hjug/refactorfirst/report/model/ChartJsBubbleDTO.java\" target=\"_blank\"];\nHtmlReport [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/report/src/main/java/org/hjug/refactorfirst/report/HtmlReport.java\" target=\"_blank\"];\nDisharmonyMetric [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/metrics/DisharmonyMetric.java\" target=\"_blank\"];\norg_hjug_graphbuilder_metrics_MetricsVisitorLogic_MethodStateSnapshot [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/metrics/MetricsVisitorLogic.java\" target=\"_blank\" label=\"MetricsVisitorLogic$MethodStateSnapshot\"];\norg_hjug_feedback_vertex_kernelized_DirectedFeedbackVertexSetSolver_PathComputationStats [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/vertex/kernelized/DirectedFeedbackVertexSetSolver.java\" target=\"_blank\" label=\"DirectedFeedbackVertexSetSolver$PathComputationStats\"];\nLineVertex [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/arc/pageRank/PageRankFAS.java\" target=\"_blank\"];\norg_hjug_feedback_vertex_kernelized_ModulatorComputer_ModulatorResult [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/vertex/kernelized/ModulatorComputer.java\" target=\"_blank\" label=\"ModulatorComputer$ModulatorResult\"];\nGodClass [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/effort-ranker/src/main/java/org/hjug/metrics/GodClass.java\" target=\"_blank\"];\nDirectedFeedbackVertexSetResult [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/vertex/kernelized/DirectedFeedbackVertexSetResult.java\" target=\"_blank\"];\nRefactorFirstReportDTO [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/report/src/main/java/org/hjug/refactorfirst/report/model/RefactorFirstReportDTO.java\" target=\"_blank\"];\nio_confluent_ksql_cli_console_Console_CliCmdExecutor [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/test-resources/src/main/resources/Console.java\" target=\"_blank\" label=\"Console$CliCmdExecutor\"];\nKotlinDependencyVisitor [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/visitor/KotlinDependencyVisitor.java\" target=\"_blank\"];\norg_hjug_feedback_vertex_approximate_FeedbackVertexSetSolver_CutCandidate [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/vertex/approximate/FeedbackVertexSetSolver.java\" target=\"_blank\" label=\"FeedbackVertexSetSolver$CutCandidate\"];\norg_hjug_graphbuilder_metrics_DisharmonyDetector_Clone [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/metrics/DisharmonyDetector.java\" target=\"_blank\" label=\"DisharmonyDetector$Clone\"];\nCBOClass [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/effort-ranker/src/main/java/org/hjug/metrics/CBOClass.java\" target=\"_blank\"];\nMain [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/cli/src/main/java/org/hjug/refactorfirst/Main.java\" target=\"_blank\"];\nJavaSourceFileGraphBuilder [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/graphbuilder/JavaSourceFileGraphBuilder.java\" target=\"_blank\"];\norg_hjug_refactorfirst_report_ReportWriter_SecureDirectoryOpsImpl [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/report/src/main/java/org/hjug/refactorfirst/report/ReportWriter.java\" target=\"_blank\" label=\"ReportWriter$SecureDirectoryOpsImpl\"];\nGodClassRanker [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/effort-ranker/src/main/java/org/hjug/metrics/GodClassRanker.java\" target=\"_blank\"];\norg_hjug_graphbuilder_visitor_KotlinDependencyVisitor_1 [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/visitor/KotlinDependencyVisitor.java\" target=\"_blank\" label=\"KotlinDependencyVisitor$1\"];\norg_hjug_feedback_vertex_kernelized_EnhancedParameterComputer_EnhancedParameters [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/vertex/kernelized/EnhancedParameterComputer.java\" target=\"_blank\" label=\"EnhancedParameterComputer$EnhancedParameters\"];\nConsole [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/test-resources/src/main/resources/Console.java\" target=\"_blank\"];\nCycleNode [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/cost-benefit-calculator/src/main/java/org/hjug/cbc/CycleNode.java\" target=\"_blank\"];\nFeedbackVertexSetComputer [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/vertex/kernelized/FeedbackVertexSetComputer.java\" target=\"_blank\"];\nCBORule [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/effort-ranker/src/main/java/org/hjug/metrics/rules/CBORule.java\" target=\"_blank\"];\nReportType [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/cli/src/main/java/org/hjug/refactorfirst/ReportType.java\" target=\"_blank\"];\nParameterComputer [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/vertex/kernelized/ParameterComputer.java\" target=\"_blank\"];\nComplexityCalculator [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/metrics/ComplexityCalculator.java\" target=\"_blank\"];\nRefactorFirstMavenCsvReport [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/refactor-first-maven-plugin/src/main/java/org/hjug/mavenreport/RefactorFirstMavenCsvReport.java\" target=\"_blank\"];\nReportWriter [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/report/src/main/java/org/hjug/refactorfirst/report/ReportWriter.java\" target=\"_blank\" color=red style=filled];\nMetricsVisitorLogic [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/metrics/MetricsVisitorLogic.java\" target=\"_blank\"];\norg_hjug_metrics_DisharmonyRanker_ValueExtractor [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/effort-ranker/src/main/java/org/hjug/metrics/DisharmonyRanker.java\" target=\"_blank\" label=\"DisharmonyRanker$ValueExtractor\"];\nMetricsVisitorState [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/metrics/MetricsVisitorState.java\" target=\"_blank\"];\nTypeDependencyExtractor [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/visitor/TypeDependencyExtractor.java\" target=\"_blank\"];\norg_hjug_graphbuilder_metrics_DisharmonyDetector_ClassDisharmony [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/metrics/DisharmonyDetector.java\" target=\"_blank\" label=\"DisharmonyDetector$ClassDisharmony\"];\norg_hjug_graphbuilder_metrics_DisharmonyDetector_MethodEntry [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/metrics/DisharmonyDetector.java\" target=\"_blank\" label=\"DisharmonyDetector$MethodEntry\"];\norg_hjug_refactorfirst_report_ReportWriter_FallbackDirectoryOps [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/report/src/main/java/org/hjug/refactorfirst/report/ReportWriter.java\" target=\"_blank\" label=\"ReportWriter$FallbackDirectoryOps\"];\norg_hjug_feedback_arc_approximate_FeedbackArcSetResult [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/arc/approximate/FeedbackArcSetResult.java\" target=\"_blank\"];\nJavaVisitor [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/visitor/JavaVisitor.java\" target=\"_blank\"];\nJsonReportExecutor [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/report/src/main/java/org/hjug/refactorfirst/report/json/JsonReportExecutor.java\" target=\"_blank\"];\nBaseTypeProcessor [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/visitor/BaseTypeProcessor.java\" target=\"_blank\"];\nEnhancedParameterComputer [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/vertex/kernelized/EnhancedParameterComputer.java\" target=\"_blank\"];\nFeedbackVertexSetSolver [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/vertex/approximate/FeedbackVertexSetSolver.java\" target=\"_blank\"];\nGraphDataGenerator [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-data-generator/src/main/java/org/hjug/gdg/GraphDataGenerator.java\" target=\"_blank\"];\nDependencyVisitorState [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/visitor/DependencyVisitorState.java\" target=\"_blank\"];\norg_hjug_feedback_arc_exact_FeedbackArcSetResult [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/arc/exact/FeedbackArcSetResult.java\" target=\"_blank\"];\nUnattributedTypeFqnResolver [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/visitor/UnattributedTypeFqnResolver.java\" target=\"_blank\"];\nSourceFileGraphBuilder [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/graphbuilder/SourceFileGraphBuilder.java\" target=\"_blank\"];\nSuperTypeToken [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/SuperTypeToken.java\" target=\"_blank\"];\nPageRankFAS [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/arc/pageRank/PageRankFAS.java\" target=\"_blank\"];\nSourcePathResolver [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/visitor/SourcePathResolver.java\" target=\"_blank\"];\norg_hjug_graphbuilder_metrics_DisharmonyDetector_MethodDisharmony [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/metrics/DisharmonyDetector.java\" target=\"_blank\" label=\"DisharmonyDetector$MethodDisharmony\"];\nRefactorFirstHtmlReport [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/refactor-first-maven-plugin/src/main/java/org/hjug/mavenreport/RefactorFirstHtmlReport.java\" target=\"_blank\"];\nClassCyclesDTO [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/report/src/main/java/org/hjug/refactorfirst/report/model/ClassCyclesDTO.java\" target=\"_blank\"];\nTreewidthComputer [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/vertex/kernelized/TreewidthComputer.java\" target=\"_blank\"];\nModulatorComputer [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/vertex/kernelized/ModulatorComputer.java\" target=\"_blank\"];\n}",
+    "hasEdges" : false
+  },
+  "classRelationshipsToRemove" : {
+    "cycleCount" : 1,
+    "relationshipsToRemoveCount" : 2,
+    "hasRelationships" : true,
+    "relationships" : [ {
+      "sourceClass" : "org.hjug.refactorfirst.report.ReportWriter$SecureDirectoryOps",
+      "targetClass" : "org.hjug.refactorfirst.report.ReportWriter$SecureDirectoryOpsImpl",
+      "sourceUrl" : null,
+      "targetUrl" : null,
+      "sourceMarked" : false,
+      "targetMarked" : false,
+      "weight" : 1,
+      "renderedLabel" : "ReportWriter$SecureDirectoryOps → ReportWriter$SecureDirectoryOpsImpl : 1",
+      "priority" : 1,
+      "cycleCount" : 1,
+      "effortRank" : 1,
+      "alsoRemovesPackageRelationship" : false,
+      "packageCycleCount" : 0
+    }, {
+      "sourceClass" : "org.hjug.refactorfirst.report.ReportWriter$SecureDirectoryOps",
+      "targetClass" : "org.hjug.refactorfirst.report.ReportWriter$FallbackDirectoryOps",
+      "sourceUrl" : null,
+      "targetUrl" : null,
+      "sourceMarked" : false,
+      "targetMarked" : false,
+      "weight" : 1,
+      "renderedLabel" : "ReportWriter$SecureDirectoryOps → ReportWriter$FallbackDirectoryOps : 1",
+      "priority" : 2,
+      "cycleCount" : 1,
+      "effortRank" : 1,
+      "alsoRemovesPackageRelationship" : false,
+      "packageCycleCount" : 0
+    } ]
+  },
+  "packageMap" : {
+    "graphId" : "packageGraph",
+    "classCount" : 26,
+    "relationshipCount" : 35,
+    "dotThreshold" : 4000,
+    "dotThresholdExceeded" : false,
+    "dot" : "strict digraph G {\npackage_622c04a26e1ba36b6ebca283 -> package_864d6940ac14438961598d5a [ label = \"10\" weight = \"10\" ];\npackage_622c04a26e1ba36b6ebca283 -> package_bb20afe0ec6010144ae2060c [ label = \"3\" weight = \"3\" ];\npackage_275b39592e996f9bc7d2bab4 -> package_179967d6e66ef95e5ec582dc [ label = \"12\" weight = \"12\" ];\npackage_275b39592e996f9bc7d2bab4 -> package_98c578ab6c4dd833f53d3aee [ label = \"6\" weight = \"6\" color = \"red\" ];\npackage_98c578ab6c4dd833f53d3aee -> package_275b39592e996f9bc7d2bab4 [ label = \"10\" weight = \"10\" ];\npackage_98c578ab6c4dd833f53d3aee -> package_d36e09db80f0e2bbc4ffd5c7 [ label = \"4\" weight = \"4\" ];\npackage_98c578ab6c4dd833f53d3aee -> package_179967d6e66ef95e5ec582dc [ label = \"37\" weight = \"37\" ];\npackage_179967d6e66ef95e5ec582dc -> package_275b39592e996f9bc7d2bab4 [ label = \"1\" weight = \"1\" color = \"red\" ];\npackage_d36e09db80f0e2bbc4ffd5c7 -> package_275b39592e996f9bc7d2bab4 [ label = \"14\" weight = \"14\" ];\npackage_bfb0d6f0cb59390b479b08a1 -> package_cc2439ece2ff219a79eb369d [ label = \"27\" weight = \"27\" ];\npackage_bfb0d6f0cb59390b479b08a1 -> package_d6011c21970de8ae7eafff05 [ label = \"1\" weight = \"1\" ];\npackage_bfb0d6f0cb59390b479b08a1 -> package_869fe932642cb7510df73c8d [ label = \"46\" weight = \"46\" ];\npackage_bfb0d6f0cb59390b479b08a1 -> package_275b39592e996f9bc7d2bab4 [ label = \"15\" weight = \"15\" ];\npackage_bfb0d6f0cb59390b479b08a1 -> package_179967d6e66ef95e5ec582dc [ label = \"7\" weight = \"7\" ];\npackage_bfb0d6f0cb59390b479b08a1 -> package_6da3c08ea2d561edab77673f [ label = \"2\" weight = \"2\" ];\npackage_869fe932642cb7510df73c8d -> package_179967d6e66ef95e5ec582dc [ label = \"2\" weight = \"2\" ];\npackage_5770287cc40afd5bd6812d59 -> package_0b6cea3e7e0dde98e8d142c3 [ label = \"2\" weight = \"2\" ];\npackage_d30a7a8d892c5e6113a07e84 -> package_0b6cea3e7e0dde98e8d142c3 [ label = \"3\" weight = \"3\" ];\npackage_0b6cea3e7e0dde98e8d142c3 -> package_6da3c08ea2d561edab77673f [ label = \"2\" weight = \"2\" ];\npackage_0b6cea3e7e0dde98e8d142c3 -> package_d2f1dd27b2e43b88238a4c05 [ label = \"10\" weight = \"10\" ];\npackage_0b6cea3e7e0dde98e8d142c3 -> package_d30a7a8d892c5e6113a07e84 [ label = \"2\" weight = \"2\" color = \"red\" ];\npackage_d2f1dd27b2e43b88238a4c05 -> package_0b6cea3e7e0dde98e8d142c3 [ label = \"12\" weight = \"12\" color = \"red\" ];\npackage_e16f87ed4cbaa8972b66b80b -> package_bfb0d6f0cb59390b479b08a1 [ label = \"2\" weight = \"2\" ];\npackage_5a5b226dc916c25cd94e86c9 -> package_864d6940ac14438961598d5a [ label = \"16\" weight = \"16\" ];\npackage_5a5b226dc916c25cd94e86c9 -> package_bb20afe0ec6010144ae2060c [ label = \"3\" weight = \"3\" ];\npackage_864d6940ac14438961598d5a -> package_cc2439ece2ff219a79eb369d [ label = \"11\" weight = \"11\" ];\npackage_864d6940ac14438961598d5a -> package_bfb0d6f0cb59390b479b08a1 [ label = \"73\" weight = \"73\" ];\npackage_864d6940ac14438961598d5a -> package_e16f87ed4cbaa8972b66b80b [ label = \"5\" weight = \"5\" ];\npackage_864d6940ac14438961598d5a -> package_275b39592e996f9bc7d2bab4 [ label = \"31\" weight = \"31\" ];\npackage_bb20afe0ec6010144ae2060c -> package_bfb0d6f0cb59390b479b08a1 [ label = \"8\" weight = \"8\" ];\npackage_bb20afe0ec6010144ae2060c -> package_864d6940ac14438961598d5a [ label = \"2\" weight = \"2\" ];\npackage_864d6940ac14438961598d5a -> package_8b5bd27cd192f3c043f79d74 [ label = \"29\" weight = \"29\" ];\npackage_864d6940ac14438961598d5a -> package_0b6cea3e7e0dde98e8d142c3 [ label = \"12\" weight = \"12\" ];\npackage_864d6940ac14438961598d5a -> package_869fe932642cb7510df73c8d [ label = \"2\" weight = \"2\" ];\npackage_864d6940ac14438961598d5a -> package_179967d6e66ef95e5ec582dc [ label = \"5\" weight = \"5\" ];\npackage_6da3c08ea2d561edab77673f [label=\"org.hjug.dsm\"];\npackage_5a5b226dc916c25cd94e86c9 [label=\"org.hjug.mavenreport\"];\npackage_d30a7a8d892c5e6113a07e84 [label=\"org.hjug.feedback.arc.pageRank\"];\npackage_d6011c21970de8ae7eafff05 [label=\"org.hjug.metrics.rules\"];\npackage_179967d6e66ef95e5ec582dc [label=\"org.hjug.graphbuilder.metrics\"];\npackage_98c578ab6c4dd833f53d3aee [label=\"org.hjug.graphbuilder.graphbuilder\"];\npackage_8b5bd27cd192f3c043f79d74 [label=\"org.hjug.refactorfirst.report.model\"];\npackage_cc2439ece2ff219a79eb369d [label=\"org.hjug.git\"];\npackage_bb20afe0ec6010144ae2060c [label=\"org.hjug.refactorfirst.report.json\"];\npackage_d36e09db80f0e2bbc4ffd5c7 [label=\"org.hjug.graphbuilder.visitor\"];\npackage_0b6cea3e7e0dde98e8d142c3 [label=\"org.hjug.feedback\"];\npackage_275b39592e996f9bc7d2bab4 [label=\"org.hjug.graphbuilder\" color=red style=filled];\npackage_869fe932642cb7510df73c8d [label=\"org.hjug.metrics\"];\npackage_864d6940ac14438961598d5a [label=\"org.hjug.refactorfirst.report\"];\npackage_e16f87ed4cbaa8972b66b80b [label=\"org.hjug.gdg\"];\npackage_5770287cc40afd5bd6812d59 [label=\"org.hjug.feedback.arc.exact\"];\npackage_622c04a26e1ba36b6ebca283 [label=\"org.hjug.refactorfirst\"];\npackage_bfb0d6f0cb59390b479b08a1 [label=\"org.hjug.cbc\" color=red style=filled];\npackage_d2f1dd27b2e43b88238a4c05 [label=\"org.hjug.feedback.vertex.kernelized\"];\n}",
+    "hasEdges" : true
+  },
+  "packageRelationshipsToRemove" : {
+    "cycleCount" : 2,
+    "relationshipsToRemoveCount" : 4,
+    "hasRelationships" : true,
+    "relationships" : [ {
+      "sourcePackage" : "org.hjug.graphbuilder.metrics",
+      "targetPackage" : "org.hjug.graphbuilder",
+      "sourceMarked" : false,
+      "targetMarked" : true,
+      "weight" : 1,
+      "renderedLabel" : "org.hjug.graphbuilder.metrics &#8594; org.hjug.graphbuilder<strong>*</strong> : 1",
+      "priority" : 1,
+      "cycleCount" : 1,
+      "effortRank" : 1,
+      "classRelationshipsToBreakPackage" : [ "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/metrics/GraphMetricsCollector.java\" target=\"_blank\">GraphMetricsCollector</a> &#8594; <a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/DependencyCollector.java\" target=\"_blank\">DependencyCollector</a> : 1" ]
+    }, {
+      "sourcePackage" : "org.hjug.feedback",
+      "targetPackage" : "org.hjug.feedback.arc.pageRank",
+      "sourceMarked" : false,
+      "targetMarked" : false,
+      "weight" : 2,
+      "renderedLabel" : "org.hjug.feedback &#8594; org.hjug.feedback.arc.pageRank : 2",
+      "priority" : 2,
+      "cycleCount" : 1,
+      "effortRank" : 2,
+      "classRelationshipsToBreakPackage" : [ "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/CycleRemovalComputer.java\" target=\"_blank\">CycleRemovalComputer</a> &#8594; <a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/arc/pageRank/PageRankFAS.java\" target=\"_blank\">PageRankFAS</a> : 2" ]
+    }, {
+      "sourcePackage" : "org.hjug.graphbuilder",
+      "targetPackage" : "org.hjug.graphbuilder.graphbuilder",
+      "sourceMarked" : true,
+      "targetMarked" : false,
+      "weight" : 6,
+      "renderedLabel" : "org.hjug.graphbuilder<strong>*</strong> &#8594; org.hjug.graphbuilder.graphbuilder : 6",
+      "priority" : 3,
+      "cycleCount" : 1,
+      "effortRank" : 6,
+      "classRelationshipsToBreakPackage" : [ "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/CompositeGraphBuilder.java\" target=\"_blank\">CompositeGraphBuilder</a> &#8594; <a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/graphbuilder/KotlinSourceFileGraphBuilder.java\" target=\"_blank\">KotlinSourceFileGraphBuilder</a> : 3", "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/CompositeGraphBuilder.java\" target=\"_blank\">CompositeGraphBuilder</a> &#8594; <a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/graphbuilder/JavaSourceFileGraphBuilder.java\" target=\"_blank\">JavaSourceFileGraphBuilder</a> : 3" ]
+    }, {
+      "sourcePackage" : "org.hjug.feedback.vertex.kernelized",
+      "targetPackage" : "org.hjug.feedback",
+      "sourceMarked" : false,
+      "targetMarked" : false,
+      "weight" : 12,
+      "renderedLabel" : "org.hjug.feedback.vertex.kernelized &#8594; org.hjug.feedback : 12",
+      "priority" : 4,
+      "cycleCount" : 1,
+      "effortRank" : 12,
+      "classRelationshipsToBreakPackage" : [ "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/vertex/kernelized/EnhancedParameterComputer.java\" target=\"_blank\">EnhancedParameterComputer</a> &#8594; <a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/SuperTypeToken.java\" target=\"_blank\">SuperTypeToken</a> : 2", "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/vertex/kernelized/FeedbackVertexSetComputer.java\" target=\"_blank\">FeedbackVertexSetComputer</a> &#8594; <a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/SuperTypeToken.java\" target=\"_blank\">SuperTypeToken</a> : 4", "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/vertex/kernelized/ModulatorComputer.java\" target=\"_blank\">ModulatorComputer</a> &#8594; <a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/SuperTypeToken.java\" target=\"_blank\">SuperTypeToken</a> : 2", "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/vertex/kernelized/DirectedFeedbackVertexSetSolver.java\" target=\"_blank\">DirectedFeedbackVertexSetSolver</a> &#8594; <a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/SuperTypeToken.java\" target=\"_blank\">SuperTypeToken</a> : 2", "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/vertex/kernelized/ParameterComputer.java\" target=\"_blank\">ParameterComputer</a> &#8594; <a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/SuperTypeToken.java\" target=\"_blank\">SuperTypeToken</a> : 2" ]
+    } ]
+  },
+  "hasDisharmonies" : true,
+  "disharmonies" : [ {
+    "type" : "Data Class",
+    "anchorId" : "DATA_CLASS",
+    "title" : "Data Classes",
+    "methodLevel" : false,
+    "problem" : "Data Classes are dumb data holders that other classes rely on.",
+    "solution" : "Move the data/variable(s) to the same class as the operation.",
+    "maxPriority" : 2,
+    "chart" : {
+      "canvasId" : "chart_DATA_CLASS",
+      "bubbles" : [ {
+        "id" : "MetricsVisitorState.java",
+        "label" : "MetricsVisitorState.java",
+        "x" : 1,
+        "y" : 2,
+        "r" : 24,
+        "priority" : 1,
+        "effortRank" : 1,
+        "changePronenessRank" : 2,
+        "color" : "rgba(235, 64, 52, 0.75)",
+        "borderColor" : "rgb(235, 64, 52)"
+      }, {
+        "id" : "Attributes.java",
+        "label" : "Attributes.java",
+        "x" : 2,
+        "y" : 1,
+        "r" : 6,
+        "priority" : 2,
+        "effortRank" : 2,
+        "changePronenessRank" : 1,
+        "color" : "rgba(39, 174, 96, 0.75)",
+        "borderColor" : "rgb(39, 174, 96)"
+      } ],
+      "xaxisLabel" : "Effort to refactor",
+      "yaxisLabel" : "Relative churn (impact)"
+    },
+    "table" : {
+      "headers" : [ "Class", "Priority", "Change Proneness Rank", "Effort Rank", "Most Recent Commit Date", "Commit Count" ],
+      "rows" : [ {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/metrics/MetricsVisitorState.java\" target=\"_blank\">MetricsVisitorState.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        }, {
+          "content" : "2",
+          "align" : "right"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        }, {
+          "content" : "8/19/26, 7:20 PM",
+          "align" : "right"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/test-resources/src/main/resources/Attributes.java\" target=\"_blank\">Attributes.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "2",
+          "align" : "right"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        }, {
+          "content" : "2",
+          "align" : "right"
+        }, {
+          "content" : "10/1/20, 8:46 AM",
+          "align" : "right"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        } ]
+      } ]
+    }
+  }, {
+    "type" : "Brain Class",
+    "anchorId" : "BRAIN_CLASS",
+    "title" : "Brain Classes",
+    "methodLevel" : false,
+    "problem" : "Brain Classes are complex, lack cohesion, and have at least one Brain Method.",
+    "solution" : "Decompose Brain Methods into smaller methods.",
+    "maxPriority" : 1,
+    "chart" : {
+      "canvasId" : "chart_BRAIN_CLASS",
+      "bubbles" : [ {
+        "id" : "MetricsVisitorLogic.java",
+        "label" : "MetricsVisitorLogic.java",
+        "x" : 1,
+        "y" : 1,
+        "r" : 24,
+        "priority" : 1,
+        "effortRank" : 1,
+        "changePronenessRank" : 1,
+        "color" : "rgba(235, 64, 52, 0.75)",
+        "borderColor" : "rgb(235, 64, 52)"
+      } ],
+      "xaxisLabel" : "Effort to refactor",
+      "yaxisLabel" : "Relative churn (impact)"
+    },
+    "table" : {
+      "headers" : [ "Class", "Priority", "Change Proneness Rank", "Effort Rank", "Most Recent Commit Date", "Commit Count" ],
+      "rows" : [ {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/metrics/MetricsVisitorLogic.java\" target=\"_blank\">MetricsVisitorLogic.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        }, {
+          "content" : "8/19/26, 7:20 PM",
+          "align" : "right"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        } ]
+      } ]
+    }
+  }, {
+    "type" : "Refused Parent Bequest",
+    "anchorId" : "RPB",
+    "title" : "Refused Parent Bequest",
+    "methodLevel" : false,
+    "problem" : "Child class is large and often complex, but doesn't override or use many of the parent class's methods",
+    "solution" : "Do one or more of the following:<br>- Extract the child class into a separate class.  Move the methods that are used from the parent class into the child class.<br>- Make unused protected members private in the parent class.<br>- If a parent class has multiple children, move methods not used by all descendants to another class.",
+    "maxPriority" : 4,
+    "chart" : {
+      "canvasId" : "chart_RPB",
+      "bubbles" : [ {
+        "id" : "AttributeHandlerAndSorter.java",
+        "label" : "AttributeHandlerAndSorter.java",
+        "x" : 1,
+        "y" : 4,
+        "r" : 24,
+        "priority" : 1,
+        "effortRank" : 1,
+        "changePronenessRank" : 4,
+        "color" : "rgba(235, 64, 52, 0.75)",
+        "borderColor" : "rgb(235, 64, 52)"
+      }, {
+        "id" : "HtmlReport.java",
+        "label" : "HtmlReport.java",
+        "x" : 2,
+        "y" : 3,
+        "r" : 18,
+        "priority" : 2,
+        "effortRank" : 2,
+        "changePronenessRank" : 3,
+        "color" : "rgba(170, 101, 67, 0.75)",
+        "borderColor" : "rgb(170, 101, 67)"
+      }, {
+        "id" : "AttributeHandler.java",
+        "label" : "AttributeHandler.java",
+        "x" : 1,
+        "y" : 1,
+        "r" : 12,
+        "priority" : 3,
+        "effortRank" : 1,
+        "changePronenessRank" : 1,
+        "color" : "rgba(104, 137, 81, 0.75)",
+        "borderColor" : "rgb(104, 137, 81)"
+      }, {
+        "id" : "AttributeHandler2.java",
+        "label" : "AttributeHandler2.java",
+        "x" : 2,
+        "y" : 2,
+        "r" : 6,
+        "priority" : 4,
+        "effortRank" : 2,
+        "changePronenessRank" : 2,
+        "color" : "rgba(39, 174, 96, 0.75)",
+        "borderColor" : "rgb(39, 174, 96)"
+      } ],
+      "xaxisLabel" : "Effort to refactor",
+      "yaxisLabel" : "Relative churn (impact)"
+    },
+    "table" : {
+      "headers" : [ "Class", "Priority", "Change Proneness Rank", "Effort Rank", "Most Recent Commit Date", "Commit Count" ],
+      "rows" : [ {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/test-resources/src/main/resources/AttributeHandlerAndSorter.java\" target=\"_blank\">AttributeHandlerAndSorter.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        }, {
+          "content" : "4",
+          "align" : "right"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        }, {
+          "content" : "1/18/38, 9:14 PM",
+          "align" : "right"
+        }, {
+          "content" : "0",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/report/src/main/java/org/hjug/refactorfirst/report/HtmlReport.java\" target=\"_blank\">HtmlReport.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "2",
+          "align" : "right"
+        }, {
+          "content" : "3",
+          "align" : "right"
+        }, {
+          "content" : "2",
+          "align" : "right"
+        }, {
+          "content" : "9/10/26, 7:05 AM",
+          "align" : "right"
+        }, {
+          "content" : "60",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/test-resources/src/main/resources/AttributeHandler.java\" target=\"_blank\">AttributeHandler.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "3",
+          "align" : "right"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        }, {
+          "content" : "10/1/20, 8:46 AM",
+          "align" : "right"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/test-resources/src/main/resources/AttributeHandler2.java\" target=\"_blank\">AttributeHandler2.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "4",
+          "align" : "right"
+        }, {
+          "content" : "2",
+          "align" : "right"
+        }, {
+          "content" : "2",
+          "align" : "right"
+        }, {
+          "content" : "10/1/20, 8:46 AM",
+          "align" : "right"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        } ]
+      } ]
+    }
+  }, {
+    "type" : "Tradition Breaker",
+    "anchorId" : "TB",
+    "title" : "Tradition Breakers",
+    "methodLevel" : false,
+    "problem" : "Child class adds many new public methods, but doesn't override or use many of the parent class's methods",
+    "solution" : "Do one or more of the following:<br>- Make public child methods unused outside of the class non-public.<br>- Pull duplicated methods in child classes into the parent class.<br>- Move methods in the child class that are unrelated to the parent class to another class.<br>- Remove the child class from the hierarchy.",
+    "maxPriority" : 2,
+    "chart" : {
+      "canvasId" : "chart_TB",
+      "bubbles" : [ {
+        "id" : "AttributeHandler2.java",
+        "label" : "AttributeHandler2.java",
+        "x" : 1,
+        "y" : 1,
+        "r" : 24,
+        "priority" : 1,
+        "effortRank" : 1,
+        "changePronenessRank" : 1,
+        "color" : "rgba(235, 64, 52, 0.75)",
+        "borderColor" : "rgb(235, 64, 52)"
+      }, {
+        "id" : "HtmlReport.java",
+        "label" : "HtmlReport.java",
+        "x" : 2,
+        "y" : 2,
+        "r" : 6,
+        "priority" : 2,
+        "effortRank" : 2,
+        "changePronenessRank" : 2,
+        "color" : "rgba(39, 174, 96, 0.75)",
+        "borderColor" : "rgb(39, 174, 96)"
+      } ],
+      "xaxisLabel" : "Effort to refactor",
+      "yaxisLabel" : "Relative churn (impact)"
+    },
+    "table" : {
+      "headers" : [ "Class", "Priority", "Change Proneness Rank", "Effort Rank", "Most Recent Commit Date", "Commit Count" ],
+      "rows" : [ {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/test-resources/src/main/resources/AttributeHandler2.java\" target=\"_blank\">AttributeHandler2.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        }, {
+          "content" : "10/1/20, 8:46 AM",
+          "align" : "right"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/report/src/main/java/org/hjug/refactorfirst/report/HtmlReport.java\" target=\"_blank\">HtmlReport.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "2",
+          "align" : "right"
+        }, {
+          "content" : "2",
+          "align" : "right"
+        }, {
+          "content" : "2",
+          "align" : "right"
+        }, {
+          "content" : "9/10/26, 7:05 AM",
+          "align" : "right"
+        }, {
+          "content" : "60",
+          "align" : "right"
+        } ]
+      } ]
+    }
+  }, {
+    "type" : "Significant Duplication",
+    "anchorId" : "SIG_DUP",
+    "title" : "Significant Duplication",
+    "methodLevel" : false,
+    "problem" : "Nearly identical code is found in multiple classes, leading to increased maintenance costs.",
+    "solution" : "- Move duplicated code in the same class into a new method.<br>- Move duplicated code into a separate or parent class.<br>- Move duplicated code in two child classes or in parent/child classes into the parent class.",
+    "maxPriority" : 3,
+    "chart" : {
+      "canvasId" : "chart_SIG_DUP",
+      "bubbles" : [ {
+        "id" : "AttributeHandlerAndSorter.java",
+        "label" : "AttributeHandlerAndSorter.java",
+        "x" : 1,
+        "y" : 3,
+        "r" : 24,
+        "priority" : 1,
+        "effortRank" : 1,
+        "changePronenessRank" : 3,
+        "color" : "rgba(235, 64, 52, 0.75)",
+        "borderColor" : "rgb(235, 64, 52)"
+      }, {
+        "id" : "AttributeHandler.java",
+        "label" : "AttributeHandler.java",
+        "x" : 1,
+        "y" : 2,
+        "r" : 15,
+        "priority" : 2,
+        "effortRank" : 1,
+        "changePronenessRank" : 2,
+        "color" : "rgba(137, 119, 74, 0.75)",
+        "borderColor" : "rgb(137, 119, 74)"
+      }, {
+        "id" : "AttributeHandler2.java",
+        "label" : "AttributeHandler2.java",
+        "x" : 1,
+        "y" : 1,
+        "r" : 6,
+        "priority" : 3,
+        "effortRank" : 1,
+        "changePronenessRank" : 1,
+        "color" : "rgba(39, 174, 96, 0.75)",
+        "borderColor" : "rgb(39, 174, 96)"
+      } ],
+      "xaxisLabel" : "Effort to refactor",
+      "yaxisLabel" : "Relative churn (impact)"
+    },
+    "table" : {
+      "headers" : [ "Class", "Priority", "Change Proneness Rank", "Effort Rank", "Duplicate Partners", "Most Recent Commit Date", "Commit Count" ],
+      "rows" : [ {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/test-resources/src/main/resources/AttributeHandlerAndSorter.java\" target=\"_blank\">AttributeHandlerAndSorter.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        }, {
+          "content" : "3",
+          "align" : "right"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        }, {
+          "content" : "apply(Unknown,Unknown) ↔ AttributeHandler.apply(Unknown,Unknown)<br> apply(Unknown,Unknown) ↔ &lt<br>unknown&gt<br>.apply(Unknown,Unknown)",
+          "align" : "left"
+        }, {
+          "content" : "10/1/20, 8:46 AM",
+          "align" : "right"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/test-resources/src/main/resources/AttributeHandler.java\" target=\"_blank\">AttributeHandler.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "2",
+          "align" : "right"
+        }, {
+          "content" : "2",
+          "align" : "right"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        }, {
+          "content" : "apply(Unknown,Unknown) ↔ AttributeHandler.apply(Unknown,Unknown)<br> apply(Unknown,Unknown) ↔ &lt<br>unknown&gt<br>.apply(Unknown,Unknown)",
+          "align" : "left"
+        }, {
+          "content" : "10/1/20, 8:46 AM",
+          "align" : "right"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/test-resources/src/main/resources/AttributeHandler2.java\" target=\"_blank\">AttributeHandler2.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "3",
+          "align" : "right"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        }, {
+          "content" : "apply(Unknown,Unknown) ↔ AttributeHandler.apply(Unknown,Unknown)",
+          "align" : "left"
+        }, {
+          "content" : "10/1/20, 8:46 AM",
+          "align" : "right"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        } ]
+      } ]
+    }
+  }, {
+    "type" : "Brain Method",
+    "anchorId" : "BRAIN_METHOD",
+    "title" : "Brain Methods",
+    "methodLevel" : true,
+    "problem" : "Method is long, complicated, and uses many variables.",
+    "solution" : "- Decompose the method into two or more smaller methods.<br>- If part of the method relies heavily on an outside class, extract that functionality out of the calling method and move it to the called class.",
+    "maxPriority" : 11,
+    "chart" : {
+      "canvasId" : "chart_BRAIN_METHOD",
+      "bubbles" : [ {
+        "id" : "CompositeGraphBuilder.java",
+        "label" : "CompositeGraphBuilder.java",
+        "x" : 1,
+        "y" : 7,
+        "r" : 24,
+        "priority" : 1,
+        "effortRank" : 1,
+        "changePronenessRank" : 7,
+        "color" : "rgba(235, 64, 52, 0.75)",
+        "borderColor" : "rgb(235, 64, 52)"
+      }, {
+        "id" : "AttributeHandlerAndSorter.java",
+        "label" : "AttributeHandlerAndSorter.java",
+        "x" : 5,
+        "y" : 11,
+        "r" : 22,
+        "priority" : 2,
+        "effortRank" : 5,
+        "changePronenessRank" : 11,
+        "color" : "rgba(215, 75, 56, 0.75)",
+        "borderColor" : "rgb(215, 75, 56)"
+      }, {
+        "id" : "MetricsVisitorLogic.java",
+        "label" : "MetricsVisitorLogic.java",
+        "x" : 2,
+        "y" : 4,
+        "r" : 20,
+        "priority" : 3,
+        "effortRank" : 2,
+        "changePronenessRank" : 4,
+        "color" : "rgba(196, 86, 61, 0.75)",
+        "borderColor" : "rgb(196, 86, 61)"
+      }, {
+        "id" : "DirectedFeedbackVertexSetSolver.java",
+        "label" : "DirectedFeedbackVertexSetSolver.java",
+        "x" : 3,
+        "y" : 5,
+        "r" : 19,
+        "priority" : 4,
+        "effortRank" : 3,
+        "changePronenessRank" : 5,
+        "color" : "rgba(176, 97, 65, 0.75)",
+        "borderColor" : "rgb(176, 97, 65)"
+      }, {
+        "id" : "DependencyVisitorLogic.java",
+        "label" : "DependencyVisitorLogic.java",
+        "x" : 4,
+        "y" : 6,
+        "r" : 17,
+        "priority" : 5,
+        "effortRank" : 4,
+        "changePronenessRank" : 6,
+        "color" : "rgba(157, 108, 70, 0.75)",
+        "borderColor" : "rgb(157, 108, 70)"
+      }, {
+        "id" : "DisharmonyDetector.java",
+        "label" : "DisharmonyDetector.java",
+        "x" : 6,
+        "y" : 8,
+        "r" : 15,
+        "priority" : 6,
+        "effortRank" : 6,
+        "changePronenessRank" : 8,
+        "color" : "rgba(137, 119, 74, 0.75)",
+        "borderColor" : "rgb(137, 119, 74)"
+      }, {
+        "id" : "AttributeHandlerAndSorter.java",
+        "label" : "AttributeHandlerAndSorter.java",
+        "x" : 9,
+        "y" : 11,
+        "r" : 13,
+        "priority" : 7,
+        "effortRank" : 9,
+        "changePronenessRank" : 11,
+        "color" : "rgba(117, 130, 78, 0.75)",
+        "borderColor" : "rgb(117, 130, 78)"
+      }, {
+        "id" : "JsonGenerator.java",
+        "label" : "JsonGenerator.java",
+        "x" : 8,
+        "y" : 9,
+        "r" : 11,
+        "priority" : 8,
+        "effortRank" : 8,
+        "changePronenessRank" : 9,
+        "color" : "rgba(98, 141, 83, 0.75)",
+        "borderColor" : "rgb(98, 141, 83)"
+      }, {
+        "id" : "MetricsVisitorLogic.java",
+        "label" : "MetricsVisitorLogic.java",
+        "x" : 5,
+        "y" : 4,
+        "r" : 10,
+        "priority" : 9,
+        "effortRank" : 5,
+        "changePronenessRank" : 4,
+        "color" : "rgba(78, 152, 87, 0.75)",
+        "borderColor" : "rgb(78, 152, 87)"
+      }, {
+        "id" : "AttributeHandler2.java",
+        "label" : "AttributeHandler2.java",
+        "x" : 7,
+        "y" : 1,
+        "r" : 8,
+        "priority" : 10,
+        "effortRank" : 7,
+        "changePronenessRank" : 1,
+        "color" : "rgba(59, 163, 92, 0.75)",
+        "borderColor" : "rgb(59, 163, 92)"
+      }, {
+        "id" : "AttributeHandler.java",
+        "label" : "AttributeHandler.java",
+        "x" : 9,
+        "y" : 2,
+        "r" : 6,
+        "priority" : 11,
+        "effortRank" : 9,
+        "changePronenessRank" : 2,
+        "color" : "rgba(39, 174, 96, 0.75)",
+        "borderColor" : "rgb(39, 174, 96)"
+      } ],
+      "xaxisLabel" : "Effort to refactor",
+      "yaxisLabel" : "Relative churn (impact)"
+    },
+    "table" : {
+      "headers" : [ "Class", "Method", "Priority", "Change Proneness Rank", "Effort Rank", "Most Recent Commit Date", "Commit Count" ],
+      "rows" : [ {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/CompositeGraphBuilder.java\" target=\"_blank\">CompositeGraphBuilder.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "reconcileUnattributedVertices(Unknown,Unknown,Map&lt;String,String&gt;)",
+          "align" : "left"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        }, {
+          "content" : "7",
+          "align" : "right"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        }, {
+          "content" : "9/5/26, 1:41 PM",
+          "align" : "right"
+        }, {
+          "content" : "8",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/test-resources/src/main/resources/AttributeHandlerAndSorter.java\" target=\"_blank\">AttributeHandlerAndSorter.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "perform(Unknown)",
+          "align" : "left"
+        }, {
+          "content" : "2",
+          "align" : "right"
+        }, {
+          "content" : "11",
+          "align" : "right"
+        }, {
+          "content" : "5",
+          "align" : "right"
+        }, {
+          "content" : "1/18/38, 9:14 PM",
+          "align" : "right"
+        }, {
+          "content" : "0",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/metrics/MetricsVisitorLogic.java\" target=\"_blank\">MetricsVisitorLogic.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "handleMemberReference(MetricsVisitorState,GraphMetricsCollector,Unknown)",
+          "align" : "left"
+        }, {
+          "content" : "3",
+          "align" : "right"
+        }, {
+          "content" : "4",
+          "align" : "right"
+        }, {
+          "content" : "2",
+          "align" : "right"
+        }, {
+          "content" : "8/19/26, 7:20 PM",
+          "align" : "right"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/vertex/kernelized/DirectedFeedbackVertexSetSolver.java\" target=\"_blank\">DirectedFeedbackVertexSetSolver.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "addBypassEdges(V,Set&lt;V&gt;)",
+          "align" : "left"
+        }, {
+          "content" : "4",
+          "align" : "right"
+        }, {
+          "content" : "5",
+          "align" : "right"
+        }, {
+          "content" : "3",
+          "align" : "right"
+        }, {
+          "content" : "8/26/26, 7:48 PM",
+          "align" : "right"
+        }, {
+          "content" : "3",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/visitor/DependencyVisitorLogic.java\" target=\"_blank\">DependencyVisitorLogic.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "enterClassDeclaration(DependencyVisitorState,Unknown,boolean,SourcePathResolver)",
+          "align" : "left"
+        }, {
+          "content" : "5",
+          "align" : "right"
+        }, {
+          "content" : "6",
+          "align" : "right"
+        }, {
+          "content" : "4",
+          "align" : "right"
+        }, {
+          "content" : "9/5/26, 1:41 PM",
+          "align" : "right"
+        }, {
+          "content" : "6",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/metrics/DisharmonyDetector.java\" target=\"_blank\">DisharmonyDetector.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "detectSignificantDuplication(List&lt;ClassMetrics&gt;)",
+          "align" : "left"
+        }, {
+          "content" : "6",
+          "align" : "right"
+        }, {
+          "content" : "8",
+          "align" : "right"
+        }, {
+          "content" : "6",
+          "align" : "right"
+        }, {
+          "content" : "9/5/26, 1:41 PM",
+          "align" : "right"
+        }, {
+          "content" : "15",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/test-resources/src/main/resources/AttributeHandlerAndSorter.java\" target=\"_blank\">AttributeHandlerAndSorter.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "apply(Unknown,Unknown)",
+          "align" : "left"
+        }, {
+          "content" : "7",
+          "align" : "right"
+        }, {
+          "content" : "11",
+          "align" : "right"
+        }, {
+          "content" : "9",
+          "align" : "right"
+        }, {
+          "content" : "1/18/38, 9:14 PM",
+          "align" : "right"
+        }, {
+          "content" : "0",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/report/src/main/java/org/hjug/refactorfirst/report/JsonGenerator.java\" target=\"_blank\">JsonGenerator.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "generateReportData(boolean,int,boolean,boolean,String,String,String,File)",
+          "align" : "left"
+        }, {
+          "content" : "8",
+          "align" : "right"
+        }, {
+          "content" : "9",
+          "align" : "right"
+        }, {
+          "content" : "8",
+          "align" : "right"
+        }, {
+          "content" : "9/10/26, 8:06 AM",
+          "align" : "right"
+        }, {
+          "content" : "3",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/metrics/MetricsVisitorLogic.java\" target=\"_blank\">MetricsVisitorLogic.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "enterClass(MetricsVisitorState,GraphMetricsCollector,Unknown)",
+          "align" : "left"
+        }, {
+          "content" : "9",
+          "align" : "right"
+        }, {
+          "content" : "4",
+          "align" : "right"
+        }, {
+          "content" : "5",
+          "align" : "right"
+        }, {
+          "content" : "8/19/26, 7:20 PM",
+          "align" : "right"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/test-resources/src/main/resources/AttributeHandler2.java\" target=\"_blank\">AttributeHandler2.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "apply(Unknown,Unknown)",
+          "align" : "left"
+        }, {
+          "content" : "10",
+          "align" : "right"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        }, {
+          "content" : "7",
+          "align" : "right"
+        }, {
+          "content" : "1/18/38, 9:14 PM",
+          "align" : "right"
+        }, {
+          "content" : "0",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/test-resources/src/main/resources/AttributeHandler.java\" target=\"_blank\">AttributeHandler.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "apply(Unknown,Unknown)",
+          "align" : "left"
+        }, {
+          "content" : "11",
+          "align" : "right"
+        }, {
+          "content" : "2",
+          "align" : "right"
+        }, {
+          "content" : "9",
+          "align" : "right"
+        }, {
+          "content" : "10/1/20, 8:46 AM",
+          "align" : "right"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        } ]
+      } ]
+    }
+  }, {
+    "type" : "Feature Envy",
+    "anchorId" : "FEATURE_ENVY",
+    "title" : "Feature Envy",
+    "methodLevel" : true,
+    "problem" : "Method is more interested in data in other classes than its own class.",
+    "solution" : "Move the method (or part of the method) to the class where it uses the most data.",
+    "maxPriority" : 6,
+    "chart" : {
+      "canvasId" : "chart_FEATURE_ENVY",
+      "bubbles" : [ {
+        "id" : "AttributeHandlerAndSorter.java",
+        "label" : "AttributeHandlerAndSorter.java",
+        "x" : 2,
+        "y" : 6,
+        "r" : 24,
+        "priority" : 1,
+        "effortRank" : 2,
+        "changePronenessRank" : 6,
+        "color" : "rgba(235, 64, 52, 0.75)",
+        "borderColor" : "rgb(235, 64, 52)"
+      }, {
+        "id" : "ReportWriter.java",
+        "label" : "ReportWriter.java",
+        "x" : 1,
+        "y" : 4,
+        "r" : 20,
+        "priority" : 2,
+        "effortRank" : 1,
+        "changePronenessRank" : 4,
+        "color" : "rgba(196, 86, 61, 0.75)",
+        "borderColor" : "rgb(196, 86, 61)"
+      }, {
+        "id" : "MetricsVisitorLogic.java",
+        "label" : "MetricsVisitorLogic.java",
+        "x" : 3,
+        "y" : 3,
+        "r" : 17,
+        "priority" : 3,
+        "effortRank" : 3,
+        "changePronenessRank" : 3,
+        "color" : "rgba(157, 108, 70, 0.75)",
+        "borderColor" : "rgb(157, 108, 70)"
+      }, {
+        "id" : "JsonGenerator.java",
+        "label" : "JsonGenerator.java",
+        "x" : 5,
+        "y" : 5,
+        "r" : 13,
+        "priority" : 4,
+        "effortRank" : 5,
+        "changePronenessRank" : 5,
+        "color" : "rgba(117, 130, 78, 0.75)",
+        "borderColor" : "rgb(117, 130, 78)"
+      }, {
+        "id" : "AttributeHandler.java",
+        "label" : "AttributeHandler.java",
+        "x" : 2,
+        "y" : 1,
+        "r" : 10,
+        "priority" : 5,
+        "effortRank" : 2,
+        "changePronenessRank" : 1,
+        "color" : "rgba(78, 152, 87, 0.75)",
+        "borderColor" : "rgb(78, 152, 87)"
+      }, {
+        "id" : "MetricsVisitorLogic.java",
+        "label" : "MetricsVisitorLogic.java",
+        "x" : 4,
+        "y" : 3,
+        "r" : 6,
+        "priority" : 6,
+        "effortRank" : 4,
+        "changePronenessRank" : 3,
+        "color" : "rgba(39, 174, 96, 0.75)",
+        "borderColor" : "rgb(39, 174, 96)"
+      } ],
+      "xaxisLabel" : "Effort to refactor",
+      "yaxisLabel" : "Relative churn (impact)"
+    },
+    "table" : {
+      "headers" : [ "Class", "Method", "Priority", "Change Proneness Rank", "Effort Rank", "Most Recent Commit Date", "Commit Count" ],
+      "rows" : [ {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/test-resources/src/main/resources/AttributeHandlerAndSorter.java\" target=\"_blank\">AttributeHandlerAndSorter.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "apply(Unknown,Unknown)",
+          "align" : "left"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        }, {
+          "content" : "6",
+          "align" : "right"
+        }, {
+          "content" : "2",
+          "align" : "right"
+        }, {
+          "content" : "10/1/20, 8:46 AM",
+          "align" : "right"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/report/src/main/java/org/hjug/refactorfirst/report/ReportWriter.java\" target=\"_blank\">ReportWriter.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "writeAtomically(Path,String)",
+          "align" : "left"
+        }, {
+          "content" : "2",
+          "align" : "right"
+        }, {
+          "content" : "4",
+          "align" : "right"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        }, {
+          "content" : "9/5/26, 8:03 AM",
+          "align" : "right"
+        }, {
+          "content" : "10",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/metrics/MetricsVisitorLogic.java\" target=\"_blank\">MetricsVisitorLogic.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "leaveClass(MetricsVisitorState,GraphMetricsCollector,Unknown,MetricsVisitorLogic$ClassStateSnapshot)",
+          "align" : "left"
+        }, {
+          "content" : "3",
+          "align" : "right"
+        }, {
+          "content" : "3",
+          "align" : "right"
+        }, {
+          "content" : "3",
+          "align" : "right"
+        }, {
+          "content" : "8/19/26, 7:20 PM",
+          "align" : "right"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/report/src/main/java/org/hjug/refactorfirst/report/JsonGenerator.java\" target=\"_blank\">JsonGenerator.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "generateReportData(boolean,int,boolean,boolean,String,String,String,File)",
+          "align" : "left"
+        }, {
+          "content" : "4",
+          "align" : "right"
+        }, {
+          "content" : "5",
+          "align" : "right"
+        }, {
+          "content" : "5",
+          "align" : "right"
+        }, {
+          "content" : "9/10/26, 8:06 AM",
+          "align" : "right"
+        }, {
+          "content" : "3",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/test-resources/src/main/resources/AttributeHandler.java\" target=\"_blank\">AttributeHandler.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "apply(Unknown,Unknown)",
+          "align" : "left"
+        }, {
+          "content" : "5",
+          "align" : "right"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        }, {
+          "content" : "2",
+          "align" : "right"
+        }, {
+          "content" : "10/1/20, 8:46 AM",
+          "align" : "right"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/metrics/MetricsVisitorLogic.java\" target=\"_blank\">MetricsVisitorLogic.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "leaveMethod(MetricsVisitorState,GraphMetricsCollector,MetricsVisitorLogic$MethodStateSnapshot)",
+          "align" : "left"
+        }, {
+          "content" : "6",
+          "align" : "right"
+        }, {
+          "content" : "3",
+          "align" : "right"
+        }, {
+          "content" : "4",
+          "align" : "right"
+        }, {
+          "content" : "8/19/26, 7:20 PM",
+          "align" : "right"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        } ]
+      } ]
+    }
+  }, {
+    "type" : "Intensive Coupling",
+    "anchorId" : "INTENSIVE_COUPLING",
+    "title" : "Intensive Coupling",
+    "methodLevel" : true,
+    "problem" : "Method calls too many methods from a few unrelated classes (often in a separate package).",
+    "solution" : "Move the calling method to a class more closely related to the other classes that the original method can call.",
+    "maxPriority" : 16,
+    "chart" : {
+      "canvasId" : "chart_INTENSIVE_COUPLING",
+      "bubbles" : [ {
+        "id" : "SimpleHtmlReport.java",
+        "label" : "SimpleHtmlReport.java",
+        "x" : 4,
+        "y" : 16,
+        "r" : 24,
+        "priority" : 1,
+        "effortRank" : 4,
+        "changePronenessRank" : 16,
+        "color" : "rgba(235, 64, 52, 0.75)",
+        "borderColor" : "rgb(235, 64, 52)"
+      }, {
+        "id" : "SimpleHtmlReport.java",
+        "label" : "SimpleHtmlReport.java",
+        "x" : 7,
+        "y" : 16,
+        "r" : 23,
+        "priority" : 2,
+        "effortRank" : 7,
+        "changePronenessRank" : 16,
+        "color" : "rgba(222, 71, 55, 0.75)",
+        "borderColor" : "rgb(222, 71, 55)"
+      }, {
+        "id" : "CompositeGraphBuilder.java",
+        "label" : "CompositeGraphBuilder.java",
+        "x" : 2,
+        "y" : 10,
+        "r" : 22,
+        "priority" : 3,
+        "effortRank" : 2,
+        "changePronenessRank" : 10,
+        "color" : "rgba(209, 79, 58, 0.75)",
+        "borderColor" : "rgb(209, 79, 58)"
+      }, {
+        "id" : "SimpleHtmlReport.java",
+        "label" : "SimpleHtmlReport.java",
+        "x" : 8,
+        "y" : 16,
+        "r" : 20,
+        "priority" : 4,
+        "effortRank" : 8,
+        "changePronenessRank" : 16,
+        "color" : "rgba(196, 86, 61, 0.75)",
+        "borderColor" : "rgb(196, 86, 61)"
+      }, {
+        "id" : "FeedbackVertexSetSolver.java",
+        "label" : "FeedbackVertexSetSolver.java",
+        "x" : 4,
+        "y" : 8,
+        "r" : 19,
+        "priority" : 5,
+        "effortRank" : 4,
+        "changePronenessRank" : 8,
+        "color" : "rgba(183, 93, 64, 0.75)",
+        "borderColor" : "rgb(183, 93, 64)"
+      }, {
+        "id" : "CompositeGraphBuilder.java",
+        "label" : "CompositeGraphBuilder.java",
+        "x" : 7,
+        "y" : 10,
+        "r" : 18,
+        "priority" : 6,
+        "effortRank" : 7,
+        "changePronenessRank" : 10,
+        "color" : "rgba(170, 101, 67, 0.75)",
+        "borderColor" : "rgb(170, 101, 67)"
+      }, {
+        "id" : "DirectedFeedbackVertexSetSolver.java",
+        "label" : "DirectedFeedbackVertexSetSolver.java",
+        "x" : 5,
+        "y" : 7,
+        "r" : 17,
+        "priority" : 7,
+        "effortRank" : 5,
+        "changePronenessRank" : 7,
+        "color" : "rgba(157, 108, 70, 0.75)",
+        "borderColor" : "rgb(157, 108, 70)"
+      }, {
+        "id" : "JsonGenerator.java",
+        "label" : "JsonGenerator.java",
+        "x" : 11,
+        "y" : 13,
+        "r" : 16,
+        "priority" : 8,
+        "effortRank" : 11,
+        "changePronenessRank" : 13,
+        "color" : "rgba(144, 115, 73, 0.75)",
+        "borderColor" : "rgb(144, 115, 73)"
+      }, {
+        "id" : "OptimalBackEdgeRemover.java",
+        "label" : "OptimalBackEdgeRemover.java",
+        "x" : 1,
+        "y" : 2,
+        "r" : 14,
+        "priority" : 9,
+        "effortRank" : 1,
+        "changePronenessRank" : 2,
+        "color" : "rgba(130, 123, 75, 0.75)",
+        "borderColor" : "rgb(130, 123, 75)"
+      }, {
+        "id" : "JsonGenerator.java",
+        "label" : "JsonGenerator.java",
+        "x" : 12,
+        "y" : 13,
+        "r" : 13,
+        "priority" : 10,
+        "effortRank" : 12,
+        "changePronenessRank" : 13,
+        "color" : "rgba(117, 130, 78, 0.75)",
+        "borderColor" : "rgb(117, 130, 78)"
+      }, {
+        "id" : "TreewidthComputer.java",
+        "label" : "TreewidthComputer.java",
+        "x" : 3,
+        "y" : 3,
+        "r" : 12,
+        "priority" : 11,
+        "effortRank" : 3,
+        "changePronenessRank" : 3,
+        "color" : "rgba(104, 137, 81, 0.75)",
+        "borderColor" : "rgb(104, 137, 81)"
+      }, {
+        "id" : "MetricsVisitorLogic.java",
+        "label" : "MetricsVisitorLogic.java",
+        "x" : 6,
+        "y" : 6,
+        "r" : 11,
+        "priority" : 12,
+        "effortRank" : 6,
+        "changePronenessRank" : 6,
+        "color" : "rgba(91, 145, 84, 0.75)",
+        "borderColor" : "rgb(91, 145, 84)"
+      }, {
+        "id" : "DisharmonyDetector.java",
+        "label" : "DisharmonyDetector.java",
+        "x" : 11,
+        "y" : 11,
+        "r" : 10,
+        "priority" : 13,
+        "effortRank" : 11,
+        "changePronenessRank" : 11,
+        "color" : "rgba(78, 152, 87, 0.75)",
+        "borderColor" : "rgb(78, 152, 87)"
+      }, {
+        "id" : "MinimumFeedbackArcSetSolver.java",
+        "label" : "MinimumFeedbackArcSetSolver.java",
+        "x" : 3,
+        "y" : 1,
+        "r" : 8,
+        "priority" : 14,
+        "effortRank" : 3,
+        "changePronenessRank" : 1,
+        "color" : "rgba(65, 159, 90, 0.75)",
+        "borderColor" : "rgb(65, 159, 90)"
+      }, {
+        "id" : "MetricsVisitorLogic.java",
+        "label" : "MetricsVisitorLogic.java",
+        "x" : 9,
+        "y" : 6,
+        "r" : 7,
+        "priority" : 15,
+        "effortRank" : 9,
+        "changePronenessRank" : 6,
+        "color" : "rgba(52, 167, 93, 0.75)",
+        "borderColor" : "rgb(52, 167, 93)"
+      }, {
+        "id" : "MetricsVisitorLogic.java",
+        "label" : "MetricsVisitorLogic.java",
+        "x" : 10,
+        "y" : 6,
+        "r" : 6,
+        "priority" : 16,
+        "effortRank" : 10,
+        "changePronenessRank" : 6,
+        "color" : "rgba(39, 174, 96, 0.75)",
+        "borderColor" : "rgb(39, 174, 96)"
+      } ],
+      "xaxisLabel" : "Effort to refactor",
+      "yaxisLabel" : "Relative churn (impact)"
+    },
+    "table" : {
+      "headers" : [ "Class", "Method", "Priority", "Change Proneness Rank", "Effort Rank", "Most Recent Commit Date", "Commit Count" ],
+      "rows" : [ {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/report/src/main/java/org/hjug/refactorfirst/report/SimpleHtmlReport.java\" target=\"_blank\">SimpleHtmlReport.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "simplifyDuplicatePartners(String)",
+          "align" : "left"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        }, {
+          "content" : "16",
+          "align" : "right"
+        }, {
+          "content" : "4",
+          "align" : "right"
+        }, {
+          "content" : "9/10/26, 8:06 AM",
+          "align" : "right"
+        }, {
+          "content" : "95",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/report/src/main/java/org/hjug/refactorfirst/report/SimpleHtmlReport.java\" target=\"_blank\">SimpleHtmlReport.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "renderDisharmonyInfo(String,SimpleHtmlReport$DisharmonySpec,boolean,List&lt;RankedDisharmony&gt;)",
+          "align" : "left"
+        }, {
+          "content" : "2",
+          "align" : "right"
+        }, {
+          "content" : "16",
+          "align" : "right"
+        }, {
+          "content" : "7",
+          "align" : "right"
+        }, {
+          "content" : "9/10/26, 8:06 AM",
+          "align" : "right"
+        }, {
+          "content" : "95",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/CompositeGraphBuilder.java\" target=\"_blank\">CompositeGraphBuilder.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "reconcileUnattributedVertices(Unknown,Unknown,Map&lt;String,String&gt;)",
+          "align" : "left"
+        }, {
+          "content" : "3",
+          "align" : "right"
+        }, {
+          "content" : "10",
+          "align" : "right"
+        }, {
+          "content" : "2",
+          "align" : "right"
+        }, {
+          "content" : "9/5/26, 1:41 PM",
+          "align" : "right"
+        }, {
+          "content" : "8",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/report/src/main/java/org/hjug/refactorfirst/report/SimpleHtmlReport.java\" target=\"_blank\">SimpleHtmlReport.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "generateReport(boolean,int,boolean,boolean,String,String,String,File)",
+          "align" : "left"
+        }, {
+          "content" : "4",
+          "align" : "right"
+        }, {
+          "content" : "16",
+          "align" : "right"
+        }, {
+          "content" : "8",
+          "align" : "right"
+        }, {
+          "content" : "9/10/26, 8:06 AM",
+          "align" : "right"
+        }, {
+          "content" : "95",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/vertex/approximate/FeedbackVertexSetSolver.java\" target=\"_blank\">FeedbackVertexSetSolver.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "solveRecursive(Unknown,Set&lt;V&gt;)",
+          "align" : "left"
+        }, {
+          "content" : "5",
+          "align" : "right"
+        }, {
+          "content" : "8",
+          "align" : "right"
+        }, {
+          "content" : "4",
+          "align" : "right"
+        }, {
+          "content" : "8/26/26, 7:48 PM",
+          "align" : "right"
+        }, {
+          "content" : "4",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/CompositeGraphBuilder.java\" target=\"_blank\">CompositeGraphBuilder.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "getEnclosingClassFqn(String)",
+          "align" : "left"
+        }, {
+          "content" : "6",
+          "align" : "right"
+        }, {
+          "content" : "10",
+          "align" : "right"
+        }, {
+          "content" : "7",
+          "align" : "right"
+        }, {
+          "content" : "9/5/26, 1:41 PM",
+          "align" : "right"
+        }, {
+          "content" : "8",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/vertex/kernelized/DirectedFeedbackVertexSetSolver.java\" target=\"_blank\">DirectedFeedbackVertexSetSolver.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "computeMinimumVertexCut(V,Set&lt;V&gt;,int)",
+          "align" : "left"
+        }, {
+          "content" : "7",
+          "align" : "right"
+        }, {
+          "content" : "7",
+          "align" : "right"
+        }, {
+          "content" : "5",
+          "align" : "right"
+        }, {
+          "content" : "8/26/26, 7:48 PM",
+          "align" : "right"
+        }, {
+          "content" : "3",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/report/src/main/java/org/hjug/refactorfirst/report/JsonGenerator.java\" target=\"_blank\">JsonGenerator.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "buildDisharmonySection(SimpleHtmlReport$DisharmonySpec,boolean,List&lt;RankedDisharmony&gt;,String)",
+          "align" : "left"
+        }, {
+          "content" : "8",
+          "align" : "right"
+        }, {
+          "content" : "13",
+          "align" : "right"
+        }, {
+          "content" : "11",
+          "align" : "right"
+        }, {
+          "content" : "9/10/26, 8:06 AM",
+          "align" : "right"
+        }, {
+          "content" : "3",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/dsm/OptimalBackEdgeRemover.java\" target=\"_blank\">OptimalBackEdgeRemover.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "findOptimalBackEdgesToRemove()",
+          "align" : "left"
+        }, {
+          "content" : "9",
+          "align" : "right"
+        }, {
+          "content" : "2",
+          "align" : "right"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        }, {
+          "content" : "8/19/26, 7:20 PM",
+          "align" : "right"
+        }, {
+          "content" : "2",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/report/src/main/java/org/hjug/refactorfirst/report/JsonGenerator.java\" target=\"_blank\">JsonGenerator.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "generateReportData(boolean,int,boolean,boolean,String,String,String,File)",
+          "align" : "left"
+        }, {
+          "content" : "10",
+          "align" : "right"
+        }, {
+          "content" : "13",
+          "align" : "right"
+        }, {
+          "content" : "12",
+          "align" : "right"
+        }, {
+          "content" : "9/10/26, 8:06 AM",
+          "align" : "right"
+        }, {
+          "content" : "3",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/vertex/kernelized/TreewidthComputer.java\" target=\"_blank\">TreewidthComputer.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "minDegreeEliminationTreewidth(Unknown)",
+          "align" : "left"
+        }, {
+          "content" : "11",
+          "align" : "right"
+        }, {
+          "content" : "3",
+          "align" : "right"
+        }, {
+          "content" : "3",
+          "align" : "right"
+        }, {
+          "content" : "7/12/26, 3:24 PM",
+          "align" : "right"
+        }, {
+          "content" : "2",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/metrics/MetricsVisitorLogic.java\" target=\"_blank\">MetricsVisitorLogic.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "handleMemberReference(MetricsVisitorState,GraphMetricsCollector,Unknown)",
+          "align" : "left"
+        }, {
+          "content" : "12",
+          "align" : "right"
+        }, {
+          "content" : "6",
+          "align" : "right"
+        }, {
+          "content" : "6",
+          "align" : "right"
+        }, {
+          "content" : "8/19/26, 7:20 PM",
+          "align" : "right"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/metrics/DisharmonyDetector.java\" target=\"_blank\">DisharmonyDetector.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "detectSignificantDuplication(List&lt;ClassMetrics&gt;)",
+          "align" : "left"
+        }, {
+          "content" : "13",
+          "align" : "right"
+        }, {
+          "content" : "11",
+          "align" : "right"
+        }, {
+          "content" : "11",
+          "align" : "right"
+        }, {
+          "content" : "9/5/26, 1:41 PM",
+          "align" : "right"
+        }, {
+          "content" : "15",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/arc/exact/MinimumFeedbackArcSetSolver.java\" target=\"_blank\">MinimumFeedbackArcSetSolver.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "solveRelaxedProblem()",
+          "align" : "left"
+        }, {
+          "content" : "14",
+          "align" : "right"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        }, {
+          "content" : "3",
+          "align" : "right"
+        }, {
+          "content" : "12/18/25, 11:00 AM",
+          "align" : "right"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/metrics/MetricsVisitorLogic.java\" target=\"_blank\">MetricsVisitorLogic.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "enterMethod(MetricsVisitorState,Unknown,MetricsVisitorLogic$OverridePredicate)",
+          "align" : "left"
+        }, {
+          "content" : "15",
+          "align" : "right"
+        }, {
+          "content" : "6",
+          "align" : "right"
+        }, {
+          "content" : "9",
+          "align" : "right"
+        }, {
+          "content" : "8/19/26, 7:20 PM",
+          "align" : "right"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/metrics/MetricsVisitorLogic.java\" target=\"_blank\">MetricsVisitorLogic.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "enterClass(MetricsVisitorState,GraphMetricsCollector,Unknown)",
+          "align" : "left"
+        }, {
+          "content" : "16",
+          "align" : "right"
+        }, {
+          "content" : "6",
+          "align" : "right"
+        }, {
+          "content" : "10",
+          "align" : "right"
+        }, {
+          "content" : "8/19/26, 7:20 PM",
+          "align" : "right"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        } ]
+      } ]
+    }
+  }, {
+    "type" : "Dispersed Coupling",
+    "anchorId" : "DISPERSED_COUPLING",
+    "title" : "Dispersed Coupling",
+    "methodLevel" : true,
+    "problem" : "Method calls a few methods in many classes",
+    "solution" : "Reduce the size of the calling method.  Extract methods from the calling method into the target classes.",
+    "maxPriority" : 33,
+    "chart" : {
+      "canvasId" : "chart_DISPERSED_COUPLING",
+      "bubbles" : [ {
+        "id" : "GraphMetricsCollector.java",
+        "label" : "GraphMetricsCollector.java",
+        "x" : 1,
+        "y" : 30,
+        "r" : 24,
+        "priority" : 1,
+        "effortRank" : 1,
+        "changePronenessRank" : 30,
+        "color" : "rgba(235, 64, 52, 0.75)",
+        "borderColor" : "rgb(235, 64, 52)"
+      }, {
+        "id" : "GitLogReader.java",
+        "label" : "GitLogReader.java",
+        "x" : 2,
+        "y" : 29,
+        "r" : 23,
+        "priority" : 2,
+        "effortRank" : 2,
+        "changePronenessRank" : 29,
+        "color" : "rgba(229, 67, 53, 0.75)",
+        "borderColor" : "rgb(229, 67, 53)"
+      }, {
+        "id" : "AttributeHandlerAndSorter.java",
+        "label" : "AttributeHandlerAndSorter.java",
+        "x" : 7,
+        "y" : 33,
+        "r" : 23,
+        "priority" : 3,
+        "effortRank" : 7,
+        "changePronenessRank" : 33,
+        "color" : "rgba(223, 71, 55, 0.75)",
+        "borderColor" : "rgb(223, 71, 55)"
+      }, {
+        "id" : "ReportWriter.java",
+        "label" : "ReportWriter.java",
+        "x" : 4,
+        "y" : 28,
+        "r" : 22,
+        "priority" : 4,
+        "effortRank" : 4,
+        "changePronenessRank" : 28,
+        "color" : "rgba(217, 74, 56, 0.75)",
+        "borderColor" : "rgb(217, 74, 56)"
+      }, {
+        "id" : "DisharmonyDetector.java",
+        "label" : "DisharmonyDetector.java",
+        "x" : 8,
+        "y" : 32,
+        "r" : 22,
+        "priority" : 5,
+        "effortRank" : 8,
+        "changePronenessRank" : 32,
+        "color" : "rgba(211, 78, 58, 0.75)",
+        "borderColor" : "rgb(211, 78, 58)"
+      }, {
+        "id" : "FeedbackVertexSetSolver.java",
+        "label" : "FeedbackVertexSetSolver.java",
+        "x" : 2,
+        "y" : 25,
+        "r" : 21,
+        "priority" : 6,
+        "effortRank" : 2,
+        "changePronenessRank" : 25,
+        "color" : "rgba(204, 81, 59, 0.75)",
+        "borderColor" : "rgb(204, 81, 59)"
+      }, {
+        "id" : "ReportWriter.java",
+        "label" : "ReportWriter.java",
+        "x" : 5,
+        "y" : 28,
+        "r" : 21,
+        "priority" : 7,
+        "effortRank" : 5,
+        "changePronenessRank" : 28,
+        "color" : "rgba(198, 85, 60, 0.75)",
+        "borderColor" : "rgb(198, 85, 60)"
+      }, {
+        "id" : "KotlinSourceFileGraphBuilder.java",
+        "label" : "KotlinSourceFileGraphBuilder.java",
+        "x" : 12,
+        "y" : 31,
+        "r" : 20,
+        "priority" : 8,
+        "effortRank" : 12,
+        "changePronenessRank" : 31,
+        "color" : "rgba(192, 88, 62, 0.75)",
+        "borderColor" : "rgb(192, 88, 62)"
+      }, {
+        "id" : "MetricsVisitorLogic.java",
+        "label" : "MetricsVisitorLogic.java",
+        "x" : 3,
+        "y" : 21,
+        "r" : 20,
+        "priority" : 9,
+        "effortRank" : 3,
+        "changePronenessRank" : 21,
+        "color" : "rgba(186, 92, 63, 0.75)",
+        "borderColor" : "rgb(186, 92, 63)"
+      }, {
+        "id" : "ReportWriter.java",
+        "label" : "ReportWriter.java",
+        "x" : 10,
+        "y" : 28,
+        "r" : 19,
+        "priority" : 10,
+        "effortRank" : 10,
+        "changePronenessRank" : 28,
+        "color" : "rgba(180, 95, 64, 0.75)",
+        "borderColor" : "rgb(180, 95, 64)"
+      }, {
+        "id" : "DirectedFeedbackVertexSetSolver.java",
+        "label" : "DirectedFeedbackVertexSetSolver.java",
+        "x" : 8,
+        "y" : 24,
+        "r" : 18,
+        "priority" : 11,
+        "effortRank" : 8,
+        "changePronenessRank" : 24,
+        "color" : "rgba(174, 98, 66, 0.75)",
+        "borderColor" : "rgb(174, 98, 66)"
+      }, {
+        "id" : "DirectedFeedbackVertexSetSolver.java",
+        "label" : "DirectedFeedbackVertexSetSolver.java",
+        "x" : 9,
+        "y" : 24,
+        "r" : 18,
+        "priority" : 12,
+        "effortRank" : 9,
+        "changePronenessRank" : 24,
+        "color" : "rgba(168, 102, 67, 0.75)",
+        "borderColor" : "rgb(168, 102, 67)"
+      }, {
+        "id" : "TreewidthComputer.java",
+        "label" : "TreewidthComputer.java",
+        "x" : 7,
+        "y" : 20,
+        "r" : 17,
+        "priority" : 13,
+        "effortRank" : 7,
+        "changePronenessRank" : 20,
+        "color" : "rgba(162, 105, 69, 0.75)",
+        "borderColor" : "rgb(162, 105, 69)"
+      }, {
+        "id" : "ModulatorComputer.java",
+        "label" : "ModulatorComputer.java",
+        "x" : 4,
+        "y" : 16,
+        "r" : 17,
+        "priority" : 14,
+        "effortRank" : 4,
+        "changePronenessRank" : 16,
+        "color" : "rgba(155, 109, 70, 0.75)",
+        "borderColor" : "rgb(155, 109, 70)"
+      }, {
+        "id" : "ModulatorComputer.java",
+        "label" : "ModulatorComputer.java",
+        "x" : 4,
+        "y" : 16,
+        "r" : 16,
+        "priority" : 15,
+        "effortRank" : 4,
+        "changePronenessRank" : 16,
+        "color" : "rgba(149, 112, 71, 0.75)",
+        "borderColor" : "rgb(149, 112, 71)"
+      }, {
+        "id" : "ModulatorComputer.java",
+        "label" : "ModulatorComputer.java",
+        "x" : 5,
+        "y" : 16,
+        "r" : 16,
+        "priority" : 16,
+        "effortRank" : 5,
+        "changePronenessRank" : 16,
+        "color" : "rgba(143, 116, 73, 0.75)",
+        "borderColor" : "rgb(143, 116, 73)"
+      }, {
+        "id" : "TreewidthComputer.java",
+        "label" : "TreewidthComputer.java",
+        "x" : 9,
+        "y" : 20,
+        "r" : 15,
+        "priority" : 17,
+        "effortRank" : 9,
+        "changePronenessRank" : 20,
+        "color" : "rgba(137, 119, 74, 0.75)",
+        "borderColor" : "rgb(137, 119, 74)"
+      }, {
+        "id" : "DirectedFeedbackVertexSetSolver.java",
+        "label" : "DirectedFeedbackVertexSetSolver.java",
+        "x" : 13,
+        "y" : 24,
+        "r" : 14,
+        "priority" : 18,
+        "effortRank" : 13,
+        "changePronenessRank" : 24,
+        "color" : "rgba(131, 122, 75, 0.75)",
+        "borderColor" : "rgb(131, 122, 75)"
+      }, {
+        "id" : "FeedbackVertexSetComputer.java",
+        "label" : "FeedbackVertexSetComputer.java",
+        "x" : 4,
+        "y" : 14,
+        "r" : 14,
+        "priority" : 19,
+        "effortRank" : 4,
+        "changePronenessRank" : 14,
+        "color" : "rgba(125, 126, 77, 0.75)",
+        "borderColor" : "rgb(125, 126, 77)"
+      }, {
+        "id" : "ModulatorComputer.java",
+        "label" : "ModulatorComputer.java",
+        "x" : 6,
+        "y" : 16,
+        "r" : 13,
+        "priority" : 20,
+        "effortRank" : 6,
+        "changePronenessRank" : 16,
+        "color" : "rgba(119, 129, 78, 0.75)",
+        "borderColor" : "rgb(119, 129, 78)"
+      }, {
+        "id" : "TreewidthComputer.java",
+        "label" : "TreewidthComputer.java",
+        "x" : 10,
+        "y" : 20,
+        "r" : 13,
+        "priority" : 21,
+        "effortRank" : 10,
+        "changePronenessRank" : 20,
+        "color" : "rgba(113, 133, 80, 0.75)",
+        "borderColor" : "rgb(113, 133, 80)"
+      }, {
+        "id" : "ModulatorComputer.java",
+        "label" : "ModulatorComputer.java",
+        "x" : 7,
+        "y" : 16,
+        "r" : 12,
+        "priority" : 22,
+        "effortRank" : 7,
+        "changePronenessRank" : 16,
+        "color" : "rgba(106, 136, 81, 0.75)",
+        "borderColor" : "rgb(106, 136, 81)"
+      }, {
+        "id" : "ModulatorComputer.java",
+        "label" : "ModulatorComputer.java",
+        "x" : 8,
+        "y" : 16,
+        "r" : 12,
+        "priority" : 23,
+        "effortRank" : 8,
+        "changePronenessRank" : 16,
+        "color" : "rgba(100, 140, 82, 0.75)",
+        "borderColor" : "rgb(100, 140, 82)"
+      }, {
+        "id" : "ModulatorComputer.java",
+        "label" : "ModulatorComputer.java",
+        "x" : 8,
+        "y" : 16,
+        "r" : 11,
+        "priority" : 24,
+        "effortRank" : 8,
+        "changePronenessRank" : 16,
+        "color" : "rgba(94, 143, 84, 0.75)",
+        "borderColor" : "rgb(94, 143, 84)"
+      }, {
+        "id" : "CycleRemovalComputer.java",
+        "label" : "CycleRemovalComputer.java",
+        "x" : 9,
+        "y" : 17,
+        "r" : 11,
+        "priority" : 25,
+        "effortRank" : 9,
+        "changePronenessRank" : 17,
+        "color" : "rgba(88, 147, 85, 0.75)",
+        "borderColor" : "rgb(88, 147, 85)"
+      }, {
+        "id" : "MinimumFeedbackArcSetSolver.java",
+        "label" : "MinimumFeedbackArcSetSolver.java",
+        "x" : 4,
+        "y" : 9,
+        "r" : 10,
+        "priority" : 26,
+        "effortRank" : 4,
+        "changePronenessRank" : 9,
+        "color" : "rgba(82, 150, 86, 0.75)",
+        "borderColor" : "rgb(82, 150, 86)"
+      }, {
+        "id" : "MinimumFeedbackArcSetSolver.java",
+        "label" : "MinimumFeedbackArcSetSolver.java",
+        "x" : 4,
+        "y" : 9,
+        "r" : 9,
+        "priority" : 27,
+        "effortRank" : 4,
+        "changePronenessRank" : 9,
+        "color" : "rgba(76, 153, 88, 0.75)",
+        "borderColor" : "rgb(76, 153, 88)"
+      }, {
+        "id" : "LineDigraph.java",
+        "label" : "LineDigraph.java",
+        "x" : 8,
+        "y" : 13,
+        "r" : 9,
+        "priority" : 28,
+        "effortRank" : 8,
+        "changePronenessRank" : 13,
+        "color" : "rgba(70, 157, 89, 0.75)",
+        "borderColor" : "rgb(70, 157, 89)"
+      }, {
+        "id" : "ModulatorComputer.java",
+        "label" : "ModulatorComputer.java",
+        "x" : 11,
+        "y" : 16,
+        "r" : 8,
+        "priority" : 29,
+        "effortRank" : 11,
+        "changePronenessRank" : 16,
+        "color" : "rgba(64, 160, 91, 0.75)",
+        "borderColor" : "rgb(64, 160, 91)"
+      }, {
+        "id" : "FeedbackVertexSetComputer.java",
+        "label" : "FeedbackVertexSetComputer.java",
+        "x" : 10,
+        "y" : 14,
+        "r" : 8,
+        "priority" : 30,
+        "effortRank" : 10,
+        "changePronenessRank" : 14,
+        "color" : "rgba(57, 164, 92, 0.75)",
+        "borderColor" : "rgb(57, 164, 92)"
+      }, {
+        "id" : "ModulatorComputer.java",
+        "label" : "ModulatorComputer.java",
+        "x" : 12,
+        "y" : 16,
+        "r" : 7,
+        "priority" : 31,
+        "effortRank" : 12,
+        "changePronenessRank" : 16,
+        "color" : "rgba(51, 167, 93, 0.75)",
+        "borderColor" : "rgb(51, 167, 93)"
+      }, {
+        "id" : "MinimumFeedbackArcSetSolver.java",
+        "label" : "MinimumFeedbackArcSetSolver.java",
+        "x" : 7,
+        "y" : 9,
+        "r" : 7,
+        "priority" : 32,
+        "effortRank" : 7,
+        "changePronenessRank" : 9,
+        "color" : "rgba(45, 171, 95, 0.75)",
+        "borderColor" : "rgb(45, 171, 95)"
+      }, {
+        "id" : "FeedbackArcSetSolver.java",
+        "label" : "FeedbackArcSetSolver.java",
+        "x" : 4,
+        "y" : 2,
+        "r" : 6,
+        "priority" : 33,
+        "effortRank" : 4,
+        "changePronenessRank" : 2,
+        "color" : "rgba(39, 174, 96, 0.75)",
+        "borderColor" : "rgb(39, 174, 96)"
+      } ],
+      "xaxisLabel" : "Effort to refactor",
+      "yaxisLabel" : "Relative churn (impact)"
+    },
+    "table" : {
+      "headers" : [ "Class", "Method", "Priority", "Change Proneness Rank", "Effort Rank", "Most Recent Commit Date", "Commit Count" ],
+      "rows" : [ {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/metrics/GraphMetricsCollector.java\" target=\"_blank\">GraphMetricsCollector.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "finalizeMetrics()",
+          "align" : "left"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        }, {
+          "content" : "30",
+          "align" : "right"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        }, {
+          "content" : "9/5/26, 2:50 PM",
+          "align" : "right"
+        }, {
+          "content" : "8",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/change-proneness-ranker/src/main/java/org/hjug/git/GitLogReader.java\" target=\"_blank\">GitLogReader.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "captureChangeCountByCommitTimestamp()",
+          "align" : "left"
+        }, {
+          "content" : "2",
+          "align" : "right"
+        }, {
+          "content" : "29",
+          "align" : "right"
+        }, {
+          "content" : "2",
+          "align" : "right"
+        }, {
+          "content" : "9/14/26, 1:00 PM",
+          "align" : "right"
+        }, {
+          "content" : "21",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/test-resources/src/main/resources/AttributeHandlerAndSorter.java\" target=\"_blank\">AttributeHandlerAndSorter.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "perform(Unknown)",
+          "align" : "left"
+        }, {
+          "content" : "3",
+          "align" : "right"
+        }, {
+          "content" : "33",
+          "align" : "right"
+        }, {
+          "content" : "7",
+          "align" : "right"
+        }, {
+          "content" : "10/1/20, 8:46 AM",
+          "align" : "right"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/report/src/main/java/org/hjug/refactorfirst/report/ReportWriter.java\" target=\"_blank\">ReportWriter.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "openSecurePath()",
+          "align" : "left"
+        }, {
+          "content" : "4",
+          "align" : "right"
+        }, {
+          "content" : "28",
+          "align" : "right"
+        }, {
+          "content" : "4",
+          "align" : "right"
+        }, {
+          "content" : "9/5/26, 8:03 AM",
+          "align" : "right"
+        }, {
+          "content" : "10",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/metrics/DisharmonyDetector.java\" target=\"_blank\">DisharmonyDetector.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "detectFeatureEnvy(List&lt;ClassMetrics&gt;)",
+          "align" : "left"
+        }, {
+          "content" : "5",
+          "align" : "right"
+        }, {
+          "content" : "32",
+          "align" : "right"
+        }, {
+          "content" : "8",
+          "align" : "right"
+        }, {
+          "content" : "9/5/26, 1:41 PM",
+          "align" : "right"
+        }, {
+          "content" : "15",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/vertex/approximate/FeedbackVertexSetSolver.java\" target=\"_blank\">FeedbackVertexSetSolver.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "computeFractionalSolution()",
+          "align" : "left"
+        }, {
+          "content" : "6",
+          "align" : "right"
+        }, {
+          "content" : "25",
+          "align" : "right"
+        }, {
+          "content" : "2",
+          "align" : "right"
+        }, {
+          "content" : "8/26/26, 7:48 PM",
+          "align" : "right"
+        }, {
+          "content" : "4",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/report/src/main/java/org/hjug/refactorfirst/report/ReportWriter.java\" target=\"_blank\">ReportWriter.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "writeAtomically(Path,String)",
+          "align" : "left"
+        }, {
+          "content" : "7",
+          "align" : "right"
+        }, {
+          "content" : "28",
+          "align" : "right"
+        }, {
+          "content" : "5",
+          "align" : "right"
+        }, {
+          "content" : "9/5/26, 8:03 AM",
+          "align" : "right"
+        }, {
+          "content" : "10",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/graphbuilder/KotlinSourceFileGraphBuilder.java\" target=\"_blank\">KotlinSourceFileGraphBuilder.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "buildGraph(String,String,GraphBuilderConfig)",
+          "align" : "left"
+        }, {
+          "content" : "8",
+          "align" : "right"
+        }, {
+          "content" : "31",
+          "align" : "right"
+        }, {
+          "content" : "12",
+          "align" : "right"
+        }, {
+          "content" : "9/5/26, 1:25 PM",
+          "align" : "right"
+        }, {
+          "content" : "8",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/codebase-graph-builder/src/main/java/org/hjug/graphbuilder/metrics/MetricsVisitorLogic.java\" target=\"_blank\">MetricsVisitorLogic.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "handleMethodInvocation(MetricsVisitorState,GraphMetricsCollector,Unknown)",
+          "align" : "left"
+        }, {
+          "content" : "9",
+          "align" : "right"
+        }, {
+          "content" : "21",
+          "align" : "right"
+        }, {
+          "content" : "3",
+          "align" : "right"
+        }, {
+          "content" : "8/19/26, 7:20 PM",
+          "align" : "right"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/report/src/main/java/org/hjug/refactorfirst/report/ReportWriter.java\" target=\"_blank\">ReportWriter.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "writeAtomicallySecure(SecureDirectoryStream&lt;Path&gt;,Path,String)",
+          "align" : "left"
+        }, {
+          "content" : "10",
+          "align" : "right"
+        }, {
+          "content" : "28",
+          "align" : "right"
+        }, {
+          "content" : "10",
+          "align" : "right"
+        }, {
+          "content" : "9/5/26, 8:03 AM",
+          "align" : "right"
+        }, {
+          "content" : "10",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/vertex/kernelized/DirectedFeedbackVertexSetSolver.java\" target=\"_blank\">DirectedFeedbackVertexSetSolver.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "createMinimalBypass(V,Set&lt;V&gt;,Set&lt;E&gt;)",
+          "align" : "left"
+        }, {
+          "content" : "11",
+          "align" : "right"
+        }, {
+          "content" : "24",
+          "align" : "right"
+        }, {
+          "content" : "8",
+          "align" : "right"
+        }, {
+          "content" : "8/26/26, 7:48 PM",
+          "align" : "right"
+        }, {
+          "content" : "3",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/vertex/kernelized/DirectedFeedbackVertexSetSolver.java\" target=\"_blank\">DirectedFeedbackVertexSetSolver.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "findBypassChain(V,Set&lt;V&gt;)",
+          "align" : "left"
+        }, {
+          "content" : "12",
+          "align" : "right"
+        }, {
+          "content" : "24",
+          "align" : "right"
+        }, {
+          "content" : "9",
+          "align" : "right"
+        }, {
+          "content" : "8/26/26, 7:48 PM",
+          "align" : "right"
+        }, {
+          "content" : "3",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/vertex/kernelized/TreewidthComputer.java\" target=\"_blank\">TreewidthComputer.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "computeEta(Unknown,Set&lt;V&gt;)",
+          "align" : "left"
+        }, {
+          "content" : "13",
+          "align" : "right"
+        }, {
+          "content" : "20",
+          "align" : "right"
+        }, {
+          "content" : "7",
+          "align" : "right"
+        }, {
+          "content" : "1/18/38, 9:14 PM",
+          "align" : "right"
+        }, {
+          "content" : "0",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/vertex/kernelized/ModulatorComputer.java\" target=\"_blank\">ModulatorComputer.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "computeBetweennessCentrality(Unknown)",
+          "align" : "left"
+        }, {
+          "content" : "14",
+          "align" : "right"
+        }, {
+          "content" : "16",
+          "align" : "right"
+        }, {
+          "content" : "4",
+          "align" : "right"
+        }, {
+          "content" : "12/18/25, 11:00 AM",
+          "align" : "right"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/vertex/kernelized/ModulatorComputer.java\" target=\"_blank\">ModulatorComputer.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "computeGreedyDegreeModulator(Unknown,int,int)",
+          "align" : "left"
+        }, {
+          "content" : "15",
+          "align" : "right"
+        }, {
+          "content" : "16",
+          "align" : "right"
+        }, {
+          "content" : "4",
+          "align" : "right"
+        }, {
+          "content" : "12/18/25, 11:00 AM",
+          "align" : "right"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/vertex/kernelized/ModulatorComputer.java\" target=\"_blank\">ModulatorComputer.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "computeFeedbackVertexSetModulator(Unknown,int,int)",
+          "align" : "left"
+        }, {
+          "content" : "16",
+          "align" : "right"
+        }, {
+          "content" : "16",
+          "align" : "right"
+        }, {
+          "content" : "5",
+          "align" : "right"
+        }, {
+          "content" : "12/18/25, 11:00 AM",
+          "align" : "right"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/vertex/kernelized/TreewidthComputer.java\" target=\"_blank\">TreewidthComputer.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "greedyTriangulationTreewidth(Unknown)",
+          "align" : "left"
+        }, {
+          "content" : "17",
+          "align" : "right"
+        }, {
+          "content" : "20",
+          "align" : "right"
+        }, {
+          "content" : "9",
+          "align" : "right"
+        }, {
+          "content" : "1/18/38, 9:14 PM",
+          "align" : "right"
+        }, {
+          "content" : "0",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/vertex/kernelized/DirectedFeedbackVertexSetSolver.java\" target=\"_blank\">DirectedFeedbackVertexSetSolver.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "addBypassEdges(V,Set&lt;V&gt;)",
+          "align" : "left"
+        }, {
+          "content" : "18",
+          "align" : "right"
+        }, {
+          "content" : "24",
+          "align" : "right"
+        }, {
+          "content" : "13",
+          "align" : "right"
+        }, {
+          "content" : "8/26/26, 7:48 PM",
+          "align" : "right"
+        }, {
+          "content" : "3",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/vertex/kernelized/FeedbackVertexSetComputer.java\" target=\"_blank\">FeedbackVertexSetComputer.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "stronglyConnectedComponentsBasedFVS(Unknown)",
+          "align" : "left"
+        }, {
+          "content" : "19",
+          "align" : "right"
+        }, {
+          "content" : "14",
+          "align" : "right"
+        }, {
+          "content" : "4",
+          "align" : "right"
+        }, {
+          "content" : "12/18/25, 11:00 AM",
+          "align" : "right"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/vertex/kernelized/ModulatorComputer.java\" target=\"_blank\">ModulatorComputer.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "computeSingleSourceBetweennessContributionsParallel(Unknown,V)",
+          "align" : "left"
+        }, {
+          "content" : "20",
+          "align" : "right"
+        }, {
+          "content" : "16",
+          "align" : "right"
+        }, {
+          "content" : "6",
+          "align" : "right"
+        }, {
+          "content" : "12/18/25, 11:00 AM",
+          "align" : "right"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/vertex/kernelized/TreewidthComputer.java\" target=\"_blank\">TreewidthComputer.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "fillInHeuristicTreewidth(Unknown)",
+          "align" : "left"
+        }, {
+          "content" : "21",
+          "align" : "right"
+        }, {
+          "content" : "20",
+          "align" : "right"
+        }, {
+          "content" : "10",
+          "align" : "right"
+        }, {
+          "content" : "1/18/38, 9:14 PM",
+          "align" : "right"
+        }, {
+          "content" : "0",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/vertex/kernelized/ModulatorComputer.java\" target=\"_blank\">ModulatorComputer.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "originalComputeBetweennessCentrality(Unknown)",
+          "align" : "left"
+        }, {
+          "content" : "22",
+          "align" : "right"
+        }, {
+          "content" : "16",
+          "align" : "right"
+        }, {
+          "content" : "7",
+          "align" : "right"
+        }, {
+          "content" : "12/18/25, 11:00 AM",
+          "align" : "right"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/vertex/kernelized/ModulatorComputer.java\" target=\"_blank\">ModulatorComputer.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "computeSingleSourceBetweennessContributions(Unknown,V)",
+          "align" : "left"
+        }, {
+          "content" : "23",
+          "align" : "right"
+        }, {
+          "content" : "16",
+          "align" : "right"
+        }, {
+          "content" : "8",
+          "align" : "right"
+        }, {
+          "content" : "12/18/25, 11:00 AM",
+          "align" : "right"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/vertex/kernelized/ModulatorComputer.java\" target=\"_blank\">ModulatorComputer.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "computeBetweennessCentralityAdaptive(Unknown)",
+          "align" : "left"
+        }, {
+          "content" : "24",
+          "align" : "right"
+        }, {
+          "content" : "16",
+          "align" : "right"
+        }, {
+          "content" : "8",
+          "align" : "right"
+        }, {
+          "content" : "12/18/25, 11:00 AM",
+          "align" : "right"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/CycleRemovalComputer.java\" target=\"_blank\">CycleRemovalComputer.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "computeCycleRemovalInformation(Unknown)",
+          "align" : "left"
+        }, {
+          "content" : "25",
+          "align" : "right"
+        }, {
+          "content" : "17",
+          "align" : "right"
+        }, {
+          "content" : "9",
+          "align" : "right"
+        }, {
+          "content" : "6/16/26, 7:10 PM",
+          "align" : "right"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/arc/exact/MinimumFeedbackArcSetSolver.java\" target=\"_blank\">MinimumFeedbackArcSetSolver.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "findShortestPath(Unknown,V)",
+          "align" : "left"
+        }, {
+          "content" : "26",
+          "align" : "right"
+        }, {
+          "content" : "9",
+          "align" : "right"
+        }, {
+          "content" : "4",
+          "align" : "right"
+        }, {
+          "content" : "1/18/38, 9:14 PM",
+          "align" : "right"
+        }, {
+          "content" : "0",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/arc/exact/MinimumFeedbackArcSetSolver.java\" target=\"_blank\">MinimumFeedbackArcSetSolver.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "solve()",
+          "align" : "left"
+        }, {
+          "content" : "27",
+          "align" : "right"
+        }, {
+          "content" : "9",
+          "align" : "right"
+        }, {
+          "content" : "4",
+          "align" : "right"
+        }, {
+          "content" : "1/18/38, 9:14 PM",
+          "align" : "right"
+        }, {
+          "content" : "0",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/arc/pageRank/LineDigraph.java\" target=\"_blank\">LineDigraph.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "topologicalSort()",
+          "align" : "left"
+        }, {
+          "content" : "28",
+          "align" : "right"
+        }, {
+          "content" : "13",
+          "align" : "right"
+        }, {
+          "content" : "8",
+          "align" : "right"
+        }, {
+          "content" : "12/18/25, 11:00 AM",
+          "align" : "right"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/vertex/kernelized/ModulatorComputer.java\" target=\"_blank\">ModulatorComputer.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "computeTreewidthDecompositionModulator(Unknown,int,int)",
+          "align" : "left"
+        }, {
+          "content" : "29",
+          "align" : "right"
+        }, {
+          "content" : "16",
+          "align" : "right"
+        }, {
+          "content" : "11",
+          "align" : "right"
+        }, {
+          "content" : "12/18/25, 11:00 AM",
+          "align" : "right"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/vertex/kernelized/FeedbackVertexSetComputer.java\" target=\"_blank\">FeedbackVertexSetComputer.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "degreeBasedFeedbackVertexSet(Unknown)",
+          "align" : "left"
+        }, {
+          "content" : "30",
+          "align" : "right"
+        }, {
+          "content" : "14",
+          "align" : "right"
+        }, {
+          "content" : "10",
+          "align" : "right"
+        }, {
+          "content" : "12/18/25, 11:00 AM",
+          "align" : "right"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/vertex/kernelized/ModulatorComputer.java\" target=\"_blank\">ModulatorComputer.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "computeBottleneckVertexModulator(Unknown,int,int)",
+          "align" : "left"
+        }, {
+          "content" : "31",
+          "align" : "right"
+        }, {
+          "content" : "16",
+          "align" : "right"
+        }, {
+          "content" : "12",
+          "align" : "right"
+        }, {
+          "content" : "12/18/25, 11:00 AM",
+          "align" : "right"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/arc/exact/MinimumFeedbackArcSetSolver.java\" target=\"_blank\">MinimumFeedbackArcSetSolver.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "computeInitialHeuristicSolution()",
+          "align" : "left"
+        }, {
+          "content" : "32",
+          "align" : "right"
+        }, {
+          "content" : "9",
+          "align" : "right"
+        }, {
+          "content" : "7",
+          "align" : "right"
+        }, {
+          "content" : "1/18/38, 9:14 PM",
+          "align" : "right"
+        }, {
+          "content" : "0",
+          "align" : "right"
+        } ]
+      }, {
+        "cells" : [ {
+          "content" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/graph-algorithms/src/main/java/org/hjug/feedback/arc/approximate/FeedbackArcSetSolver.java\" target=\"_blank\">FeedbackArcSetSolver.java</a>",
+          "align" : "left"
+        }, {
+          "content" : "solve()",
+          "align" : "left"
+        }, {
+          "content" : "33",
+          "align" : "right"
+        }, {
+          "content" : "2",
+          "align" : "right"
+        }, {
+          "content" : "4",
+          "align" : "right"
+        }, {
+          "content" : "12/18/25, 11:00 AM",
+          "align" : "right"
+        }, {
+          "content" : "1",
+          "align" : "right"
+        } ]
+      } ]
+    }
+  } ],
+  "classCycles" : {
+    "hasCycles" : true,
+    "summary" : [ {
+      "cycleName" : "ReportWriter$SecureDirectoryOps",
+      "priority" : 1,
+      "classCount" : 4,
+      "relationshipCount" : 7
+    } ],
+    "largestCycle" : {
+      "hasCycleMap" : true,
+      "cycleName" : "ReportWriter$SecureDirectoryOps",
+      "cycleIdentifier" : "graph_ReportWriter_SecureDirectoryOps_g0qpeh",
+      "classCount" : 4,
+      "relationshipCount" : 7,
+      "dot" : "strict digraph G {\nReportWriter -> org_hjug_refactorfirst_report_ReportWriter_SecureDirectoryOps [ label = \"3\" weight = \"3\" ];\norg_hjug_refactorfirst_report_ReportWriter_SecureDirectoryOpsImpl -> org_hjug_refactorfirst_report_ReportWriter_SecureDirectoryOps [ label = \"1\" weight = \"1\" ];\norg_hjug_refactorfirst_report_ReportWriter_FallbackDirectoryOps -> org_hjug_refactorfirst_report_ReportWriter_SecureDirectoryOps [ label = \"1\" weight = \"1\" ];\norg_hjug_refactorfirst_report_ReportWriter_SecureDirectoryOps -> org_hjug_refactorfirst_report_ReportWriter_SecureDirectoryOpsImpl [ label = \"1\" weight = \"1\" color = \"red\" ];\norg_hjug_refactorfirst_report_ReportWriter_SecureDirectoryOps -> org_hjug_refactorfirst_report_ReportWriter_FallbackDirectoryOps [ label = \"1\" weight = \"1\" color = \"red\" ];\norg_hjug_refactorfirst_report_ReportWriter_FallbackDirectoryOps -> ReportWriter [ label = \"1\" weight = \"1\" ];\norg_hjug_refactorfirst_report_ReportWriter_SecureDirectoryOpsImpl -> ReportWriter [ label = \"1\" weight = \"1\" ];\norg_hjug_refactorfirst_report_ReportWriter_SecureDirectoryOps [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/report/src/main/java/org/hjug/refactorfirst/report/ReportWriter.java\" target=\"_blank\" label=\"ReportWriter$SecureDirectoryOps\"];\norg_hjug_refactorfirst_report_ReportWriter_FallbackDirectoryOps [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/report/src/main/java/org/hjug/refactorfirst/report/ReportWriter.java\" target=\"_blank\" label=\"ReportWriter$FallbackDirectoryOps\"];\nReportWriter [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/report/src/main/java/org/hjug/refactorfirst/report/ReportWriter.java\" target=\"_blank\" color=red style=filled];\norg_hjug_refactorfirst_report_ReportWriter_SecureDirectoryOpsImpl [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/report/src/main/java/org/hjug/refactorfirst/report/ReportWriter.java\" target=\"_blank\" label=\"ReportWriter$SecureDirectoryOpsImpl\"];\n}",
+      "dotThresholdExceeded" : false,
+      "breakdown" : [ {
+        "className" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/report/src/main/java/org/hjug/refactorfirst/report/ReportWriter.java\" target=\"_blank\">ReportWriter$SecureDirectoryOps</a>",
+        "edgesHtml" : "<strong>ReportWriter$SecureDirectoryOps &#8594; ReportWriter$SecureDirectoryOpsImpl : 1<strong>*</strong></strong><br/>\n<strong>ReportWriter$SecureDirectoryOps &#8594; ReportWriter$FallbackDirectoryOps : 1<strong>*</strong></strong><br/>\n"
+      }, {
+        "className" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/report/src/main/java/org/hjug/refactorfirst/report/ReportWriter.java\" target=\"_blank\">ReportWriter$FallbackDirectoryOps</a>",
+        "edgesHtml" : "ReportWriter$FallbackDirectoryOps &#8594; ReportWriter$SecureDirectoryOps : 1<br/>\nReportWriter$FallbackDirectoryOps &#8594; ReportWriter : 1<br/>\n"
+      }, {
+        "className" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/report/src/main/java/org/hjug/refactorfirst/report/ReportWriter.java\" target=\"_blank\">ReportWriter</a><strong>*</strong>",
+        "edgesHtml" : "ReportWriter &#8594; ReportWriter$SecureDirectoryOps : 3<br/>\n"
+      }, {
+        "className" : "<a href=\"https://github.com/refactorfirst/RefactorFirst/blob/79f1681d15f055311cf8722104b444d7cb33d045/report/src/main/java/org/hjug/refactorfirst/report/ReportWriter.java\" target=\"_blank\">ReportWriter$SecureDirectoryOpsImpl</a>",
+        "edgesHtml" : "ReportWriter$SecureDirectoryOpsImpl &#8594; ReportWriter$SecureDirectoryOps : 1<br/>\nReportWriter$SecureDirectoryOpsImpl &#8594; ReportWriter : 1<br/>\n"
+      } ]
+    }
+  }
+}
