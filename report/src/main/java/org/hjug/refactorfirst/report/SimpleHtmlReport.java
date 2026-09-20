@@ -222,7 +222,7 @@ public class SimpleHtmlReport {
             reportHtml = stringBuilder.toString();
         }
         writeReportToDisk(outputDirectory, filename, reportHtml);
-        log.info("Done! View the report at target/site/{}", filename);
+        log.info("Done! View the report at {}/{}", outputDirectory, filename);
     }
 
     /** Analyzes a project and renders the findings as a complete HTML report. */

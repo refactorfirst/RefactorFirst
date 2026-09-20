@@ -12,11 +12,18 @@ Code map viewers are powered by [3D Force Graph](https://vasturiano.github.io/3d
 <br>If there are more than 4000 classes + relationships, a simplified 3D viewer will be available to avoid page load slowdowns.  Features will be toggleable in the 3D UI in a future release.
 
 ## How to Use RefactorFirst Quickly
-Run the command below in your Java project's top-level directory.  You'll need Git, Java 11 (or newer) and Maven 3 installed.  This command will analyze Maven and non-Maven projects:
+Run one of the commands below in your Java project's top-level directory.  You'll need Git, Java 17 (or newer) and Maven 3 or Gradle installed.  This command will analyze Maven and non-Maven projects:
 ```bash
 mvn org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.10.0:htmlReport
 ```
-View the report at ```target/site/refactor-first-report.html``` in your project.
+```bash
+./gradlew --init-script refactorFirstPlugin.gradle refactorFirstHtmlReport
+```
+
+View the report at 
+```target/site/refactor-first-report.html``` for Maven projects or 
+```build/reports/refactor-first/refactor-first-report.html``` for Gradle projects.
+
 Full instructions for various usage scenarios are below.
 Great effort has been taken to make both the analysis and page rendering times as fast as possible.
 
@@ -33,7 +40,7 @@ See [DIAGRAM.md](./graph-algorithms/src/main/java/org/hjug/feedback/arc/pageRank
 
 ### How to understand the Relationship Removal Priority table
 
-The Relationship Removal Priority tables shows the most optimal relationships to remove from your codebase to remove all cycles.  
+The Relationship Removal Priority tables show the most optimal relationships to remove from your codebase to remove all cycles.  
 The table is sorted by the number of cycles that a relationship exists in and then the change proneness of the classes in the relationship.
 - Classes that should be broken apart / removed from the codebase have a *.  
 - If only one class is bold, the shared functionality should be moved to the non-bold class or classes.  
@@ -100,6 +107,34 @@ A RefactorFirst report will show up in the site report when you run ```mvn site`
         ...
     </plugins>
 </reporting>
+```
+
+## Gradle Plugin
+
+Add the plugin to a Gradle project and configure it in the same way as the Maven plugin:
+
+```kotlin
+plugins {
+    id("java")
+    id("org.hjug.refactorfirst") version "0.11.0-SNAPSHOT"
+}
+
+refactorFirst {
+    showDetails.set(false)
+    backEdgeAnalysisCount.set(50)
+    analyzeCycles.set(true)
+    excludeTests.set(true)
+    minifyHtml.set(false)
+    outputDirectory.set(file("build/reports/refactor-first"))
+}
+```
+
+Then run:
+
+```bash
+./gradlew refactorFirstHtmlReport
+./gradlew refactorFirstCsvReport
+./gradlew refactorFirstJsonReport
 ```
 
 ## Configuration Options
@@ -185,7 +220,6 @@ There is still much to be done.  Your feedback and collaboration would be greatl
 If you find this plugin useful, please star this repository and share with your friends & colleagues and on social media.
 
 ## Future Plans
-* Add a Gradle plugin.
 * Incorporate Unit Test coverage metrics to quickly identify the safety of refactoring classes.
 * Incorporate additional meaningful metrics.
 

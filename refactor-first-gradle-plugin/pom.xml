@@ -7,15 +7,17 @@
     <parent>
         <groupId>org.hjug.refactorfirst</groupId>
         <artifactId>refactor-first</artifactId>
-        <version>0.2.0-SNAPSHOT</version>
+        <version>0.11.0-SNAPSHOT</version>
     </parent>
 
-    <groupId>org.hjug.refactorfirst.plugin</groupId>
-    <artifactId>refactor-first-gradle-plugin</artifactId>
+    <groupId>org.hjug.refactorfirst</groupId>
+    <artifactId>org.hjug.refactorfirst.gradle.plugin</artifactId>
     <packaging>pom</packaging>
 
+    <name>RefactorFirst Gradle Plugin</name>
+
     <properties>
-        <gradle.executable>./gradlew</gradle.executable>
+        <gradle.executable>${project.basedir}/gradlew</gradle.executable>
         <gradle.tasks>build</gradle.tasks>
         <maven.main.skip>true</maven.main.skip>
         <maven.test.skip>true</maven.test.skip>
@@ -25,6 +27,10 @@
         <dependency>
             <groupId>org.hjug.refactorfirst.graphdatagenerator</groupId>
             <artifactId>graph-data-generator</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.hjug.refactorfirst.report</groupId>
+            <artifactId>report</artifactId>
         </dependency>
     </dependencies>
 
@@ -92,7 +98,7 @@
                 </os>
             </activation>
             <properties>
-                <gradle.executable>gradlew.bat</gradle.executable>
+                <gradle.executable>${project.basedir}/gradlew.bat</gradle.executable>
             </properties>
         </profile>
     </profiles>

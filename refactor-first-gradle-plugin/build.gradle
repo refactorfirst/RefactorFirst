@@ -2,15 +2,14 @@ plugins {
     id 'java'
     id 'java-gradle-plugin'
     id 'maven-publish'
-    id 'com.gradleup.shadow' version '9.1.0'
 }
 
-group = 'org.hjug.refactorfirst.plugin'
-version = '0.7.2-SNAPSHOT'
+group = 'org.hjug.refactorfirst'
+version = '0.11.0-SNAPSHOT'
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(11)
+        languageVersion = JavaLanguageVersion.of(17)
     }
 }
 
@@ -22,7 +21,18 @@ repositories {
 
 dependencies {
     compileOnly gradleApi()
-    implementation 'org.hjug.refactorfirst.report:report:0.7.2-SNAPSHOT'
+    implementation "org.hjug.refactorfirst.graphdatagenerator:graph-data-generator:${version}"
+    implementation "org.hjug.refactorfirst.report:report:${version}"
+
+    testImplementation platform('org.junit:junit-bom:5.10.2')
+    testImplementation 'org.junit.jupiter:junit-jupiter-api'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testImplementation gradleTestKit()
+}
+
+tasks.withType(Test).configureEach {
+    useJUnitPlatform()
 }
 
 jar {
@@ -33,17 +43,57 @@ jar {
     }
 }
 
-shadowJar {
-    minimizeJar = true
-}
-
 gradlePlugin {
     plugins {
         refactorFirstPlugin {
             id = 'org.hjug.refactor-first'
             displayName = 'RefactorFirst'
-            description = 'Plugin that identifies God classes in a codebase and suggests which classes should be refactored first.'
+            description = 'Plugin that identifies God classes and other code disharmonies in a codebase and suggests which classes should be refactored first.'
             implementationClass = 'org.hjug.gradlereport.RefactorFirstPlugin'
+        }
+    }
+}
+
+publishing {
+    publications {
+        // The java-gradle-plugin automatically creates pluginMaven publication
+        // We only need to configure the POM metadata for the pluginMaven publication
+        pluginMaven(MavenPublication) {
+            pom {
+                name = 'RefactorFirst Gradle Plugin'
+                description = 'Plugin that identifies God classes and other code disharmonies in a codebase and suggests which classes should be refactored first.'
+                url = 'https://github.com/refactorfirst/RefactorFirst'
+
+                licenses {
+                    license {
+                        name = 'Apache License 2.0'
+                        url = 'http://www.apache.org/licenses/'
+                    }
+                }
+
+                developers {
+                    developer {
+                        name = 'Jim Bethancourt'
+                        email = 'jimbethancourt@gmail.com'
+                    }
+                }
+
+                scm {
+                    connection = 'scm:git:https://github.com/refactorfirst/RefactorFirst'
+                    developerConnection = 'scm:git:https://github.com/refactorfirst/RefactorFirst'
+                    url = 'https://github.com/refactorfirst/RefactorFirst'
+                }
+            }
+        }
+    }
+}
+
+// Configure the plugin marker publication to use the desired group ID
+afterEvaluate {
+    publishing.publications.withType(MavenPublication).configureEach {
+        if (name == 'refactorFirstPluginPluginMarkerMaven') {
+            groupId = 'org.hjug.refactorfirst'
+            artifactId = 'org.hjug.refactorfirst.gradle.plugin'
         }
     }
 }
