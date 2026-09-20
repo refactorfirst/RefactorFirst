@@ -4,15 +4,13 @@ import java.io.File;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
-import org.gradle.api.tasks.CacheableTask;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
-import org.hjug.refactorfirst.report.SimpleHtmlReport;
+import org.hjug.refactorfirst.report.HtmlReport;
 
-@CacheableTask
 public abstract class HtmlReportTask extends DefaultTask {
     @Internal
     public abstract Property<GradleProjectAdapter> getProjectAdapter();
@@ -76,8 +74,8 @@ public abstract class HtmlReportTask extends DefaultTask {
             throw new RefactorFirstPluginException("backEdgeAnalysisCount must be >= 0, got: " + backEdgeAnalysisCount);
         }
 
-        System.out.println("Creating SimpleHtmlReport instance...");
-        SimpleHtmlReport htmlReport = new SimpleHtmlReport();
+        System.out.println("Creating HtmlReport instance...");
+        HtmlReport htmlReport = new HtmlReport();
 
         System.out.println("Executing report generation with backEdgeAnalysisCount=" + backEdgeAnalysisCount);
         htmlReport.execute(

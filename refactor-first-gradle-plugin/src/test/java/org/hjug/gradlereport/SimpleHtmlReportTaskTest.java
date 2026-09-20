@@ -7,15 +7,15 @@ import org.gradle.testfixtures.ProjectBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class HtmlReportTaskTest {
+class SimpleHtmlReportTaskTest {
     private Project project;
-    private HtmlReportTask task;
+    private SimpleHtmlReportTask task;
 
     @BeforeEach
     void setUp() {
         project = ProjectBuilder.builder().build();
         task = project.getTasks()
-                .register("refactorFirstHtmlReport", HtmlReportTask.class)
+                .register("refactorFirstSimpleHtmlReport", SimpleHtmlReportTask.class)
                 .get();
     }
 

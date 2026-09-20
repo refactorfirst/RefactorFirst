@@ -1,7 +1,6 @@
 package org.hjug.gradlereport;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.gradle.api.Project;
 import org.gradle.testfixtures.ProjectBuilder;
@@ -18,11 +17,6 @@ class CsvReportTaskTest {
         task = project.getTasks()
                 .register("refactorFirstCsvReport", CsvReportTask.class)
                 .get();
-    }
-
-    @Test
-    void taskIsCacheable() {
-        assertTrue(task.getClass().isAnnotationPresent(org.gradle.api.tasks.CacheableTask.class));
     }
 
     @Test

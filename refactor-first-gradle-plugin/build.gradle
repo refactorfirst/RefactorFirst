@@ -46,7 +46,7 @@ jar {
 gradlePlugin {
     plugins {
         refactorFirstPlugin {
-            id = 'org.hjug.refactor-first'
+            id = 'org.hjug.refactorfirst'
             displayName = 'RefactorFirst'
             description = 'Plugin that identifies God classes and other code disharmonies in a codebase and suggests which classes should be refactored first.'
             implementationClass = 'org.hjug.gradlereport.RefactorFirstPlugin'
