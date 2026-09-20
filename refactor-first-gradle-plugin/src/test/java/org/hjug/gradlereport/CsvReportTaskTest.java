@@ -12,6 +12,7 @@ class CsvReportTaskTest {
     private Project project;
     private CsvReportTask task;
 
+    /** Creates a CSV report task for each test. */
     @BeforeEach
     void setUp() {
         project = ProjectBuilder.builder().build();
@@ -20,36 +21,43 @@ class CsvReportTaskTest {
                 .get();
     }
 
+    /** Verifies the task supports Gradle build caching. */
     @Test
     void taskIsCacheable() {
         assertTrue(task.getClass().isAnnotationPresent(org.gradle.api.tasks.CacheableTask.class));
     }
 
+    /** Verifies the task exposes its output file property. */
     @Test
     void taskHasOutputFileProperty() {
         assertNotNull(task.getReportFile());
     }
 
+    /** Verifies the task exposes its project adapter property. */
     @Test
     void taskHasProjectAdapterProperty() {
         assertNotNull(task.getProjectAdapter());
     }
 
+    /** Verifies the task exposes its project name property. */
     @Test
     void taskHasProjectNameProperty() {
         assertNotNull(task.getProjectName());
     }
 
+    /** Verifies the task exposes its project version property. */
     @Test
     void taskHasProjectVersionProperty() {
         assertNotNull(task.getProjectVersion());
     }
 
+    /** Verifies the task exposes its detail flag property. */
     @Test
     void taskHasShowDetailsProperty() {
         assertNotNull(task.getShowDetails());
     }
 
+    /** Verifies the task exposes its output directory property. */
     @Test
     void taskHasOutputDirectoryProperty() {
         assertNotNull(task.getOutputDirectory());

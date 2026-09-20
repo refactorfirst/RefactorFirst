@@ -14,41 +14,53 @@ import org.hjug.refactorfirst.report.SimpleHtmlReport;
 
 @CacheableTask
 public abstract class SimpleHtmlReportTask extends DefaultTask {
+    /** Returns the project information used while generating the report. */
     @Internal
     public abstract Property<GradleProjectAdapter> getProjectAdapter();
 
+    /** Returns the project name included in the report. */
     @Input
     public abstract Property<String> getProjectName();
 
+    /** Returns the project version included in the report. */
     @Input
     public abstract Property<String> getProjectVersion();
 
+    /** Returns the maximum number of cycle back edges to analyze. */
     @Input
     public abstract Property<Integer> getBackEdgeAnalysisCount();
 
+    /** Returns whether cycle analysis is enabled. */
     @Input
     public abstract Property<Boolean> getAnalyzeCycles();
 
+    /** Returns whether detailed findings should be included. */
     @Input
     public abstract Property<Boolean> getShowDetails();
 
+    /** Returns whether the generated HTML should be minified. */
     @Input
     public abstract Property<Boolean> getMinifyHtml();
 
+    /** Returns whether test sources should be excluded from analysis. */
     @Input
     public abstract Property<Boolean> getExcludeTests();
 
+    /** Returns the optional test source directory. */
     @Input
     @Optional
     public abstract Property<String> getTestSourceDirectory();
 
+    /** Returns the optional report output directory. */
     @Input
     @Optional
     public abstract Property<String> getOutputDirectory();
 
+    /** Returns the file produced by this task. */
     @OutputFile
     public abstract RegularFileProperty getReportFile();
 
+    /** Generates the simplified HTML report using the configured task inputs. */
     @TaskAction
     public void generate() {
         System.out.println("Starting RefactorFirst Simple HTML report generation...");

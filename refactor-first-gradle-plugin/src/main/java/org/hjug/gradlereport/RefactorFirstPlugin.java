@@ -5,6 +5,7 @@ import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 
 public class RefactorFirstPlugin implements Plugin<Project> {
+    /** Registers the RefactorFirst extension and report tasks. */
     @Override
     public void apply(Project project) {
         project.getPluginManager().apply("java");
@@ -93,6 +94,7 @@ public class RefactorFirstPlugin implements Plugin<Project> {
         });
     }
 
+    /** Returns a project-relative output path, or the legacy default for external paths. */
     public static String relativizeToProject(File baseDir, File outputDir) {
         String basePath = baseDir.getAbsolutePath();
         String outPath = outputDir.getAbsolutePath();

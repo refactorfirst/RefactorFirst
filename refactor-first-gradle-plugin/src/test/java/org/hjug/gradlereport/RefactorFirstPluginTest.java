@@ -12,11 +12,13 @@ import org.junit.jupiter.api.Test;
 class RefactorFirstPluginTest {
     private Project project;
 
+    /** Creates a Gradle project for each test. */
     @BeforeEach
     void setUp() {
         project = ProjectBuilder.builder().build();
     }
 
+    /** Verifies applying the plugin creates its extension. */
     @Test
     void pluginCreatesExtension() {
         new RefactorFirstPlugin().apply(project);
@@ -24,6 +26,7 @@ class RefactorFirstPluginTest {
         assertNotNull(project.getExtensions().findByName("refactorFirst"));
     }
 
+    /** Verifies applying the plugin registers the HTML task. */
     @Test
     void pluginRegistersHtmlReportTask() {
         new RefactorFirstPlugin().apply(project);
@@ -32,6 +35,7 @@ class RefactorFirstPluginTest {
         assertNotNull(task);
     }
 
+    /** Verifies the registered extension uses its defaults. */
     @Test
     void extensionHasDefaultValues() {
         new RefactorFirstPlugin().apply(project);
@@ -42,6 +46,7 @@ class RefactorFirstPluginTest {
         assertEquals(50, extension.getBackEdgeAnalysisCount().get());
     }
 
+    /** Verifies applying the plugin registers the CSV task. */
     @Test
     void pluginRegistersCsvReportTask() {
         new RefactorFirstPlugin().apply(project);
@@ -50,6 +55,7 @@ class RefactorFirstPluginTest {
         assertNotNull(task);
     }
 
+    /** Verifies applying the plugin registers the JSON task. */
     @Test
     void pluginRegistersJsonReportTask() {
         new RefactorFirstPlugin().apply(project);

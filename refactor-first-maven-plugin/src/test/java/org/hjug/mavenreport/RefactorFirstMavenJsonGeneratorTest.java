@@ -42,6 +42,7 @@ class RefactorFirstMavenJsonGeneratorTest {
                 "JSON report must not be written under the build directory");
     }
 
+    /** Creates a Maven project rooted at the supplied directory. */
     private static MavenProject projectAt(Path baseDirectory) {
         Model model = new Model();
         model.setPomFile(new File(baseDirectory.toFile(), "pom.xml"));
@@ -50,12 +51,14 @@ class RefactorFirstMavenJsonGeneratorTest {
         return project;
     }
 
+    /** Assigns a private generator field for test setup. */
     private static void setField(Object target, String name, Object value) throws Exception {
         Field field = RefactorFirstMavenJsonGenerator.class.getDeclaredField(name);
         field.setAccessible(true);
         field.set(target, value);
     }
 
+    /** Assigns a private generator field when that field exists. */
     private static void setFieldIfPresent(Object target, String name, Object value) throws Exception {
         try {
             setField(target, name, value);

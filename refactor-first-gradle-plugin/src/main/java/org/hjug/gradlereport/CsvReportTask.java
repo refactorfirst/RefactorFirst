@@ -14,25 +14,32 @@ import org.hjug.refactorfirst.report.CsvReport;
 
 @CacheableTask
 public abstract class CsvReportTask extends DefaultTask {
+    /** Returns the project information used while generating the report. */
     @Internal
     public abstract Property<GradleProjectAdapter> getProjectAdapter();
 
+    /** Returns the project name included in the report. */
     @Input
     public abstract Property<String> getProjectName();
 
+    /** Returns the project version included in the report. */
     @Input
     public abstract Property<String> getProjectVersion();
 
+    /** Returns whether detailed findings should be included. */
     @Input
     public abstract Property<Boolean> getShowDetails();
 
+    /** Returns the optional report output directory. */
     @Input
     @Optional
     public abstract Property<String> getOutputDirectory();
 
+    /** Returns the file produced by this task. */
     @OutputFile
     public abstract RegularFileProperty getReportFile();
 
+    /** Generates the CSV report using the configured task inputs. */
     @TaskAction
     public void generate() {
         System.out.println("Starting RefactorFirst CSV report generation...");

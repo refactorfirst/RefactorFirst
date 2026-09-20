@@ -179,6 +179,7 @@ public class SimpleHtmlReport {
             .setMinifyCss(true)
             .build();
 
+    /** Analyzes a project and writes the resulting HTML report to disk. */
     @SneakyThrows
     public void execute(
             int edgeAnalysisCount,
