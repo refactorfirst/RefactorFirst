@@ -15,12 +15,14 @@ class GradleProjectAdapterTest {
     private Project project;
     private RefactorFirstExtension extension;
 
+    /** Creates a Gradle project and extension for each test. */
     @BeforeEach
     void setUp() {
         project = ProjectBuilder.builder().build();
         extension = project.getExtensions().create("refactorFirst", RefactorFirstExtension.class);
     }
 
+    /** Verifies main sources are included in the adapter. */
     @Test
     void getSourceDirectoriesReturnsMainSourceSet() {
         extension.getExcludeTests().set(true);
@@ -31,6 +33,7 @@ class GradleProjectAdapterTest {
         assertFalse(sources.isEmpty(), "Should return main source directories");
     }
 
+    /** Verifies test sources are included when configured. */
     @Test
     void getSourceDirectoriesIncludesTestSourcesWhenNotExcluded() {
         extension.getExcludeTests().set(false);
@@ -41,6 +44,7 @@ class GradleProjectAdapterTest {
         assertTrue(sources.size() >= 2, "Should include both main and test sources");
     }
 
+    /** Verifies the adapter retains the project directory. */
     @Test
     void getProjectBaseDirReturnsProjectDirectory() {
         GradleProjectAdapter adapter = new GradleProjectAdapter(project, extension);
@@ -50,6 +54,7 @@ class GradleProjectAdapterTest {
         assertEquals(project.getProjectDir(), baseDir);
     }
 
+    /** Verifies the adapter retains the project name. */
     @Test
     void getProjectNameReturnsProjectName() {
         GradleProjectAdapter adapter = new GradleProjectAdapter(project, extension);
@@ -59,6 +64,7 @@ class GradleProjectAdapterTest {
         assertEquals(project.getName(), name);
     }
 
+    /** Verifies the adapter retains the project version. */
     @Test
     void getProjectVersionReturnsProjectVersion() {
         GradleProjectAdapter adapter = new GradleProjectAdapter(project, extension);

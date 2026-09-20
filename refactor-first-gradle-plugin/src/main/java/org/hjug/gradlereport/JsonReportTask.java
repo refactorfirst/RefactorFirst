@@ -12,16 +12,20 @@ import org.gradle.api.tasks.TaskAction;
 import org.hjug.refactorfirst.report.json.JsonReportExecutor;
 
 public abstract class JsonReportTask extends DefaultTask {
+    /** Returns the project information used while generating the report. */
     @Internal
     public abstract Property<GradleProjectAdapter> getProjectAdapter();
 
+    /** Returns the optional report output directory. */
     @Input
     @Optional
     public abstract Property<String> getOutputDirectory();
 
+    /** Returns the file produced by this task. */
     @OutputFile
     public abstract RegularFileProperty getReportFile();
 
+    /** Generates the JSON report using the configured task inputs. */
     @TaskAction
     public void generate() {
         System.out.println("Starting RefactorFirst JSON report generation...");
