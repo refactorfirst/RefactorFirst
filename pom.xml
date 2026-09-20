@@ -74,7 +74,7 @@
         <module>cost-benefit-calculator</module>
         <module>graph-data-generator</module>
         <module>refactor-first-maven-plugin</module>
-        <!--<module>refactor-first-gradle-plugin</module>-->
+        <module>refactor-first-gradle-plugin</module>
         <module>coverage</module>
         <module>report</module>
         <!--<module>cli</module>-->
@@ -115,6 +115,12 @@
             <dependency>
                 <groupId>org.hjug.refactorfirst.plugin</groupId>
                 <artifactId>refactor-first-maven-plugin</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.hjug.refactorfirst</groupId>
+                <artifactId>org.hjug.refactorfirst.gradle.plugin</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

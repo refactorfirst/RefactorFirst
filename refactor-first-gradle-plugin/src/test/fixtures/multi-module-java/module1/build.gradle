@@ -1,0 +1,8 @@
+plugins {
+    id 'java'
+    id 'org.hjug.refactorfirst'
+}
+
+repositories {
+    mavenCentral()
+}

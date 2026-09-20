@@ -2,30 +2,68 @@ package org.hjug.gradlereport;
 
 import java.io.File;
 import org.gradle.api.DefaultTask;
+import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.provider.Property;
+import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.Internal;
+import org.gradle.api.tasks.Optional;
+import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 import org.hjug.refactorfirst.report.CsvReport;
 
-public class CsvReportTask extends DefaultTask {
+public abstract class CsvReportTask extends DefaultTask {
+    /** Returns the project information used while generating the report. */
+    @Internal
+    public abstract Property<GradleProjectAdapter> getProjectAdapter();
 
+    /** Returns the project name included in the report. */
+    @Input
+    public abstract Property<String> getProjectName();
+
+    /** Returns the project version included in the report. */
+    @Input
+    public abstract Property<String> getProjectVersion();
+
+    /** Returns whether detailed findings should be included. */
+    @Input
+    public abstract Property<Boolean> getShowDetails();
+
+    /** Returns the optional report output directory. */
+    @Input
+    @Optional
+    public abstract Property<String> getOutputDirectory();
+
+    /** Returns the file produced by this task. */
+    @OutputFile
+    public abstract RegularFileProperty getReportFile();
+
+    /** Generates the CSV report using the configured task inputs. */
     @TaskAction
     public void generate() {
-        RefactorFirstExtension ext = getProject().getExtensions().findByType(RefactorFirstExtension.class);
-        if (ext == null) {
-            ext = new RefactorFirstExtension();
-        }
+        System.out.println("Starting RefactorFirst CSV report generation...");
 
-        final String projectName = ext.getProjectName() != null ? ext.getProjectName() : getProject().getName();
-        final String projectVersion = ext.getProjectVersion() != null ? ext.getProjectVersion() : String.valueOf(getProject().getVersion());
-        final File baseDir = getProject().getProjectDir();
-        final File outputDir = ext.resolveOutputDir(baseDir);
+        GradleProjectAdapter adapter = getProjectAdapter().get();
+        File baseDir = adapter.getProjectBaseDir();
+        File buildDir = new File(baseDir, "build");
+        File outputDir = getOutputDirectory().isPresent()
+                ? new File(getOutputDirectory().get())
+                : new File(buildDir, "reports/refactor-first");
 
+        System.out.println("Base directory: " + baseDir.getAbsolutePath());
+        System.out.println("Output directory: " + outputDir.getAbsolutePath());
+
+        String projectName = getProjectName().getOrElse(adapter.getProjectName());
+        String projectVersion = getProjectVersion().getOrElse(adapter.getProjectVersion());
+
+        System.out.println("Project name: " + projectName);
+        System.out.println("Project version: " + projectVersion);
+
+        System.out.println("Creating CsvReport instance...");
         CsvReport csvReport = new CsvReport();
-        csvReport.execute(
-                ext.isShowDetails(),
-                projectName,
-                projectVersion,
-                RefactorFirstPlugin.relativizeToProject(baseDir, outputDir),
-                baseDir
-        );
+
+        System.out.println("Executing CSV report generation...");
+        csvReport.execute(getShowDetails().get(), projectName, projectVersion, outputDir.getAbsolutePath(), baseDir);
+
+        System.out.println("CSV report generation completed.");
     }
 }

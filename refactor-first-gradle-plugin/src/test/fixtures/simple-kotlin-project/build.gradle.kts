@@ -1,0 +1,12 @@
+plugins {
+    id("java")
+    id("org.hjug.refactorfirst")
+}
+
+repositories {
+    mavenCentral()
+}
+
+refactorFirst {
+    excludeTests.set(true)
+}
