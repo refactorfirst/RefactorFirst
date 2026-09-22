@@ -52,7 +52,7 @@ jobs:
         # factory so JDK 25 users actually get the Java 25 parser.
         run: |
           jar=$(ls codebase-graph-builder/target/codebase-graph-builder-*.jar | grep -v -e sources -e javadoc | head -1)
-          unzip -l "$jar" | grep -q "META-INF/versions/25/org/hjug/graphbuilder/graphbuilder/Java25ParserFactory.class" \
+          unzip -l "$jar" | grep "META-INF/versions/25/org/hjug/graphbuilder/graphbuilder/Java25ParserFactory.class" >/dev/null \
             || { echo "FATAL: $jar is missing META-INF/versions/25 entries"; exit 1; }
           unzip -p "$jar" META-INF/MANIFEST.MF | grep -q "Multi-Release: true" \
             || { echo "FATAL: $jar manifest lacks 'Multi-Release: true'"; exit 1; }
