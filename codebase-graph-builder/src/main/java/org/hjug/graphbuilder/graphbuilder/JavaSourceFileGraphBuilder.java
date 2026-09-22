@@ -16,7 +16,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.hjug.graphbuilder.CodebaseGraphDTO;
 import org.hjug.graphbuilder.GraphBuilderConfig;
 import org.hjug.graphbuilder.GraphDependencyCollector;
-import org.hjug.graphbuilder.JavaRuntimeDetector;
 import org.hjug.graphbuilder.metrics.ClassMetrics;
 import org.hjug.graphbuilder.metrics.DisharmonyDetector;
 import org.hjug.graphbuilder.metrics.DisharmonyDetector.ClassDisharmony;
@@ -96,20 +95,29 @@ public class JavaSourceFileGraphBuilder implements SourceFileGraphBuilder {
     }
 
     /**
-     * Selects the {@link JavaParser} for this build. On a Java 25+ runtime
-     * (or when {@code forceJava25Parser} is set), a Java 25 parser is
-     * attempted via {@link Java25ParserWrapper}; otherwise — or when that
-     * attempt fails — the standard runtime-appropriate parser from
-     * {@link JavaParser#fromJavaVersion()} is used.
+     * Selects the {@link JavaParser} for this build. The JEP 238 multi-release
+     * variant of {@link Java25ParserFactory} supplies the Java 25 parser when
+     * the classes were loaded from the packaged jar on a JDK 25+ runtime. The
+     * fallback {@link JavaParser#fromJavaVersion()} additionally elevates to
+     * the Java 25 parser on its own whenever the runtime is 25+ and
+     * {@code rewrite-java-25} is on the classpath.
+     *
+     * <p>The {@code config} parameter is retained for API stability but no
+     * longer influences parser selection (the former force-flag escape hatch
+     * was removed together with the reflection-based loading; parser selection
+     * is now entirely runtime-driven).
+     *
+     * <p>Note: JEP 238 shadowing applies only to classes loaded from a jar.
+     * In exploded-directory classpaths (e.g. unit tests against
+     * {@code target/classes}) the base factory variant answers even on
+     * JDK 25; the {@code fromJavaVersion()} elevation still yields a
+     * Java 25-capable parser there when {@code rewrite-java-25} is present.
      */
     static JavaParser createJavaParser(GraphBuilderConfig config) {
-        JavaParser java25Parser = Java25ParserWrapper.tryCreateJava25Parser(config.isForceJava25Parser());
-        if (java25Parser != null) {
-            log.info("Using Java 25 parser for Java 25 language feature support");
-            return java25Parser;
-        }
-        log.debug("Using standard Java parser (runtime version: {})", JavaRuntimeDetector.getRuntimeVersion());
-        return JavaParser.fromJavaVersion().build();
+        return Java25ParserFactory.createJava25Parser().orElseGet(() -> {
+            log.debug("Using JavaParser.fromJavaVersion() (Java 25 multi-release jar variant not active)");
+            return JavaParser.fromJavaVersion().build();
+        });
     }
 
     static CodebaseGraphDTO finalizeDto(

@@ -42,21 +42,6 @@ public class CycleRanker {
      */
     // TODO: should this method belong in this class?
     public CodebaseGraphDTO generateClassReferencesGraph(boolean excludeTests, String testSourceDirectory) {
-        return generateClassReferencesGraph(excludeTests, testSourceDirectory, false);
-    }
-
-    /**
-     * Build a unified {@link CodebaseGraphDTO} from a directory that may contain
-     * both Java and Kotlin source files.
-     *
-     * @param excludeTests        whether to exclude test files
-     * @param testSourceDirectory test source directory pattern
-     * @param forceJava25Parser   force an attempt to load the Java 25 parser even when
-     *                            the runtime is not detected as Java 25 or higher
-     * @return a merged CodebaseGraphDTO
-     */
-    public CodebaseGraphDTO generateClassReferencesGraph(
-            boolean excludeTests, String testSourceDirectory, boolean forceJava25Parser) {
         if (repositoryPath == null || repositoryPath.isEmpty()) {
             throw new IllegalArgumentException("Source directory cannot be null or empty");
         }
@@ -69,7 +54,6 @@ public class CycleRanker {
             GraphBuilderConfig config = GraphBuilderConfig.builder()
                     .excludeTests(excludeTests)
                     .testSourceDirectory(testSourceDirectory)
-                    .forceJava25Parser(forceJava25Parser)
                     .build();
             codebaseGraphDTO = compositeGraphBuilder.getCodebaseGraphDTO(repositoryPath, repositoryRoot, config);
         } catch (IOException e) {

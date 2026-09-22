@@ -47,21 +47,6 @@ class GraphBuilderConfigTest {
         assertEquals("/repo/root", config.getRepositoryRoot());
     }
 
-    @DisplayName("forceJava25Parser defaults to false")
-    @Test
-    void forceJava25Parser_defaultsToFalse() {
-        GraphBuilderConfig config = GraphBuilderConfig.defaultConfig();
-        assertFalse(config.isForceJava25Parser());
-    }
-
-    @DisplayName("forceJava25Parser can be set via builder")
-    @Test
-    void forceJava25Parser_canBeSetViaBuilder() {
-        GraphBuilderConfig config =
-                GraphBuilderConfig.builder().forceJava25Parser(true).build();
-        assertTrue(config.isForceJava25Parser());
-    }
-
     @DisplayName("repositoryRoot is passed through config overload")
     @Test
     void repositoryRoot_passedThroughConfigOverload(@TempDir Path tempDir) throws IOException {

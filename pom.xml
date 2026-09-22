@@ -406,6 +406,15 @@
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>0.8.15</version>
+                <configuration>
+                    <!-- JEP 238: versioned class files (META-INF/versions/25)
+                         duplicate base class names, which the report goal
+                         rejects ("Can't add different class with same name").
+                         Coverage still applies to the base classes. -->
+                    <excludes>
+                        <exclude>META-INF/versions/**</exclude>
+                    </excludes>
+                </configuration>
                 <executions>
                     <!-- to avoid bugs in some situations -->
                     <execution>

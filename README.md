@@ -12,7 +12,7 @@ Code map viewers are powered by [3D Force Graph](https://vasturiano.github.io/3d
 <br>If there are more than 4000 classes + relationships, a simplified 3D viewer will be available to avoid page load slowdowns.  Features will be toggleable in the 3D UI in a future release.
 
 ## How to Use RefactorFirst Quickly
-Run the command below in your Java project's top-level directory.  You'll need Git, Java 11 (or newer) and Maven 3 installed.  This command will analyze Maven and non-Maven projects:
+Run the command below in your Java project's top-level directory.  You'll need Git, Java 17 (or newer) and Maven 3 installed.  This command will analyze Maven and non-Maven projects:
 ```bash
 mvn org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.10.0:htmlReport
 ```
@@ -118,7 +118,8 @@ Specify with -D if running on the command line.  e.g. ```-DbackEdgeAnalysisCount
 |projectName|The name of your project to be displayed on the report| Your Maven project name                                   |
 |projectVersion|The version of your project to be displayed on the report| Your Maven project version                                |
 |outputDirectory|The location the project report will be written| ```${projectDir}/target/site/refactor-first-report.html``` 
-|forceJava25Parser|Force an attempt to load the Java 25 parser even when the runtime is not detected as Java 25 or higher.  Only useful as an escape hatch for exotic JVMs where runtime version detection fails; a failed attempt falls back to the standard parser.| false                                                     |
+
+The Java 25 parser activates automatically when running on a JDK 25+ runtime (JEP 238 multi-release jar); there is no configuration flag for it.
 
 
 ## But I'm using Gradle / my project layout isn't typical!

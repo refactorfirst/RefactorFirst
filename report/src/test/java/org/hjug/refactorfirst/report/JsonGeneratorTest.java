@@ -196,13 +196,13 @@ class JsonGeneratorTest {
     }
 
     /**
-     * Verifies the {@code forceJava25Parser} overload: a forced Java 25 parser
-     * attempt must be transparent on any runtime (the forced load fails
-     * gracefully on &lt; 25 runtimes; on 25+ it simply parses), so report
-     * generation succeeds regardless.
+     * Verifies report generation succeeds with parser selection left entirely
+     * to the runtime (the parser-forcing overload was removed when
+     * reflection-based parser loading was replaced by the JEP 238
+     * multi-release jar design).
      */
     @Test
-    void testExecuteWithForceJava25Parser() throws Exception {
+    void testExecuteWithoutParserFlags() throws Exception {
         File repoDir = tempDir.toFile();
         new File(repoDir, ".git").mkdirs();
 
@@ -235,7 +235,7 @@ class JsonGeneratorTest {
                 .start()
                 .waitFor();
 
-        new JsonGenerator().execute(50, true, false, true, "src/test", "ForcedProject", "1.0.0", repoDir, null, true);
+        new JsonGenerator().execute(50, true, false, true, "src/test", "ForcedProject", "1.0.0", repoDir, null);
 
         Path jsonFile = tempDir.resolve(".refactorfirst").resolve("refactor-first.json");
         assertTrue(Files.exists(jsonFile));

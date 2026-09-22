@@ -47,14 +47,6 @@ public class RefactorFirstSimpleHtmlReport extends AbstractMojo {
     @Parameter(defaultValue = "${project.version}")
     private String projectVersion;
 
-    /**
-     * Force an attempt to load the Java 25 parser even when the runtime is not
-     * detected as Java 25 or higher. Escape hatch for exotic JVMs where version
-     * detection fails; a failed attempt falls back to the standard parser.
-     */
-    @Parameter(property = "forceJava25Parser")
-    private boolean forceJava25Parser = false;
-
     @Parameter(readonly = true, defaultValue = "${project}")
     private MavenProject project;
 
@@ -75,7 +67,6 @@ public class RefactorFirstSimpleHtmlReport extends AbstractMojo {
                 projectName,
                 projectVersion,
                 project.getBasedir(),
-                MavenReportOutputDirectory.resolve(project, outputDirectory),
-                forceJava25Parser);
+                MavenReportOutputDirectory.resolve(project, outputDirectory));
     }
 }
