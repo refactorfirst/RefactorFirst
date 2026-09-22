@@ -32,6 +32,16 @@ public class GraphBuilderConfig {
     @Builder.Default
     String repositoryRoot = "";
 
+    /**
+     * Whether to force an attempt to load the Java 25 parser (from the
+     * optional {@code rewrite-java-25} dependency) even when the runtime does
+     * not appear to be Java 25 or higher. An escape hatch for exotic JVMs
+     * where version detection fails; a failed attempt still falls back to the
+     * standard parser. Default: {@code false} (rely on runtime detection).
+     */
+    @Builder.Default
+    boolean forceJava25Parser = false;
+
     public static GraphBuilderConfig defaultConfig() {
         return GraphBuilderConfig.builder().build();
     }

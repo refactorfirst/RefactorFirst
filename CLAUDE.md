@@ -49,7 +49,7 @@ test-resources (shared fixtures)
 coverage (JaCoCo aggregation)
 ```
 
-**codebase-graph-builder** — The most complex module. Uses OpenRewrite to parse Java source across versions (11/17/21), builds class and package dependency graphs with JGraphT, detects cycle-breaking candidates using two graph algorithms, and returns everything in `CodebaseGraphDTO`. Entry point: `JavaGraphBuilder.getCodebaseGraphDTO()`.
+**codebase-graph-builder** — The most complex module. Uses OpenRewrite to parse Java source across versions (11/17/21, and 25 when running on a Java 25+ runtime — see "Java 25 analysis" below), builds class and package dependency graphs with JGraphT, detects cycle-breaking candidates using two graph algorithms, and returns everything in `CodebaseGraphDTO`. Entry point: `JavaGraphBuilder.getCodebaseGraphDTO()`.
 
 **graph-algorithms** — Two cycle-decomposition algorithms used by `JavaGraphBuilder`:
 - *Directed Feedback Vertex Set* (`org.hjug.feedback.vertex.kernelized`) — kernelized algorithm; identifies the minimum vertex set to remove to break all cycles.
@@ -92,6 +92,10 @@ Mutation testing via PIT (`pitest-maven`) is configured but not part of the defa
 
 ## Java & Toolchain
 
-- Source/target: Java 11 minimum; OpenRewrite parser supports 11, 17, 21.
+- Source/target: Java 17 minimum; OpenRewrite parser supports 11, 17, 21 — plus 25 when running on a Java 25+ runtime.
 - Logging: SLF4J; use `log.debug()` for verbose per-class output, `log.info()` sparingly.
 - Spotless enforces Palantir Java format — run `mvn spotless:apply` before committing.
+
+## Java 25 analysis
+
+`rewrite-java-25` is an **optional** compile dependency of `codebase-graph-builder` (so it is never transitively included in the Maven/Gradle plugin distributions, preserving their Java 17 runtime requirement). At runtime `JavaSourceFileGraphBuilder` asks `Java25ParserWrapper` for a Java 25 parser; the wrapper loads `org.openrewrite.java.Java25Parser` **via reflection** — the class files are compiled for class-file version 69 and would break on older runtimes if referenced directly. Load is only attempted when `JavaRuntimeDetector.isJava25OrHigher()` (or `forceJava25Parser` config is set); any failure, including `UnsupportedClassVersionError`, falls back to `JavaParser.fromJavaVersion()`. Reflection results are cached after the first attempt. The `forceJava25Parser` option is exposed on `GraphBuilderConfig`, `CycleRanker.generateClassReferencesGraph(...)`, `SimpleHtmlReport.execute(...)` / `generateReport(...)`, `JsonGenerator.execute(...)` / `generateReportData(...)`, and the Maven `report`, `htmlReport`, `simpleHtmlReport`, and `jsonReport` mojos (`-DforceJava25Parser=true`).

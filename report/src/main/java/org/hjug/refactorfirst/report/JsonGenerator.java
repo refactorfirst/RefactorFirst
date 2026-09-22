@@ -45,6 +45,37 @@ public class JsonGenerator extends HtmlReport {
             String projectVersion,
             File baseDir,
             File outputDir) {
+        execute(
+                edgeAnalysisCount,
+                analyzeCycles,
+                showDetails,
+                excludeTests,
+                testSourceDirectory,
+                projectName,
+                projectVersion,
+                baseDir,
+                outputDir,
+                false);
+    }
+
+    /**
+     * Generates report data and writes it with the bundled viewer resources.
+     *
+     * @param forceJava25Parser force an attempt to load the Java 25 parser even when
+     *                          the runtime is not detected as Java 25 or higher
+     */
+    @SneakyThrows
+    public void execute(
+            int edgeAnalysisCount,
+            boolean analyzeCycles,
+            boolean showDetails,
+            boolean excludeTests,
+            String testSourceDirectory,
+            String projectName,
+            String projectVersion,
+            File baseDir,
+            File outputDir,
+            boolean forceJava25Parser) {
 
         Path projectPath = baseDir != null
                 ? baseDir.toPath().toAbsolutePath().normalize()
@@ -65,7 +96,8 @@ public class JsonGenerator extends HtmlReport {
                 testSourceDirectory,
                 projectName,
                 projectVersion,
-                projectPath.toFile());
+                projectPath.toFile(),
+                forceJava25Parser);
 
         String json = objectMapper.writeValueAsString(reportDTO);
 
@@ -121,6 +153,35 @@ public class JsonGenerator extends HtmlReport {
             String projectVersion,
             File baseDir)
             throws Exception {
+        return generateReportData(
+                showDetails,
+                edgeAnalysisCount,
+                analyzeCycles,
+                excludeTests,
+                testSourceDirectory,
+                projectName,
+                projectVersion,
+                baseDir,
+                false);
+    }
+
+    /**
+     * Analyzes a project and converts its findings into serializable report data.
+     *
+     * @param forceJava25Parser force an attempt to load the Java 25 parser even when
+     *                          the runtime is not detected as Java 25 or higher
+     */
+    public RefactorFirstReportDTO generateReportData(
+            boolean showDetails,
+            int edgeAnalysisCount,
+            boolean analyzeCycles,
+            boolean excludeTests,
+            String testSourceDirectory,
+            String projectName,
+            String projectVersion,
+            File baseDir,
+            boolean forceJava25Parser)
+            throws Exception {
 
         if (testSourceDirectory == null || testSourceDirectory.isEmpty()) {
             testSourceDirectory = "src" + File.separator + "test";
@@ -161,11 +222,12 @@ public class JsonGenerator extends HtmlReport {
             List<RankedCycle> rankedClassCycles = List.of();
             CodebaseGraphDTO codebaseGraphDTO;
             if (analyzeCycles) {
-                cycleRanker.generateClassReferencesGraph(excludeTests, testSourceDirectory);
+                cycleRanker.generateClassReferencesGraph(excludeTests, testSourceDirectory, forceJava25Parser);
                 codebaseGraphDTO = cycleRanker.getCodebaseGraphDTO();
                 rankedClassCycles = cycleRanker.rankCycles(codebaseGraphDTO.getClassReferencesGraph());
             } else {
-                codebaseGraphDTO = cycleRanker.generateClassReferencesGraph(excludeTests, testSourceDirectory);
+                codebaseGraphDTO =
+                        cycleRanker.generateClassReferencesGraph(excludeTests, testSourceDirectory, forceJava25Parser);
             }
 
             classGraph = codebaseGraphDTO.getClassReferencesGraph();

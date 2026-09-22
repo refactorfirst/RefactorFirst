@@ -191,6 +191,39 @@ public class SimpleHtmlReport {
             String projectVersion,
             File baseDir,
             String outputDirectory) {
+        execute(
+                edgeAnalysisCount,
+                analyzeCycles,
+                showDetails,
+                minifyHtml,
+                excludeTests,
+                testSourceDirectory,
+                projectName,
+                projectVersion,
+                baseDir,
+                outputDirectory,
+                false);
+    }
+
+    /**
+     * Generates the HTML report and writes it to {@code outputDirectory}.
+     *
+     * @param forceJava25Parser force an attempt to load the Java 25 parser even when
+     *                          the runtime is not detected as Java 25 or higher
+     */
+    @SneakyThrows
+    public void execute(
+            int edgeAnalysisCount,
+            boolean analyzeCycles,
+            boolean showDetails,
+            boolean minifyHtml,
+            boolean excludeTests,
+            String testSourceDirectory,
+            String projectName,
+            String projectVersion,
+            File baseDir,
+            String outputDirectory,
+            boolean forceJava25Parser) {
 
         String filename = getOutputName() + ".html";
         log.info("Generating {} for {} - {}", filename, projectName, projectVersion);
@@ -210,7 +243,8 @@ public class SimpleHtmlReport {
                 testSourceDirectory,
                 projectName,
                 projectVersion,
-                baseDir));
+                baseDir,
+                forceJava25Parser));
 
         stringBuilder.append(printProjectFooter());
         stringBuilder.append(THE_END);
@@ -235,6 +269,35 @@ public class SimpleHtmlReport {
             String projectName,
             String projectVersion,
             File baseDir)
+            throws Exception {
+        return generateReport(
+                showDetails,
+                edgeAnalysisCount,
+                analyzeCycles,
+                excludeTests,
+                testSourceDirectory,
+                projectName,
+                projectVersion,
+                baseDir,
+                false);
+    }
+
+    /**
+     * Analyzes a project and renders the findings as a complete HTML report.
+     *
+     * @param forceJava25Parser force an attempt to load the Java 25 parser even when
+     *                          the runtime is not detected as Java 25 or higher
+     */
+    public StringBuilder generateReport(
+            boolean showDetails,
+            int edgeAnalysisCount,
+            boolean analyzeCycles,
+            boolean excludeTests,
+            String testSourceDirectory,
+            String projectName,
+            String projectVersion,
+            File baseDir,
+            boolean forceJava25Parser)
             throws Exception {
 
         if (testSourceDirectory == null || testSourceDirectory.isEmpty()) {
@@ -287,12 +350,13 @@ public class SimpleHtmlReport {
         CodebaseGraphDTO codebaseGraphDTO;
         if (analyzeCycles) {
             log.info("Analyzing Cycles");
-            cycleRanker.generateClassReferencesGraph(excludeTests, testSourceDirectory);
+            cycleRanker.generateClassReferencesGraph(excludeTests, testSourceDirectory, forceJava25Parser);
             codebaseGraphDTO = cycleRanker.getCodebaseGraphDTO();
             rankedClassCycles = cycleRanker.rankCycles(codebaseGraphDTO.getClassReferencesGraph());
             //            rankedPackageCycles = cycleRanker.rankCycles(codebaseGraphDTO.getPackageReferencesGraph());
         } else {
-            codebaseGraphDTO = cycleRanker.generateClassReferencesGraph(excludeTests, testSourceDirectory);
+            codebaseGraphDTO =
+                    cycleRanker.generateClassReferencesGraph(excludeTests, testSourceDirectory, forceJava25Parser);
         }
 
         classGraph = codebaseGraphDTO.getClassReferencesGraph();

@@ -43,7 +43,8 @@ The graphs generated in the report will look similar to this one:
 ![image info](./RefactorFirst_Sample_Report.png)
 
 ## Please Note: Java 17 (or newer) required to run RefactorFirst
-**Java 25 codebase analysis is supported!**
+**Java 25 codebase analysis is supported!** Run RefactorFirst on a Java 25+ runtime and the Java 25 parser is used automatically; on older runtimes analysis falls back to the parser matching your runtime.
+The Maven and Gradle plugins themselves still only require a Java 17 runtime.
 Please use a recent JDK release of the Java version you are using.  
 If you use an old JDK release of your chosen Java version, you may encounter issues during analysis.
 
@@ -117,6 +118,7 @@ Specify with -D if running on the command line.  e.g. ```-DbackEdgeAnalysisCount
 |projectName|The name of your project to be displayed on the report| Your Maven project name                                   |
 |projectVersion|The version of your project to be displayed on the report| Your Maven project version                                |
 |outputDirectory|The location the project report will be written| ```${projectDir}/target/site/refactor-first-report.html``` 
+|forceJava25Parser|Force an attempt to load the Java 25 parser even when the runtime is not detected as Java 25 or higher.  Only useful as an escape hatch for exotic JVMs where runtime version detection fails; a failed attempt falls back to the standard parser.| false                                                     |
 
 
 ## But I'm using Gradle / my project layout isn't typical!

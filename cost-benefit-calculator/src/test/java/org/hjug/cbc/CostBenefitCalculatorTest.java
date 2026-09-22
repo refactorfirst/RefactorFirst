@@ -18,6 +18,8 @@ import org.jgrapht.graph.AsSubgraph;
 import org.jgrapht.graph.DefaultWeightedEdge;
 import org.jgrapht.graph.SimpleDirectedWeightedGraph;
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.condition.DisabledOnJre;
+import org.junit.jupiter.api.condition.JRE;
 import org.junit.jupiter.api.io.TempDir;
 
 class CostBenefitCalculatorTest {
@@ -68,6 +70,17 @@ class CostBenefitCalculatorTest {
         Assertions.assertFalse(disharmonies.isEmpty());
     }
 
+    // Disabled on JDK 25: OpenRewrite 8.90.4's parsers cannot convert the
+    // UpdateCenter2.java fixture on a JDK 25 runtime. The Java 21 parser
+    // fails on the fixture's @exception javadoc tags ("Expected to be able to
+    // find @exception"), and the Java 25 parser (only loadable when the
+    // optional rewrite-java-25 dependency is present) hits an unfixed
+    // upstream NPE in ReloadableJava25ParserVisitor.visitLambdaExpression
+    // (VarSymbol.flags() on a lambda over unresolvable types; OpenRewrite
+    // issue #8712 family). Re-enable once a rewrite release fixes both and
+    // rewrite-java-25 lands on this module's classpath.
+    // See https://github.com/openrewrite/rewrite/issues/8712
+    @DisabledOnJre(JRE.JAVA_25)
     @Test
     void testCostBenefitCalculation() throws IOException, GitAPIException, InterruptedException {
 

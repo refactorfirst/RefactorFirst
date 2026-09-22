@@ -38,6 +38,17 @@
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-core</artifactId>
         </dependency>
+        <!-- Optional: only loaded (via reflection) on a Java 25+ runtime. The
+             class files are compiled for Java 25 (class file 69.0), so this
+             dependency must stay <optional> and must never be referenced
+             directly from compiled code — doing either would break the
+             Maven/Gradle plugins' Java 17 runtime requirement. Version is
+             managed by the rewrite-bom import above. -->
+        <dependency>
+            <groupId>org.openrewrite</groupId>
+            <artifactId>rewrite-java-25</artifactId>
+            <optional>true</optional>
+        </dependency>
         <dependency>
             <groupId>org.openrewrite</groupId>
             <artifactId>rewrite-java-21</artifactId>

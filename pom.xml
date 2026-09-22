@@ -505,7 +505,7 @@
             <plugin>
                 <groupId>com.diffplug.spotless</groupId>
                 <artifactId>spotless-maven-plugin</artifactId>
-                <version>2.44.5</version>
+                <version>3.10.2</version>
                 <configuration>
                     <formats>
                         <!-- you can define as many formats as you want, each is independent -->
@@ -524,7 +524,10 @@
                         </format>
                     </formats>
                     <java>
-                        <palantirJavaFormat />
+                        <!-- 2.71.0 supports running on JDK 25 (and up). -->
+                        <palantirJavaFormat>
+                            <version>2.71.0</version>
+                        </palantirJavaFormat>
                     </java>
                 </configuration>
                 <executions>

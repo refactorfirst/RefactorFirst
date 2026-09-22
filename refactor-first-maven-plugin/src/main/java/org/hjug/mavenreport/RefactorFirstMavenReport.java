@@ -42,6 +42,14 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
     @Parameter(property = "testSourceDirectory")
     private String testSourceDirectory;
 
+    /**
+     * Force an attempt to load the Java 25 parser even when the runtime is not
+     * detected as Java 25 or higher. Escape hatch for exotic JVMs where version
+     * detection fails; a failed attempt falls back to the standard parser.
+     */
+    @Parameter(property = "forceJava25Parser")
+    private boolean forceJava25Parser = false;
+
     @Parameter(defaultValue = "${project.name}")
     private String projectName;
 
@@ -80,7 +88,8 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
                         testSourceDirectory,
                         projectName,
                         projectVersion,
-                        project.getBasedir())
+                        project.getBasedir(),
+                        forceJava25Parser)
                 .toString();
 
         mainSink.rawText(report);

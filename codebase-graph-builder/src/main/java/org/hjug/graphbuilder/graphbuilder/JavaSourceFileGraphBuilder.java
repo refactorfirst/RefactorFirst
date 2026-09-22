@@ -16,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.hjug.graphbuilder.CodebaseGraphDTO;
 import org.hjug.graphbuilder.GraphBuilderConfig;
 import org.hjug.graphbuilder.GraphDependencyCollector;
+import org.hjug.graphbuilder.JavaRuntimeDetector;
 import org.hjug.graphbuilder.metrics.ClassMetrics;
 import org.hjug.graphbuilder.metrics.DisharmonyDetector;
 import org.hjug.graphbuilder.metrics.DisharmonyDetector.ClassDisharmony;
@@ -44,7 +45,7 @@ public class JavaSourceFileGraphBuilder implements SourceFileGraphBuilder {
             throws IOException {
         File srcDirectory = new File(repositoryPath);
 
-        JavaParser javaParser = JavaParser.fromJavaVersion().build();
+        JavaParser javaParser = createJavaParser(config);
         ExecutionContext ctx = new InMemoryExecutionContext(e -> log.warn("OpenRewrite parse/visit error", e));
 
         final Graph<String, DefaultWeightedEdge> classReferencesGraph =
@@ -92,6 +93,23 @@ public class JavaSourceFileGraphBuilder implements SourceFileGraphBuilder {
                 dependencyCollector,
                 classToSourceFilePathMapping,
                 metricsCollector);
+    }
+
+    /**
+     * Selects the {@link JavaParser} for this build. On a Java 25+ runtime
+     * (or when {@code forceJava25Parser} is set), a Java 25 parser is
+     * attempted via {@link Java25ParserWrapper}; otherwise — or when that
+     * attempt fails — the standard runtime-appropriate parser from
+     * {@link JavaParser#fromJavaVersion()} is used.
+     */
+    static JavaParser createJavaParser(GraphBuilderConfig config) {
+        JavaParser java25Parser = Java25ParserWrapper.tryCreateJava25Parser(config.isForceJava25Parser());
+        if (java25Parser != null) {
+            log.info("Using Java 25 parser for Java 25 language feature support");
+            return java25Parser;
+        }
+        log.debug("Using standard Java parser (runtime version: {})", JavaRuntimeDetector.getRuntimeVersion());
+        return JavaParser.fromJavaVersion().build();
     }
 
     static CodebaseGraphDTO finalizeDto(

@@ -17,6 +17,44 @@
 - **Anonymous/synthetic classes are first-class graph members.** Java `Outer$N`/`Outer$` (anonymous/synthetic inner classes) and the Kotlin literal `"<anonymous>"` FQN are **not** sieved out by `GraphDependencyCollector`; they genuinely participate in cycles and can harbour antipatterns, so they are vertices in the class graph and rendered with `$` as the enclosing-class separator. `GraphDependencyCollector` keeps only the `from == to` self-edge guard, plus a degenerate-package guard so a packageless `"<anonymous>"` source never creates an `""` package-graph vertex. **Sink-only** anonymous/synthetic vertices (those with no outgoing edges) are suppressed only at render time in `HtmlReport.isSinkAnonymousOrSyntheticVertex` to keep the Class/Cycle Map DOT graph readable; active ones still render.
 - **Anonymous DOT node ids are source-file derived.** OpenRewrite attributes a Kotlin anonymous object / function-literal type with {@code "<anonymous>"} as the trailing simple-name segment of its FQN: standalone ({@code "<anonymous>"}) or, in real graphs (e.g. FXGL), prefixed by the enclosing class/package ({@code "dev.DeveloperWASDControl.<anonymous>"}). {@code HtmlReport.isAnonymousFqn(vertex)} detects a vertex when its trailing segment starts with {@code <}. {@code HtmlReport.renderSafeNodeId(vertex, codebaseGraphDTO)} then derives the enclosing owner from the vertex's mapped source-file path in {@code CodebaseGraphDTO.classToSourceFilePathMapping} (file base name without extension, e.g. {@code DeveloperWASDControl.kt} -> {@code DeveloperWASDControl}). The DOT node id renders as {@code DeveloperWASDControl_anonymous} and the human-readable label as {@code DeveloperWASDControl\$anonymous} ({@code $} escaped as {@code \$} for DOT). When no source path is mapped (or DTO is null) it degrades to the reversible {@code lt_}/{@code _gt} {@code <}/{@code >} encoding. The renderer is responsible for DOT/HTML-safe encoding of the literal {@code "<anonymous>"} FQN ({@code <}/{@code >} are illegal in Graphviz node ids; {@code <}/{@code >} escaping in HTML table labels).
 
+## Java 25 analysis (optional, reflection-loaded)
+
+`rewrite-java-25` is an **optional** (BOM-managed, no explicit version) compile
+dependency of `codebase-graph-builder`. It must stay optional and must never
+be referenced directly from compiled code: its class files are Java 25
+(class-file 69.0), so a static reference would break the Maven/Gradle plugins'
+Java 17 runtime requirement — and because it is `<optional>`, it is not
+transitively included in plugin distributions (verified:
+`mvn -pl refactor-first-maven-plugin dependency:tree` shows no
+`rewrite-java-25`).
+
+At runtime, `JavaSourceFileGraphBuilder.createJavaParser(config)` calls
+`Java25ParserWrapper.tryCreateJava25Parser(force)`, which reflectively loads
+`org.openrewrite.java.Java25Parser` **only** when
+`JavaRuntimeDetector.isJava25OrHigher()` (based on
+`java.specification.version`, falling back to `Runtime.version()`). A forced
+attempt (`GraphBuilderConfig.forceJava25Parser`, exposed on the Maven
+`report`, `htmlReport`, `simpleHtmlReport`, and `jsonReport` mojos as
+`-DforceJava25Parser=true`, plumbed through `SimpleHtmlReport.execute` /
+`generateReport`, `JsonGenerator.execute` / `generateReportData`, and
+`CycleRanker.generateClassReferencesGraph`) can override detection; any
+failure — including `UnsupportedClassVersionError` on older runtimes —
+returns `null`
+and the builder falls back to `JavaParser.fromJavaVersion()`. Reflection
+results are cached (one load attempt per class loader).
+
+**JDK 25 build notes:**
+- Spotless 3.10.2 with `palantir-java-format` 2.71.0 runs on JDK 17, 21 and
+  25 with no `--add-exports` workaround (older Spotless 2.x /
+  palantir-java-format builds failed on JDK 21+ without javac exports and
+  could not run on JDK 25 at all).
+- CI (`maven.yml`, `maven-pr.yml`) builds a JDK 17 + JDK 25 matrix.
+- `CostBenefitCalculatorTest.testCostBenefitCalculation` is
+  `@DisabledOnJre(JRE.JAVA_25)`: OpenRewrite 8.90.4 cannot convert the
+  fixture on a JDK 25 runtime (Java 21 parser: javadoc `@exception`
+  IllegalStateException; Java 25 parser: unfixed upstream lambda NPE,
+  OpenRewrite issue #8712 family). Re-enable once a rewrite release fixes it.
+
 ## Kotlin analysis (hard dependency)
 
 `rewrite-kotlin` (`org.openrewrite:rewrite-kotlin`) is a **non-optional
@@ -77,6 +115,7 @@ Configuration options (most important):
 - `analyzeCycles`: Whether to analyze cycles (default: true)
 - `excludeTests`: Exclude test classes (default: true)
 - `minifyHtml`: Minify HTML report (default: false)
+- `forceJava25Parser`: Force an attempt to load the Java 25 parser even when the runtime isn't detected as Java 25+ (default: false)
 
 ## CVE Pinning
 Transitive dependencies surfaced by an OWASP dependency-check are pinned centrally in the
