@@ -182,12 +182,13 @@ All environment-sensitive tests follow the existing pattern of
 - **T1** `returnsEmptyOnPre25Runtime` — skipped on JDK 25; asserts
   `Java25ParserFactory.createJava25Parser()` is empty. *(Fails: class does not
   exist → compile error = red.)*
-- **T2** `createsParserOnJava25Runtime` — `@EnabledOnJre(JRE.JAVA_25)`; asserts
-  non-empty and that the returned parser can parse a source using a finalized
-  Java 25 language feature (fixture: **module import declaration**
-  `import module java.base;` in `test-resources`), which the Java 21 parser
-  rejects. This is the behavioral proof that the *Java 25* parser — not merely
-  *a* parser — was selected.
+- **T2** `versionedVariantCreatesWorkingJava25Parser` —
+  `@EnabledForJreRange(min = JRE.JAVA_25)`; loads the Java 25
+  `Java25ParserFactory` class from the versioned output in isolation, then
+  reflectively invokes `createJava25Parser()`. Asserts that the resulting
+  parser handles the flexible-constructor-body fixture, proving the versioned
+  variant creates a working Java 25 parser. Packaged-JAR shadowing is covered
+  separately by `MultiReleaseJarIT`; direct factory invocation belongs to T1.
 - **T3** `baseAndVersionedVariantsExposeIdenticalPublicApi` —
   `@EnabledOnJre(JRE.JAVA_25)` (only meaningful when the versioned class file
   exists on disk): loads
