@@ -103,6 +103,22 @@ class Java25ParserFactoryTest {
                         + parsed.get(0).getClass().getName());
     }
 
+    @DisplayName("T2: versioned variant falls back when the Java 25 parser is unavailable")
+    @EnabledForJreRange(min = JRE.JAVA_25)
+    @Test
+    void versionedVariantFallsBackWhenJava25ParserIsUnavailable() throws Exception {
+        Class<?> versionedFactory = loadVersionedFactoryWithoutJava25Parser();
+
+        Object result = assertDoesNotThrow(
+                () -> versionedFactory.getMethod("createJava25Parser").invoke(null),
+                "The versioned factory must contain parser linkage failures");
+
+        assertInstanceOf(Optional.class, result);
+        assertTrue(
+                ((Optional<?>) result).isEmpty(),
+                "A missing Java25Parser must return an empty Optional so the caller can use its standard fallback");
+    }
+
     @DisplayName("T3: versioned and base variants expose identical public API (JEP 238 parity)")
     @EnabledForJreRange(min = JRE.JAVA_25)
     @Test
@@ -122,6 +138,14 @@ class Java25ParserFactoryTest {
      * inactive).
      */
     private static Class<?> loadVersionedFactory() throws Exception {
+        return loadVersionedFactory(false);
+    }
+
+    private static Class<?> loadVersionedFactoryWithoutJava25Parser() throws Exception {
+        return loadVersionedFactory(true);
+    }
+
+    private static Class<?> loadVersionedFactory(boolean hideJava25Parser) throws Exception {
         assumeTrue(
                 Files.exists(VERSIONED_CLASSES_DIR.resolve(VERSIONED_CLASS_RELATIVE_PATH)),
                 "Versioned factory class only exists when built on JDK 25+");
@@ -138,7 +162,15 @@ class Java25ParserFactoryTest {
             }
         };
         URLClassLoader loader =
-                new URLClassLoader(new URL[] {VERSIONED_CLASSES_DIR.toUri().toURL()}, filteredParent);
+                new URLClassLoader(new URL[] {VERSIONED_CLASSES_DIR.toUri().toURL()}, filteredParent) {
+                    @Override
+                    protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
+                        if (hideJava25Parser && name.equals("org.openrewrite.java.Java25Parser")) {
+                            throw new ClassNotFoundException(name);
+                        }
+                        return super.loadClass(name, resolve);
+                    }
+                };
         return Class.forName(FACTORY_FQN, false, loader);
     }
 
