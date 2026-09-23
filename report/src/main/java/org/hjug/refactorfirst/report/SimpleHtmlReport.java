@@ -179,6 +179,9 @@ public class SimpleHtmlReport {
             .setMinifyCss(true)
             .build();
 
+    /**
+     * Generates the HTML report and writes it to {@code outputDirectory}.
+     */
     @SneakyThrows
     public void execute(
             int edgeAnalysisCount,
@@ -416,12 +419,14 @@ public class SimpleHtmlReport {
         return stringBuilder;
     }
 
+    /** Reads the repository's remote URL from the project Git metadata. */
     static String getRepoUrl(String projectBaseDir) throws Exception {
         try (GitLogReader glr = new GitLogReader(new File(projectBaseDir))) {
             return glr.getRepoUrl();
         }
     }
 
+    /** Builds the report navigation menu for the available graphs, findings, and cycles. */
     StringBuilder createMenu(
             List<DisharmonySpec> disharmonySpecs,
             Map<String, List<RankedDisharmony>> rankedDisharmoniesByAnchor,
@@ -475,10 +480,13 @@ public class SimpleHtmlReport {
         return menu;
     }
 
+    /** Extension hook for adding a class-map entry to the navigation menu. */
     void renderClassMapMenu(StringBuilder stringBuilder) {}
 
+    /** Extension hook for adding a package-map entry to the navigation menu. */
     void renderPackageMapMenu(StringBuilder stringBuilder) {}
 
+    /** Renders the class-cycle summary and the largest cycle's details. */
     private String renderCycles(List<RankedCycle> rankedCycles, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append(renderClassCycleSummary(rankedCycles));
@@ -491,6 +499,7 @@ public class SimpleHtmlReport {
         return stringBuilder.toString();
     }
 
+    /** Renders the prioritized class relationships whose removal breaks cycles. */
     private String renderClassEdgeDisharmonies(
             List<RankedDisharmony> classRelationshipDisharmonies,
             List<RankedDisharmony> packageRelationshipDisharmonies,
@@ -545,6 +554,7 @@ public class SimpleHtmlReport {
         return stringBuilder.toString();
     }
 
+    /** Renders the prioritized package relationships whose removal breaks cycles. */
     private String renderPackageEdgeDisharmonies(
             List<RankedDisharmony> edgeDisharmonies, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
         StringBuilder stringBuilder = new StringBuilder();
@@ -596,6 +606,7 @@ public class SimpleHtmlReport {
         return stringBuilder.toString();
     }
 
+    /** Returns column headings for the class-relationship table. */
     private String[] getClassRelationshipDisharmonyTableHeadings() {
         return new String[] {
             "Class Relationship",
@@ -607,6 +618,7 @@ public class SimpleHtmlReport {
         };
     }
 
+    /** Returns column headings for the package-relationship table. */
     private String[] getPackageRelationshipDisharmonyTableHeadings() {
         return new String[] {
             "Package Relationship",
@@ -653,6 +665,7 @@ public class SimpleHtmlReport {
         };
     }
 
+    /** Renders summary rows for the ranked class cycles. */
     private String renderClassCycleSummary(List<RankedCycle> rankedCycles) {
         StringBuilder stringBuilder = new StringBuilder();
 
@@ -701,6 +714,7 @@ public class SimpleHtmlReport {
                 .toString();
     }
 
+    /** Renders a weighted class edge with repository links and removal markers. */
     private String renderClassEdge(DefaultWeightedEdge edge, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
         StringBuilder edgesToCut = new StringBuilder();
         String[] vertexes = extractVertexes(edge);
@@ -727,6 +741,7 @@ public class SimpleHtmlReport {
                 .toString();
     }
 
+    /** Renders a weighted package edge with removal markers. */
     private String renderPackageEdge(DefaultWeightedEdge edge, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
         StringBuilder edgesToCut = new StringBuilder();
         String[] vertexes = extractVertexes(edge);
@@ -753,6 +768,7 @@ public class SimpleHtmlReport {
                 .toString();
     }
 
+    /** Links a class label to its source file when a source-path mapping is available. */
     String hyperlinkClass(String className, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
         String path = codebaseGraphDTO.getClassToSourceFilePathMapping().get(className);
         if (path == null || path.isBlank()) {
@@ -780,6 +796,7 @@ public class SimpleHtmlReport {
         return escapeHtmlLabel(value).replace("\"", "&quot;").replace("'", "&#39;");
     }
 
+    /** Returns column headings for the class-cycle summary table. */
     private String[] getClassCycleSummaryTableHeadings() {
         return new String[] {"Cycle Name", "Priority", "Class Count", "Relationship Count"};
     }
@@ -795,6 +812,7 @@ public class SimpleHtmlReport {
         };
     }
 
+    /** Renders the visualization and relationship table for one class cycle. */
     private String renderSingleCycle(RankedCycle cycle, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
         StringBuilder stringBuilder = new StringBuilder();
 
@@ -875,18 +893,22 @@ public class SimpleHtmlReport {
         return stringBuilder.toString();
     }
 
+    /** Extension hook for rendering class-graph visuals. */
     public String renderClassGraphVisuals(String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
         return ""; // empty on purpose
     }
 
+    /** Extension hook for rendering package-graph visuals. */
     public String renderPackageGraphVisuals(String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
         return ""; // empty on purpose
     }
 
+    /** Extension hook for rendering a class-cycle visualization. */
     public String renderClassCycleVisuals(RankedCycle cycle, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
         return ""; // empty on purpose
     }
 
+    /** Renders a table cell, right-aligning numeric and date-like values. */
     String drawTableCell(String rowData) {
         if (isNumber(rowData) || isDateTime(rowData)) {
             return "<td align=\"right\">" + rowData + "</td>\n";
@@ -895,30 +917,37 @@ public class SimpleHtmlReport {
         }
     }
 
+    /** Reports whether a table value is a signed integer or decimal number. */
     boolean isNumber(String rowData) {
         return rowData.matches("-?\\d+(\\.\\d+)?");
     }
 
+    /** Reports whether a table value uses the localized date-time delimiter. */
     boolean isDateTime(String rowData) {
         return rowData.contains(", ");
     }
 
+    /** Extension hook for rendering the HTML title element. */
     public String printTitle(String projectName, String projectVersion) {
         return ""; // empty on purpose
     }
 
+    /** Extension hook for rendering additional HTML head content. */
     public String printHead() {
         return ""; // empty on purpose
     }
 
+    /** Extension hook for rendering script elements. */
     String printScripts() {
         return ""; // empty on purpose
     }
 
+    /** Returns the opening body tag used by the report page. */
     public String printOpenBodyTag() {
         return "  <body class=\"composite\">\n";
     }
 
+    /** Returns the opening banner and breadcrumb markup. */
     public String printBreadcrumbs() {
         return """
                     <div id="banner">
@@ -928,6 +957,7 @@ public class SimpleHtmlReport {
                 """;
     }
 
+    /** Renders the project heading with links to RefactorFirst and the analyzed repository. */
     public String printProjectHeader(String projectName, String projectVersion, String projectBaseDir)
             throws Exception {
         String repoUrl = getRepoUrl(projectBaseDir);
@@ -942,6 +972,7 @@ public class SimpleHtmlReport {
                 + projectVersion + "</a></h1>\n";
     }
 
+    /** Renders the report footer with the current publication timestamp. */
     public String printProjectFooter() {
         return "      <div class=\"clear\">\n" + "        <hr/>\n" + "      </div>\n"
                 + "<span id=\"publishDate\">Last Published: "
@@ -950,6 +981,7 @@ public class SimpleHtmlReport {
                 + "        <hr/>\n" + "      </div>\n" + "</span>";
     }
 
+    /** Renders links for common RefactorFirst GitHub actions. */
     String renderGithubButtons() {
         return """
                 <div align="center">
@@ -962,6 +994,7 @@ public class SimpleHtmlReport {
                 </div>""";
     }
 
+    /** Returns the base filename for the generated report. */
     String getOutputName() {
         // This report will generate simple-report.html when invoked in a project with `mvn site`
         return "refactor-first-report";
@@ -1096,6 +1129,7 @@ public class SimpleHtmlReport {
         return sb.toString();
     }
 
+    /** Removes package qualifiers and verbose generic bounds from a method signature. */
     String getSimpleMethodSignature(String sig) {
         if (sig == null) {
             return null;
@@ -1146,6 +1180,7 @@ public class SimpleHtmlReport {
     // upWaitQueue(com.tonikelope.megabasterd.Transference) ↔
     // TransferenceManager.downWaitQueue(com.tonikelope.megabasterd.Transference)
     // should become upWaitQueue(Transference) ↔ TransferenceManager.downWaitQueue(Transference)
+    /** Simplifies fully qualified parameter types in a duplication-partner description. */
     String simplifyDuplicatePartners(String duplicationPartners) {
         if (duplicationPartners == null) {
             return null;
@@ -1172,10 +1207,12 @@ public class SimpleHtmlReport {
         return String.join(" ↔ ", simplifiedParts);
     }
 
+    /** Extension hook for rendering a chart for one disharmony category. */
     String renderDisharmonyChart(String anchorId, String title, List<RankedDisharmony> ranked, int maxPriority) {
         return ""; // empty on purpose; overridden in HtmlReport
     }
 
+    /** Returns the simple class name from a fully qualified class name. */
     String getClassName(String fqn) {
         // handle no package
         if (!fqn.contains(".")) {
@@ -1186,6 +1223,7 @@ public class SimpleHtmlReport {
         return fqn.substring(lastIndex + 1);
     }
 
+    /** Extracts the source and target vertex labels from an edge's string representation. */
     static String[] extractVertexes(DefaultWeightedEdge edge) {
         return edge.toString().replace("(", "").replace(")", "").split(":");
     }
@@ -1198,6 +1236,7 @@ public class SimpleHtmlReport {
         final String problem;
         final String solution;
 
+        /** Creates the display metadata for one supported disharmony category. */
         DisharmonySpec(
                 String type, String anchorId, String title, boolean methodLevel, String problem, String solution) {
             this.type = type;
@@ -1208,26 +1247,32 @@ public class SimpleHtmlReport {
             this.solution = solution;
         }
 
+        /** Returns the disharmony type identifier. */
         String type() {
             return type;
         }
 
+        /** Returns the HTML anchor identifier. */
         String anchorId() {
             return anchorId;
         }
 
+        /** Returns the display title. */
         String title() {
             return title;
         }
 
+        /** Reports whether the disharmony describes methods rather than classes. */
         boolean methodLevel() {
             return methodLevel;
         }
 
+        /** Returns the problem description. */
         String problem() {
             return problem;
         }
 
+        /** Returns the recommended remediation. */
         String solution() {
             return solution;
         }

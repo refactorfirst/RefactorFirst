@@ -12,7 +12,7 @@ Code map viewers are powered by [3D Force Graph](https://vasturiano.github.io/3d
 <br>If there are more than 4000 classes + relationships, a simplified 3D viewer will be available to avoid page load slowdowns.  Features will be toggleable in the 3D UI in a future release.
 
 ## How to Use RefactorFirst Quickly
-Run the command below in your Java project's top-level directory.  You'll need Git, Java 11 (or newer) and Maven 3 installed.  This command will analyze Maven and non-Maven projects:
+Run the command below in your Java project's top-level directory.  You'll need Git, Java 17 (or newer) and Maven 3 installed.  This command will analyze Maven and non-Maven projects:
 ```bash
 mvn org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.10.0:htmlReport
 ```
@@ -43,7 +43,8 @@ The graphs generated in the report will look similar to this one:
 ![image info](./RefactorFirst_Sample_Report.png)
 
 ## Please Note: Java 17 (or newer) required to run RefactorFirst
-**Java 25 codebase analysis is supported!**
+**Java 25 codebase analysis is supported!** Run RefactorFirst on a Java 25+ runtime and the Java 25 parser is used automatically; on older runtimes analysis falls back to the parser matching your runtime.
+The Maven and Gradle plugins themselves still only require a Java 17 runtime.
 Please use a recent JDK release of the Java version you are using.  
 If you use an old JDK release of your chosen Java version, you may encounter issues during analysis.
 
@@ -117,6 +118,8 @@ Specify with -D if running on the command line.  e.g. ```-DbackEdgeAnalysisCount
 |projectName|The name of your project to be displayed on the report| Your Maven project name                                   |
 |projectVersion|The version of your project to be displayed on the report| Your Maven project version                                |
 |outputDirectory|The location the project report will be written| ```${projectDir}/target/site/refactor-first-report.html``` 
+
+The Java 25 parser activates automatically when running on a JDK 25+ runtime (JEP 238 multi-release jar); there is no configuration flag for it.
 
 
 ## But I'm using Gradle / my project layout isn't typical!

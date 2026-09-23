@@ -38,6 +38,18 @@
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-core</artifactId>
         </dependency>
+        <!-- JEP 238: this jar now ships in every distribution (Maven plugin,
+             CLI, ...) so JDK 25+ runtimes always get the Java 25 parser. Its
+             class files are compiled for Java 25 (class file 69.0), but they
+             are inert on Java 17/21 classpaths: the module's own code only
+             references them from the META-INF/versions/25 multi-release
+             variant (Java25ParserFactory), which pre-25 runtimes can never
+             load, and the jar declares no META-INF/services entries.
+             Version is managed by the rewrite-bom import above. -->
+        <dependency>
+            <groupId>org.openrewrite</groupId>
+            <artifactId>rewrite-java-25</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.openrewrite</groupId>
             <artifactId>rewrite-java-21</artifactId>
@@ -66,4 +78,75 @@
             <artifactId>rewrite-kotlin</artifactId>
         </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.4.1</version>
+                <configuration>
+                    <archive>
+                        <manifestEntries>
+                            <!-- JEP 238: activate META-INF/versions/25 lookup
+                                 on JDK 25+ runtimes (see Java25ParserFactory). -->
+                            <Multi-Release>true</Multi-Release>
+                        </manifestEntries>
+                    </archive>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <version>3.5.3</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <!-- JEP 238 multi-release build: compiling META-INF/versions/25
+             classes requires a JDK 25+ javac. On older build JDKs this profile
+             is inactive and the jar simply ships without versioned entries
+             (the release pipeline builds on JDK 25 and asserts their
+             presence). -->
+        <profile>
+            <id>jdk25-multi-release</id>
+            <activation>
+                <jdk>[25,)</jdk>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-compiler-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>compile-java25-multirelease</id>
+                                <phase>compile</phase>
+                                <goals>
+                                    <goal>compile</goal>
+                                </goals>
+                                <configuration>
+                                    <release>25</release>
+                                    <compileSourceRoots>
+                                        <compileSourceRoot>${project.basedir}/src/main/java25</compileSourceRoot>
+                                    </compileSourceRoots>
+                                    <outputDirectory>
+                                        ${project.build.outputDirectory}/META-INF/versions/25</outputDirectory>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

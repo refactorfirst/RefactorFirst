@@ -7,6 +7,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.util.*;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.LogCommand;
@@ -190,8 +192,6 @@ public class GitLogReaderTest {
     void testFileLogReturnsOnlyVerifiedPartialPathHistoryWithMissingTree() throws Exception {
         // Simulates a shallow clone whose tree objects are missing:  the filtered walk
         // may yield zero results due to missing objects, but should not fall back to total history.
-        GitLogReader gitLogReader = new GitLogReader(git);
-
         String attributeHandler = "AttributeHandler.java";
         InputStream resourceAsStream = getClass().getClassLoader().getResourceAsStream(attributeHandler);
         String contents = convertInputStreamToString(resourceAsStream);
@@ -208,11 +208,19 @@ public class GitLogReaderTest {
 
         deleteLooseObject(secondCommit.getTree());
 
-        ScmLogInfo scmLogInfo = Assertions.assertDoesNotThrow(() -> gitLogReader.fileLog(attributeHandler));
+        // Read through a freshly opened repository: the commits above populated JGit's
+        // in-memory loose-object cache (UnpackedObjectCache, one per ObjectDirectory
+        // instance), which could otherwise serve the deleted tree from memory and let
+        // the walk succeed with 2 commits instead of failing. A new Repository instance
+        // gets an empty cache, so the missing object is really exercised on every OS.
+        try (Git freshGit = Git.open(repository.getDirectory())) {
+            GitLogReader gitLogReader = new GitLogReader(freshGit);
+            ScmLogInfo scmLogInfo = Assertions.assertDoesNotThrow(() -> gitLogReader.fileLog(attributeHandler));
 
-        // With missing tree objects, the filtered walk may yield zero verified partial results
-        // rather than falling back to total repository history
-        Assertions.assertEquals(0, scmLogInfo.getCommitCount());
+            // With missing tree objects, the filtered walk may yield zero verified partial results
+            // rather than falling back to total repository history
+            Assertions.assertEquals(0, scmLogInfo.getCommitCount());
+        }
     }
 
     @Test
@@ -232,16 +240,39 @@ public class GitLogReaderTest {
         Assertions.assertEquals(0, scmLogInfo.getCommitCount());
     }
 
-    private void deleteLooseObject(ObjectId objectId) throws IOException {
+    private void deleteLooseObject(ObjectId objectId) throws IOException, InterruptedException {
         String objectName = objectId.getName();
         File looseObject = new File(
                 new File(repository.getDirectory(), "objects"),
                 objectName.substring(0, 2) + '/' + objectName.substring(2));
         org.junit.jupiter.api.Assumptions.assumeTrue(
                 looseObject.exists(), "loose object " + objectName + " should exist in a fresh repository");
-        if (!looseObject.delete()) {
-            throw new IOException("Unable to delete loose object " + looseObject);
+
+        // JGit writes loose objects with the read-only attribute set (as C git
+        // does). POSIX unlink ignores the read-only bit, but Windows refuses to
+        // delete a read-only file and every retry would fail with
+        // AccessDeniedException — so the attribute must be cleared first.
+        if (!looseObject.setWritable(true) && !looseObject.canWrite()) {
+            throw new IOException("Unable to clear read-only flag on loose object " + looseObject);
         }
+
+        // On Windows, antivirus or the search indexer can also hold a newly
+        // created file open briefly, making an immediate delete fail
+        // spuriously. Retry for a short window before giving up (harmless on
+        // Linux/macOS, where the first attempt succeeds).
+        IOException lastError = null;
+        for (int attempt = 0; attempt < 50; attempt++) {
+            try {
+                Files.delete(looseObject.toPath());
+                return;
+            } catch (NoSuchFileException alreadyGone) {
+                return;
+            } catch (IOException lockedOrBusy) {
+                lastError = lockedOrBusy;
+                Thread.sleep(50);
+            }
+        }
+        throw new IOException("Unable to delete loose object " + looseObject, lastError);
     }
 
     @Test

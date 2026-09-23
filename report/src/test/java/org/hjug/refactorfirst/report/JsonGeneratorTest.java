@@ -194,4 +194,54 @@ class JsonGeneratorTest {
         // (buildRawClassGraphDot only renders vertices with edges)
         assertTrue(report.getClassMap().getDot().contains("digraph G"));
     }
+
+    /**
+     * Verifies report generation succeeds with parser selection left entirely
+     * to the runtime (JEP 238 multi-release jar design).
+     */
+    @Test
+    void testExecuteWithoutParserFlags() throws Exception {
+        File repoDir = tempDir.toFile();
+        new File(repoDir, ".git").mkdirs();
+
+        File srcDir = new File(repoDir, "src/main/java/com/example");
+        srcDir.mkdirs();
+        Files.writeString(
+                new File(srcDir, "SampleService.java").toPath(),
+                """
+                package com.example;
+
+                public class SampleService {
+                    public String execute() {
+                        return "Hello World";
+                    }
+                }
+                """);
+
+        new ProcessBuilder("git", "init").directory(repoDir).start().waitFor();
+        new ProcessBuilder("git", "config", "user.email", "test@test.com")
+                .directory(repoDir)
+                .start()
+                .waitFor();
+        new ProcessBuilder("git", "config", "user.name", "Test")
+                .directory(repoDir)
+                .start()
+                .waitFor();
+        new ProcessBuilder("git", "add", ".").directory(repoDir).start().waitFor();
+        new ProcessBuilder("git", "commit", "-m", "initial")
+                .directory(repoDir)
+                .start()
+                .waitFor();
+
+        new JsonGenerator().execute(50, true, false, true, "src/test", "ForcedProject", "1.0.0", repoDir, null);
+
+        Path jsonFile = tempDir.resolve(".refactorfirst").resolve("refactor-first.json");
+        assertTrue(Files.exists(jsonFile));
+
+        RefactorFirstReportDTO report = objectMapper.readValue(jsonFile.toFile(), RefactorFirstReportDTO.class);
+        assertNotNull(report);
+        assertEquals("ForcedProject", report.getProject().getName());
+        assertFalse(report.getProject().isAnalysisFailed());
+        assertTrue(report.getClassMap().getClassCount() >= 1);
+    }
 }

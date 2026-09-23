@@ -39,12 +39,13 @@ import org.openrewrite.java.JavaParser;
 @Slf4j
 public class JavaSourceFileGraphBuilder implements SourceFileGraphBuilder {
 
+    /** Builds dependency graphs and metrics from the Java files under the supplied repository path. */
     @Override
     public CodebaseGraphDTO buildGraph(String repositoryPath, String repositoryRoot, GraphBuilderConfig config)
             throws IOException {
         File srcDirectory = new File(repositoryPath);
 
-        JavaParser javaParser = JavaParser.fromJavaVersion().build();
+        JavaParser javaParser = createJavaParser();
         ExecutionContext ctx = new InMemoryExecutionContext(e -> log.warn("OpenRewrite parse/visit error", e));
 
         final Graph<String, DefaultWeightedEdge> classReferencesGraph =
@@ -94,6 +95,28 @@ public class JavaSourceFileGraphBuilder implements SourceFileGraphBuilder {
                 metricsCollector);
     }
 
+    /**
+     * Selects the {@link JavaParser} for this build. The JEP 238 multi-release
+     * variant of {@link Java25ParserFactory} supplies the Java 25 parser when
+     * the classes were loaded from the packaged jar on a JDK 25+ runtime. The
+     * fallback {@link JavaParser#fromJavaVersion()} additionally elevates to
+     * the Java 25 parser on its own whenever the runtime is 25+ and
+     * {@code rewrite-java-25} is on the classpath.
+     *
+     * <p>Note: JEP 238 shadowing applies only to classes loaded from a jar.
+     * In exploded-directory classpaths (e.g. unit tests against
+     * {@code target/classes}) the base factory variant answers even on
+     * JDK 25; the {@code fromJavaVersion()} elevation still yields a
+     * Java 25-capable parser there when {@code rewrite-java-25} is present.
+     */
+    static JavaParser createJavaParser() {
+        return Java25ParserFactory.createJava25Parser().orElseGet(() -> {
+            log.debug("Using JavaParser.fromJavaVersion() (Java 25 multi-release jar variant not active)");
+            return JavaParser.fromJavaVersion().build();
+        });
+    }
+
+    /** Finalizes collected metrics and assembles the Java codebase graph result. */
     static CodebaseGraphDTO finalizeDto(
             Graph<String, DefaultWeightedEdge> classReferencesGraph,
             Graph<String, DefaultWeightedEdge> packageReferencesGraph,
@@ -127,6 +150,7 @@ public class JavaSourceFileGraphBuilder implements SourceFileGraphBuilder {
                 getMethodDisharmonies(detector, metrics));
     }
 
+    /** Removes graph vertices whose packages were not discovered in the analyzed codebase. */
     static void removeClassesNotInCodebase(
             Set<String> packagesInCodebase, Graph<String, DefaultWeightedEdge> classReferencesGraph) {
         Set<String> classesToRemove = new HashSet<>();
@@ -138,6 +162,7 @@ public class JavaSourceFileGraphBuilder implements SourceFileGraphBuilder {
         classReferencesGraph.removeAllVertices(classesToRemove);
     }
 
+    /** Removes package vertices that were not discovered in the analyzed codebase. */
     static void removePackagesNotInCodebase(
             Set<String> packagesInCodebase, Graph<String, DefaultWeightedEdge> packageReferencesGraph) {
         Set<String> packagesToRemove = new HashSet<>();
@@ -149,6 +174,7 @@ public class JavaSourceFileGraphBuilder implements SourceFileGraphBuilder {
         packageReferencesGraph.removeAllVertices(packagesToRemove);
     }
 
+    /** Returns the package portion of a fully qualified class name. */
     static String getPackage(String fqn) {
         if (!fqn.contains(".")) {
             return "";
@@ -157,6 +183,7 @@ public class JavaSourceFileGraphBuilder implements SourceFileGraphBuilder {
         return fqn.substring(0, lastIndex);
     }
 
+    /** Collects all method-level disharmonies detected for the supplied metrics. */
     private static List<MethodDisharmony> getMethodDisharmonies(
             DisharmonyDetector detector, Collection<ClassMetrics> metrics) {
         List<MethodDisharmony> methodDisharmonies = new ArrayList<>();
@@ -168,6 +195,7 @@ public class JavaSourceFileGraphBuilder implements SourceFileGraphBuilder {
         return methodDisharmonies;
     }
 
+    /** Collects class-level disharmonies, including Kotlin-specific findings when applicable. */
     static List<ClassDisharmony> getClassDisharmonies(
             DisharmonyDetector detector, Collection<ClassMetrics> metrics, boolean hasKotlinMetrics) {
         List<ClassDisharmony> classDisharmonies = new ArrayList<>();

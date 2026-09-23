@@ -68,6 +68,12 @@ class CostBenefitCalculatorTest {
         Assertions.assertFalse(disharmonies.isEmpty());
     }
 
+    // Note: this test was previously @DisabledOnJre(JRE.JAVA_25) — OpenRewrite
+    // 8.90.4 could not convert the UpdateCenter2.java fixture on a JDK 25
+    // runtime (Java 25 parser lambda NPE, openrewrite/rewrite#8712 family).
+    // That failure no longer reproduces now that rewrite-java-25 is always on
+    // the classpath (JEP 238 packaging): the test passes on JDK 25. If the
+    // fixture regresses on newer JDKs, check that issue first.
     @Test
     void testCostBenefitCalculation() throws IOException, GitAPIException, InterruptedException {
 

@@ -55,6 +55,12 @@
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <mainClass>org.hjug.refactorfirst.Main</mainClass>
+                                    <!-- JEP 238: keep multi-release lookup working for the
+                                         META-INF/versions/25 entries shaded in from
+                                         codebase-graph-builder. -->
+                                    <manifestEntries>
+                                        <Multi-Release>true</Multi-Release>
+                                    </manifestEntries>
                                 </transformer>
                             </transformers>
                             <filters>

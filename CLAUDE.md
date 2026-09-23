@@ -49,7 +49,7 @@ test-resources (shared fixtures)
 coverage (JaCoCo aggregation)
 ```
 
-**codebase-graph-builder** — The most complex module. Uses OpenRewrite to parse Java source across versions (11/17/21), builds class and package dependency graphs with JGraphT, detects cycle-breaking candidates using two graph algorithms, and returns everything in `CodebaseGraphDTO`. Entry point: `JavaGraphBuilder.getCodebaseGraphDTO()`.
+**codebase-graph-builder** — The most complex module. Uses OpenRewrite to parse Java source across versions (11/17/21, and 25 when running on a Java 25+ runtime — see "Java 25 analysis" below), builds class and package dependency graphs with JGraphT, detects cycle-breaking candidates using two graph algorithms, and returns everything in `CodebaseGraphDTO`. Entry point: `JavaGraphBuilder.getCodebaseGraphDTO()`.
 
 **graph-algorithms** — Two cycle-decomposition algorithms used by `JavaGraphBuilder`:
 - *Directed Feedback Vertex Set* (`org.hjug.feedback.vertex.kernelized`) — kernelized algorithm; identifies the minimum vertex set to remove to break all cycles.
@@ -92,6 +92,10 @@ Mutation testing via PIT (`pitest-maven`) is configured but not part of the defa
 
 ## Java & Toolchain
 
-- Source/target: Java 11 minimum; OpenRewrite parser supports 11, 17, 21.
+- Source/target: Java 17 minimum; OpenRewrite parser supports 11, 17, 21 — plus 25 when running on a Java 25+ runtime.
 - Logging: SLF4J; use `log.debug()` for verbose per-class output, `log.info()` sparingly.
 - Spotless enforces Palantir Java format — run `mvn spotless:apply` before committing.
+
+## Java 25 analysis
+
+`rewrite-java-25` is a **required** compile dependency of `codebase-graph-builder` and ships in every distribution (Maven plugin, CLI fat jar). Its class files are compiled for class-file version 69 but are inert on Java 17/21 classpaths (no `META-INF/services` entries, no base-level references). Activation uses a **JEP 238 multi-release jar** rather than reflection or runtime-version detection: `codebase-graph-builder` declares `Multi-Release: true` and carries two variants of `org.hjug.graphbuilder.graphbuilder.Java25ParserFactory` — the base variant (release 17, returns `Optional.empty()`) and a Java 25 variant compiled from `src/main/java25` into `META-INF/versions/25` (directly constructs `Java25Parser`, with a `catch (Throwable)` graceful-degradation guard). On JDK 25+ runtimes the JVM's versioned jar lookup shadows the base variant, so `JavaSourceFileGraphBuilder.createJavaParser(config)` is just `Java25ParserFactory.createJava25Parser().orElseGet(JavaParser::fromJavaVersion...)`. OpenRewrite's `fromJavaVersion()` additionally elevates to `Java25Parser` on its own when the runtime is 25+ and `rewrite-java-25` is on the classpath (covering exploded-directory classpaths where jar shadowing does not apply). The former `forceJava25Parser` escape hatch has been removed everywhere; there is no configuration surface for parser selection. Build constraints: never reference class-file-69 code from base sources (only `src/main/java25`); the versioned class must keep the base's exact public API; release artifacts must be built with JDK 25 (`release.yml` asserts the versioned entries exist); JaCoCo excludes `META-INF/versions/**`; the CLI shade config re-adds `Multi-Release: true` to the fat jar manifest; `refactor-first-maven-plugin` requires `maven-plugin-plugin`/`maven-plugin-annotations` 3.16.0 (ASM 9.10.1) so descriptor generation can scan class-file-69 entries. See `plans/jep-238-plan.md` for the design record.

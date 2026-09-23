@@ -17,6 +17,64 @@
 - **Anonymous/synthetic classes are first-class graph members.** Java `Outer$N`/`Outer$` (anonymous/synthetic inner classes) and the Kotlin literal `"<anonymous>"` FQN are **not** sieved out by `GraphDependencyCollector`; they genuinely participate in cycles and can harbour antipatterns, so they are vertices in the class graph and rendered with `$` as the enclosing-class separator. `GraphDependencyCollector` keeps only the `from == to` self-edge guard, plus a degenerate-package guard so a packageless `"<anonymous>"` source never creates an `""` package-graph vertex. **Sink-only** anonymous/synthetic vertices (those with no outgoing edges) are suppressed only at render time in `HtmlReport.isSinkAnonymousOrSyntheticVertex` to keep the Class/Cycle Map DOT graph readable; active ones still render.
 - **Anonymous DOT node ids are source-file derived.** OpenRewrite attributes a Kotlin anonymous object / function-literal type with {@code "<anonymous>"} as the trailing simple-name segment of its FQN: standalone ({@code "<anonymous>"}) or, in real graphs (e.g. FXGL), prefixed by the enclosing class/package ({@code "dev.DeveloperWASDControl.<anonymous>"}). {@code HtmlReport.isAnonymousFqn(vertex)} detects a vertex when its trailing segment starts with {@code <}. {@code HtmlReport.renderSafeNodeId(vertex, codebaseGraphDTO)} then derives the enclosing owner from the vertex's mapped source-file path in {@code CodebaseGraphDTO.classToSourceFilePathMapping} (file base name without extension, e.g. {@code DeveloperWASDControl.kt} -> {@code DeveloperWASDControl}). The DOT node id renders as {@code DeveloperWASDControl_anonymous} and the human-readable label as {@code DeveloperWASDControl\$anonymous} ({@code $} escaped as {@code \$} for DOT). When no source path is mapped (or DTO is null) it degrades to the reversible {@code lt_}/{@code _gt} {@code <}/{@code >} encoding. The renderer is responsible for DOT/HTML-safe encoding of the literal {@code "<anonymous>"} FQN ({@code <}/{@code >} are illegal in Graphviz node ids; {@code <}/{@code >} escaping in HTML table labels).
 
+## Java 25 analysis (JEP 238 multi-release jar)
+
+`rewrite-java-25` is a **required** (BOM-managed, no explicit version) compile
+dependency of `codebase-graph-builder` and ships in every distributed artifact
+(Maven plugin, CLI fat jar). Its class files are Java 25 (class-file 69.0) but
+are inert on Java 17/21 classpaths: the jar declares no `META-INF/services`
+entries, and no base-level class in the module references it.
+
+Activation uses a **JEP 238 multi-release jar**, not reflection or version
+detection. `codebase-graph-builder` declares `Multi-Release: true` and ships
+two variants of `org.hjug.graphbuilder.graphbuilder.Java25ParserFactory`:
+
+- the base variant (`src/main/java`, `--release 17`) returns
+  `Optional.empty()`;
+- the Java 25 variant (`src/main/java25`, compiled `--release 25` into
+  `META-INF/versions/25` by the auto-activated `jdk25-multi-release` profile)
+  calls `Java25Parser.builder().build()` directly, wrapped in a
+  `catch (Throwable)` graceful-degradation guard.
+
+On JDK 25+ runtimes the JVM's versioned jar lookup shadows the base variant —
+parser selection is fully runtime-driven with no configuration surface.
+`JavaSourceFileGraphBuilder.createJavaParser(config)` is just
+`Java25ParserFactory.createJava25Parser().orElseGet(...fromJavaVersion...)`.
+Independently, OpenRewrite's `JavaParser.fromJavaVersion()` itself reflectively
+elevates to `Java25Parser` on JDK 25+ whenever `rewrite-java-25` is on the
+classpath, so exploded-directory classpaths (e.g. surefire against
+`target/classes`, where JEP 238 shadowing does not apply) still get the
+Java 25 parser on JDK 25. `Java25ParserFactoryTest` covers the factory
+contract (including public-API parity of the two variants);
+`MultiReleaseJarIT` verifies the packaged jar's manifest, versioned entries,
+and real jar shadowing.
+
+Constraints:
+
+- **Never reference `rewrite-java-25` (or any class-file-69 code) from base
+  sources** — only from `src/main/java25`.
+- The versioned class must keep exactly the same public API as the base class.
+- Release artifacts must be built on JDK 25+ (see `release.yml`, which also
+  asserts the versioned entries exist); a build on JDK 17 succeeds but
+  silently lacks `META-INF/versions/25`.
+- JaCoCo excludes `META-INF/versions/**` (duplicate class names break its
+  report goal); the CLI shade config re-adds `Multi-Release: true` to the fat
+  jar manifest.
+- `refactor-first-maven-plugin` uses `maven-plugin-plugin` /
+  `maven-plugin-annotations` 3.16.0 because descriptor generation scans
+  dependency archives with ASM and older versions cannot read class-file 69.
+
+**JDK 25 build notes:**
+- Spotless 3.10.2 with `palantir-java-format` 2.71.0 runs on JDK 17, 21 and
+  25 with no `--add-exports` workaround (older Spotless 2.x /
+  palantir-java-format builds failed on JDK 21+ without javac exports and
+  could not run on JDK 25 at all).
+- CI (`maven.yml`, `maven-pr.yml`) builds a JDK 17 + JDK 25 matrix.
+- `CostBenefitCalculatorTest.testCostBenefitCalculation` runs on all JDKs;
+  its former `@DisabledOnJre(JRE.JAVA_25)` (OpenRewrite 8.90.4 fixture
+  failure, issue #8712 family) no longer reproduces now that
+  `rewrite-java-25` is always on the classpath — verified passing on JDK 25.
+
 ## Kotlin analysis (hard dependency)
 
 `rewrite-kotlin` (`org.openrewrite:rewrite-kotlin`) is a **non-optional
@@ -37,11 +95,12 @@ and the CLI fat-jar bundle the Kotlin compiler —
 `kotlin-script-runtime` / `kotlin-daemon-embeddable` /
 `kotlinx-coroutines-core-jvm` transitives — into **every** consumer's runtime,
 including pure-Java projects that never contain a `.kt` file. As of this branch
-the CLI fat-jar is `cli/target/cli-<version>.jar` and measures **~144 MB**
-(verified via `du -sh cli/target/cli-0.10.0.jar` after
-`mvn clean install -DskipTests`); the Kotlin compiler and its transitives are a
-material fraction of that. A pure-Java consumer therefore pays this size/cost
-(the dependency is always on the classpath regardless).
+the CLI fat-jar is `cli/target/cli-<version>.jar` and measures **~145 MB**
+(verified via `du -sh cli/target/cli-0.11.0-SNAPSHOT.jar` after
+`mvn clean install`); the Kotlin compiler and its transitives — and, since the
+JEP 238 change, the non-optional `rewrite-java-25` — are a material fraction of
+that. A pure-Java consumer therefore pays this size/cost (the dependency is
+always on the classpath regardless).
 
 **No opt-out:** Kotlin analysis runs unconditionally — there is no
 `analyzeKotlin` switch on `GraphBuilderConfig`. The Kotlin parser is always
@@ -77,6 +136,9 @@ Configuration options (most important):
 - `analyzeCycles`: Whether to analyze cycles (default: true)
 - `excludeTests`: Exclude test classes (default: true)
 - `minifyHtml`: Minify HTML report (default: false)
+
+(Java 25 parser activation is automatic on JDK 25+ runtimes via the JEP 238
+multi-release jar — there is no longer any configuration flag for it.)
 
 ## CVE Pinning
 Transitive dependencies surfaced by an OWASP dependency-check are pinned centrally in the
