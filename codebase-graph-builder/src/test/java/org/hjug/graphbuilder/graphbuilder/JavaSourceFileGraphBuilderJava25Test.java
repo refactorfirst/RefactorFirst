@@ -44,7 +44,7 @@ class JavaSourceFileGraphBuilderJava25Test {
         if (Runtime.version().feature() >= 25) {
             return; // covered by the JAVA_25-only test below
         }
-        JavaParser parser = JavaSourceFileGraphBuilder.createJavaParser(config());
+        JavaParser parser = JavaSourceFileGraphBuilder.createJavaParser();
         assertFalse(
                 parser.getClass().getSimpleName().contains("25"),
                 "Expected a non-Java-25 parser, got: " + parser.getClass().getName());
@@ -60,7 +60,7 @@ class JavaSourceFileGraphBuilderJava25Test {
                         + "(JEP 238 shadowing applies only to jars)");
         // fromJavaVersion() reflectively elevates to Java25Parser on a 25+
         // runtime because rewrite-java-25 is on the (test) classpath.
-        JavaParser parser = JavaSourceFileGraphBuilder.createJavaParser(config());
+        JavaParser parser = JavaSourceFileGraphBuilder.createJavaParser();
         assertNotNull(parser, "Parser creation must never fail");
         assertTrue(
                 parser.getClass().getName().contains("Java25"),

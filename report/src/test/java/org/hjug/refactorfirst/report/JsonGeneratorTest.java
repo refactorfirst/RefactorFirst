@@ -197,9 +197,7 @@ class JsonGeneratorTest {
 
     /**
      * Verifies report generation succeeds with parser selection left entirely
-     * to the runtime (the parser-forcing overload was removed when
-     * reflection-based parser loading was replaced by the JEP 238
-     * multi-release jar design).
+     * to the runtime (JEP 238 multi-release jar design).
      */
     @Test
     void testExecuteWithoutParserFlags() throws Exception {

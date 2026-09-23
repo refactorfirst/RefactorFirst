@@ -15,11 +15,6 @@ import org.openrewrite.java.JavaParser;
  * the versioned entry is invisible to the class loader — its class-file
  * version (69.0) can never be loaded — and this base variant answers.
  *
- * <p>This replaces the previous reflection-based loading, runtime-version
- * detection, and force-flag escape hatch: the JVM performs version selection
- * itself, and a forced load is meaningless because version-69 class files
- * physically cannot load on older runtimes.
- *
  * <p>Note: multi-release shadowing only applies when classes are loaded from
  * a <em>jar</em>. In exploded-directory classpaths (e.g. unit tests running
  * against {@code target/classes}) this base variant answers even on JDK 25.

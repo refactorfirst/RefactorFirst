@@ -44,7 +44,7 @@ public class JavaSourceFileGraphBuilder implements SourceFileGraphBuilder {
             throws IOException {
         File srcDirectory = new File(repositoryPath);
 
-        JavaParser javaParser = createJavaParser(config);
+        JavaParser javaParser = createJavaParser();
         ExecutionContext ctx = new InMemoryExecutionContext(e -> log.warn("OpenRewrite parse/visit error", e));
 
         final Graph<String, DefaultWeightedEdge> classReferencesGraph =
@@ -113,7 +113,7 @@ public class JavaSourceFileGraphBuilder implements SourceFileGraphBuilder {
      * JDK 25; the {@code fromJavaVersion()} elevation still yields a
      * Java 25-capable parser there when {@code rewrite-java-25} is present.
      */
-    static JavaParser createJavaParser(GraphBuilderConfig config) {
+    static JavaParser createJavaParser() {
         return Java25ParserFactory.createJava25Parser().orElseGet(() -> {
             log.debug("Using JavaParser.fromJavaVersion() (Java 25 multi-release jar variant not active)");
             return JavaParser.fromJavaVersion().build();
