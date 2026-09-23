@@ -21,6 +21,7 @@ import org.openrewrite.java.JavaParser;
  */
 public final class Java25ParserFactory {
 
+    /** Prevents instantiation of this utility class. */
     private Java25ParserFactory() {
         // Utility class
     }

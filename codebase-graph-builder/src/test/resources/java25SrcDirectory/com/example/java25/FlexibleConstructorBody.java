@@ -9,6 +9,11 @@ public class FlexibleConstructorBody {
 
     private final int value;
 
+    /**
+     * Creates an instance after validating the constructor argument before delegation.
+     *
+     * @param raw the non-negative value to retain
+     */
     public FlexibleConstructorBody(int raw) {
         if (raw < 0) {
             throw new IllegalArgumentException("value must not be negative");
@@ -18,6 +23,7 @@ public class FlexibleConstructorBody {
         this.value = raw;
     }
 
+    /** Returns the value supplied at construction time. */
     public int getValue() {
         return value;
     }

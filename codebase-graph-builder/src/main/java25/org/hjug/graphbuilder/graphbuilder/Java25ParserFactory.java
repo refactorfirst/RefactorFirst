@@ -22,6 +22,7 @@ public final class Java25ParserFactory {
     // annotation processing so the extra compile execution stays minimal.
     private static final Logger log = LoggerFactory.getLogger(Java25ParserFactory.class);
 
+    /** Prevents instantiation of this utility class. */
     private Java25ParserFactory() {
         // Utility class
     }
