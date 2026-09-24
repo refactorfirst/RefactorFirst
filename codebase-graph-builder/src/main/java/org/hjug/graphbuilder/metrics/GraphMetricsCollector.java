@@ -287,10 +287,25 @@ public class GraphMetricsCollector implements DependencyCollector {
     }
 
     private int computeSealedDepth(ClassMetrics metrics) {
+        return computeSealedDepth(metrics, new HashSet<>());
+    }
+
+    /**
+     * Cycle-safe variant of {@link #computeSealedDepth(ClassMetrics)}. The
+     * {@code visiting} set tracks the FQNs on the current ancestor-traversal
+     * path; re-entering a class already on the path means the collected
+     * ancestor data contains a cycle (issue #215: Java {@code implements}
+     * chains recorded in a cycle, e.g. by type attribution without the full
+     * classpath), so the traversal stops instead of recursing forever.
+     */
+    private int computeSealedDepth(ClassMetrics metrics, Set<String> visiting) {
         Set<String> ancestors = metrics.getSealedHierarchyAncestors();
         if (ancestors.isEmpty()) {
             // No sealed hierarchy ancestors: depth 1 if sealed, 0 otherwise
             return metrics.isSealed() ? 1 : 0;
+        }
+        if (!visiting.add(metrics.getFullyQualifiedName())) {
+            return 0;
         }
         // Has sealed hierarchy ancestors: traverse them first
         int maxAncestorDepth = 0;
@@ -303,8 +318,9 @@ public class GraphMetricsCollector implements DependencyCollector {
                 continue;
             }
             hasObservableAncestor = true;
-            maxAncestorDepth = Math.max(maxAncestorDepth, computeSealedDepth(ancestor));
+            maxAncestorDepth = Math.max(maxAncestorDepth, computeSealedDepth(ancestor, visiting));
         }
+        visiting.remove(metrics.getFullyQualifiedName());
         if (!hasObservableAncestor) {
             // All ancestors are external; preserve depth 2 to record relationship
             return 2;
