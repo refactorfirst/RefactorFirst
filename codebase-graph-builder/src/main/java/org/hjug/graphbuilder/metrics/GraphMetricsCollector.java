@@ -288,6 +288,14 @@ public class GraphMetricsCollector implements DependencyCollector {
         }
     }
 
+    /**
+     * Computes a class's depth in the collected sealed hierarchy.
+     *
+     * @return {@code 0} for a non-sealed class with no recorded ancestors, {@code 1}
+     *         for a sealed class with no recorded ancestors, {@code 2} when all
+     *         recorded ancestors are outside this collector, or one more than
+     *         the greatest depth among ancestors present in this collector
+     */
     private int computeSealedDepth(ClassMetrics metrics) {
         return computeSealedDepth(metrics, new HashSet<>());
     }
@@ -308,6 +316,10 @@ public class GraphMetricsCollector implements DependencyCollector {
      * non-sealed class in the batch — has depth 0: it is not an observable
      * member of any sealed hierarchy. Ancestors absent from the batch
      * (third-party) preserve the minimum depth of 2 as a relationship signal.
+     *
+     * @param visiting the class FQNs on the current ancestor-traversal path
+     * @return {@code 0} when this class is already on that path; otherwise its
+     *         depth from the collected ancestors
      */
     private int computeSealedDepth(ClassMetrics metrics, Set<String> visiting) {
         Set<String> ancestors = metrics.getSealedHierarchyAncestors();
