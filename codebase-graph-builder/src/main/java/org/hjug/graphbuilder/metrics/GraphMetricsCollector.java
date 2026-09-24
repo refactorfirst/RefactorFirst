@@ -262,8 +262,9 @@ public class GraphMetricsCollector implements DependencyCollector {
      *   <li>{@link ClassMetrics#setSealedHierarchyDepth(int)} — root sealed
      *       class has depth 1; each direct permittee inherits depth 2, and
      *       so on. The depth is the longest acyclic ancestor path that
-     *       terminates at a sealed root; classes with no such path (cycle
-     *       members, non-sealed dead-ends) get depth 0 and are not marked.
+     *       terminates at a sealed root; classes with no such path (including
+     *       cycle members without a path to a sealed root and non-sealed
+     *       dead-ends) get depth 0 and are not marked.
      *       Third-party ancestors absent from the batch preserve a minimum
      *       depth of 2 as a relationship signal. (Cycle safety: issue #215.)</li>
      *   <li>{@link ClassMetrics#setHasExplicitLogic(boolean)} — true when a
@@ -311,10 +312,11 @@ public class GraphMetricsCollector implements DependencyCollector {
      * <p><b>Cyclic-depth semantics:</b> a class's depth is the length of the
      * longest acyclic ancestor path that terminates at a sealed root
      * ({@code isSealed() == true} with no ancestors, depth 1) within the
-     * analyzed batch. A class with no such path — a cycle member, a class
-     * whose only paths enter a cycle, or a class whose chain dead-ends at a
-     * non-sealed class in the batch — has depth 0: it is not an observable
-     * member of any sealed hierarchy. Ancestors absent from the batch
+     * analyzed batch. A class with no such path — including a cycle member
+     * whose ancestor paths do not reach a sealed root, a class whose only
+     * paths enter a cycle, or a class whose chain dead-ends at a non-sealed
+     * class in the batch — has depth 0: it is not an observable member of any
+     * sealed hierarchy. Ancestors absent from the batch
      * (third-party) preserve the minimum depth of 2 as a relationship signal.
      *
      * @param visiting the class FQNs on the current ancestor-traversal path

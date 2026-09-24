@@ -152,8 +152,9 @@ public class ClassMetrics {
      *
      * <p>Cyclic-depth semantics: the depth is the longest acyclic
      * ancestor path terminating at a sealed root within the analyzed
-     * batch; a class with no such path (cycle member, or a chain
-     * dead-ending at a non-sealed in-batch class) has depth 0. Ancestors
+     * batch; a class with no such path (including a cycle member whose
+     * ancestor paths do not reach a sealed root, or a chain dead-ending at a
+     * non-sealed in-batch class) has depth 0. Ancestors
      * absent from the batch preserve a minimum depth of 2 as a
      * relationship signal. (Cycle safety: issue #215.)
      */

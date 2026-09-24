@@ -21,12 +21,12 @@ import org.junit.jupiter.api.Test;
  * <p>A class's depth is the length of the longest acyclic ancestor path that
  * terminates at a sealed root ({@code isSealed() == true} with no ancestors,
  * depth 1) <em>within the analyzed batch</em>. A class with no such path —
- * cycle members, classes whose only ancestor paths enter a cycle, or classes
- * whose chain dead-ends at a non-sealed class in the batch — has depth 0: it
- * is not a member of any observable sealed hierarchy. External ancestors (not
- * present in the batch) preserve the pre-existing minimum depth of 2 as a
- * relationship signal. When both cyclic and valid paths exist, the valid
- * path's depth wins.
+ * including a cycle member whose ancestor paths do not reach a sealed root,
+ * a class whose only ancestor paths enter a cycle, or a class whose chain
+ * dead-ends at a non-sealed class in the batch — has depth 0: it is not a
+ * member of any observable sealed hierarchy. External ancestors (not present
+ * in the batch) preserve the pre-existing minimum depth of 2 as a relationship
+ * signal. When both cyclic and valid paths exist, the valid path's depth wins.
  */
 class GraphMetricsCollectorSealedDepthTest {
 
@@ -143,6 +143,24 @@ class GraphMetricsCollectorSealedDepthTest {
                 e.getSealedHierarchyDepth(),
                 "Circle's depth comes from the Shape root path; the cyclic path contributes nothing");
         assertEquals(1, root.getSealedHierarchyDepth());
+    }
+
+    @DisplayName("a cycle member with a sealed-root path receives its valid depth")
+    @Test
+    void cycleMemberWithSealedRootPath_hasValidDepth() {
+        GraphMetricsCollector collector = newCollector();
+        ClassMetrics root = collector.getOrCreateClassMetrics("com.example.Shape");
+        root.setSealed(true);
+        ClassMetrics a = collector.getOrCreateClassMetrics("com.example.A");
+        ClassMetrics b = collector.getOrCreateClassMetrics("com.example.B");
+        a.addSealedHierarchyAncestor("com.example.B");
+        b.addSealedHierarchyAncestor("com.example.A");
+        b.addSealedHierarchyAncestor("com.example.Shape");
+
+        collector.finalizeMetrics();
+
+        assertEquals(3, a.getSealedHierarchyDepth(), "A reaches the Shape root through B");
+        assertEquals(2, b.getSealedHierarchyDepth(), "B reaches the Shape root directly");
     }
 
     @DisplayName("a chain ending at a non-sealed class in the batch has depth 0")
