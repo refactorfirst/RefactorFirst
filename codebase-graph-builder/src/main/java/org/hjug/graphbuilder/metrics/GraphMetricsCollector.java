@@ -261,9 +261,12 @@ public class GraphMetricsCollector implements DependencyCollector {
      * <ul>
      *   <li>{@link ClassMetrics#setSealedHierarchyDepth(int)} — root sealed
      *       class has depth 1; each direct permittee inherits depth 2, and
-     *       so on. Computed by walking up the sealed-hierarchy ancestor
-     *       chain until reaching a class whose {@link ClassMetrics#isSealed()}
-     *       flag is {@code false}.</li>
+     *       so on. The depth is the longest acyclic ancestor path that
+     *       terminates at a sealed root; classes with no such path (including
+     *       cycle members without a path to a sealed root and non-sealed
+     *       dead-ends) get depth 0 and are not marked.
+     *       Third-party ancestors absent from the batch preserve a minimum
+     *       depth of 2 as a relationship signal. (Cycle safety: issue #215.)</li>
      *   <li>{@link ClassMetrics#setHasExplicitLogic(boolean)} — true when a
      *       Kotlin {@code data class} declares any non-accessor method,
      *       feeding the {@code (hasExplicitLogic || WMC > 14)} criterion of
@@ -286,30 +289,77 @@ public class GraphMetricsCollector implements DependencyCollector {
         }
     }
 
+    /**
+     * Computes a class's depth in the collected sealed hierarchy.
+     *
+     * @return {@code 0} for a non-sealed class with no recorded ancestors, {@code 1}
+     *         for a sealed class with no recorded ancestors, {@code 2} when all
+     *         recorded ancestors are outside this collector, or one more than
+     *         the greatest depth among ancestors present in this collector
+     */
     private int computeSealedDepth(ClassMetrics metrics) {
+        return computeSealedDepth(metrics, new HashSet<>());
+    }
+
+    /**
+     * Cycle-safe variant of {@link #computeSealedDepth(ClassMetrics)}. The
+     * {@code visiting} set tracks the FQNs on the current ancestor-traversal
+     * path; re-entering a class already on the path means the collected
+     * ancestor data contains a cycle (issue #215: Java {@code implements}
+     * chains recorded in a cycle, e.g. by type attribution without the full
+     * classpath), so the traversal stops instead of recursing forever.
+     *
+     * <p><b>Cyclic-depth semantics:</b> a class's depth is the length of the
+     * longest acyclic ancestor path that terminates at a sealed root
+     * ({@code isSealed() == true} with no ancestors, depth 1) within the
+     * analyzed batch. A class with no such path — including a cycle member
+     * whose ancestor paths do not reach a sealed root, a class whose only
+     * paths enter a cycle, or a class whose chain dead-ends at a non-sealed
+     * class in the batch — has depth 0: it is not an observable member of any
+     * sealed hierarchy. Ancestors absent from the batch
+     * (third-party) preserve the minimum depth of 2 as a relationship signal.
+     *
+     * @param visiting the class FQNs on the current ancestor-traversal path
+     * @return {@code 0} when this class is already on that path; otherwise its
+     *         depth from the collected ancestors
+     */
+    private int computeSealedDepth(ClassMetrics metrics, Set<String> visiting) {
         Set<String> ancestors = metrics.getSealedHierarchyAncestors();
         if (ancestors.isEmpty()) {
             // No sealed hierarchy ancestors: depth 1 if sealed, 0 otherwise
             return metrics.isSealed() ? 1 : 0;
         }
+        if (!visiting.add(metrics.getFullyQualifiedName())) {
+            // Cycle: this path has no valid depth contribution
+            return 0;
+        }
         // Has sealed hierarchy ancestors: traverse them first
         int maxAncestorDepth = 0;
-        boolean hasObservableAncestor = false;
+        boolean hasExternalAncestor = false;
         for (String ancestorFqn : ancestors) {
             ClassMetrics ancestor = classMetrics.get(ancestorFqn);
             if (ancestor == null) {
                 // Ancestor not in this codebase batch (third-party): preserve
                 // minimum depth of 2 to record the relationship
+                hasExternalAncestor = true;
                 continue;
             }
-            hasObservableAncestor = true;
-            maxAncestorDepth = Math.max(maxAncestorDepth, computeSealedDepth(ancestor));
+            // Dead-end paths (depth 0) contribute nothing; only paths that
+            // reach a sealed root propagate a positive depth upward
+            maxAncestorDepth = Math.max(maxAncestorDepth, computeSealedDepth(ancestor, visiting));
         }
-        if (!hasObservableAncestor) {
-            // All ancestors are external; preserve depth 2 to record relationship
+        visiting.remove(metrics.getFullyQualifiedName());
+        if (maxAncestorDepth > 0) {
+            return maxAncestorDepth + 1;
+        }
+        if (hasExternalAncestor) {
+            // No sealed root reachable in-batch, but external ancestors may
+            // hold the root; preserve depth 2 to record relationship
             return 2;
         }
-        return maxAncestorDepth + 1;
+        // No ancestor path reaches a sealed root (cycle or non-sealed
+        // dead-end): not a member of any observable sealed hierarchy
+        return 0;
     }
 
     /**
