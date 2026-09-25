@@ -69,7 +69,9 @@ Constraints:
   25 with no `--add-exports` workaround (older Spotless 2.x /
   palantir-java-format builds failed on JDK 21+ without javac exports and
   could not run on JDK 25 at all).
-- CI (`maven.yml`, `maven-pr.yml`) builds a JDK 17 + JDK 25 matrix.
+- CI (`maven.yml`, `maven-pr.yml`) builds a JDK 17 + JDK 25 matrix; the Gradle
+  plugin has its own workflow (`gradle.yml`) on the same JDK matrix plus
+  Windows.
 - `CostBenefitCalculatorTest.testCostBenefitCalculation` runs on all JDKs;
   its former `@DisabledOnJre(JRE.JAVA_25)` (OpenRewrite 8.90.4 fixture
   failure, issue #8712 family) no longer reproduces now that
@@ -113,6 +115,45 @@ graph and merges them. A Kotlin build *failure* (parse error, IO, etc.) falls
 back to returning the Java-only DTO with a `log.warn`
 (`"Kotlin analysis failed; falling back to Java-only graph"`). This fallback
 is for build failures, not for "Kotlin is absent".
+
+## Gradle plugin
+
+`refactor-first-gradle-plugin/` is **excluded from the Maven reactor** and built
+by its own Gradle wrapper (Gradle 9.8.0 — 9.8+ required: the plugin classpath
+carries the class-file-69 `rewrite-java-25` jar, whose bytecode Gradle ≤ 9.0
+cannot instrument):
+
+- Build & test: `cd refactor-first-gradle-plugin && ./gradlew clean build`
+- Plugin id: `org.hjug.refactorfirst`; tasks `refactorFirstHtmlReport`,
+  `refactorFirstSimpleHtmlReport`, `refactorFirstCsvReport`,
+  `refactorFirstJsonReport` (task/output contract: see
+  `plans/finish-pr-157-v2.md` §1; verified by `RefactorFirstPluginTest`
+  [ProjectBuilder] and `RefactorFirstPluginFunctionalTest` [TestKit]).
+- **Thin jar — no shadow plugin, no `minimizeJar`.** The plugin resolves
+  `org.hjug.refactorfirst.report:report` and its transitives as real jars, so
+  `codebase-graph-builder`'s JEP 238 `META-INF/versions/25` entries stay intact
+  (shading with minimize would strip them and break Java 25 parsing).
+- **No `getProject()` in `@TaskAction`** (Gradle 9 / configuration-cache
+  hygiene); values are captured at registration time. Tasks declare no
+  `@Input`/`@Output` and `getOutputs().upToDateWhen(t -> false)` — they always
+  run (guarded by `configurationCacheRunHasNoProblems` and `tasksRunEveryTime`).
+- `refactorFirstJsonReport` must invoke
+  `org.hjug.refactorfirst.report.JsonGenerator` (the Maven plugin's generator),
+  **never** `org.hjug.refactorfirst.report.json.JsonReportExecutor`.
+- Version sync: `refactor-first-gradle-plugin/gradle.properties`
+  `refactorFirstVersion` must equal the Maven `project.version`; `gradle.yml`
+  fails the build on drift, and `release.yml` bumps both in the same commit.
+  Release order: `report` et al. must be on Maven Central **before**
+  `./gradlew publishPlugins` (maintainer-only) publishes the thin plugin jar.
+- Local dev: run `mvn install` (or `-pl report -am`) first so `mavenLocal()`
+  can resolve the SNAPSHOT `report` dependency, **then** `./gradlew
+  publishToMavenLocal` so consuming builds can resolve the plugin marker
+  `org.hjug.refactorfirst:org.hjug.refactorfirst.gradle.plugin` from
+  `mavenLocal()`. Consumers need `mavenLocal()` in `pluginManagement
+  repositories`; never point `resolutionStrategy.eachPlugin.useModule` at the
+  marker coordinates (that module is POM-only) — either omit
+  `resolutionStrategy` or point `useModule` at the implementation module
+  `org.hjug.refactorfirst.plugin:refactor-first-gradle-plugin`.
 
 ## Testing Notes
 - JUnit 5 with parameterized tests
