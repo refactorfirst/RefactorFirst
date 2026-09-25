@@ -177,6 +177,36 @@ class RefactorFirstPluginFunctionalTest {
         assertFalse(firstContent.equals(secondContent), "JSON report must be regenerated when sources change");
     }
 
+    /**
+     * Version regression: apply() runs while the plugins {} block is being evaluated, before the build
+     * script sets the project version. The default version must therefore be read when the task is
+     * realized (after build-script evaluation), and the CSV file name must carry the real version.
+     */
+    @Test
+    void csvReportFileNameUsesProjectVersionSetAfterPluginsBlock() {
+        try {
+            Files.writeString(
+                    projectDir.toPath().resolve("build.gradle.kts"),
+                    """
+                    plugins { id("org.hjug.refactorfirst") }
+                    version = "1.2.3"
+                    """);
+            commitAll(projectDir, "Set project version");
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        runGradle(projectDir, "refactorFirstCsvReport");
+
+        File reportsDir = new File(projectDir, "build/reports/refactorfirst");
+        assertTrue(reportsDir.isDirectory(), "Expected reports directory at " + reportsDir);
+        File[] csvFiles = reportsDir.listFiles((dir, name) -> name.matches("RefFirst_P.*_PV1\\.2\\.3_PD.*\\.csv"));
+        assertNotNull(csvFiles);
+        assertTrue(
+                csvFiles.length == 1 && csvFiles[0].length() > 0,
+                "Expected exactly one non-empty RefFirst_P*_PV1.2.3_PD*.csv in " + reportsDir);
+    }
+
     /** T12: extension overrides are honored by the HTML report task. */
     @Test
     void extensionOverridesAreHonored() throws Exception {

@@ -23,31 +23,35 @@ public class RefactorFirstPlugin implements Plugin<Project> {
         Provider<Directory> defaultReportsDir =
                 project.getLayout().getBuildDirectory().dir("reports/refactorfirst");
         String defaultProjectName = project.getName();
-        String defaultProjectVersion = String.valueOf(project.getVersion());
 
         // Register tasks
+        // The project version is read lazily inside each configuration action: apply() runs while the
+        // plugins {} block is being evaluated, so getVersion() would still return "unspecified" there.
         project.getTasks().register("refactorFirstHtmlReport", HtmlReportTask.class, task -> {
             task.setGroup("RefactorFirst");
             task.setDescription("Generates the RefactorFirst full HTML report (with graphs)");
-            task.configureFrom(extension, projectDir, defaultReportsDir, defaultProjectName, defaultProjectVersion);
+            task.configureFrom(
+                    extension, projectDir, defaultReportsDir, defaultProjectName, String.valueOf(project.getVersion()));
         });
 
         project.getTasks().register("refactorFirstSimpleHtmlReport", SimpleHtmlReportTask.class, task -> {
             task.setGroup("RefactorFirst");
             task.setDescription("Generates the RefactorFirst simplified HTML report (no heavy graphs)");
-            task.configureFrom(extension, projectDir, defaultReportsDir, defaultProjectName, defaultProjectVersion);
+            task.configureFrom(
+                    extension, projectDir, defaultReportsDir, defaultProjectName, String.valueOf(project.getVersion()));
         });
 
         project.getTasks().register("refactorFirstJsonReport", JsonReportTask.class, task -> {
             task.setGroup("RefactorFirst");
             task.setDescription("Generates the RefactorFirst JSON data report");
-            task.configureFrom(extension, projectDir, defaultProjectName, defaultProjectVersion);
+            task.configureFrom(extension, projectDir, defaultProjectName, String.valueOf(project.getVersion()));
         });
 
         project.getTasks().register("refactorFirstCsvReport", CsvReportTask.class, task -> {
             task.setGroup("RefactorFirst");
             task.setDescription("Generates the RefactorFirst CSV report");
-            task.configureFrom(extension, projectDir, defaultReportsDir, defaultProjectName, defaultProjectVersion);
+            task.configureFrom(
+                    extension, projectDir, defaultReportsDir, defaultProjectName, String.valueOf(project.getVersion()));
         });
     }
 }
