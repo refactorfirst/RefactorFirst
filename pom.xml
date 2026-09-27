@@ -73,10 +73,10 @@
         <module>effort-ranker</module>
         <module>cost-benefit-calculator</module>
         <module>graph-data-generator</module>
+        <module>report</module>
         <module>refactor-first-maven-plugin</module>
         <module>refactor-first-gradle-plugin</module>
         <module>coverage</module>
-        <module>report</module>
         <!--<module>cli</module>-->
     </modules>
 
