@@ -207,6 +207,48 @@ class RefactorFirstPluginFunctionalTest {
                 "Expected exactly one non-empty RefFirst_P*_PV1.2.3_PD*.csv in " + reportsDir);
     }
 
+    /**
+     * Multi-project build: the Git repository root is the root project, but the plugin is
+     * applied (and the task invoked) on a subproject beneath it. The CSV report must be
+     * written to the subproject's build directory even though projectDir != Git root.
+     */
+    @Test
+    void csvReportWritesForSubprojectBeneathGitRoot() throws Exception {
+        Files.writeString(
+                projectDir.toPath().resolve("settings.gradle.kts"),
+                "rootProject.name = \"sample\"\ninclude(\"service\")\n");
+
+        Path serviceDir = projectDir.toPath().resolve("service");
+        Files.createDirectories(serviceDir);
+        Files.writeString(serviceDir.resolve("build.gradle.kts"), "plugins { id(\"org.hjug.refactorfirst\") }\n");
+
+        Path source = serviceDir.resolve(Path.of("src", "main", "java", "com", "example", "Service.java"));
+        Files.createDirectories(source.getParent());
+        Files.writeString(
+                source,
+                """
+                package com.example;
+
+                public class Service {
+                    public String serve() {
+                        return "served";
+                    }
+                }
+                """);
+        commitAll(projectDir, "Add service subproject");
+
+        BuildResult result = runGradle(projectDir, ":service:refactorFirstCsvReport");
+        assertNotNull(result.task(":service:refactorFirstCsvReport"));
+
+        File reportsDir = new File(serviceDir.toFile(), "build/reports/refactorfirst");
+        assertTrue(reportsDir.isDirectory(), "Expected reports directory at " + reportsDir);
+        File[] csvFiles = reportsDir.listFiles((dir, name) -> name.matches("RefFirst_P.*_PV.*_PD.*\\.csv"));
+        assertNotNull(csvFiles);
+        assertTrue(
+                csvFiles.length == 1 && csvFiles[0].length() > 0,
+                "Expected exactly one non-empty RefFirst CSV in " + reportsDir);
+    }
+
     /** T12: extension overrides are honored by the HTML report task. */
     @Test
     void extensionOverridesAreHonored() throws Exception {
