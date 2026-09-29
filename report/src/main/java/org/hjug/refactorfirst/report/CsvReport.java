@@ -3,6 +3,7 @@ package org.hjug.refactorfirst.report;
 import static org.hjug.refactorfirst.report.ReportWriter.writeReportToDisk;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -71,8 +72,19 @@ public class CsvReport {
         }
 
         String parentOfGitDir = gitDir.getParentFile().getPath();
-        Path gitRootPath = gitDir.getParentFile().toPath().toAbsolutePath().normalize();
-        Path projectBaseDirPath = Path.of(projectBaseDir).toAbsolutePath().normalize();
+        Path gitRootPath;
+        Path projectBaseDirPath;
+        try {
+            gitRootPath = gitDir.getParentFile().toPath().toRealPath();
+            projectBaseDirPath = Path.of(projectBaseDir).toRealPath();
+        } catch (IOException e) {
+            log.error(
+                    "Error resolving project directory {} against Git repository root {}",
+                    projectBaseDir,
+                    parentOfGitDir,
+                    e);
+            throw new RuntimeException(e);
+        }
 
         log.info("Project Base Dir: {} ", projectBaseDir);
         log.info("Parent of Git Dir: {}", parentOfGitDir);
