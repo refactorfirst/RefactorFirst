@@ -262,4 +262,104 @@ class JsonGeneratorTest {
         assertFalse(report.getProject().isAnalysisFailed());
         assertTrue(report.getClassMap().getClassCount() >= 1);
     }
+
+    /**
+     * Verifies that sourceUrl and targetUrl are set in ClassRelationshipDTO and PackageRelationshipDTO.
+     */
+    @Test
+    void given_circularDependency_when_reportGenerated_then_relationshipUrlsAreSet() throws Exception {
+        // Given
+        File repoDir = tempDir.toFile();
+        new File(repoDir, ".git").mkdirs();
+
+        File srcDir = new File(repoDir, "src/main/java/com/example");
+        srcDir.mkdirs();
+
+        // Create two classes with circular dependency
+        Files.writeString(
+                new File(srcDir, "ClassA.java").toPath(),
+                """
+                package com.example;
+
+                public class ClassA {
+                    private ClassB classB;
+
+                    public ClassA(ClassB classB) {
+                        this.classB = classB;
+                    }
+                }
+                """);
+
+        Files.writeString(
+                new File(srcDir, "ClassB.java").toPath(),
+                """
+                package com.example;
+
+                public class ClassB {
+                    private ClassA classA;
+
+                    public ClassB(ClassA classA) {
+                        this.classA = classA;
+                    }
+                }
+                """);
+
+        new ProcessBuilder("git", "init").directory(repoDir).start().waitFor();
+        new ProcessBuilder("git", "config", "user.email", "test@test.com")
+                .directory(repoDir)
+                .start()
+                .waitFor();
+        new ProcessBuilder("git", "config", "user.name", "Test")
+                .directory(repoDir)
+                .start()
+                .waitFor();
+        new ProcessBuilder("git", "add", ".").directory(repoDir).start().waitFor();
+        new ProcessBuilder("git", "commit", "-m", "initial")
+                .directory(repoDir)
+                .start()
+                .waitFor();
+
+        // When
+        new JsonGenerator().execute(0, true, false, true, "src/test", "CircularProject", "1.0.0", repoDir, null);
+
+        // Then
+        Path jsonFile = tempDir.resolve(".refactorfirst").resolve("refactor-first.json");
+        assertTrue(Files.exists(jsonFile));
+
+        RefactorFirstReportDTO report = objectMapper.readValue(jsonFile.toFile(), RefactorFirstReportDTO.class);
+        assertNotNull(report);
+
+        // Verify ClassRelationshipDTO has sourceUrl and targetUrl
+        if (report.getClassRelationshipsToRemove() != null
+                && report.getClassRelationshipsToRemove().getRelationships() != null
+                && !report.getClassRelationshipsToRemove().getRelationships().isEmpty()) {
+            var classRel =
+                    report.getClassRelationshipsToRemove().getRelationships().get(0);
+            assertNotNull(classRel.getSourceUrl(), "ClassRelationshipDTO should have sourceUrl");
+            assertNotNull(classRel.getTargetUrl(), "ClassRelationshipDTO should have targetUrl");
+            assertTrue(
+                    classRel.getSourceUrl().contains("ClassA.java")
+                            || classRel.getSourceUrl().contains("ClassB.java"),
+                    "sourceUrl should contain the class file name");
+            assertTrue(
+                    classRel.getTargetUrl().contains("ClassA.java")
+                            || classRel.getTargetUrl().contains("ClassB.java"),
+                    "targetUrl should contain the class file name");
+        }
+
+        // Verify PackageRelationshipDTO renderedLabel contains HTML links
+        if (report.getPackageRelationshipsToRemove() != null
+                && report.getPackageRelationshipsToRemove().getRelationships() != null
+                && !report.getPackageRelationshipsToRemove().getRelationships().isEmpty()) {
+            var packageRel =
+                    report.getPackageRelationshipsToRemove().getRelationships().get(0);
+            assertNotNull(packageRel.getRenderedLabel(), "PackageRelationshipDTO should have renderedLabel");
+            assertTrue(
+                    packageRel.getRenderedLabel().contains("<a href=\""),
+                    "renderedLabel should contain HTML anchor tags");
+            assertTrue(
+                    packageRel.getRenderedLabel().contains("target=\"_blank\""),
+                    "renderedLabel should have target=\"_blank\" attribute");
+        }
+    }
 }

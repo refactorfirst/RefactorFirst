@@ -254,9 +254,18 @@ public class JsonGenerator extends HtmlReport {
                 String startVertex = vertexes[0].trim();
                 String endVertex = vertexes[1].trim();
 
+                String sourcePath =
+                        codebaseGraphDTO.getClassToSourceFilePathMapping().get(startVertex);
+                String targetPath =
+                        codebaseGraphDTO.getClassToSourceFilePathMapping().get(endVertex);
+                String sourceUrl = (sourcePath != null && !sourcePath.isBlank()) ? repoUrl + sourcePath : "";
+                String targetUrl = (targetPath != null && !targetPath.isBlank()) ? repoUrl + targetPath : "";
+
                 classRelList.add(ClassRelationshipDTO.builder()
                         .sourceClass(startVertex)
                         .targetClass(endVertex)
+                        .sourceUrl(sourceUrl)
+                        .targetUrl(targetUrl)
                         .sourceMarked(classesToRemove.contains(startVertex))
                         .targetMarked(classesToRemove.contains(endVertex))
                         .weight((int) classGraph.getEdgeWeight(edgeInfo.getEdge()))
@@ -300,8 +309,73 @@ public class JsonGenerator extends HtmlReport {
                 String startVertex = vertexes[0].trim();
                 String endVertex = vertexes[1].trim();
 
+                // Extract package URLs from class relationships in the package edge
+                String sourceUrl = "";
+                String targetUrl = "";
+                Set<DefaultWeightedEdge> classRelationshipsInPackageRelationship = codebaseGraphDTO
+                        .getClassRelationshipsInPackageRelationship()
+                        .get(edgeInfo.getEdge());
+                if (classRelationshipsInPackageRelationship != null) {
+                    for (DefaultWeightedEdge classEdge : classRelationshipsInPackageRelationship) {
+                        String[] classVertexes = extractVertexes(classEdge);
+                        String classStart = classVertexes[0].trim();
+                        String classEnd = classVertexes[1].trim();
+
+                        // Get source file path for each class vertex
+                        String classStartPath = codebaseGraphDTO
+                                .getClassToSourceFilePathMapping()
+                                .get(classStart);
+                        String classEndPath = codebaseGraphDTO
+                                .getClassToSourceFilePathMapping()
+                                .get(classEnd);
+
+                        // Derive package directory from source file path
+                        if (classStartPath != null && !classStartPath.isBlank()) {
+                            int lastSlash = classStartPath.lastIndexOf('/');
+                            if (lastSlash != -1) {
+                                String packageDir = classStartPath.substring(0, lastSlash + 1);
+                                // Check if this class belongs to the source package
+                                if (isClassInPackage(classStart, startVertex, codebaseGraphDTO)) {
+                                    sourceUrl = repoUrl + packageDir;
+                                }
+                                // Check if this class belongs to the target package
+                                if (isClassInPackage(classStart, endVertex, codebaseGraphDTO)) {
+                                    targetUrl = repoUrl + packageDir;
+                                }
+                            }
+                        }
+
+                        if (classEndPath != null && !classEndPath.isBlank()) {
+                            int lastSlash = classEndPath.lastIndexOf('/');
+                            if (lastSlash != -1) {
+                                String packageDir = classEndPath.substring(0, lastSlash + 1);
+                                // Check if this class belongs to the source package
+                                if (isClassInPackage(classEnd, startVertex, codebaseGraphDTO)) {
+                                    sourceUrl = repoUrl + packageDir;
+                                }
+                                // Check if this class belongs to the target package
+                                if (isClassInPackage(classEnd, endVertex, codebaseGraphDTO)) {
+                                    targetUrl = repoUrl + packageDir;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Fallback to package name conversion if no class edges found
+                if (sourceUrl.isBlank()) {
+                    sourceUrl = repoUrl + startVertex.replace('.', '/');
+                }
+                if (targetUrl.isBlank()) {
+                    targetUrl = repoUrl + endVertex.replace('.', '/');
+                }
+
                 List<String> breakClassRels =
                         cells.length > 4 && !cells[4].isBlank() ? List.of(cells[4].split("<br>")) : List.of();
+
+                // Build rendered label with links to package directories
+                String renderedLabel =
+                        buildPackageLinkLabel(cells[0], startVertex, endVertex, sourceUrl, targetUrl, packagesToRemove);
 
                 packageRelList.add(PackageRelationshipDTO.builder()
                         .sourcePackage(startVertex)
@@ -309,7 +383,7 @@ public class JsonGenerator extends HtmlReport {
                         .sourceMarked(packagesToRemove.contains(startVertex))
                         .targetMarked(packagesToRemove.contains(endVertex))
                         .weight((int) packageGraph.getEdgeWeight(edgeInfo.getEdge()))
-                        .renderedLabel(cells[0])
+                        .renderedLabel(renderedLabel)
                         .priority(edgeInfo.getPriority())
                         .cycleCount(edgeInfo.getCycleCount())
                         .effortRank(edgeInfo.getEffortRank())
@@ -675,5 +749,80 @@ public class JsonGenerator extends HtmlReport {
             sanitized = "cycle";
         }
         return "graph_" + sanitized + "_" + Integer.toUnsignedString(original.hashCode(), 36);
+    }
+
+    /** Checks if a class belongs to a given package by checking the fully qualified class name. */
+    private boolean isClassInPackage(String className, String packageName, CodebaseGraphDTO codebaseGraphDTO) {
+        if (className == null || packageName == null) {
+            return false;
+        }
+        // Check if the class name starts with the package name followed by a dot
+        return className.startsWith(packageName + ".");
+    }
+
+    /**
+     * Builds a rendered label with HTML links to package directories.
+     * Transforms "org.hjug.graphbuilder.metrics &#8594; org.hjug.graphbuilder<strong>*</strong> : 1"
+     * into "<a href="...">org.hjug.graphbuilder.metrics</a> &#8594; <a href="...">org.hjug.graphbuilder</a><strong>*</strong> : 1"
+     */
+    private String buildPackageLinkLabel(
+            String originalLabel,
+            String startVertex,
+            String endVertex,
+            String sourceUrl,
+            String targetUrl,
+            Set<String> packagesToRemove) {
+        if (originalLabel == null || originalLabel.isBlank()) {
+            return originalLabel;
+        }
+
+        // The original label format is: "startPackage &#8594; endPackage : weight"
+        // We need to wrap the package names with links
+        String arrow = " &#8594; ";
+        String weightSeparator = " : ";
+
+        // Split the label into parts
+        String[] parts = originalLabel.split(weightSeparator);
+        if (parts.length < 2) {
+            return originalLabel;
+        }
+
+        String edgePart = parts[0];
+        String weight = parts[1];
+
+        // Split the edge part by arrow
+        String[] packages = edgePart.split(arrow, 2);
+        if (packages.length < 2) {
+            return originalLabel;
+        }
+
+        String startPackage = packages[0].trim();
+        String endPackage = packages[1].trim();
+
+        // Check if end package has the removal marker <strong>*</strong>
+        boolean endMarked = endPackage.contains("<strong>*</strong>");
+        if (endMarked) {
+            endPackage = endPackage.replace("<strong>*</strong>", "");
+        }
+
+        // Build the new label with links
+        StringBuilder newLabel = new StringBuilder();
+        newLabel.append("<a href=\"")
+                .append(escapeHtmlAttribute(sourceUrl))
+                .append("\" target=\"_blank\">")
+                .append(escapeHtmlLabel(startPackage))
+                .append("</a>");
+        newLabel.append(arrow);
+        newLabel.append("<a href=\"")
+                .append(escapeHtmlAttribute(targetUrl))
+                .append("\" target=\"_blank\">")
+                .append(escapeHtmlLabel(endPackage))
+                .append("</a>");
+        if (endMarked) {
+            newLabel.append("<strong>*</strong>");
+        }
+        newLabel.append(weightSeparator).append(weight);
+
+        return newLabel.toString();
     }
 }
