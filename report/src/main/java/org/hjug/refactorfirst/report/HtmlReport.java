@@ -154,6 +154,7 @@ public class HtmlReport extends SimpleHtmlReport {
                             var nodeData = graphlibGraph.node(node);
                             nodes.push({
                                 id: node,
+                                label: graphlibGraph.node(node).label || node,
                                 color: nodeData.color || 'white',
                             });
                         });
@@ -189,7 +190,7 @@ public class HtmlReport extends SimpleHtmlReport {
 
                         const Graph = new ForceGraph3D(container)
                             .graphData(gData)
-                            .nodeLabel('id')
+                            .nodeLabel('label')
                             .width(container.clientWidth)
                             .height(container.clientHeight);
 
@@ -199,7 +200,7 @@ public class HtmlReport extends SimpleHtmlReport {
 
                             // use node labels instead of spheres
                             Graph.nodeThreeObject(node => {
-                                const sprite = new SpriteText(node.id);
+                                const sprite = new SpriteText(node.label);
                                 sprite.material.depthWrite = false; // make sprite background transparent
                                 sprite.color = node.color;
                                 sprite.textHeight = 4;
@@ -612,14 +613,15 @@ public class HtmlReport extends SimpleHtmlReport {
 
             dot.append(" [");
             dot.append(hyperlinkClassForDot(vertex, repoUrl, codebaseGraphDTO));
-            if (className.contains("$")) {
-                dot.append(" label=\"").append(escapeDotQuoted(className)).append("\"");
-            } else if (isAnonymousFqn(vertex)) {
+
+            if (isAnonymousFqn(vertex)) {
                 // Kotlin "<anonymous>" renders under the enclosing source file's base name as the
                 // owner with $ as the enclosing-class separator (escaped for DOT).
                 dot.append(" label=\"")
                         .append(escapeDotQuoted(anonymousOwnerLabel(vertex, codebaseGraphDTO)))
                         .append("\"");
+            } else {
+                dot.append(" label=\"").append(escapeDotQuoted(className)).append("\"");
             }
 
             if (classesToRemove.contains(vertex)) {
