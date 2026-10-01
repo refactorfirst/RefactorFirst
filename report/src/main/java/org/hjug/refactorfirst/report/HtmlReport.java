@@ -190,7 +190,7 @@ public class HtmlReport extends SimpleHtmlReport {
 
                         const Graph = new ForceGraph3D(container)
                             .graphData(gData)
-                            .nodeLabel('id')
+                            .nodeLabel('label')
                             .width(container.clientWidth)
                             .height(container.clientHeight);
 
