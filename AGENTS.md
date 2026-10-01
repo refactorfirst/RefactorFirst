@@ -115,6 +115,7 @@ back to returning the Java-only DTO with a `log.warn`
 is for build failures, not for "Kotlin is absent".
 
 ## Testing Notes
+- **TDD is required when implementing code.** Write tests before production code using the red-green-refactor cycle. Use the Given-When-Then format for test structure.
 - JUnit 5 with parameterized tests
 - Test fixtures in `test-resources/src/test/resources`
 - For graph algorithm changes, check `JavaGraphBuilderTest` and `CircularReferenceCheckerTests`

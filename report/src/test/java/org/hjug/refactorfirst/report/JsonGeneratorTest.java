@@ -118,7 +118,7 @@ class JsonGeneratorTest {
         JsonGenerator generator = new JsonGenerator();
 
         // Priority 1 out of 10 should have max radius and red color
-        ChartJsBubbleDTO bubblePriority1 = generator.createBubble("TestClass", "TestClass.java", 5, 10, 1, 10);
+        ChartJsBubbleDTO bubblePriority1 = generator.createBubble("TestClass", "TestClass.java", 5, 10, 1, 10, null);
 
         assertEquals(1, bubblePriority1.getPriority());
         assertEquals(24, bubblePriority1.getR(), "Priority 1 should have max radius 24");
@@ -128,7 +128,7 @@ class JsonGeneratorTest {
                 "Priority 1 should be red");
 
         // Priority 10 out of 10 should have min radius and green color
-        ChartJsBubbleDTO bubblePriority10 = generator.createBubble("CleanClass", "CleanClass.java", 1, 1, 10, 10);
+        ChartJsBubbleDTO bubblePriority10 = generator.createBubble("CleanClass", "CleanClass.java", 1, 1, 10, 10, null);
 
         assertEquals(10, bubblePriority10.getPriority());
         assertEquals(6, bubblePriority10.getR(), "Max priority (lowest urgency) should have min radius 6");
@@ -136,6 +136,24 @@ class JsonGeneratorTest {
                 bubblePriority10.getColor().contains("39, 174, 96")
                         || bubblePriority10.getColor().contains("46, 204, 113"),
                 "Lowest priority should be green");
+    }
+
+    /** Verifies that bubble URL is set to the class file path. */
+    @Test
+    void given_createBubble_when_urlProvided_then_urlIsSet() {
+        // Given
+        JsonGenerator generator = new JsonGenerator();
+        String classPath = "src/main/java/com/example/TestClass.java";
+        String repoUrl = "https://github.com/example/repo/blob/main/";
+
+        // When
+        ChartJsBubbleDTO bubble =
+                generator.createBubble("TestClass", "TestClass.java", 5, 10, 1, 10, repoUrl + classPath);
+
+        // Then
+        assertNotNull(bubble.getUrl());
+        assertEquals(
+                "https://github.com/example/repo/blob/main/src/main/java/com/example/TestClass.java", bubble.getUrl());
     }
 
     /** Verifies report generation against a minimal Git repository fixture. */

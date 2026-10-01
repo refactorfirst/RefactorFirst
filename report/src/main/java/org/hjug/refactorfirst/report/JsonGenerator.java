@@ -449,13 +449,15 @@ public class JsonGenerator extends HtmlReport {
             String label = rd.getFileName() != null
                     ? rd.getFileName()
                     : rd.getRawPriority().toString();
+            String url = repoUrl + rd.getPath();
             bubbles.add(createBubble(
                     rd.getFileName(),
                     label,
                     rd.getEffortRank(),
                     rd.getChangePronenessRank(),
                     rd.getPriority(),
-                    maxPriority));
+                    maxPriority,
+                    url));
         }
 
         DisharmonyChartDTO chartDTO = DisharmonyChartDTO.builder()
@@ -615,7 +617,13 @@ public class JsonGenerator extends HtmlReport {
 
     /** Creates a chart bubble whose size and color reflect the finding priority. */
     public ChartJsBubbleDTO createBubble(
-            String id, String label, int effortRank, int changePronenessRank, int priority, int maxPriority) {
+            String id,
+            String label,
+            int effortRank,
+            int changePronenessRank,
+            int priority,
+            int maxPriority,
+            String url) {
 
         int minRadius = 6;
         int maxRadius = 24;
@@ -655,6 +663,7 @@ public class JsonGenerator extends HtmlReport {
                 .changePronenessRank(changePronenessRank)
                 .color(color)
                 .borderColor(borderColor)
+                .url(url)
                 .build();
     }
 
