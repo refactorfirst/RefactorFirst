@@ -20,4 +20,5 @@ public class ChartJsBubbleDTO {
     private int changePronenessRank;
     private String color;
     private String borderColor;
+    private String url;
 }

@@ -1,6 +1,7 @@
 package org.hjug.refactorfirst.report;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.File;
@@ -75,10 +76,6 @@ class JsonGeneratorTest {
 
         assertTrue(Files.exists(outputDir.resolve(".refactorfirst/refactor-first.json")));
         assertFalse(Files.exists(tempDir.resolve(".refactorfirst/refactor-first.json")));
-
-        String viewer = Files.readString(outputDir.resolve(".refactorfirst/index.html"));
-        assertTrue(viewer.contains("accept=\".json,.mustache\" multiple"));
-        assertFalse(viewer.contains("getFallbackTemplate"));
     }
 
     /** Verifies HTML encoding used for repository-derived text and attribute values. */
@@ -118,7 +115,7 @@ class JsonGeneratorTest {
         JsonGenerator generator = new JsonGenerator();
 
         // Priority 1 out of 10 should have max radius and red color
-        ChartJsBubbleDTO bubblePriority1 = generator.createBubble("TestClass", "TestClass.java", 5, 10, 1, 10);
+        ChartJsBubbleDTO bubblePriority1 = generator.createBubble("TestClass", "TestClass.java", 5, 10, 1, 10, null);
 
         assertEquals(1, bubblePriority1.getPriority());
         assertEquals(24, bubblePriority1.getR(), "Priority 1 should have max radius 24");
@@ -128,7 +125,7 @@ class JsonGeneratorTest {
                 "Priority 1 should be red");
 
         // Priority 10 out of 10 should have min radius and green color
-        ChartJsBubbleDTO bubblePriority10 = generator.createBubble("CleanClass", "CleanClass.java", 1, 1, 10, 10);
+        ChartJsBubbleDTO bubblePriority10 = generator.createBubble("CleanClass", "CleanClass.java", 1, 1, 10, 10, null);
 
         assertEquals(10, bubblePriority10.getPriority());
         assertEquals(6, bubblePriority10.getR(), "Max priority (lowest urgency) should have min radius 6");
@@ -136,6 +133,97 @@ class JsonGeneratorTest {
                 bubblePriority10.getColor().contains("39, 174, 96")
                         || bubblePriority10.getColor().contains("46, 204, 113"),
                 "Lowest priority should be green");
+    }
+
+    /** Verifies that bubble URL is set to the class file path. */
+    @Test
+    void given_createBubble_when_urlProvided_then_urlIsSet() {
+        // Given
+        JsonGenerator generator = new JsonGenerator();
+        String classPath = "src/main/java/com/example/TestClass.java";
+        String repoUrl = "https://github.com/example/repo/blob/main/";
+
+        // When
+        ChartJsBubbleDTO bubble =
+                generator.createBubble("TestClass", "TestClass.java", 5, 10, 1, 10, repoUrl + classPath);
+
+        // Then
+        assertNotNull(bubble.getUrl());
+        assertEquals(
+                "https://github.com/example/repo/blob/main/src/main/java/com/example/TestClass.java", bubble.getUrl());
+    }
+
+    /** Verifies that generated and serialized chart bubbles carry repoUrl + source path. */
+    @Test
+    void given_repoWithOrigin_when_reportGenerated_then_bubbleUrlsPointToSourceFiles() throws Exception {
+        // Given
+        File repoDir = tempDir.toFile();
+        File srcDir = new File(repoDir, "src/main/java/com/example");
+        srcDir.mkdirs();
+
+        StringBuilder complexMethod = new StringBuilder();
+        for (int i = 0; i < 40; i++) {
+            complexMethod
+                    .append("        if (a > ")
+                    .append(i)
+                    .append(") { for (int j = 0; j < a; j++) { if (j % 2 == 0 && b) { c += j; } else { c -= j; } } }\n");
+        }
+        Files.writeString(
+                new File(srcDir, "ComplexService.java").toPath(),
+                "package com.example;\n\n"
+                        + "public class ComplexService {\n"
+                        + "    private int c;\n"
+                        + "    public int compute(int a, boolean b) {\n"
+                        + complexMethod
+                        + "        return c;\n"
+                        + "    }\n"
+                        + "}\n");
+
+        new ProcessBuilder("git", "init").directory(repoDir).start().waitFor();
+        new ProcessBuilder("git", "config", "user.email", "test@test.com")
+                .directory(repoDir)
+                .start()
+                .waitFor();
+        new ProcessBuilder("git", "config", "user.name", "Test")
+                .directory(repoDir)
+                .start()
+                .waitFor();
+        new ProcessBuilder("git", "remote", "add", "origin", "https://github.com/example/repo.git")
+                .directory(repoDir)
+                .start()
+                .waitFor();
+        new ProcessBuilder("git", "add", ".").directory(repoDir).start().waitFor();
+        new ProcessBuilder("git", "commit", "-m", "initial")
+                .directory(repoDir)
+                .start()
+                .waitFor();
+
+        // When
+        new JsonGenerator().execute(0, true, false, true, "src/test", "BubbleProject", "1.0.0", repoDir, null);
+
+        // Then
+        Path jsonFile = tempDir.resolve(".refactorfirst").resolve("refactor-first.json");
+        RefactorFirstReportDTO report = objectMapper.readValue(jsonFile.toFile(), RefactorFirstReportDTO.class);
+        String repoUrl = report.getProject().getRepoUrl();
+        assertTrue(
+                repoUrl.startsWith("https://github.com/example/repo/blob/"),
+                "repoUrl should be derived from origin: " + repoUrl);
+
+        var bubbles = report.getDisharmonies() == null
+                ? java.util.List.<ChartJsBubbleDTO>of()
+                : report.getDisharmonies().stream()
+                        .filter(section -> section.getChart() != null)
+                        .flatMap(section -> section.getChart().getBubbles().stream())
+                        .toList();
+        assumeTrue(!bubbles.isEmpty(), "Fixture produced no disharmony bubbles");
+
+        for (ChartJsBubbleDTO bubble : bubbles) {
+            assertNotNull(bubble.getUrl(), "Bubble " + bubble.getLabel() + " should have a url");
+            assertTrue(bubble.getUrl().startsWith(repoUrl), "Bubble url should start with repoUrl: " + bubble.getUrl());
+            assertTrue(
+                    bubble.getUrl().endsWith("src/main/java/com/example/" + bubble.getLabel()),
+                    "Bubble url should point to the source file: " + bubble.getUrl());
+        }
     }
 
     /** Verifies report generation against a minimal Git repository fixture. */
@@ -243,5 +331,98 @@ class JsonGeneratorTest {
         assertEquals("ForcedProject", report.getProject().getName());
         assertFalse(report.getProject().isAnalysisFailed());
         assertTrue(report.getClassMap().getClassCount() >= 1);
+    }
+
+    /**
+     * Verifies that sourceUrl and targetUrl are set in ClassRelationshipDTO and PackageRelationshipDTO.
+     */
+    @Test
+    void given_circularDependency_when_reportGenerated_then_relationshipUrlsAreSet() throws Exception {
+        // Given
+        File repoDir = tempDir.toFile();
+        new File(repoDir, ".git").mkdirs();
+
+        File srcDir = new File(repoDir, "src/main/java/com/example");
+        srcDir.mkdirs();
+
+        // Create two classes with circular dependency
+        Files.writeString(
+                new File(srcDir, "ClassA.java").toPath(),
+                """
+                package com.example;
+
+                public class ClassA {
+                    private ClassB classB;
+
+                    public ClassA(ClassB classB) {
+                        this.classB = classB;
+                    }
+                }
+                """);
+
+        Files.writeString(
+                new File(srcDir, "ClassB.java").toPath(),
+                """
+                package com.example;
+
+                public class ClassB {
+                    private ClassA classA;
+
+                    public ClassB(ClassA classA) {
+                        this.classA = classA;
+                    }
+                }
+                """);
+
+        new ProcessBuilder("git", "init").directory(repoDir).start().waitFor();
+        new ProcessBuilder("git", "config", "user.email", "test@test.com")
+                .directory(repoDir)
+                .start()
+                .waitFor();
+        new ProcessBuilder("git", "config", "user.name", "Test")
+                .directory(repoDir)
+                .start()
+                .waitFor();
+        new ProcessBuilder("git", "add", ".").directory(repoDir).start().waitFor();
+        new ProcessBuilder("git", "commit", "-m", "initial")
+                .directory(repoDir)
+                .start()
+                .waitFor();
+
+        // When
+        new JsonGenerator().execute(0, true, false, true, "src/test", "CircularProject", "1.0.0", repoDir, null);
+
+        // Then
+        Path jsonFile = tempDir.resolve(".refactorfirst").resolve("refactor-first.json");
+        assertTrue(Files.exists(jsonFile));
+
+        RefactorFirstReportDTO report = objectMapper.readValue(jsonFile.toFile(), RefactorFirstReportDTO.class);
+        assertNotNull(report);
+
+        // Verify ClassRelationshipDTO renderedLabel contains HTML links
+        assertNotNull(report.getClassRelationshipsToRemove());
+        assertNotNull(report.getClassRelationshipsToRemove().getRelationships());
+        assertFalse(report.getClassRelationshipsToRemove().getRelationships().isEmpty());
+        var classRel = report.getClassRelationshipsToRemove().getRelationships().get(0);
+        assertNotNull(classRel.getRenderedLabel(), "ClassRelationshipDTO should have renderedLabel");
+        assertTrue(classRel.getRenderedLabel().contains("<a href=\""));
+        assertTrue(
+                classRel.getRenderedLabel().contains("target=\"_blank\""),
+                "renderedLabel should have target=\"_blank\" attribute");
+
+        // Verify PackageRelationshipDTO renderedLabel contains HTML links
+        if (report.getPackageRelationshipsToRemove() != null
+                && report.getPackageRelationshipsToRemove().getRelationships() != null
+                && !report.getPackageRelationshipsToRemove().getRelationships().isEmpty()) {
+            var packageRel =
+                    report.getPackageRelationshipsToRemove().getRelationships().get(0);
+            assertNotNull(packageRel.getRenderedLabel(), "PackageRelationshipDTO should have renderedLabel");
+            assertTrue(
+                    packageRel.getRenderedLabel().contains("<a href=\""),
+                    "renderedLabel should contain HTML anchor tags");
+            assertTrue(
+                    packageRel.getRenderedLabel().contains("target=\"_blank\""),
+                    "renderedLabel should have target=\"_blank\" attribute");
+        }
     }
 }

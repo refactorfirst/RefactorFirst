@@ -12,8 +12,6 @@ import lombok.NoArgsConstructor;
 public class ClassRelationshipDTO {
     private String sourceClass;
     private String targetClass;
-    private String sourceUrl;
-    private String targetUrl;
     private boolean sourceMarked;
     private boolean targetMarked;
     private int weight;
