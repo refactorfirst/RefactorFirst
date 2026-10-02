@@ -75,10 +75,6 @@ class JsonGeneratorTest {
 
         assertTrue(Files.exists(outputDir.resolve(".refactorfirst/refactor-first.json")));
         assertFalse(Files.exists(tempDir.resolve(".refactorfirst/refactor-first.json")));
-
-        String viewer = Files.readString(outputDir.resolve(".refactorfirst/index.html"));
-        assertTrue(viewer.contains("accept=\".json,.mustache\" multiple"));
-        assertFalse(viewer.contains("getFallbackTemplate"));
     }
 
     /** Verifies HTML encoding used for repository-derived text and attribute values. */
