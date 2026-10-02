@@ -261,15 +261,18 @@ public class JsonGenerator extends HtmlReport {
                 String sourceUrl = (sourcePath != null && !sourcePath.isBlank()) ? repoUrl + sourcePath : "";
                 String targetUrl = (targetPath != null && !targetPath.isBlank()) ? repoUrl + targetPath : "";
 
+                // Build rendered label with links to class files
+                String renderedLabel =
+                        buildClassLinkLabel(startVertex, endVertex, sourceUrl, targetUrl, classesToRemove, (int)
+                                classGraph.getEdgeWeight(edgeInfo.getEdge()));
+
                 classRelList.add(ClassRelationshipDTO.builder()
                         .sourceClass(startVertex)
                         .targetClass(endVertex)
-                        .sourceUrl(sourceUrl)
-                        .targetUrl(targetUrl)
                         .sourceMarked(classesToRemove.contains(startVertex))
                         .targetMarked(classesToRemove.contains(endVertex))
                         .weight((int) classGraph.getEdgeWeight(edgeInfo.getEdge()))
-                        .renderedLabel(renderPlainClassEdge(edgeInfo.getEdge()))
+                        .renderedLabel(renderedLabel)
                         .priority(edgeInfo.getPriority())
                         .cycleCount(edgeInfo.getCycleCount())
                         .effortRank(edgeInfo.getEffortRank())
@@ -432,7 +435,7 @@ public class JsonGenerator extends HtmlReport {
                 for (String vertex : largestCycle.getVertexSet()) {
                     String className;
                     if (classesToRemove.contains(vertex)) {
-                        className = hyperlinkClass(vertex, repoUrl, codebaseGraphDTO) + "<strong>*</strong>";
+                        className = hyperlinkClass(vertex, repoUrl, codebaseGraphDTO) + "*";
                     } else {
                         className = hyperlinkClass(vertex, repoUrl, codebaseGraphDTO);
                     }
@@ -442,7 +445,7 @@ public class JsonGenerator extends HtmlReport {
                         if (edge.toString().startsWith("(" + vertex + " :")) {
                             if (classRelationshipsToRemove.contains(edge)) {
                                 edges.append("<strong>");
-                                edges.append(renderClassEdge(edge) + "<strong>*</strong>");
+                                edges.append(renderClassEdge(edge) + "*");
                                 edges.append("</strong>");
                             } else {
                                 edges.append(renderClassEdge(edge));
@@ -498,17 +501,6 @@ public class JsonGenerator extends HtmlReport {
                             .build())
                     .build();
         }
-    }
-
-    /** Renders a relationship label as plain text for Mustache's escaped interpolation. */
-    private String renderPlainClassEdge(DefaultWeightedEdge edge) {
-        String[] vertexes = extractVertexes(edge);
-        String startVertex = vertexes[0].trim();
-        String endVertex = vertexes[1].trim();
-        String startMarker = classesToRemove.contains(startVertex) ? "*" : "";
-        String endMarker = classesToRemove.contains(endVertex) ? "*" : "";
-        return getClassName(startVertex) + startMarker + " → " + getClassName(endVertex) + endMarker + " : "
-                + (int) classGraph.getEdgeWeight(edge);
     }
 
     /** Converts ranked instances of one disharmony type into chart and table data. */
@@ -763,7 +755,7 @@ public class JsonGenerator extends HtmlReport {
     /**
      * Builds a rendered label with HTML links to package directories.
      * Transforms "org.hjug.graphbuilder.metrics &#8594; org.hjug.graphbuilder<strong>*</strong> : 1"
-     * into "<a href="...">org.hjug.graphbuilder.metrics</a> &#8594; <a href="...">org.hjug.graphbuilder</a><strong>*</strong> : 1"
+     * into "<a href="...">org.hjug.graphbuilder.metrics</a> &#8594; <a href="...">org.hjug.graphbuilder</a>* : 1"
      */
     private String buildPackageLinkLabel(
             String originalLabel,
@@ -799,10 +791,18 @@ public class JsonGenerator extends HtmlReport {
         String startPackage = packages[0].trim();
         String endPackage = packages[1].trim();
 
-        // Check if end package has the removal marker <strong>*</strong>
-        boolean endMarked = endPackage.contains("<strong>*</strong>");
+        // Check if start package has the removal marker (escaped or unescaped)
+        boolean startMarked =
+                startPackage.contains("<strong>*</strong>") || startPackage.contains("&lt;strong&gt;*&lt;/strong&gt;");
+        if (startMarked) {
+            startPackage = startPackage.replace("<strong>*</strong>", "").replace("&lt;strong&gt;*&lt;/strong&gt;", "");
+        }
+
+        // Check if end package has the removal marker (escaped or unescaped)
+        boolean endMarked =
+                endPackage.contains("<strong>*</strong>") || endPackage.contains("&lt;strong&gt;*&lt;/strong&gt;");
         if (endMarked) {
-            endPackage = endPackage.replace("<strong>*</strong>", "");
+            endPackage = endPackage.replace("<strong>*</strong>", "").replace("&lt;strong&gt;*&lt;/strong&gt;", "");
         }
 
         // Build the new label with links
@@ -812,6 +812,9 @@ public class JsonGenerator extends HtmlReport {
                 .append("\" target=\"_blank\">")
                 .append(escapeHtmlLabel(startPackage))
                 .append("</a>");
+        if (startMarked) {
+            newLabel.append("*");
+        }
         newLabel.append(arrow);
         newLabel.append("<a href=\"")
                 .append(escapeHtmlAttribute(targetUrl))
@@ -819,9 +822,61 @@ public class JsonGenerator extends HtmlReport {
                 .append(escapeHtmlLabel(endPackage))
                 .append("</a>");
         if (endMarked) {
-            newLabel.append("<strong>*</strong>");
+            newLabel.append("*");
         }
         newLabel.append(weightSeparator).append(weight);
+
+        return newLabel.toString();
+    }
+
+    /**
+     * Builds a rendered label with HTML links to class files.
+     * Transforms "GraphMetricsCollector → DependencyCollector : 1"
+     * into "<a href="...">GraphMetricsCollector</a> → <a href="...">DependencyCollector</a>* : 1"
+     */
+    private String buildClassLinkLabel(
+            String startVertex,
+            String endVertex,
+            String sourceUrl,
+            String targetUrl,
+            Set<String> classesToRemove,
+            int weight) {
+        // Extract simple class names for display
+        String startClass = getClassName(startVertex);
+        String endClass = getClassName(endVertex);
+
+        // Check if classes are marked for removal
+        boolean startMarked = classesToRemove.contains(startVertex);
+        boolean endMarked = classesToRemove.contains(endVertex);
+
+        // Build the new label with links
+        StringBuilder newLabel = new StringBuilder();
+        if (sourceUrl != null && !sourceUrl.isBlank()) {
+            newLabel.append("<a href=\"")
+                    .append(escapeHtmlAttribute(sourceUrl))
+                    .append("\" target=\"_blank\">")
+                    .append(escapeHtmlLabel(startClass))
+                    .append("</a>");
+        } else {
+            newLabel.append(escapeHtmlLabel(startClass));
+        }
+        if (startMarked) {
+            newLabel.append("*");
+        }
+        newLabel.append(" &#8594; ");
+        if (targetUrl != null && !targetUrl.isBlank()) {
+            newLabel.append("<a href=\"")
+                    .append(escapeHtmlAttribute(targetUrl))
+                    .append("\" target=\"_blank\">")
+                    .append(escapeHtmlLabel(endClass))
+                    .append("</a>");
+        } else {
+            newLabel.append(escapeHtmlLabel(endClass));
+        }
+        if (endMarked) {
+            newLabel.append("*");
+        }
+        newLabel.append(" : ").append(weight);
 
         return newLabel.toString();
     }

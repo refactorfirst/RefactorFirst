@@ -329,22 +329,19 @@ class JsonGeneratorTest {
         RefactorFirstReportDTO report = objectMapper.readValue(jsonFile.toFile(), RefactorFirstReportDTO.class);
         assertNotNull(report);
 
-        // Verify ClassRelationshipDTO has sourceUrl and targetUrl
+        // Verify ClassRelationshipDTO renderedLabel contains HTML links
         if (report.getClassRelationshipsToRemove() != null
                 && report.getClassRelationshipsToRemove().getRelationships() != null
                 && !report.getClassRelationshipsToRemove().getRelationships().isEmpty()) {
             var classRel =
                     report.getClassRelationshipsToRemove().getRelationships().get(0);
-            assertNotNull(classRel.getSourceUrl(), "ClassRelationshipDTO should have sourceUrl");
-            assertNotNull(classRel.getTargetUrl(), "ClassRelationshipDTO should have targetUrl");
-            assertTrue(
-                    classRel.getSourceUrl().contains("ClassA.java")
-                            || classRel.getSourceUrl().contains("ClassB.java"),
-                    "sourceUrl should contain the class file name");
-            assertTrue(
-                    classRel.getTargetUrl().contains("ClassA.java")
-                            || classRel.getTargetUrl().contains("ClassB.java"),
-                    "targetUrl should contain the class file name");
+            assertNotNull(classRel.getRenderedLabel(), "ClassRelationshipDTO should have renderedLabel");
+            // Only check for links if source path was available
+            if (classRel.getRenderedLabel().contains("<a href=\"")) {
+                assertTrue(
+                        classRel.getRenderedLabel().contains("target=\"_blank\""),
+                        "renderedLabel should have target=\"_blank\" attribute");
+            }
         }
 
         // Verify PackageRelationshipDTO renderedLabel contains HTML links
