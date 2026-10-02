@@ -77,7 +77,7 @@ public class JsonGenerator extends HtmlReport {
         log.info("RefactorFirst JSON successfully generated at {}", targetFile.toAbsolutePath());
 
         // Copy Mustache template and viewer to .refactorfirst directory
-        copyViewerResources(dotRefactorFirstDir);
+        // copyViewerResources(dotRefactorFirstDir);
     }
 
     /** Copies the Mustache template and browser viewer into the report directory. */
