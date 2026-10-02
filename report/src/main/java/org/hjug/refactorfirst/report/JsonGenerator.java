@@ -749,7 +749,8 @@ public class JsonGenerator extends HtmlReport {
             return false;
         }
         // Check if the class name starts with the package name followed by a dot
-        return className.startsWith(packageName + ".");
+        int lastDot = className.lastIndexOf('.');
+        return lastDot > 0 && className.substring(0, lastDot).equals(packageName);
     }
 
     /**
