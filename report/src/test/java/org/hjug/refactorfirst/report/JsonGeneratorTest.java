@@ -1,6 +1,7 @@
 package org.hjug.refactorfirst.report;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.File;
@@ -150,6 +151,79 @@ class JsonGeneratorTest {
         assertNotNull(bubble.getUrl());
         assertEquals(
                 "https://github.com/example/repo/blob/main/src/main/java/com/example/TestClass.java", bubble.getUrl());
+    }
+
+    /** Verifies that generated and serialized chart bubbles carry repoUrl + source path. */
+    @Test
+    void given_repoWithOrigin_when_reportGenerated_then_bubbleUrlsPointToSourceFiles() throws Exception {
+        // Given
+        File repoDir = tempDir.toFile();
+        File srcDir = new File(repoDir, "src/main/java/com/example");
+        srcDir.mkdirs();
+
+        StringBuilder complexMethod = new StringBuilder();
+        for (int i = 0; i < 40; i++) {
+            complexMethod
+                    .append("        if (a > ")
+                    .append(i)
+                    .append(") { for (int j = 0; j < a; j++) { if (j % 2 == 0 && b) { c += j; } else { c -= j; } } }\n");
+        }
+        Files.writeString(
+                new File(srcDir, "ComplexService.java").toPath(),
+                "package com.example;\n\n"
+                        + "public class ComplexService {\n"
+                        + "    private int c;\n"
+                        + "    public int compute(int a, boolean b) {\n"
+                        + complexMethod
+                        + "        return c;\n"
+                        + "    }\n"
+                        + "}\n");
+
+        new ProcessBuilder("git", "init").directory(repoDir).start().waitFor();
+        new ProcessBuilder("git", "config", "user.email", "test@test.com")
+                .directory(repoDir)
+                .start()
+                .waitFor();
+        new ProcessBuilder("git", "config", "user.name", "Test")
+                .directory(repoDir)
+                .start()
+                .waitFor();
+        new ProcessBuilder("git", "remote", "add", "origin", "https://github.com/example/repo.git")
+                .directory(repoDir)
+                .start()
+                .waitFor();
+        new ProcessBuilder("git", "add", ".").directory(repoDir).start().waitFor();
+        new ProcessBuilder("git", "commit", "-m", "initial")
+                .directory(repoDir)
+                .start()
+                .waitFor();
+
+        // When
+        new JsonGenerator().execute(0, true, false, true, "src/test", "BubbleProject", "1.0.0", repoDir, null);
+
+        // Then
+        Path jsonFile = tempDir.resolve(".refactorfirst").resolve("refactor-first.json");
+        RefactorFirstReportDTO report = objectMapper.readValue(jsonFile.toFile(), RefactorFirstReportDTO.class);
+        String repoUrl = report.getProject().getRepoUrl();
+        assertTrue(
+                repoUrl.startsWith("https://github.com/example/repo/blob/"),
+                "repoUrl should be derived from origin: " + repoUrl);
+
+        var bubbles = report.getDisharmonies() == null
+                ? java.util.List.<ChartJsBubbleDTO>of()
+                : report.getDisharmonies().stream()
+                        .filter(section -> section.getChart() != null)
+                        .flatMap(section -> section.getChart().getBubbles().stream())
+                        .toList();
+        assumeTrue(!bubbles.isEmpty(), "Fixture produced no disharmony bubbles");
+
+        for (ChartJsBubbleDTO bubble : bubbles) {
+            assertNotNull(bubble.getUrl(), "Bubble " + bubble.getLabel() + " should have a url");
+            assertTrue(bubble.getUrl().startsWith(repoUrl), "Bubble url should start with repoUrl: " + bubble.getUrl());
+            assertTrue(
+                    bubble.getUrl().endsWith("src/main/java/com/example/" + bubble.getLabel()),
+                    "Bubble url should point to the source file: " + bubble.getUrl());
+        }
     }
 
     /** Verifies report generation against a minimal Git repository fixture. */
