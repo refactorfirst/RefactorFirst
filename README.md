@@ -122,8 +122,45 @@ Specify with -D if running on the command line.  e.g. ```-DbackEdgeAnalysisCount
 The Java 25 parser activates automatically when running on a JDK 25+ runtime (JEP 238 multi-release jar); there is no configuration flag for it.
 
 
-## But I'm using Gradle / my project layout isn't typical!
-I plan to create a Gradle plugin and (possibly) support non-conventional project structures in the future, but in the meantime you can create a dummy POM file in the same directory as your .git directory to show your project's name in the report:
+## Using the Gradle Plugin
+
+Apply the plugin in `build.gradle.kts` (or `build.gradle`):
+
+```kotlin
+plugins {
+    id("org.hjug.refactorfirst") version "0.11.0"
+}
+```
+
+Tasks (run with `./gradlew <task>` on the project the plugin is applied to):
+
+|Task| Output                                                               |
+|----|----------------------------------------------------------------------|
+|`refactorFirstHtmlReport`| `build/reports/refactorfirst/refactor-first-report.html`             |
+|`refactorFirstSimpleHtmlReport`| `build/reports/refactorfirst/refactor-first-report.html`             |
+|`refactorFirstCsvReport`| `build/reports/refactorfirst/RefFirst_P<name>_PV<version>_PD<date>.csv` |
+|`refactorFirstJsonReport`| `.refactorfirst/refactor-first.json`                                 |
+
+Reports are always regenerated: the tasks never report `UP-TO-DATE` and are never loaded `FROM-CACHE`.
+
+The `refactorFirst` extension accepts the same options as the Maven plugin (described above), plus an output override:
+
+```kotlin
+refactorFirst {
+    showDetails = false
+    backEdgeAnalysisCount = 50
+    analyzeCycles = true
+    minifyHtml = false
+    excludeTests = true
+    testSourceDirectory = "src/test"
+    projectName = "My Project"      // defaults to the Gradle project name
+    projectVersion = "1.0-SNAPSHOT" // defaults to the Gradle project version
+    outputDirectory = "build/rf"    // HTML/CSV only; the JSON report always writes to .refactorfirst
+}
+```
+
+## But my project layout isn't typical!
+If your project layout isn't conventional, you can create a dummy POM file in the same directory as your .git directory to show your project's name in the report:
 
 ```xml
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -188,7 +225,6 @@ There is still much to be done.  Your feedback and collaboration would be greatl
 If you find this plugin useful, please star this repository and share with your friends & colleagues and on social media.
 
 ## Future Plans
-* Add a Gradle plugin.
 * Incorporate Unit Test coverage metrics to quickly identify the safety of refactoring classes.
 * Incorporate additional meaningful metrics.
 

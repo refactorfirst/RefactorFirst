@@ -1,0 +1,66 @@
+# CI for the Gradle plugin (refactor-first-gradle-plugin), which is excluded from the
+# Maven reactor and built with its own Gradle wrapper.
+name: Gradle Plugin CI
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'refactor-first-gradle-plugin/**'
+      - 'report/**'
+      - '.github/workflows/gradle.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'refactor-first-gradle-plugin/**'
+      - 'report/**'
+      - '.github/workflows/gradle.yml'
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, windows-latest ]
+        java-version: [ 17, 25 ]
+
+    runs-on: ${{ matrix.os }}
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ matrix.java-version }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ matrix.java-version }}
+          distribution: 'zulu'
+          cache: maven
+
+      # setup-gradle caches the Gradle user home and validates any wrapper jars
+      # found in the repository (including refactor-first-gradle-plugin/gradlew).
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      # The plugin consumes the (SNAPSHOT during development) report module and its
+      # transitives as real jars via mavenLocal(); install them first.
+      - name: Install report module to Maven local
+        run: mvn -B -q install -DskipTests -pl report -am
+
+      # Guard against version drift: gradle.properties must track the Maven project version.
+      - name: Check gradle.properties version matches Maven project version
+        run: |
+          mvnVersion=$(grep -m1 '<version>' pom.xml | sed -E 's:\s*</?version>::g')
+          gradleVersion=$(grep '^refactorFirstVersion=' refactor-first-gradle-plugin/gradle.properties | cut -d= -f2-)
+          echo "Maven project.version=$mvnVersion, gradle.properties refactorFirstVersion=$gradleVersion"
+          if [ "$mvnVersion" != "$gradleVersion" ]; then
+            echo "FATAL: version mismatch between pom.xml and refactor-first-gradle-plugin/gradle.properties"
+            exit 1
+          fi
+
+      - name: Build and test the Gradle plugin
+        working-directory: refactor-first-gradle-plugin
+        run: ./gradlew clean build
