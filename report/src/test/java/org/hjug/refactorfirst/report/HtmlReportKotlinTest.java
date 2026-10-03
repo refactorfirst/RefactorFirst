@@ -53,6 +53,7 @@ import org.junit.jupiter.api.Test;
  */
 class HtmlReportKotlinTest {
 
+    /** Verifies cycle DOT preserves Kotlin source links and edge weights while omitting redundant labels. */
     @DisplayName("HtmlReport.buildClassCycleDot emits .kt URLs from Kotlin source-path mapping")
     @Test
     void buildClassCycleDot_kotlinSourcePaths() {

@@ -594,6 +594,11 @@ public class HtmlReport extends SimpleHtmlReport {
         return toJavaScriptTemplateLiteral(buildRawClassGraphDot(classGraph, repoUrl, codebaseGraphDTO));
     }
 
+    /**
+     * Appends class DOT nodes, omitting sink-only anonymous or synthetic vertices and labels that
+     * match their node IDs. Includes source-link attributes supplied by the report and highlights
+     * classes selected for removal.
+     */
     private void renderClassVertices(
             Graph<String, DefaultWeightedEdge> classGraph,
             String repoUrl,

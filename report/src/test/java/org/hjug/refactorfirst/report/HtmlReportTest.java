@@ -38,6 +38,7 @@ class HtmlReportTest {
                 mavenReport.getDescription(Locale.getDefault()));
     }
 
+    /** Verifies cycle DOT preserves Java source links and edge weights while omitting redundant labels. */
     @Test
     void buildClassCycleDot() {
         Graph<String, DefaultWeightedEdge> classGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
