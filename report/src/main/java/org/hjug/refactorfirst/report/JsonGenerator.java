@@ -80,6 +80,13 @@ public class JsonGenerator extends HtmlReport {
         // copyViewerResources(dotRefactorFirstDir);
     }
 
+    /**
+     * Intentionally excluding hyperlinks in DOT to reduce JSON file size
+     *
+     * @param fqClassName The fully qualified class name
+     * @param repoUrl The repo URL
+     * @param codebaseGraphDTO The DTO containing the codebase graph
+     * */
     String hyperlinkClassForDot(String fqClassName, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
         return "";
     }
