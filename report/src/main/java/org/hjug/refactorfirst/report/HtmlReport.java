@@ -594,6 +594,11 @@ public class HtmlReport extends SimpleHtmlReport {
         return toJavaScriptTemplateLiteral(buildRawClassGraphDot(classGraph, repoUrl, codebaseGraphDTO));
     }
 
+    /**
+     * Appends class DOT nodes, omitting sink-only anonymous or synthetic vertices and labels that
+     * match their node IDs. Includes source-link attributes supplied by the report and highlights
+     * classes selected for removal.
+     */
     private void renderClassVertices(
             Graph<String, DefaultWeightedEdge> classGraph,
             String repoUrl,
@@ -609,19 +614,23 @@ public class HtmlReport extends SimpleHtmlReport {
                 continue;
             }
 
-            dot.append(renderSafeNodeId(vertex, classGraph, codebaseGraphDTO));
+            String safeNodeId = renderSafeNodeId(vertex, classGraph, codebaseGraphDTO);
+            dot.append(safeNodeId);
 
             dot.append(" [");
             dot.append(hyperlinkClassForDot(vertex, repoUrl, codebaseGraphDTO));
 
+            String label;
             if (isAnonymousFqn(vertex)) {
                 // Kotlin "<anonymous>" renders under the enclosing source file's base name as the
                 // owner with $ as the enclosing-class separator (escaped for DOT).
-                dot.append(" label=\"")
-                        .append(escapeDotQuoted(anonymousOwnerLabel(vertex, codebaseGraphDTO)))
-                        .append("\"");
+                label = escapeDotQuoted(anonymousOwnerLabel(vertex, codebaseGraphDTO));
             } else {
-                dot.append(" label=\"").append(escapeDotQuoted(className)).append("\"");
+                label = escapeDotQuoted(className);
+            }
+
+            if (!label.equals(safeNodeId)) {
+                dot.append(" label=\"").append(label).append("\"");
             }
 
             if (classesToRemove.contains(vertex)) {

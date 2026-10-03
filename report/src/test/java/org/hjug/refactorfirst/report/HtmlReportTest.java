@@ -38,6 +38,7 @@ class HtmlReportTest {
                 mavenReport.getDescription(Locale.getDefault()));
     }
 
+    /** Verifies cycle DOT preserves Java source links and edge weights while omitting redundant labels. */
     @Test
     void buildClassCycleDot() {
         Graph<String, DefaultWeightedEdge> classGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
@@ -66,9 +67,9 @@ class HtmlReportTest {
                 + "A -\\u003E B [ label = \"2\" weight = \"2\" ];\n"
                 + "B -\\u003E C [ label = \"1\" weight = \"1\" ];\n"
                 + "C -\\u003E A [ label = \"1\" weight = \"1\" ];\n"
-                + "A [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/src/main/java/org/hjug/refactorfirst/A.java\" target=\"_blank\" label=\"A\"];\n"
-                + "B [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/src/main/java/org/hjug/refactorfirst/B.java\" target=\"_blank\" label=\"B\"];\n"
-                + "C [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/src/main/java/org/hjug/refactorfirst/C.java\" target=\"_blank\" label=\"C\"];\n"
+                + "A [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/src/main/java/org/hjug/refactorfirst/A.java\" target=\"_blank\"];\n"
+                + "B [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/src/main/java/org/hjug/refactorfirst/B.java\" target=\"_blank\"];\n"
+                + "C [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/src/main/java/org/hjug/refactorfirst/C.java\" target=\"_blank\"];\n"
                 + "}`;";
 
         assertEquals(expectedDot, dot);
