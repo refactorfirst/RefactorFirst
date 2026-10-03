@@ -80,6 +80,10 @@ public class JsonGenerator extends HtmlReport {
         // copyViewerResources(dotRefactorFirstDir);
     }
 
+    String hyperlinkClassForDot(String fqClassName, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
+        return "";
+    }
+
     /** Copies the Mustache template and browser viewer into the report directory. */
     private void copyViewerResources(Path targetDir) {
         try {

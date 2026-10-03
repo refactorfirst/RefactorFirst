@@ -166,7 +166,8 @@ class JsonGeneratorTest {
             complexMethod
                     .append("        if (a > ")
                     .append(i)
-                    .append(") { for (int j = 0; j < a; j++) { if (j % 2 == 0 && b) { c += j; } else { c -= j; } } }\n");
+                    .append(
+                            ") { for (int j = 0; j < a; j++) { if (j % 2 == 0 && b) { c += j; } else { c -= j; } } }\n");
         }
         Files.writeString(
                 new File(srcDir, "ComplexService.java").toPath(),
