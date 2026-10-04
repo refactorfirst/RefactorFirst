@@ -494,11 +494,11 @@ class JsonGeneratorTest {
         Path jsonFile = tempDir.resolve(".refactorfirst").resolve("refactor-first.json");
         RefactorFirstReportDTO report = objectMapper.readValue(jsonFile.toFile(), RefactorFirstReportDTO.class);
         assertNotNull(report.getPackageRelationshipsToRemove());
-        assumeTrue(
-                report.getPackageRelationshipsToRemove().getRelationships() != null
-                        && !report.getPackageRelationshipsToRemove()
-                                .getRelationships()
-                                .isEmpty(),
+        assertNotNull(
+                report.getPackageRelationshipsToRemove().getRelationships(),
+                "Package relationships to remove should be present");
+        assertFalse(
+                report.getPackageRelationshipsToRemove().getRelationships().isEmpty(),
                 "Fixture produced no package relationships to remove");
 
         int totalClassRelationships = 0;
