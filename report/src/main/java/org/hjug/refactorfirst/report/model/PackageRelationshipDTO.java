@@ -23,5 +23,5 @@ public class PackageRelationshipDTO {
     private int effortRank;
 
     @Builder.Default
-    private List<String> classRelationshipsToBreakPackage = new ArrayList<>();
+    private List<ClassRelationshipDTO> classRelationshipsToBreakPackage = new ArrayList<>();
 }

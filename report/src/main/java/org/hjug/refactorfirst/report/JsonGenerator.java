@@ -384,8 +384,8 @@ public class JsonGenerator extends HtmlReport {
                     targetUrl = repoUrl + endVertex.replace('.', '/');
                 }
 
-                List<String> breakClassRels =
-                        cells.length > 4 && !cells[4].isBlank() ? List.of(cells[4].split("<br>")) : List.of();
+                List<ClassRelationshipDTO> breakClassRels = buildClassRelationshipsToBreakPackage(
+                        classRelationshipsInPackageRelationship, repoUrl, codebaseGraphDTO, classEdgeCycleCounts);
 
                 // Build rendered label with links to package directories
                 String renderedLabel =
@@ -839,6 +839,44 @@ public class JsonGenerator extends HtmlReport {
         newLabel.append(weightSeparator).append(weight);
 
         return newLabel.toString();
+    }
+
+    /** Converts the class edges behind a package edge into structured DTOs. */
+    private List<ClassRelationshipDTO> buildClassRelationshipsToBreakPackage(
+            Set<DefaultWeightedEdge> classEdges,
+            String repoUrl,
+            CodebaseGraphDTO codebaseGraphDTO,
+            Map<DefaultWeightedEdge, Integer> classEdgeCycleCounts) {
+        if (classEdges == null || classEdges.isEmpty()) {
+            return List.of();
+        }
+
+        List<ClassRelationshipDTO> relationships = new ArrayList<>();
+        for (DefaultWeightedEdge classEdge : classEdges) {
+            String[] vertexes = extractVertexes(classEdge);
+            String startVertex = vertexes[0].trim();
+            String endVertex = vertexes[1].trim();
+
+            String sourcePath =
+                    codebaseGraphDTO.getClassToSourceFilePathMapping().get(startVertex);
+            String targetPath =
+                    codebaseGraphDTO.getClassToSourceFilePathMapping().get(endVertex);
+            String sourceUrl = (sourcePath != null && !sourcePath.isBlank()) ? repoUrl + sourcePath : "";
+            String targetUrl = (targetPath != null && !targetPath.isBlank()) ? repoUrl + targetPath : "";
+            int weight = (int) classGraph.getEdgeWeight(classEdge);
+
+            relationships.add(ClassRelationshipDTO.builder()
+                    .sourceClass(startVertex)
+                    .targetClass(endVertex)
+                    .sourceMarked(classesToRemove.contains(startVertex))
+                    .targetMarked(classesToRemove.contains(endVertex))
+                    .weight(weight)
+                    .renderedLabel(
+                            buildClassLinkLabel(startVertex, endVertex, sourceUrl, targetUrl, classesToRemove, weight))
+                    .cycleCount(classEdgeCycleCounts.getOrDefault(classEdge, 0))
+                    .build());
+        }
+        return relationships;
     }
 
     /**
