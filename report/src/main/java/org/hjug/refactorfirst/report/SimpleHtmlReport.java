@@ -649,11 +649,10 @@ public class SimpleHtmlReport {
 
         Set<DefaultWeightedEdge> classRelationshipsInPackageRelationship =
                 codebaseGraphDTO.getClassRelationshipsInPackageRelationship().get(edgeInfo.getEdge());
-        Set<String> classEdges = new HashSet<>();
-        if (classRelationshipsInPackageRelationship != null) {
-            for (DefaultWeightedEdge defaultWeightedEdge : classRelationshipsInPackageRelationship) {
-                classEdges.add(renderClassEdge(defaultWeightedEdge, repoUrl, codebaseGraphDTO));
-            }
+        Set<String> classEdges = new LinkedHashSet<>();
+        for (DefaultWeightedEdge defaultWeightedEdge :
+                sortedClassEdgesInPackageRelationship(classRelationshipsInPackageRelationship)) {
+            classEdges.add(renderClassEdge(defaultWeightedEdge, repoUrl, codebaseGraphDTO));
         }
 
         return new String[] {
@@ -663,6 +662,24 @@ public class SimpleHtmlReport {
             String.valueOf(edgeInfo.getEffortRank()),
             String.join("<br>", classEdges),
         };
+    }
+
+    /**
+     * Deterministically orders the class edges behind a package relationship so that every
+     * report type (HTML, JSON) lists them identically on every run. The backing set's iteration
+     * order is identity-hash based and varies between executions, which made the htmlReport and
+     * the jsonReport disagree on the order of the class relationships to remove.
+     *
+     * @param classEdges the class edges mapped to a package relationship; may be {@code null}
+     * @return the edges ordered by source class FQN, then target class FQN
+     */
+    List<DefaultWeightedEdge> sortedClassEdgesInPackageRelationship(Set<DefaultWeightedEdge> classEdges) {
+        if (classEdges == null || classEdges.isEmpty()) {
+            return List.of();
+        }
+        return classEdges.stream()
+                .sorted(Comparator.comparing(classGraph::getEdgeSource).thenComparing(classGraph::getEdgeTarget))
+                .toList();
     }
 
     /** Renders summary rows for the ranked class cycles. */

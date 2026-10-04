@@ -2,7 +2,6 @@ package org.hjug.feedback.arc.pageRank;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import lombok.extern.slf4j.Slf4j;
 import org.hjug.feedback.SuperTypeToken;
 import org.jgrapht.Graph;
@@ -98,11 +97,48 @@ public class PageRankFAS<V, E> {
         // Run PageRank on line digraph
         Map<LineVertex<V, E>, Double> pageRankScores = computePageRank(lineDigraph);
 
-        // Find the edge (line vertex) with highest PageRank score
-        return pageRankScores.entrySet().parallelStream()
-                .max(Map.Entry.comparingByValue())
-                .map(entry -> entry.getKey().getOriginalEdge())
-                .orElse(null);
+        // Deterministically select the edge (line vertex) with the highest PageRank score
+        return selectHighestScoredEdge(pageRankScores);
+    }
+
+    /**
+     * Canonical, run-stable total order over line vertices: by the string form of the source
+     * vertex, then of the target vertex. Because the analyzed graphs never contain parallel
+     * edges, {@code (source, target)} uniquely identifies an edge, making this a total order
+     * over line vertices. Every ordering-sensitive step of the algorithm (PageRank accumulation,
+     * max-score selection, line-digraph DFS start) follows this order so that repeated runs on
+     * the same input graph — e.g. by the htmlReport and the jsonReport — produce identical
+     * feedback arc sets.
+     */
+    private Comparator<LineVertex<V, E>> lineVertexOrder() {
+        return Comparator.comparing((LineVertex<V, E> lineVertex) -> String.valueOf(lineVertex.getSource()))
+                .thenComparing(lineVertex -> String.valueOf(lineVertex.getTarget()));
+    }
+
+    /**
+     * Deterministically selects the line vertex carrying the highest PageRank score. Ties —
+     * which are common in symmetric cycles where every candidate edge scores identically — are
+     * broken by the canonical line-vertex order so the selection cannot vary between runs.
+     *
+     * @param pageRankScores PageRank score per line vertex
+     * @return the original edge of the highest-scored line vertex, or {@code null} when empty
+     */
+    private E selectHighestScoredEdge(Map<LineVertex<V, E>, Double> pageRankScores) {
+        LineVertex<V, E> best = null;
+        double bestScore = Double.NEGATIVE_INFINITY;
+        for (Map.Entry<LineVertex<V, E>, Double> entry : pageRankScores.entrySet()) {
+            double score = entry.getValue();
+            boolean tiedWinner = score == bestScore && best != null && isCanonicallyBefore(entry.getKey(), best);
+            if (best == null || score > bestScore || tiedWinner) {
+                best = entry.getKey();
+                bestScore = score;
+            }
+        }
+        return best != null ? best.getOriginalEdge() : null;
+    }
+
+    private boolean isCanonicallyBefore(LineVertex<V, E> candidate, LineVertex<V, E> incumbent) {
+        return lineVertexOrder().compare(candidate, incumbent) < 0;
     }
 
     /**
@@ -138,10 +174,13 @@ public class PageRankFAS<V, E> {
             Graph<V, E> graph, LineDigraph<V, E> lineDigraph, Map<E, LineVertex<V, E>> edgeToLineVertex) {
         Set<V> visited = ConcurrentHashMap.newKeySet();
 
-        // Start DFS from a random vertex if graph is not empty
+        // Start DFS from the canonically smallest vertex so the traversal — and therefore the
+        // resulting line-digraph edge set — is identical on every run
         if (!graph.vertexSet().isEmpty()) {
-            V startVertex = graph.vertexSet().iterator().next();
-            createLineDigraphEdgesDFS(graph, lineDigraph, edgeToLineVertex, startVertex, null, visited);
+            graph.vertexSet().stream()
+                    .min(Comparator.comparing(String::valueOf))
+                    .ifPresent(startVertex -> createLineDigraphEdgesDFS(
+                            graph, lineDigraph, edgeToLineVertex, startVertex, null, visited));
         }
     }
 
@@ -191,6 +230,10 @@ public class PageRankFAS<V, E> {
 
     /**
      * Compute PageRank scores on the line digraph (Algorithm 4 implementation)
+     * Accumulation is sequential and iterates vertices and their outgoing neighbors in the
+     * canonical line-vertex order, keeping the floating-point sums bit-identical across runs —
+     * a parallel merge would introduce run-dependent rounding and, through it, different
+     * feedback arc selections in different report executions.
      * @param lineDigraph The line digraph
      * @return Map of line vertices to their PageRank scores
      */
@@ -200,56 +243,54 @@ public class PageRankFAS<V, E> {
 
         if (numVertices == 0) return new HashMap<>();
 
+        // Canonical iteration order for vertices and adjacency keeps every run identical
+        List<LineVertex<V, E>> orderedVertices = new ArrayList<>(vertices);
+        orderedVertices.sort(lineVertexOrder());
+        Map<LineVertex<V, E>, List<LineVertex<V, E>>> orderedOutgoing = new HashMap<>();
+        for (LineVertex<V, E> v : orderedVertices) {
+            List<LineVertex<V, E>> outgoing = new ArrayList<>(lineDigraph.getOutgoingNeighbors(v));
+            outgoing.sort(lineVertexOrder());
+            orderedOutgoing.put(v, outgoing);
+        }
+
         // Initialize PageRank scores
-        Map<LineVertex<V, E>, Double> currentScores =
-                new ConcurrentHashMap<>(Math.max(16, (int) (numVertices / 0.75f) + 1));
+        Map<LineVertex<V, E>, Double> currentScores = new HashMap<>(Math.max(16, (int) (numVertices / 0.75f) + 1));
 
         final double initialScore = 1.0 / numVertices;
-        // No lambdas here, so nothing captures a non-final variable
-        for (LineVertex<V, E> v : vertices) {
+        for (LineVertex<V, E> v : orderedVertices) {
             currentScores.put(v, initialScore);
         }
 
         // Run PageRank iterations
         for (int iteration = 0; iteration < pageRankIterations; iteration++) {
             // Fresh map each iteration; pre-seed zeros so all vertices exist in the map
-            ConcurrentMap<LineVertex<V, E>, Double> newScores = new ConcurrentHashMap<>(currentScores.size());
+            Map<LineVertex<V, E>, Double> newScores = new HashMap<>(currentScores.size());
 
-            for (LineVertex<V, E> v : vertices) {
+            for (LineVertex<V, E> v : orderedVertices) {
                 newScores.put(v, 0.0);
             }
 
-            // Do one iteration in parallel; lambdas only see method parameters (effectively final)
-            applyOneIteration(vertices, lineDigraph, currentScores, newScores);
+            // One sequential iteration in canonical order; lambdas only see method parameters
+            for (LineVertex<V, E> v : orderedVertices) {
+                double score = currentScores.get(v);
+                List<LineVertex<V, E>> outgoing = orderedOutgoing.get(v);
 
-            // Swap for next iteration (this reassigns local variables, not captured by lambdas)
+                if (outgoing.isEmpty()) {
+                    // Sink: keep score on itself
+                    newScores.merge(v, score, Double::sum);
+                } else {
+                    double scorePerEdge = score / outgoing.size();
+                    for (LineVertex<V, E> target : outgoing) {
+                        newScores.merge(target, scorePerEdge, Double::sum);
+                    }
+                }
+            }
+
+            // Swap for next iteration
             currentScores = newScores;
         }
 
         return currentScores;
-    }
-
-    private void applyOneIteration(
-            Set<LineVertex<V, E>> vertices,
-            LineDigraph<V, E> lineDigraph,
-            Map<LineVertex<V, E>, Double> currentScores,
-            ConcurrentMap<LineVertex<V, E>, Double> newScores) {
-
-        vertices.parallelStream().forEach(vertex -> {
-            double score = currentScores.get(vertex);
-            Set<LineVertex<V, E>> outgoing = lineDigraph.getOutgoingNeighbors(vertex);
-
-            if (outgoing.isEmpty()) {
-                // Sink: keep score on itself
-                newScores.merge(vertex, score, Double::sum);
-            } else {
-                double scorePerEdge = score / outgoing.size();
-                // Inner loop kept sequential: nested parallel often hurts more than it helps
-                for (LineVertex<V, E> target : outgoing) {
-                    newScores.merge(target, scorePerEdge, Double::sum);
-                }
-            }
-        });
     }
 
     /**

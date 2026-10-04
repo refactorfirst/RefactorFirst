@@ -852,7 +852,7 @@ public class JsonGenerator extends HtmlReport {
         }
 
         List<ClassRelationshipDTO> relationships = new ArrayList<>();
-        for (DefaultWeightedEdge classEdge : classEdges) {
+        for (DefaultWeightedEdge classEdge : sortedClassEdgesInPackageRelationship(classEdges)) {
             String[] vertexes = extractVertexes(classEdge);
             String startVertex = vertexes[0].trim();
             String endVertex = vertexes[1].trim();
