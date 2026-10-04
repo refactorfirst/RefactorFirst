@@ -60,10 +60,11 @@ class PackageRelationshipClassEdgeCycleCountTest {
     @DisplayName("nested class relationships report their real class-cycle membership, not a defaulted zero")
     @Test
     void buildClassRelationshipsToBreakPackage_reportsActualCycleMembership() throws Exception {
-        // Given: a class graph whose Alpha -> Beta edge participates in the Alpha/Beta class
-        // cycle, and a Delta -> Beta edge that participates in no cycle
+        // Given: a class graph whose Alpha -> Beta and Beta -> Alpha edges participate in the
+        // Alpha/Beta class cycle, and a Delta -> Beta edge that participates in no cycle
         Graph<String, DefaultWeightedEdge> classGraph = createClassGraph();
         DefaultWeightedEdge alphaToBeta = classGraph.getEdge(ALPHA, BETA);
+        DefaultWeightedEdge betaToAlpha = classGraph.getEdge(BETA, ALPHA);
         DefaultWeightedEdge deltaToBeta = classGraph.getEdge(DELTA, BETA);
 
         JsonGenerator generator = new JsonGenerator();
@@ -84,6 +85,7 @@ class PackageRelationshipClassEdgeCycleCountTest {
         // feedback-arc-set edges), so their membership must be calculated from classCycles
         Set<DefaultWeightedEdge> classEdgesInPackageRelationship = new LinkedHashSet<>();
         classEdgesInPackageRelationship.add(alphaToBeta);
+        classEdgesInPackageRelationship.add(betaToAlpha);
         classEdgesInPackageRelationship.add(deltaToBeta);
 
         // When: the nested class-relationship DTOs are built for the package edge
@@ -95,12 +97,17 @@ class PackageRelationshipClassEdgeCycleCountTest {
                 .filter(r -> r.getSourceClass().equals(ALPHA))
                 .findFirst()
                 .orElseThrow();
+        ClassRelationshipDTO betaToAlphaDto = relationships.stream()
+                .filter(r -> r.getSourceClass().equals(BETA))
+                .findFirst()
+                .orElseThrow();
         ClassRelationshipDTO deltaToBetaDto = relationships.stream()
                 .filter(r -> r.getSourceClass().equals(DELTA))
                 .findFirst()
                 .orElseThrow();
 
         assertEquals(1, alphaToBetaDto.getCycleCount(), "Alpha -> Beta is in the class cycle, so its count must be 1");
+        assertEquals(1, betaToAlphaDto.getCycleCount(), "Beta -> Alpha is in the class cycle, so its count must be 1");
         assertEquals(0, deltaToBetaDto.getCycleCount(), "Delta -> Beta is in no class cycle, so its count must be 0");
     }
 }

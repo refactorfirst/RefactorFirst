@@ -1,6 +1,7 @@
 package org.hjug.refactorfirst.report;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -39,7 +40,11 @@ class PackageRelationshipClassEdgeOrderTest {
     /** Number of class edges crossing the package boundary. */
     private static final int EDGE_COUNT = 12;
 
-    /** Builds the class graph with {@link #EDGE_COUNT} edges from {@link #PKG_A} to {@link #PKG_B}. */
+    /**
+     * Builds the class graph with {@link #EDGE_COUNT} edges from {@link #PKG_A} to
+     * {@link #PKG_B}, plus two edges sharing one source whose targets' natural order differs
+     * from their insertion order ({@code TargetZ} is inserted before {@code TargetB}).
+     */
     private Graph<String, DefaultWeightedEdge> createClassGraph() {
         Graph<String, DefaultWeightedEdge> classGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
         for (int i = 0; i < EDGE_COUNT; i++) {
@@ -50,6 +55,20 @@ class PackageRelationshipClassEdgeOrderTest {
             DefaultWeightedEdge edge = classGraph.addEdge(source, target);
             classGraph.setEdgeWeight(edge, i + 1);
         }
+
+        // Same-source edges whose target order differs from insertion order: TargetZ is added
+        // first, but TargetB must be rendered first because it sorts first
+        String multiSource = PKG_A + ".Multi";
+        String targetZ = PKG_B + ".TargetZ";
+        String targetB = PKG_B + ".TargetB";
+        classGraph.addVertex(multiSource);
+        classGraph.addVertex(targetZ);
+        classGraph.addVertex(targetB);
+        DefaultWeightedEdge multiToTargetZ = classGraph.addEdge(multiSource, targetZ);
+        classGraph.setEdgeWeight(multiToTargetZ, EDGE_COUNT + 1);
+        DefaultWeightedEdge multiToTargetB = classGraph.addEdge(multiSource, targetB);
+        classGraph.setEdgeWeight(multiToTargetB, EDGE_COUNT + 2);
+
         return classGraph;
     }
 
@@ -126,7 +145,7 @@ class PackageRelationshipClassEdgeOrderTest {
         RankedDisharmony edgeInfo = mockRankedDisharmony(packageEdge);
 
         String firstHtmlCell = null;
-        List<String> firstJsonSources = null;
+        List<ClassRelationshipDTO> firstJsonList = null;
         for (int rotation = 0; rotation < 24; rotation++) {
             Set<DefaultWeightedEdge> classEdges = newSetInOrder(edges, rotation);
             CodebaseGraphDTO dto = mockDto(packageEdge, classEdges);
@@ -146,7 +165,7 @@ class PackageRelationshipClassEdgeOrderTest {
             // When: comparing each rotated insertion order against the first one
             if (firstHtmlCell == null) {
                 firstHtmlCell = htmlCell;
-                firstJsonSources = jsonSources;
+                firstJsonList = jsonList;
             } else {
                 assertEquals(
                         firstHtmlCell,
@@ -154,7 +173,9 @@ class PackageRelationshipClassEdgeOrderTest {
                         "HTML class-relationship cell must not depend on set insertion order (rotation " + rotation
                                 + ")");
                 assertEquals(
-                        firstJsonSources,
+                        firstJsonList.stream()
+                                .map(ClassRelationshipDTO::getSourceClass)
+                                .toList(),
                         jsonSources,
                         "JSON class-relationship order must not depend on set insertion order (rotation " + rotation
                                 + ")");
@@ -172,7 +193,7 @@ class PackageRelationshipClassEdgeOrderTest {
                 .toList();
         assertEquals(
                 expectedOrder.stream().map(classGraph::getEdgeSource).toList(),
-                firstJsonSources,
+                firstJsonList.stream().map(ClassRelationshipDTO::getSourceClass).toList(),
                 "JSON class relationships must be ordered by source class FQN");
         String expectedHtmlCell = String.join(
                 "<br>",
@@ -185,6 +206,20 @@ class PackageRelationshipClassEdgeOrderTest {
                 expectedHtmlCell,
                 firstHtmlCell,
                 "HTML class-relationship cell must list the same edges in the same order as the JSON report");
+
+        // And: edges sharing a source render their targets in natural order — not insertion
+        // order — in both reports (TargetZ was inserted first, but TargetB sorts first)
+        List<String> multiSourceTargets = firstJsonList.stream()
+                .filter(r -> r.getSourceClass().equals(PKG_A + ".Multi"))
+                .map(ClassRelationshipDTO::getTargetClass)
+                .toList();
+        assertEquals(
+                List.of(PKG_B + ".TargetB", PKG_B + ".TargetZ"),
+                multiSourceTargets,
+                "JSON must order same-source class relationships by target class FQN, not insertion order");
+        assertTrue(
+                firstHtmlCell.indexOf("Multi &#8594; TargetB") < firstHtmlCell.indexOf("Multi &#8594; TargetZ"),
+                "HTML must render same-source targets in the same order as the JSON report");
     }
 
     private static String simpleName(String fqn) {
