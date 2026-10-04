@@ -43,6 +43,7 @@ class PageRankFASDeterminismTest {
         return graph;
     }
 
+    /** Copies the graph topology with fresh edges so each run can remove edges independently. */
     private Graph<String, DefaultEdge> copyGraph(Graph<String, DefaultEdge> original) {
         Graph<String, DefaultEdge> copy = new DefaultDirectedGraph<>(DefaultEdge.class);
         original.vertexSet().forEach(copy::addVertex);
@@ -52,6 +53,7 @@ class PageRankFASDeterminismTest {
         return copy;
     }
 
+    /** Converts edges to sorted source/target keys for comparison across graph copies. */
     private Set<String> edgeKeys(Graph<String, DefaultEdge> graph, Set<DefaultEdge> edges) {
         Set<String> keys = new TreeSet<>();
         for (DefaultEdge edge : edges) {
@@ -60,6 +62,7 @@ class PageRankFASDeterminismTest {
         return keys;
     }
 
+    /** Verifies repeated runs select the same edges and break both cycles in the package SCC. */
     @DisplayName("computeFeedbackArcSet selects the same edges on every run for the feedback package SCC")
     @Test
     void computeFeedbackArcSet_isDeterministicAcrossRuns() {
@@ -94,6 +97,7 @@ class PageRankFASDeterminismTest {
                 "Removing the feedback arc set must leave the graph acyclic");
     }
 
+    /** Verifies repeatable feedback arc selection and cycle removal in a larger symmetric graph. */
     @DisplayName("computeFeedbackArcSet is deterministic for a graph with parallel tie candidates")
     @Test
     void computeFeedbackArcSet_isDeterministicForLargerTiedGraph() {
@@ -134,6 +138,7 @@ class PageRankFASDeterminismTest {
                 "Removing the feedback arc set must leave the graph acyclic");
     }
 
+    /** Verifies edge insertion order does not change feedback arc selection for overlapping cycles. */
     @DisplayName("computeFeedbackArcSet is independent of the order edges were added to the graph")
     @Test
     void computeFeedbackArcSet_isDeterministicAcrossEdgeInsertionOrders() {

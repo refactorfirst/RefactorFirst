@@ -88,12 +88,14 @@ class PackageRelationshipClassEdgeOrderTest {
         return new HashSet<>(rotated);
     }
 
+    /** Injects a graph fixture into a field declared by the shared HTML report base class. */
     private void setField(Object target, String fieldName, Object value) throws Exception {
         Field field = SimpleHtmlReport.class.getDeclaredField(fieldName);
         field.setAccessible(true);
         field.set(target, value);
     }
 
+    /** Maps the package edge to its class edges in a DTO mock with no source file paths. */
     private CodebaseGraphDTO mockDto(DefaultWeightedEdge packageEdge, Set<DefaultWeightedEdge> classEdges) {
         CodebaseGraphDTO dto = Mockito.mock(CodebaseGraphDTO.class);
         Map<DefaultWeightedEdge, Set<DefaultWeightedEdge>> relationships = new HashMap<>();
@@ -103,6 +105,7 @@ class PackageRelationshipClassEdgeOrderTest {
         return dto;
     }
 
+    /** Creates a ranked package-edge fixture with priority, cycle count and effort rank set to one. */
     private RankedDisharmony mockRankedDisharmony(DefaultWeightedEdge packageEdge) {
         RankedDisharmony edgeInfo = Mockito.mock(RankedDisharmony.class);
         Mockito.when(edgeInfo.getEdge()).thenReturn(packageEdge);
@@ -132,6 +135,7 @@ class PackageRelationshipClassEdgeOrderTest {
                 dto.getClassRelationshipsInPackageRelationship().get(packageEdge), REPO_URL, dto);
     }
 
+    /** Verifies HTML and JSON use the same source/target order across class-edge set insertions. */
     @DisplayName(
             "class relationships behind a package edge render in the same deterministic order regardless of set insertion order")
     @Test
@@ -222,6 +226,7 @@ class PackageRelationshipClassEdgeOrderTest {
                 "HTML must render same-source targets in the same order as the JSON report");
     }
 
+    /** Extracts the final name segment from a fully qualified class name for expected HTML labels. */
     private static String simpleName(String fqn) {
         return fqn.substring(fqn.lastIndexOf('.') + 1);
     }
