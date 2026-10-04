@@ -9,6 +9,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
 import org.hjug.refactorfirst.report.model.ChartJsBubbleDTO;
+import org.hjug.refactorfirst.report.model.ClassRelationshipDTO;
+import org.hjug.refactorfirst.report.model.PackageRelationshipDTO;
 import org.hjug.refactorfirst.report.model.RefactorFirstReportDTO;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -425,5 +427,99 @@ class JsonGeneratorTest {
                     packageRel.getRenderedLabel().contains("target=\"_blank\""),
                     "renderedLabel should have target=\"_blank\" attribute");
         }
+    }
+
+    /**
+     * Verifies that class relationships that break a package cycle are serialized as
+     * structured {@link ClassRelationshipDTO}s with class names, markers and a rendered label.
+     */
+    @Test
+    void given_packageCycle_when_reportGenerated_then_classRelationshipsToBreakPackageAreStructuredDTOs()
+            throws Exception {
+        // Given: two packages with a circular class dependency
+        File repoDir = tempDir.toFile();
+        new File(repoDir, ".git").mkdirs();
+
+        File pkgA = new File(repoDir, "src/main/java/com/example/pkga");
+        File pkgB = new File(repoDir, "src/main/java/com/example/pkgb");
+        pkgA.mkdirs();
+        pkgB.mkdirs();
+
+        Files.writeString(
+                new File(pkgA, "ClassA.java").toPath(),
+                """
+                package com.example.pkga;
+
+                public class ClassA {
+                    private com.example.pkgb.ClassB classB;
+
+                    public ClassA(com.example.pkgb.ClassB classB) {
+                        this.classB = classB;
+                    }
+                }
+                """);
+        Files.writeString(
+                new File(pkgB, "ClassB.java").toPath(),
+                """
+                package com.example.pkgb;
+
+                public class ClassB {
+                    private com.example.pkga.ClassA classA;
+
+                    public ClassB(com.example.pkga.ClassA classA) {
+                        this.classA = classA;
+                    }
+                }
+                """);
+
+        new ProcessBuilder("git", "init").directory(repoDir).start().waitFor();
+        new ProcessBuilder("git", "config", "user.email", "test@test.com")
+                .directory(repoDir)
+                .start()
+                .waitFor();
+        new ProcessBuilder("git", "config", "user.name", "Test")
+                .directory(repoDir)
+                .start()
+                .waitFor();
+        new ProcessBuilder("git", "add", ".").directory(repoDir).start().waitFor();
+        new ProcessBuilder("git", "commit", "-m", "initial")
+                .directory(repoDir)
+                .start()
+                .waitFor();
+
+        // When
+        new JsonGenerator().execute(0, true, false, true, "src/test", "PackageCycleProject", "1.0.0", repoDir, null);
+
+        // Then
+        Path jsonFile = tempDir.resolve(".refactorfirst").resolve("refactor-first.json");
+        RefactorFirstReportDTO report = objectMapper.readValue(jsonFile.toFile(), RefactorFirstReportDTO.class);
+        assertNotNull(report.getPackageRelationshipsToRemove());
+        assertNotNull(
+                report.getPackageRelationshipsToRemove().getRelationships(),
+                "Package relationships to remove should be present");
+        assertFalse(
+                report.getPackageRelationshipsToRemove().getRelationships().isEmpty(),
+                "Fixture produced no package relationships to remove");
+
+        int totalClassRelationships = 0;
+        for (PackageRelationshipDTO packageRel :
+                report.getPackageRelationshipsToRemove().getRelationships()) {
+            assertNotNull(packageRel.getClassRelationshipsToBreakPackage());
+            for (ClassRelationshipDTO classRel : packageRel.getClassRelationshipsToBreakPackage()) {
+                totalClassRelationships++;
+                assertTrue(
+                        classRel.getSourceClass().startsWith("com.example.pkg"),
+                        "sourceClass should be a fully qualified class name: " + classRel.getSourceClass());
+                assertTrue(
+                        classRel.getTargetClass().startsWith("com.example.pkg"),
+                        "targetClass should be a fully qualified class name: " + classRel.getTargetClass());
+                assertTrue(classRel.getWeight() >= 1, "weight should be at least 1");
+                assertNotNull(classRel.getRenderedLabel(), "ClassRelationshipDTO should have renderedLabel");
+                assertTrue(
+                        classRel.getRenderedLabel().contains("&#8594;"),
+                        "renderedLabel should contain the relationship arrow");
+            }
+        }
+        assertTrue(totalClassRelationships > 0, "Expected at least one class relationship to break the package cycle");
     }
 }
