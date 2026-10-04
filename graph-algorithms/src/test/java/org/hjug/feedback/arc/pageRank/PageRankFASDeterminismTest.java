@@ -133,4 +133,52 @@ class PageRankFASDeterminismTest {
                 !new CycleDetector<>(graph).detectCycles(),
                 "Removing the feedback arc set must leave the graph acyclic");
     }
+
+    @DisplayName("computeFeedbackArcSet is independent of the order edges were added to the graph")
+    @Test
+    void computeFeedbackArcSet_isDeterministicAcrossEdgeInsertionOrders() {
+        // Given: one logical SCC expressing multiple overlapping cycles
+        String[][] logicalEdges = {
+            {"A", "B"},
+            {"B", "C"},
+            {"C", "A"}, // triangle 1
+            {"A", "D"},
+            {"D", "E"},
+            {"E", "A"}, // triangle 2
+            {"B", "E"},
+            {"D", "B"}, // cross edges
+        };
+
+        // And: several different edge insertion orders of the same logical edges
+        int[][] permutations = {
+            {0, 1, 2, 3, 4, 5, 6, 7}, // as declared
+            {7, 6, 5, 4, 3, 2, 1, 0}, // reversed
+            {3, 0, 6, 2, 5, 1, 7, 4}, // interleaved
+            {5, 2, 7, 1, 4, 6, 0, 3}, // another interleave
+        };
+
+        // When: the feedback arc set is computed for each insertion order
+        Set<String> firstOrder = null;
+        for (int[] permutation : permutations) {
+            Graph<String, DefaultEdge> graph = new DefaultDirectedGraph<>(DefaultEdge.class);
+            for (int edgeIndex : permutation) {
+                String[] logicalEdge = logicalEdges[edgeIndex];
+                graph.addVertex(logicalEdge[0]);
+                graph.addVertex(logicalEdge[1]);
+                graph.addEdge(logicalEdge[0], logicalEdge[1]);
+            }
+            PageRankFAS<String, DefaultEdge> pageRankFAS = new PageRankFAS<>(graph, new SuperTypeToken<>() {});
+            Set<String> fas = edgeKeys(graph, pageRankFAS.computeFeedbackArcSet());
+
+            // Then: every insertion order selects the identical feedback arc set
+            if (firstOrder == null) {
+                firstOrder = fas;
+            } else {
+                assertEquals(
+                        firstOrder,
+                        fas,
+                        "computeFeedbackArcSet must not depend on the order edges were added to the graph");
+            }
+        }
+    }
 }

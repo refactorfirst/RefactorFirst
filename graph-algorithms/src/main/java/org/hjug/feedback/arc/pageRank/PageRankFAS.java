@@ -197,8 +197,11 @@ public class PageRankFAS<V, E> {
             Set<V> visited) {
         visited.add(vertex);
 
-        // Get outgoing edges from current vertex
-        Set<E> outgoingEdges = graph.outgoingEdgesOf(vertex);
+        // Iterate outgoing edges in canonical (target-vertex) order rather than the graph's
+        // internal set order, so the traversal — and therefore the line-digraph edge set and
+        // the FAS selection — cannot vary with the order edges were added to the graph
+        List<E> outgoingEdges = new ArrayList<>(graph.outgoingEdgesOf(vertex));
+        outgoingEdges.sort(Comparator.comparing(edge -> String.valueOf(graph.getEdgeTarget(edge))));
 
         for (E edge : outgoingEdges) {
             V target = graph.getEdgeTarget(edge);
