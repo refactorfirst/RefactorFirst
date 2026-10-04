@@ -104,21 +104,13 @@ class PackageRelationshipClassEdgeOrderTest {
     }
 
     /** Builds the JSON DTO list of class relationships behind the package edge for the given DTO. */
-    @SuppressWarnings("unchecked")
-    private List<ClassRelationshipDTO> buildJsonList(JsonGenerator generator, CodebaseGraphDTO dto) throws Exception {
+    private List<ClassRelationshipDTO> buildJsonList(JsonGenerator generator, CodebaseGraphDTO dto) {
         DefaultWeightedEdge packageEdge = dto.getClassRelationshipsInPackageRelationship()
                 .keySet()
                 .iterator()
                 .next();
-        Method method = JsonGenerator.class.getDeclaredMethod(
-                "buildClassRelationshipsToBreakPackage", Set.class, String.class, CodebaseGraphDTO.class, Map.class);
-        method.setAccessible(true);
-        return (List<ClassRelationshipDTO>) method.invoke(
-                generator,
-                dto.getClassRelationshipsInPackageRelationship().get(packageEdge),
-                REPO_URL,
-                dto,
-                new HashMap<>());
+        return generator.buildClassRelationshipsToBreakPackage(
+                dto.getClassRelationshipsInPackageRelationship().get(packageEdge), REPO_URL, dto);
     }
 
     @DisplayName(

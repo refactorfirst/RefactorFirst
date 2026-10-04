@@ -23,6 +23,7 @@ import org.hjug.graphbuilder.CodebaseGraphDTO;
 import org.hjug.graphbuilder.metrics.DisharmonyMetric;
 import org.hjug.metrics.DisharmonyInstance;
 import org.hjug.refactorfirst.report.model.*;
+import org.jgrapht.graph.AsSubgraph;
 import org.jgrapht.graph.DefaultWeightedEdge;
 
 @Slf4j
@@ -385,7 +386,7 @@ public class JsonGenerator extends HtmlReport {
                 }
 
                 List<ClassRelationshipDTO> breakClassRels = buildClassRelationshipsToBreakPackage(
-                        classRelationshipsInPackageRelationship, repoUrl, codebaseGraphDTO, classEdgeCycleCounts);
+                        classRelationshipsInPackageRelationship, repoUrl, codebaseGraphDTO);
 
                 // Build rendered label with links to package directories
                 String renderedLabel =
@@ -841,18 +842,27 @@ public class JsonGenerator extends HtmlReport {
         return newLabel.toString();
     }
 
-    /** Converts the class edges behind a package edge into structured DTOs. */
-    private List<ClassRelationshipDTO> buildClassRelationshipsToBreakPackage(
-            Set<DefaultWeightedEdge> classEdges,
-            String repoUrl,
-            CodebaseGraphDTO codebaseGraphDTO,
-            Map<DefaultWeightedEdge, Integer> classEdgeCycleCounts) {
+    /**
+     * Converts the class edges behind a package edge into structured DTOs.
+     * Cycle membership is calculated for every class edge from {@code classCycles} before the
+     * DTOs are constructed: {@code classEdgeCycleCounts} only covers edges of the class
+     * feedback arc set, so relying on it reported the nested edges — which are generally not
+     * feedback-arc-set members — as members of zero class cycles.
+     */
+    List<ClassRelationshipDTO> buildClassRelationshipsToBreakPackage(
+            Set<DefaultWeightedEdge> classEdges, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
         if (classEdges == null || classEdges.isEmpty()) {
             return List.of();
         }
 
+        List<DefaultWeightedEdge> orderedClassEdges = sortedClassEdgesInPackageRelationship(classEdges);
+        Map<DefaultWeightedEdge, Integer> cycleCounts = new LinkedHashMap<>();
+        for (DefaultWeightedEdge classEdge : orderedClassEdges) {
+            cycleCounts.put(classEdge, countClassCyclesContaining(classEdge));
+        }
+
         List<ClassRelationshipDTO> relationships = new ArrayList<>();
-        for (DefaultWeightedEdge classEdge : sortedClassEdgesInPackageRelationship(classEdges)) {
+        for (DefaultWeightedEdge classEdge : orderedClassEdges) {
             String[] vertexes = extractVertexes(classEdge);
             String startVertex = vertexes[0].trim();
             String endVertex = vertexes[1].trim();
@@ -873,10 +883,28 @@ public class JsonGenerator extends HtmlReport {
                     .weight(weight)
                     .renderedLabel(
                             buildClassLinkLabel(startVertex, endVertex, sourceUrl, targetUrl, classesToRemove, weight))
-                    .cycleCount(classEdgeCycleCounts.getOrDefault(classEdge, 0))
+                    .cycleCount(cycleCounts.get(classEdge))
                     .build());
         }
         return relationships;
+    }
+
+    /**
+     * Counts how many of the detected class cycles contain the given class edge — the same
+     * counting {@code CycleRemovalComputer} applies to the edges it marks for removal. Returns
+     * {@code 0} when no class cycles are available.
+     */
+    private int countClassCyclesContaining(DefaultWeightedEdge classEdge) {
+        if (classCycles == null || classCycles.isEmpty()) {
+            return 0;
+        }
+        int cycleCount = 0;
+        for (AsSubgraph<String, DefaultWeightedEdge> cycle : classCycles.values()) {
+            if (cycle.containsEdge(classEdge)) {
+                cycleCount++;
+            }
+        }
+        return cycleCount;
     }
 
     /**
