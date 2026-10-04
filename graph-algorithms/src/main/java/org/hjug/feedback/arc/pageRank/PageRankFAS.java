@@ -137,6 +137,7 @@ public class PageRankFAS<V, E> {
         return best != null ? best.getOriginalEdge() : null;
     }
 
+    /** Returns whether the candidate precedes the incumbent in canonical source/target order. */
     private boolean isCanonicallyBefore(LineVertex<V, E> candidate, LineVertex<V, E> incumbent) {
         return lineVertexOrder().compare(candidate, incumbent) < 0;
     }

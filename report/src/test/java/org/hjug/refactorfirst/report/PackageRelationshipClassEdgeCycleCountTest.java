@@ -51,12 +51,14 @@ class PackageRelationshipClassEdgeCycleCountTest {
         return classGraph;
     }
 
+    /** Creates a DTO mock with no source paths so relationships render without file links. */
     private CodebaseGraphDTO mockDto() {
         CodebaseGraphDTO dto = Mockito.mock(CodebaseGraphDTO.class);
         Mockito.when(dto.getClassToSourceFilePathMapping()).thenReturn(new HashMap<>());
         return dto;
     }
 
+    /** Verifies nested relationships count detected class cycles even outside the feedback arc set. */
     @DisplayName("nested class relationships report their real class-cycle membership, not a defaulted zero")
     @Test
     void buildClassRelationshipsToBreakPackage_reportsActualCycleMembership() throws Exception {
