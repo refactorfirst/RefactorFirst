@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import java.util.Comparator;
 import org.hjug.refactorfirst.report.model.ChartJsBubbleDTO;
 import org.hjug.refactorfirst.report.model.ClassRelationshipDTO;
+import org.hjug.refactorfirst.report.model.CycleBreakdownRowDTO;
 import org.hjug.refactorfirst.report.model.PackageRelationshipDTO;
 import org.hjug.refactorfirst.report.model.RefactorFirstReportDTO;
 import org.junit.jupiter.api.AfterEach;
@@ -581,6 +582,40 @@ class JsonGeneratorTest {
                 assertTrue(classRel.has("simpleSourceClassName"));
                 assertTrue(classRel.has("simpleTargetClassName"));
             }
+        }
+
+        // The largest-cycle breakdown rows carry the simple class name, the source path
+        // relative to the project root and the removal marker; viewers build the URL
+        // from project.repoUrl themselves
+        assertNotNull(report.getClassCycles(), "Class cycles should be analyzed");
+        assertNotNull(report.getClassCycles().getLargestCycle(), "A largest cycle should exist");
+        assertNotNull(
+                report.getClassCycles().getLargestCycle().getBreakdown(), "The largest cycle should have a breakdown");
+        var breakdown = report.getClassCycles().getLargestCycle().getBreakdown();
+        assertFalse(breakdown.isEmpty(), "The largest cycle breakdown should not be empty");
+        var classNames =
+                breakdown.stream().map(CycleBreakdownRowDTO::getClassName).toList();
+        assertEquals(2, classNames.size(), "The two-class cycle should produce two breakdown rows");
+        assertTrue(classNames.contains("ClassA"), "Breakdown rows should list the simple class names: " + classNames);
+        assertTrue(classNames.contains("ClassB"), "Breakdown rows should list the simple class names: " + classNames);
+        for (CycleBreakdownRowDTO row : breakdown) {
+            assertEquals(
+                    "src/main/java/com/example/"
+                            + (row.getClassName().equals("ClassA") ? "pkga/ClassA.java" : "pkgb/ClassB.java"),
+                    row.getClassPath(),
+                    "classPath should be the source file path relative to the project root");
+            assertFalse(
+                    row.getClassName().contains("<a"),
+                    "The breakdown row must not embed a server-built link: " + row.getClassName());
+        }
+        for (com.fasterxml.jackson.databind.JsonNode row :
+                root.get("classCycles").get("largestCycle").get("breakdown")) {
+            assertTrue(row.has("classPath"), "Breakdown rows must carry classPath");
+            assertTrue(row.has("marked"), "Breakdown rows must carry the removal marker flag");
+            assertTrue(row.get("marked").isBoolean(), "The removal marker flag must serialize as a JSON boolean");
+            assertFalse(
+                    row.get("className").asText().contains("<a"),
+                    "Breakdown classNames must not embed a server-built link");
         }
     }
 }

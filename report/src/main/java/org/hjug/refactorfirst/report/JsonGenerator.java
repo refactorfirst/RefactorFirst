@@ -432,12 +432,7 @@ public class JsonGenerator extends HtmlReport {
 
                 List<CycleBreakdownRowDTO> breakdown = new ArrayList<>();
                 for (String vertex : largestCycle.getVertexSet()) {
-                    String className;
-                    if (classesToRemove.contains(vertex)) {
-                        className = hyperlinkClass(vertex, repoUrl, codebaseGraphDTO) + "*";
-                    } else {
-                        className = hyperlinkClass(vertex, repoUrl, codebaseGraphDTO);
-                    }
+                    boolean marked = classesToRemove.contains(vertex);
 
                     StringBuilder edges = new StringBuilder();
                     for (DefaultWeightedEdge edge : largestCycle.getEdgeSet()) {
@@ -452,8 +447,13 @@ public class JsonGenerator extends HtmlReport {
                             edges.append("<br/>\n");
                         }
                     }
+                    // The row carries the simple class name, the source path relative to the
+                    // project root and the removal marker; viewers build the URL from
+                    // project.repoUrl
                     breakdown.add(CycleBreakdownRowDTO.builder()
-                            .className(className)
+                            .className(getClassName(vertex))
+                            .classPath(classSourcePath(vertex, codebaseGraphDTO))
+                            .marked(marked)
                             .edgesHtml(edges.toString())
                             .build());
                 }

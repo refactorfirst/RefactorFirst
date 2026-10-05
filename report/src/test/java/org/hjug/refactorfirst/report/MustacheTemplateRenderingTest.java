@@ -393,7 +393,9 @@ class MustacheTemplateRenderingTest {
                 .build();
 
         CycleBreakdownRowDTO breakdownRow = CycleBreakdownRowDTO.builder()
-                .className("<a href=\"...\">A</a><strong>*</strong>")
+                .className("A")
+                .classPath("src/main/java/com/example/A.java")
+                .marked(true)
                 .edgesHtml("<strong>A &rarr; B<strong>*</strong></strong><br/>")
                 .build();
 
@@ -453,6 +455,10 @@ class MustacheTemplateRenderingTest {
         // Verify cycle breakdown table
         assertTrue(rendered.contains("<th>Classes</th>"));
         assertTrue(rendered.contains("<th>Relationships</th>"));
+        // The class cell renders the simple name with the removal marker; the path
+        // only feeds the viewer's link, so no anchor is built here
+        assertTrue(rendered.contains("<td align=\"left\">A*</td>"));
+        assertFalse(rendered.contains("https://github.com/test/test/src/main/java/com/example/A.java"));
         assertTrue(rendered.contains("<strong>*</strong>"));
     }
 

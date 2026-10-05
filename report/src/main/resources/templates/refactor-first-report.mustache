@@ -424,7 +424,7 @@
                 <tbody>
                 {{#classCycles.largestCycle.breakdown}}
                     <tr>
-                        <td align="left">{{{className}}}</td>
+                        <td align="left">{{className}}{{#marked}}*{{/marked}}</td>
                         <td align="left">{{{edgesHtml}}}</td>
                     </tr>
                 {{/classCycles.largestCycle.breakdown}}
