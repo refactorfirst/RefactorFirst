@@ -137,27 +137,27 @@ class JsonGeneratorTest {
                 "Lowest priority should be green");
     }
 
-    /** Verifies that bubble URL is set to the class file path. */
+    /** Verifies that the bubble carries only the source file path relative to the project root. */
     @Test
-    void given_createBubble_when_urlProvided_then_urlIsSet() {
+    void given_createBubble_when_pathProvided_then_pathIsSet() {
         // Given
         JsonGenerator generator = new JsonGenerator();
         String classPath = "src/main/java/com/example/TestClass.java";
-        String repoUrl = "https://github.com/example/repo/blob/main/";
 
         // When
-        ChartJsBubbleDTO bubble =
-                generator.createBubble("TestClass", "TestClass.java", 5, 10, 1, 10, repoUrl + classPath);
+        ChartJsBubbleDTO bubble = generator.createBubble("TestClass", "TestClass.java", 5, 10, 1, 10, classPath);
 
         // Then
-        assertNotNull(bubble.getUrl());
+        assertNotNull(bubble.getPath());
         assertEquals(
-                "https://github.com/example/repo/blob/main/src/main/java/com/example/TestClass.java", bubble.getUrl());
+                "src/main/java/com/example/TestClass.java",
+                bubble.getPath(),
+                "The bubble should carry the source file path relative to the project root, not a full URL");
     }
 
-    /** Verifies that generated and serialized chart bubbles carry repoUrl + source path. */
+    /** Verifies that generated and serialized chart bubbles carry only the source path. */
     @Test
-    void given_repoWithOrigin_when_reportGenerated_then_bubbleUrlsPointToSourceFiles() throws Exception {
+    void given_repoWithOrigin_when_reportGenerated_then_bubblePathsListSourceFiles() throws Exception {
         // Given
         File repoDir = tempDir.toFile();
         File srcDir = new File(repoDir, "src/main/java/com/example");
@@ -221,11 +221,25 @@ class JsonGeneratorTest {
         assumeTrue(!bubbles.isEmpty(), "Fixture produced no disharmony bubbles");
 
         for (ChartJsBubbleDTO bubble : bubbles) {
-            assertNotNull(bubble.getUrl(), "Bubble " + bubble.getLabel() + " should have a url");
-            assertTrue(bubble.getUrl().startsWith(repoUrl), "Bubble url should start with repoUrl: " + bubble.getUrl());
-            assertTrue(
-                    bubble.getUrl().endsWith("src/main/java/com/example/" + bubble.getLabel()),
-                    "Bubble url should point to the source file: " + bubble.getUrl());
+            assertNotNull(bubble.getPath(), "Bubble " + bubble.getLabel() + " should have a path");
+            assertEquals(
+                    "src/main/java/com/example/" + bubble.getLabel(),
+                    bubble.getPath(),
+                    "Bubble path should be the source file path relative to the project root: " + bubble.getPath());
+        }
+
+        // The viewer constructs the bubble URLs from project.repoUrl + path, so the
+        // payload must not embed a full URL per bubble
+        com.fasterxml.jackson.databind.JsonNode root = objectMapper.readTree(jsonFile.toFile());
+        for (com.fasterxml.jackson.databind.JsonNode disharmony : root.get("disharmonies")) {
+            if (!disharmony.has("chart") || !disharmony.get("chart").has("bubbles")) {
+                continue;
+            }
+            for (com.fasterxml.jackson.databind.JsonNode bubble :
+                    disharmony.get("chart").get("bubbles")) {
+                assertFalse(bubble.has("url"), "Bubbles must not embed a full url: " + bubble);
+                assertTrue(bubble.has("path"), "Bubbles must carry the source path: " + bubble);
+            }
         }
     }
 
