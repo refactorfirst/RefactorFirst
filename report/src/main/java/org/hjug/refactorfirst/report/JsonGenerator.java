@@ -310,14 +310,13 @@ public class JsonGenerator extends HtmlReport {
             // 4. Package Relationships To Remove
             List<PackageRelationshipDTO> packageRelList = new ArrayList<>();
             for (RankedDisharmony edgeInfo : packageRelationshipDisharmonies) {
-                String[] cells = getPackageRelationshipDisharmony(edgeInfo, repoUrl, codebaseGraphDTO);
                 String[] vertexes = extractVertexes(edgeInfo.getEdge());
                 String startVertex = vertexes[0].trim();
                 String endVertex = vertexes[1].trim();
 
-                // Extract package URLs from class relationships in the package edge
-                String sourceUrl = "";
-                String targetUrl = "";
+                // Extract package paths from class relationships in the package edge
+                String sourcePackagePath = "";
+                String targetPackagePath = "";
                 Set<DefaultWeightedEdge> classRelationshipsInPackageRelationship = codebaseGraphDTO
                         .getClassRelationshipsInPackageRelationship()
                         .get(edgeInfo.getEdge());
@@ -342,11 +341,11 @@ public class JsonGenerator extends HtmlReport {
                                 String packageDir = classStartPath.substring(0, lastSlash + 1);
                                 // Check if this class belongs to the source package
                                 if (isClassInPackage(classStart, startVertex, codebaseGraphDTO)) {
-                                    sourceUrl = repoUrl + packageDir;
+                                    sourcePackagePath = packageDir;
                                 }
                                 // Check if this class belongs to the target package
                                 if (isClassInPackage(classStart, endVertex, codebaseGraphDTO)) {
-                                    targetUrl = repoUrl + packageDir;
+                                    targetPackagePath = packageDir;
                                 }
                             }
                         }
@@ -357,11 +356,11 @@ public class JsonGenerator extends HtmlReport {
                                 String packageDir = classEndPath.substring(0, lastSlash + 1);
                                 // Check if this class belongs to the source package
                                 if (isClassInPackage(classEnd, startVertex, codebaseGraphDTO)) {
-                                    sourceUrl = repoUrl + packageDir;
+                                    sourcePackagePath = packageDir;
                                 }
                                 // Check if this class belongs to the target package
                                 if (isClassInPackage(classEnd, endVertex, codebaseGraphDTO)) {
-                                    targetUrl = repoUrl + packageDir;
+                                    targetPackagePath = packageDir;
                                 }
                             }
                         }
@@ -369,27 +368,24 @@ public class JsonGenerator extends HtmlReport {
                 }
 
                 // Fallback to package name conversion if no class edges found
-                if (sourceUrl.isBlank()) {
-                    sourceUrl = repoUrl + startVertex.replace('.', '/');
+                if (sourcePackagePath.isBlank()) {
+                    sourcePackagePath = startVertex.replace('.', '/');
                 }
-                if (targetUrl.isBlank()) {
-                    targetUrl = repoUrl + endVertex.replace('.', '/');
+                if (targetPackagePath.isBlank()) {
+                    targetPackagePath = endVertex.replace('.', '/');
                 }
 
                 List<ClassRelationshipDTO> breakClassRels = buildClassRelationshipsToBreakPackage(
                         classRelationshipsInPackageRelationship, codebaseGraphDTO);
 
-                // Build rendered label with links to package directories
-                String renderedLabel =
-                        buildPackageLinkLabel(cells[0], startVertex, endVertex, sourceUrl, targetUrl, packagesToRemove);
-
                 packageRelList.add(PackageRelationshipDTO.builder()
                         .sourcePackage(startVertex)
                         .targetPackage(endVertex)
+                        .sourcePackagePath(sourcePackagePath)
+                        .targetPackagePath(targetPackagePath)
                         .sourceMarked(packagesToRemove.contains(startVertex))
                         .targetMarked(packagesToRemove.contains(endVertex))
                         .weight((int) packageGraph.getEdgeWeight(edgeInfo.getEdge()))
-                        .renderedLabel(renderedLabel)
                         .priority(edgeInfo.getPriority())
                         .cycleCount(edgeInfo.getCycleCount())
                         .effortRank(edgeInfo.getEffortRank())
@@ -754,83 +750,6 @@ public class JsonGenerator extends HtmlReport {
         // Check if the class name starts with the package name followed by a dot
         int lastDot = className.lastIndexOf('.');
         return lastDot > 0 && className.substring(0, lastDot).equals(packageName);
-    }
-
-    /**
-     * Builds a rendered label with HTML links to package directories.
-     * Transforms "org.hjug.graphbuilder.metrics &#8594; org.hjug.graphbuilder<strong>*</strong> : 1"
-     * into "<a href="...">org.hjug.graphbuilder.metrics</a> &#8594; <a href="...">org.hjug.graphbuilder</a>* : 1"
-     */
-    private String buildPackageLinkLabel(
-            String originalLabel,
-            String startVertex,
-            String endVertex,
-            String sourceUrl,
-            String targetUrl,
-            Set<String> packagesToRemove) {
-        if (originalLabel == null || originalLabel.isBlank()) {
-            return originalLabel;
-        }
-
-        // The original label format is: "startPackage &#8594; endPackage : weight"
-        // We need to wrap the package names with links
-        String arrow = " &#8594; ";
-        String weightSeparator = " : ";
-
-        // Split the label into parts
-        String[] parts = originalLabel.split(weightSeparator);
-        if (parts.length < 2) {
-            return originalLabel;
-        }
-
-        String edgePart = parts[0];
-        String weight = parts[1];
-
-        // Split the edge part by arrow
-        String[] packages = edgePart.split(arrow, 2);
-        if (packages.length < 2) {
-            return originalLabel;
-        }
-
-        String startPackage = packages[0].trim();
-        String endPackage = packages[1].trim();
-
-        // Check if start package has the removal marker (escaped or unescaped)
-        boolean startMarked =
-                startPackage.contains("<strong>*</strong>") || startPackage.contains("&lt;strong&gt;*&lt;/strong&gt;");
-        if (startMarked) {
-            startPackage = startPackage.replace("<strong>*</strong>", "").replace("&lt;strong&gt;*&lt;/strong&gt;", "");
-        }
-
-        // Check if end package has the removal marker (escaped or unescaped)
-        boolean endMarked =
-                endPackage.contains("<strong>*</strong>") || endPackage.contains("&lt;strong&gt;*&lt;/strong&gt;");
-        if (endMarked) {
-            endPackage = endPackage.replace("<strong>*</strong>", "").replace("&lt;strong&gt;*&lt;/strong&gt;", "");
-        }
-
-        // Build the new label with links
-        StringBuilder newLabel = new StringBuilder();
-        newLabel.append("<a href=\"")
-                .append(escapeHtmlAttribute(sourceUrl))
-                .append("\" target=\"_blank\">")
-                .append(escapeHtmlLabel(startPackage))
-                .append("</a>");
-        if (startMarked) {
-            newLabel.append("*");
-        }
-        newLabel.append(arrow);
-        newLabel.append("<a href=\"")
-                .append(escapeHtmlAttribute(targetUrl))
-                .append("\" target=\"_blank\">")
-                .append(escapeHtmlLabel(endPackage))
-                .append("</a>");
-        if (endMarked) {
-            newLabel.append("*");
-        }
-        newLabel.append(weightSeparator).append(weight);
-
-        return newLabel.toString();
     }
 
     /**

@@ -509,6 +509,20 @@ class JsonGeneratorTest {
         for (PackageRelationshipDTO packageRel :
                 report.getPackageRelationshipsToRemove().getRelationships()) {
             assertNotNull(packageRel.getClassRelationshipsToBreakPackage());
+            // Package-level relationships carry the package directory paths relative to the
+            // project root so the viewer can combine them with project.repoUrl itself
+            assertTrue(
+                    packageRel.getSourcePackagePath().startsWith("src/main/java/com/example/pkg"),
+                    "sourcePackagePath should be the package directory relative to the project root: "
+                            + packageRel.getSourcePackagePath());
+            assertTrue(
+                    packageRel.getTargetPackagePath().startsWith("src/main/java/com/example/pkg"),
+                    "targetPackagePath should be the package directory relative to the project root: "
+                            + packageRel.getTargetPackagePath());
+            assertTrue(
+                    packageRel.getSourcePackagePath().endsWith("/"),
+                    "sourcePackagePath derived from a class source file should end with a slash: "
+                            + packageRel.getSourcePackagePath());
             for (ClassRelationshipDTO classRel : packageRel.getClassRelationshipsToBreakPackage()) {
                 totalClassRelationships++;
                 assertTrue(
@@ -542,6 +556,9 @@ class JsonGeneratorTest {
         com.fasterxml.jackson.databind.JsonNode root = objectMapper.readTree(jsonFile.toFile());
         for (com.fasterxml.jackson.databind.JsonNode packageRel :
                 root.get("packageRelationshipsToRemove").get("relationships")) {
+            assertFalse(packageRel.has("renderedLabel"), "Package relationships must not carry a renderedLabel");
+            assertTrue(packageRel.has("sourcePackagePath"), "Package relationships must carry sourcePackagePath");
+            assertTrue(packageRel.has("targetPackagePath"), "Package relationships must carry targetPackagePath");
             for (com.fasterxml.jackson.databind.JsonNode classRel :
                     packageRel.get("classRelationshipsToBreakPackage")) {
                 assertFalse(classRel.has("renderedLabel"), "Nested class relationships must not carry a renderedLabel");

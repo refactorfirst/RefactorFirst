@@ -293,7 +293,7 @@
             <tbody>
             {{#packageRelationshipsToRemove.relationships}}
                 <tr>
-                    <td align="left">{{{renderedLabel}}}</td>
+                    <td align="left">{{sourcePackage}}{{#sourceMarked}}*{{/sourceMarked}} &#8594; {{targetPackage}}{{#targetMarked}}*{{/targetMarked}}</td>
                     <td align="right">{{priority}}</td>
                     <td align="right">{{cycleCount}}</td>
                     <td align="right">{{effortRank}}</td>

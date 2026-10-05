@@ -174,6 +174,86 @@ class MustacheTemplateRenderingTest {
         assertFalse(rendered.contains("<script>"));
     }
 
+    /** Verifies that the template renders package relationship data. */
+    @Test
+    void testTemplateRendersPackageRelationshipTable() throws Exception {
+        String template = loadTemplate();
+
+        ProjectMetadataDTO project = ProjectMetadataDTO.builder()
+                .name("TestProject")
+                .version("1.0.0")
+                .repoUrl("https://github.com/test/test")
+                .baseDir("/test")
+                .scanTimestamp("9/8/26, 7:34 PM")
+                .hasAnyDisharmony(true)
+                .build();
+
+        GraphVisualDTO classMap = GraphVisualDTO.builder()
+                .graphId("classGraph")
+                .classCount(10)
+                .relationshipCount(20)
+                .dot("digraph G {}")
+                .dotThresholdExceeded(false)
+                .build();
+
+        PackageRelationshipDTO packageRel = PackageRelationshipDTO.builder()
+                .sourcePackage("org.example.pkga<script>")
+                .targetPackage("org.example.pkgb")
+                .sourcePackagePath("src/main/java/org/example/pkga/")
+                .targetPackagePath("src/main/java/org/example/pkgb/")
+                .sourceMarked(true)
+                .targetMarked(false)
+                .weight(3)
+                .priority(1)
+                .cycleCount(2)
+                .effortRank(2)
+                .classRelationshipsToBreakPackage(List.of(ClassRelationshipDTO.builder()
+                        .sourceClass("org.example.pkga.ClassA")
+                        .targetClass("org.example.pkgb.ClassB")
+                        .sourceClassPath("src/main/java/org/example/pkga/ClassA.java")
+                        .targetClassPath("src/main/java/org/example/pkgb/ClassB.java")
+                        .simpleSourceClassName("ClassA")
+                        .simpleTargetClassName("ClassB")
+                        .build()))
+                .build();
+
+        PackageRelationshipsToRemoveDTO packageRels = PackageRelationshipsToRemoveDTO.builder()
+                .cycleCount(2)
+                .relationshipsToRemoveCount(1)
+                .hasRelationships(true)
+                .relationships(List.of(packageRel))
+                .build();
+
+        RefactorFirstReportDTO report = RefactorFirstReportDTO.builder()
+                .project(project)
+                .classMap(classMap)
+                .classRelationshipsToRemove(ClassRelationshipsToRemoveDTO.builder()
+                        .cycleCount(0)
+                        .relationshipsToRemoveCount(0)
+                        .relationships(List.of())
+                        .build())
+                .packageMap(GraphVisualDTO.builder().hasEdges(false).build())
+                .packageRelationshipsToRemove(packageRels)
+                .hasDisharmonies(false)
+                .disharmonies(List.of())
+                .classCycles(ClassCyclesDTO.builder().hasCycles(false).build())
+                .build();
+
+        String rendered = renderTemplate(template, report);
+
+        // Verify table headers
+        assertTrue(rendered.contains("<th>Package Relationship</th>"));
+        assertTrue(rendered.contains("Class Relationships to Remove<br>To Break Package Relationship"));
+
+        // The package cell renders the package names separated by the arrow with the removal
+        // marker; Mustache escapes the names so no markup can be injected
+        assertTrue(rendered.contains("org.example.pkga&lt;script&gt;* &#8594; org.example.pkgb"));
+        assertFalse(rendered.contains("<script>"));
+
+        // The nested class-break cell renders the simple class names
+        assertTrue(rendered.contains("ClassA &#8594; ClassB"));
+    }
+
     /** Verifies that the template renders disharmony charts and tables. */
     @Test
     void testTemplateRendersDisharmonyCanvases() throws Exception {
