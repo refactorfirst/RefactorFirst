@@ -266,25 +266,16 @@ public class JsonGenerator extends HtmlReport {
                 String startVertex = vertexes[0].trim();
                 String endVertex = vertexes[1].trim();
 
-                String sourcePath =
-                        codebaseGraphDTO.getClassToSourceFilePathMapping().get(startVertex);
-                String targetPath =
-                        codebaseGraphDTO.getClassToSourceFilePathMapping().get(endVertex);
-                String sourceUrl = (sourcePath != null && !sourcePath.isBlank()) ? repoUrl + sourcePath : "";
-                String targetUrl = (targetPath != null && !targetPath.isBlank()) ? repoUrl + targetPath : "";
-
-                // Build rendered label with links to class files
-                String renderedLabel =
-                        buildClassLinkLabel(startVertex, endVertex, sourceUrl, targetUrl, classesToRemove, (int)
-                                classGraph.getEdgeWeight(edgeInfo.getEdge()));
-
                 classRelList.add(ClassRelationshipDTO.builder()
                         .sourceClass(startVertex)
                         .targetClass(endVertex)
+                        .sourceClassPath(classSourcePath(startVertex, codebaseGraphDTO))
+                        .targetClassPath(classSourcePath(endVertex, codebaseGraphDTO))
+                        .simpleSourceClassName(getClassName(startVertex))
+                        .simpleTargetClassName(getClassName(endVertex))
                         .sourceMarked(classesToRemove.contains(startVertex))
                         .targetMarked(classesToRemove.contains(endVertex))
                         .weight((int) classGraph.getEdgeWeight(edgeInfo.getEdge()))
-                        .renderedLabel(renderedLabel)
                         .priority(edgeInfo.getPriority())
                         .cycleCount(edgeInfo.getCycleCount())
                         .effortRank(edgeInfo.getEffortRank())
@@ -386,7 +377,7 @@ public class JsonGenerator extends HtmlReport {
                 }
 
                 List<ClassRelationshipDTO> breakClassRels = buildClassRelationshipsToBreakPackage(
-                        classRelationshipsInPackageRelationship, repoUrl, codebaseGraphDTO);
+                        classRelationshipsInPackageRelationship, codebaseGraphDTO);
 
                 // Build rendered label with links to package directories
                 String renderedLabel =
@@ -850,7 +841,7 @@ public class JsonGenerator extends HtmlReport {
      * feedback-arc-set members — as members of zero class cycles.
      */
     List<ClassRelationshipDTO> buildClassRelationshipsToBreakPackage(
-            Set<DefaultWeightedEdge> classEdges, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
+            Set<DefaultWeightedEdge> classEdges, CodebaseGraphDTO codebaseGraphDTO) {
         if (classEdges == null || classEdges.isEmpty()) {
             return List.of();
         }
@@ -866,27 +857,28 @@ public class JsonGenerator extends HtmlReport {
             String[] vertexes = extractVertexes(classEdge);
             String startVertex = vertexes[0].trim();
             String endVertex = vertexes[1].trim();
-
-            String sourcePath =
-                    codebaseGraphDTO.getClassToSourceFilePathMapping().get(startVertex);
-            String targetPath =
-                    codebaseGraphDTO.getClassToSourceFilePathMapping().get(endVertex);
-            String sourceUrl = (sourcePath != null && !sourcePath.isBlank()) ? repoUrl + sourcePath : "";
-            String targetUrl = (targetPath != null && !targetPath.isBlank()) ? repoUrl + targetPath : "";
             int weight = (int) classGraph.getEdgeWeight(classEdge);
 
             relationships.add(ClassRelationshipDTO.builder()
                     .sourceClass(startVertex)
                     .targetClass(endVertex)
+                    .sourceClassPath(classSourcePath(startVertex, codebaseGraphDTO))
+                    .targetClassPath(classSourcePath(endVertex, codebaseGraphDTO))
+                    .simpleSourceClassName(getClassName(startVertex))
+                    .simpleTargetClassName(getClassName(endVertex))
                     .sourceMarked(classesToRemove.contains(startVertex))
                     .targetMarked(classesToRemove.contains(endVertex))
                     .weight(weight)
-                    .renderedLabel(
-                            buildClassLinkLabel(startVertex, endVertex, sourceUrl, targetUrl, classesToRemove, weight))
                     .cycleCount(cycleCounts.get(classEdge))
                     .build());
         }
         return relationships;
+    }
+
+    /** Returns the class's source file path relative to the project root, or an empty string. */
+    private String classSourcePath(String className, CodebaseGraphDTO codebaseGraphDTO) {
+        String path = codebaseGraphDTO.getClassToSourceFilePathMapping().get(className);
+        return path != null ? path : "";
     }
 
     /**
@@ -905,57 +897,5 @@ public class JsonGenerator extends HtmlReport {
             }
         }
         return cycleCount;
-    }
-
-    /**
-     * Builds a rendered label with HTML links to class files.
-     * Transforms "GraphMetricsCollector → DependencyCollector : 1"
-     * into "<a href="...">GraphMetricsCollector</a> → <a href="...">DependencyCollector</a>* : 1"
-     */
-    private String buildClassLinkLabel(
-            String startVertex,
-            String endVertex,
-            String sourceUrl,
-            String targetUrl,
-            Set<String> classesToRemove,
-            int weight) {
-        // Extract simple class names for display
-        String startClass = getClassName(startVertex);
-        String endClass = getClassName(endVertex);
-
-        // Check if classes are marked for removal
-        boolean startMarked = classesToRemove.contains(startVertex);
-        boolean endMarked = classesToRemove.contains(endVertex);
-
-        // Build the new label with links
-        StringBuilder newLabel = new StringBuilder();
-        if (sourceUrl != null && !sourceUrl.isBlank()) {
-            newLabel.append("<a href=\"")
-                    .append(escapeHtmlAttribute(sourceUrl))
-                    .append("\" target=\"_blank\">")
-                    .append(escapeHtmlLabel(startClass))
-                    .append("</a>");
-        } else {
-            newLabel.append(escapeHtmlLabel(startClass));
-        }
-        if (startMarked) {
-            newLabel.append("*");
-        }
-        newLabel.append(" &#8594; ");
-        if (targetUrl != null && !targetUrl.isBlank()) {
-            newLabel.append("<a href=\"")
-                    .append(escapeHtmlAttribute(targetUrl))
-                    .append("\" target=\"_blank\">")
-                    .append(escapeHtmlLabel(endClass))
-                    .append("</a>");
-        } else {
-            newLabel.append(escapeHtmlLabel(endClass));
-        }
-        if (endMarked) {
-            newLabel.append("*");
-        }
-        newLabel.append(" : ").append(weight);
-
-        return newLabel.toString();
     }
 }

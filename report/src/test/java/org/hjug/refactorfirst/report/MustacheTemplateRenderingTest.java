@@ -123,7 +123,10 @@ class MustacheTemplateRenderingTest {
                 .sourceMarked(true)
                 .targetMarked(false)
                 .weight(5)
-                .renderedLabel("A <script>alert(1)</script> → B")
+                .sourceClassPath("src/main/java/com/example/A.java")
+                .targetClassPath("src/main/java/com/example/B.java")
+                .simpleSourceClassName("A<script>")
+                .simpleTargetClassName("B")
                 .priority(1)
                 .cycleCount(3)
                 .effortRank(2)
@@ -165,8 +168,10 @@ class MustacheTemplateRenderingTest {
 
         // Verify table data - alsoRemovesPackageRelationship renders <strong>true</strong>
         assertTrue(rendered.contains("<strong>true</strong>"));
-        assertTrue(rendered.contains("A &lt;script&gt;alert(1)&lt;/script&gt; → B"));
-        assertFalse(rendered.contains("<script>alert(1)</script>"));
+        // The cell renders the simple class names separated by the arrow, with the removal
+        // marker; Mustache escapes the names so no markup can be injected
+        assertTrue(rendered.contains("A&lt;script&gt;* &#8594; B"));
+        assertFalse(rendered.contains("<script>"));
     }
 
     /** Verifies that the template renders disharmony charts and tables. */

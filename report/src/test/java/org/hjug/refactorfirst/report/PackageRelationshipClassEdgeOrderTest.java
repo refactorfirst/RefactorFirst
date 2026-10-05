@@ -132,7 +132,7 @@ class PackageRelationshipClassEdgeOrderTest {
                 .iterator()
                 .next();
         return generator.buildClassRelationshipsToBreakPackage(
-                dto.getClassRelationshipsInPackageRelationship().get(packageEdge), REPO_URL, dto);
+                dto.getClassRelationshipsInPackageRelationship().get(packageEdge), dto);
     }
 
     /** Verifies HTML and JSON use the same source/target order across class-edge set insertions. */

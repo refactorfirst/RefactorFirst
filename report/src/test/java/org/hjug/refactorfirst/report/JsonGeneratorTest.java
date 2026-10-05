@@ -337,10 +337,12 @@ class JsonGeneratorTest {
     }
 
     /**
-     * Verifies that sourceUrl and targetUrl are set in ClassRelationshipDTO and PackageRelationshipDTO.
+     * Verifies that sourceClassPath, targetClassPath, simpleSourceClassName and
+     * simpleTargetClassName are set in ClassRelationshipDTO, and that the label
+     * is no longer pre-rendered server-side.
      */
     @Test
-    void given_circularDependency_when_reportGenerated_then_relationshipUrlsAreSet() throws Exception {
+    void given_circularDependency_when_reportGenerated_then_classPathsAndSimpleNamesAreSet() throws Exception {
         // Given
         File repoDir = tempDir.toFile();
         new File(repoDir, ".git").mkdirs();
@@ -402,30 +404,32 @@ class JsonGeneratorTest {
         RefactorFirstReportDTO report = objectMapper.readValue(jsonFile.toFile(), RefactorFirstReportDTO.class);
         assertNotNull(report);
 
-        // Verify ClassRelationshipDTO renderedLabel contains HTML links
+        // Verify ClassRelationshipDTO carries the source file paths and simple class names
+        // so the viewer can combine them with project.repoUrl itself
         assertNotNull(report.getClassRelationshipsToRemove());
         assertNotNull(report.getClassRelationshipsToRemove().getRelationships());
         assertFalse(report.getClassRelationshipsToRemove().getRelationships().isEmpty());
         var classRel = report.getClassRelationshipsToRemove().getRelationships().get(0);
-        assertNotNull(classRel.getRenderedLabel(), "ClassRelationshipDTO should have renderedLabel");
-        assertTrue(classRel.getRenderedLabel().contains("<a href=\""));
-        assertTrue(
-                classRel.getRenderedLabel().contains("target=\"_blank\""),
-                "renderedLabel should have target=\"_blank\" attribute");
+        assertEquals(
+                "src/main/java/com/example/ClassA.java",
+                classRel.getSourceClassPath(),
+                "sourceClassPath should be the source file path relative to the project root");
+        assertEquals(
+                "src/main/java/com/example/ClassB.java",
+                classRel.getTargetClassPath(),
+                "targetClassPath should be the source file path relative to the project root");
+        assertEquals("ClassA", classRel.getSimpleSourceClassName());
+        assertEquals("ClassB", classRel.getSimpleTargetClassName());
 
-        // Verify PackageRelationshipDTO renderedLabel contains HTML links
-        if (report.getPackageRelationshipsToRemove() != null
-                && report.getPackageRelationshipsToRemove().getRelationships() != null
-                && !report.getPackageRelationshipsToRemove().getRelationships().isEmpty()) {
-            var packageRel =
-                    report.getPackageRelationshipsToRemove().getRelationships().get(0);
-            assertNotNull(packageRel.getRenderedLabel(), "PackageRelationshipDTO should have renderedLabel");
-            assertTrue(
-                    packageRel.getRenderedLabel().contains("<a href=\""),
-                    "renderedLabel should contain HTML anchor tags");
-            assertTrue(
-                    packageRel.getRenderedLabel().contains("target=\"_blank\""),
-                    "renderedLabel should have target=\"_blank\" attribute");
+        // Verify the raw JSON no longer carries a server-rendered label on class relationships
+        com.fasterxml.jackson.databind.JsonNode root = objectMapper.readTree(jsonFile.toFile());
+        for (com.fasterxml.jackson.databind.JsonNode rel :
+                root.get("classRelationshipsToRemove").get("relationships")) {
+            assertFalse(rel.has("renderedLabel"), "Class relationships must not carry a renderedLabel");
+            assertTrue(rel.has("sourceClassPath"), "Class relationships must carry sourceClassPath");
+            assertTrue(rel.has("targetClassPath"), "Class relationships must carry targetClassPath");
+            assertTrue(rel.has("simpleSourceClassName"), "Class relationships must carry simpleSourceClassName");
+            assertTrue(rel.has("simpleTargetClassName"), "Class relationships must carry simpleTargetClassName");
         }
     }
 
@@ -514,12 +518,38 @@ class JsonGeneratorTest {
                         classRel.getTargetClass().startsWith("com.example.pkg"),
                         "targetClass should be a fully qualified class name: " + classRel.getTargetClass());
                 assertTrue(classRel.getWeight() >= 1, "weight should be at least 1");
-                assertNotNull(classRel.getRenderedLabel(), "ClassRelationshipDTO should have renderedLabel");
                 assertTrue(
-                        classRel.getRenderedLabel().contains("&#8594;"),
-                        "renderedLabel should contain the relationship arrow");
+                        classRel.getSourceClassPath().startsWith("src/main/java/com/example/pkg"),
+                        "sourceClassPath should be the source file path relative to the project root: "
+                                + classRel.getSourceClassPath());
+                assertTrue(
+                        classRel.getTargetClassPath().startsWith("src/main/java/com/example/pkg"),
+                        "targetClassPath should be the source file path relative to the project root: "
+                                + classRel.getTargetClassPath());
+                assertTrue(
+                        classRel.getSimpleSourceClassName().startsWith("Class"),
+                        "simpleSourceClassName should be the simple source class name: "
+                                + classRel.getSimpleSourceClassName());
+                assertTrue(
+                        classRel.getSimpleTargetClassName().startsWith("Class"),
+                        "simpleTargetClassName should be the simple target class name: "
+                                + classRel.getSimpleTargetClassName());
             }
         }
         assertTrue(totalClassRelationships > 0, "Expected at least one class relationship to break the package cycle");
+
+        // The nested class relationships must not carry a server-rendered label either
+        com.fasterxml.jackson.databind.JsonNode root = objectMapper.readTree(jsonFile.toFile());
+        for (com.fasterxml.jackson.databind.JsonNode packageRel :
+                root.get("packageRelationshipsToRemove").get("relationships")) {
+            for (com.fasterxml.jackson.databind.JsonNode classRel :
+                    packageRel.get("classRelationshipsToBreakPackage")) {
+                assertFalse(classRel.has("renderedLabel"), "Nested class relationships must not carry a renderedLabel");
+                assertTrue(classRel.has("sourceClassPath"));
+                assertTrue(classRel.has("targetClassPath"));
+                assertTrue(classRel.has("simpleSourceClassName"));
+                assertTrue(classRel.has("simpleTargetClassName"));
+            }
+        }
     }
 }
