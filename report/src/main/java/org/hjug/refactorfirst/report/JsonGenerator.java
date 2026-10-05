@@ -405,7 +405,7 @@ public class JsonGenerator extends HtmlReport {
             for (DisharmonySpec spec : DISHARMONY_SPECS) {
                 List<RankedDisharmony> ranked = rankedDisharmoniesByAnchor.get(spec.anchorId());
                 if (ranked != null && !ranked.isEmpty()) {
-                    disharmonySections.add(buildDisharmonySection(spec, showDetails, ranked, repoUrl));
+                    disharmonySections.add(buildDisharmonySection(spec, showDetails, ranked));
                 }
             }
 
@@ -502,9 +502,13 @@ public class JsonGenerator extends HtmlReport {
         }
     }
 
-    /** Converts ranked instances of one disharmony type into chart and table data. */
-    private DisharmonySectionDTO buildDisharmonySection(
-            DisharmonySpec spec, boolean showDetails, List<RankedDisharmony> ranked, String repoUrl) {
+    /**
+     * Converts ranked instances of one disharmony type into chart and table data. Table cells
+     * carry only plain text and paths relative to the project root; viewers combine the paths
+     * with the repository URL from the project metadata.
+     */
+    DisharmonySectionDTO buildDisharmonySection(
+            DisharmonySpec spec, boolean showDetails, List<RankedDisharmony> ranked) {
 
         int maxPriority = ranked.get(ranked.size() - 1).getPriority();
 
@@ -565,10 +569,11 @@ public class JsonGenerator extends HtmlReport {
         for (RankedDisharmony rd : ranked) {
             List<DisharmonyTableCellDTO> cells = new ArrayList<>();
 
-            // Class link
+            // Class link: the cell carries the plain file name and the source path
+            // relative to the project root; viewers build the URL from project.repoUrl
             cells.add(DisharmonyTableCellDTO.builder()
-                    .content("<a href=\"" + escapeHtmlAttribute(repoUrl + rd.getPath()) + "\" target=\"_blank\">"
-                            + escapeHtmlLabel(rd.getFileName()) + "</a>")
+                    .content(escapeHtmlLabel(rd.getFileName()))
+                    .path(rd.getPath())
                     .align("left")
                     .build());
 

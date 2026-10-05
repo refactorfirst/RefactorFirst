@@ -12,4 +12,5 @@ import lombok.NoArgsConstructor;
 public class DisharmonyTableCellDTO {
     private String content;
     private String align;
+    private String path;
 }

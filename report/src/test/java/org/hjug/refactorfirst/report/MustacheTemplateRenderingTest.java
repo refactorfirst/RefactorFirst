@@ -302,6 +302,7 @@ class MustacheTemplateRenderingTest {
                         .cells(List.of(
                                 DisharmonyTableCellDTO.builder()
                                         .content("TestClass.java")
+                                        .path("src/main/java/TestClass.java")
                                         .align("left")
                                         .build(),
                                 DisharmonyTableCellDTO.builder()
@@ -357,6 +358,9 @@ class MustacheTemplateRenderingTest {
         // Verify table
         assertTrue(rendered.contains("<th>Class</th>"));
         assertTrue(rendered.contains("<th>Priority</th>"));
+        // The Class cell renders as plain text; the path only feeds the viewer's link
+        assertTrue(rendered.contains("<td align=\"left\">TestClass.java</td>"));
+        assertFalse(rendered.contains("https://github.com/test/test/src/main/java/TestClass.java"));
     }
 
     /** Verifies that the template renders cycle maps and breakdown data. */
