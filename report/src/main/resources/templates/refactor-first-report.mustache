@@ -298,7 +298,7 @@
                     <td align="right">{{cycleCount}}</td>
                     <td align="right">{{effortRank}}</td>
                     <td align="left">{{#classRelationshipsToBreakPackage}}
-                        {{simpleSourceClassName}}{{#sourceMarked}}*{{/sourceMarked}} &#8594; {{simpleTargetClassName}}{{#targetMarked}}*{{/targetMarked}}<br/>{{/classRelationshipsToBreakPackage}}</td>
+                        {{simpleSourceClassName}}{{#sourceMarked}}*{{/sourceMarked}} &#8594; {{simpleTargetClassName}}{{#targetMarked}}*{{/targetMarked}} : {{weight}}<br/>{{/classRelationshipsToBreakPackage}}</td>
                 </tr>
             {{/packageRelationshipsToRemove.relationships}}
             </tbody>

@@ -214,6 +214,8 @@ class MustacheTemplateRenderingTest {
                         .targetClassPath("src/main/java/org/example/pkgb/ClassB.java")
                         .simpleSourceClassName("ClassA")
                         .simpleTargetClassName("ClassB")
+                        .sourceMarked(true)
+                        .weight(2)
                         .build()))
                 .build();
 
@@ -250,8 +252,9 @@ class MustacheTemplateRenderingTest {
         assertTrue(rendered.contains("org.example.pkga&lt;script&gt;* &#8594; org.example.pkgb"));
         assertFalse(rendered.contains("<script>"));
 
-        // The nested class-break cell renders the simple class names
-        assertTrue(rendered.contains("ClassA &#8594; ClassB"));
+        // The nested class-break cell renders the simple class names, the removal
+        // marker and the relationship weight
+        assertTrue(rendered.contains("ClassA* &#8594; ClassB : 2"));
     }
 
     /** Verifies that the template renders disharmony charts and tables. */
