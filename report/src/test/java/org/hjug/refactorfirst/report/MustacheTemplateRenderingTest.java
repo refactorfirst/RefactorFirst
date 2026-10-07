@@ -103,7 +103,7 @@ class MustacheTemplateRenderingTest {
         ProjectMetadataDTO project = ProjectMetadataDTO.builder()
                 .name("TestProject")
                 .version("1.0.0")
-                .repoUrl("https://github.com/test/test")
+                .repoUrl("https://github.com/test/test/blob/0123456789abcdef/")
                 .baseDir("/test")
                 .scanTimestamp("9/8/26, 7:34 PM")
                 .hasAnyDisharmony(true)
@@ -168,9 +168,14 @@ class MustacheTemplateRenderingTest {
 
         // Verify table data - alsoRemovesPackageRelationship renders <strong>true</strong>
         assertTrue(rendered.contains("<strong>true</strong>"));
-        // The cell renders the simple class names separated by the arrow, with the removal
-        // marker; Mustache escapes the names so no markup can be injected
-        assertTrue(rendered.contains("A&lt;script&gt;* &#8594; B"));
+        // The class names render as anchors built from the repo URL and their source
+        // paths, with the removal marker outside the anchor; Mustache escapes the
+        // names so no markup can be injected
+        assertTrue(rendered.contains(
+                "<a href=\"https://github.com/test/test/blob/0123456789abcdef/src/main/java/com/example/A.java\""
+                        + " target=\"_blank\">A&lt;script&gt;</a>* &#8594; "
+                        + "<a href=\"https://github.com/test/test/blob/0123456789abcdef/src/main/java/com/example/B.java\""
+                        + " target=\"_blank\">B</a>"));
         assertFalse(rendered.contains("<script>"));
     }
 
@@ -522,6 +527,23 @@ class MustacheTemplateRenderingTest {
                         .build()))
                 .build();
 
+        ClassRelationshipsToRemoveDTO classRels = ClassRelationshipsToRemoveDTO.builder()
+                .cycleCount(1)
+                .relationshipsToRemoveCount(1)
+                .hasRelationships(true)
+                .relationships(List.of(ClassRelationshipDTO.builder()
+                        .sourceClass("org.example.pkgx.ClassX")
+                        .targetClass("org.example.pkgy.ClassY")
+                        .simpleSourceClassName("ClassX")
+                        .simpleTargetClassName("ClassY")
+                        .sourceMarked(true)
+                        .weight(2)
+                        .priority(1)
+                        .cycleCount(1)
+                        .effortRank(1)
+                        .build()))
+                .build();
+
         PackageRelationshipsToRemoveDTO packageRels = PackageRelationshipsToRemoveDTO.builder()
                 .cycleCount(2)
                 .relationshipsToRemoveCount(1)
@@ -562,11 +584,7 @@ class MustacheTemplateRenderingTest {
         RefactorFirstReportDTO report = RefactorFirstReportDTO.builder()
                 .project(project)
                 .classMap(classMap)
-                .classRelationshipsToRemove(ClassRelationshipsToRemoveDTO.builder()
-                        .cycleCount(0)
-                        .relationshipsToRemoveCount(0)
-                        .relationships(List.of())
-                        .build())
+                .classRelationshipsToRemove(classRels)
                 .packageMap(GraphVisualDTO.builder().hasEdges(false).build())
                 .packageRelationshipsToRemove(packageRels)
                 .hasDisharmonies(true)
@@ -587,6 +605,8 @@ class MustacheTemplateRenderingTest {
 
         String rendered = renderTemplate(template, report);
 
+        // Class relationships without class paths render as plain text
+        assertTrue(rendered.contains("<td align=\"left\">ClassX* &#8594; ClassY</td>"));
         // Package endpoints without package paths render as plain text
         assertTrue(rendered.contains("<td align=\"left\">org.example.pkga* &#8594; org.example.pkgb</td>"));
         // Nested class relationships without class paths render as plain text

@@ -210,7 +210,7 @@
             <tbody>
             {{#classRelationshipsToRemove.relationships}}
                 <tr>
-                    <td align="left">{{simpleSourceClassName}}{{#sourceMarked}}*{{/sourceMarked}} &#8594; {{simpleTargetClassName}}{{#targetMarked}}*{{/targetMarked}}</td>
+                    <td align="left">{{#sourceClassPath}}<a href="{{project.repoUrl}}{{sourceClassPath}}" target="_blank">{{/sourceClassPath}}{{simpleSourceClassName}}{{#sourceClassPath}}</a>{{/sourceClassPath}}{{#sourceMarked}}*{{/sourceMarked}} &#8594; {{#targetClassPath}}<a href="{{project.repoUrl}}{{targetClassPath}}" target="_blank">{{/targetClassPath}}{{simpleTargetClassName}}{{#targetClassPath}}</a>{{/targetClassPath}}{{#targetMarked}}*{{/targetMarked}}</td>
                     <td align="right">{{priority}}</td>
                     <td align="right">{{cycleCount}}</td>
                     <td align="right">{{effortRank}}</td>
