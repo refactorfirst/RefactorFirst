@@ -32,7 +32,6 @@ class PackageRelationshipClassEdgeCycleCountTest {
     private static final String ALPHA = PKG_A + ".Alpha";
     private static final String BETA = PKG_B + ".Beta";
     private static final String DELTA = PKG_A + ".Delta";
-    private static final String REPO_URL = "https://github.com/example/repo/blob/";
 
     /** Alpha and Beta form a 2-cycle; Delta -> Beta hangs off the cycle and is in no cycle. */
     private Graph<String, DefaultWeightedEdge> createClassGraph() {
@@ -91,8 +90,7 @@ class PackageRelationshipClassEdgeCycleCountTest {
         classEdgesInPackageRelationship.add(deltaToBeta);
 
         // When: the nested class-relationship DTOs are built for the package edge
-        var relationships =
-                generator.buildClassRelationshipsToBreakPackage(classEdgesInPackageRelationship, REPO_URL, mockDto());
+        var relationships = generator.buildClassRelationshipsToBreakPackage(classEdgesInPackageRelationship, mockDto());
 
         // Then: each nested DTO reports its real class-cycle membership
         ClassRelationshipDTO alphaToBetaDto = relationships.stream()

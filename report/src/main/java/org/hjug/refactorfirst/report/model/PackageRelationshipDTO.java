@@ -14,10 +14,11 @@ import lombok.NoArgsConstructor;
 public class PackageRelationshipDTO {
     private String sourcePackage;
     private String targetPackage;
+    private String sourcePackagePath;
+    private String targetPackagePath;
     private boolean sourceMarked;
     private boolean targetMarked;
     private int weight;
-    private String renderedLabel;
     private int priority;
     private int cycleCount;
     private int effortRank;

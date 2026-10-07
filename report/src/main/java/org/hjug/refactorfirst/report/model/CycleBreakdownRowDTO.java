@@ -11,5 +11,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class CycleBreakdownRowDTO {
     private String className;
+    private String classPath;
+    private boolean marked;
     private String edgesHtml;
 }

@@ -210,7 +210,7 @@
             <tbody>
             {{#classRelationshipsToRemove.relationships}}
                 <tr>
-                    <td align="left">{{renderedLabel}}</td>
+                    <td align="left">{{#sourceClassPath}}<a href="{{project.repoUrl}}{{sourceClassPath}}" target="_blank">{{/sourceClassPath}}{{simpleSourceClassName}}{{#sourceClassPath}}</a>{{/sourceClassPath}}{{#sourceMarked}}*{{/sourceMarked}} &#8594; {{#targetClassPath}}<a href="{{project.repoUrl}}{{targetClassPath}}" target="_blank">{{/targetClassPath}}{{simpleTargetClassName}}{{#targetClassPath}}</a>{{/targetClassPath}}{{#targetMarked}}*{{/targetMarked}}</td>
                     <td align="right">{{priority}}</td>
                     <td align="right">{{cycleCount}}</td>
                     <td align="right">{{effortRank}}</td>
@@ -293,12 +293,12 @@
             <tbody>
             {{#packageRelationshipsToRemove.relationships}}
                 <tr>
-                    <td align="left">{{{renderedLabel}}}</td>
+                    <td align="left">{{#sourcePackagePath}}<a href="{{project.repoUrl}}{{sourcePackagePath}}" target="_blank">{{/sourcePackagePath}}{{sourcePackage}}{{#sourcePackagePath}}</a>{{/sourcePackagePath}}{{#sourceMarked}}*{{/sourceMarked}} &#8594; {{#targetPackagePath}}<a href="{{project.repoUrl}}{{targetPackagePath}}" target="_blank">{{/targetPackagePath}}{{targetPackage}}{{#targetPackagePath}}</a>{{/targetPackagePath}}{{#targetMarked}}*{{/targetMarked}}</td>
                     <td align="right">{{priority}}</td>
                     <td align="right">{{cycleCount}}</td>
                     <td align="right">{{effortRank}}</td>
                     <td align="left">{{#classRelationshipsToBreakPackage}}
-                        {{{renderedLabel}}}<br/>{{/classRelationshipsToBreakPackage}}</td>
+                        {{#sourceClassPath}}<a href="{{project.repoUrl}}{{sourceClassPath}}" target="_blank">{{/sourceClassPath}}{{simpleSourceClassName}}{{#sourceClassPath}}</a>{{/sourceClassPath}}{{#sourceMarked}}*{{/sourceMarked}} &#8594; {{#targetClassPath}}<a href="{{project.repoUrl}}{{targetClassPath}}" target="_blank">{{/targetClassPath}}{{simpleTargetClassName}}{{#targetClassPath}}</a>{{/targetClassPath}}{{#targetMarked}}*{{/targetMarked}} : {{weight}}<br/>{{/classRelationshipsToBreakPackage}}</td>
                 </tr>
             {{/packageRelationshipsToRemove.relationships}}
             </tbody>
@@ -349,7 +349,7 @@
             {{#table.rows}}
                 <tr>
                     {{#cells}}
-                        <td align="{{align}}">{{{content}}}</td>
+                        <td align="{{align}}">{{#path}}<a href="{{project.repoUrl}}{{path}}" target="_blank">{{/path}}{{{content}}}{{#path}}</a>{{/path}}</td>
                     {{/cells}}
                 </tr>
             {{/table.rows}}
@@ -424,7 +424,7 @@
                 <tbody>
                 {{#classCycles.largestCycle.breakdown}}
                     <tr>
-                        <td align="left">{{{className}}}</td>
+                        <td align="left">{{#classPath}}<a href="{{project.repoUrl}}{{classPath}}" target="_blank">{{/classPath}}{{className}}{{#classPath}}</a>{{/classPath}}{{#marked}}*{{/marked}}</td>
                         <td align="left">{{{edgesHtml}}}</td>
                     </tr>
                 {{/classCycles.largestCycle.breakdown}}

@@ -103,7 +103,7 @@ class MustacheTemplateRenderingTest {
         ProjectMetadataDTO project = ProjectMetadataDTO.builder()
                 .name("TestProject")
                 .version("1.0.0")
-                .repoUrl("https://github.com/test/test")
+                .repoUrl("https://github.com/test/test/blob/0123456789abcdef/")
                 .baseDir("/test")
                 .scanTimestamp("9/8/26, 7:34 PM")
                 .hasAnyDisharmony(true)
@@ -123,7 +123,10 @@ class MustacheTemplateRenderingTest {
                 .sourceMarked(true)
                 .targetMarked(false)
                 .weight(5)
-                .renderedLabel("A <script>alert(1)</script> → B")
+                .sourceClassPath("src/main/java/com/example/A.java")
+                .targetClassPath("src/main/java/com/example/B.java")
+                .simpleSourceClassName("A<script>")
+                .simpleTargetClassName("B")
                 .priority(1)
                 .cycleCount(3)
                 .effortRank(2)
@@ -165,8 +168,107 @@ class MustacheTemplateRenderingTest {
 
         // Verify table data - alsoRemovesPackageRelationship renders <strong>true</strong>
         assertTrue(rendered.contains("<strong>true</strong>"));
-        assertTrue(rendered.contains("A &lt;script&gt;alert(1)&lt;/script&gt; → B"));
-        assertFalse(rendered.contains("<script>alert(1)</script>"));
+        // The class names render as anchors built from the repo URL and their source
+        // paths, with the removal marker outside the anchor; Mustache escapes the
+        // names so no markup can be injected
+        assertTrue(rendered.contains(
+                "<a href=\"https://github.com/test/test/blob/0123456789abcdef/src/main/java/com/example/A.java\""
+                        + " target=\"_blank\">A&lt;script&gt;</a>* &#8594; "
+                        + "<a href=\"https://github.com/test/test/blob/0123456789abcdef/src/main/java/com/example/B.java\""
+                        + " target=\"_blank\">B</a>"));
+        assertFalse(rendered.contains("<script>"));
+    }
+
+    /** Verifies that the template renders package relationship data. */
+    @Test
+    void testTemplateRendersPackageRelationshipTable() throws Exception {
+        String template = loadTemplate();
+
+        ProjectMetadataDTO project = ProjectMetadataDTO.builder()
+                .name("TestProject")
+                .version("1.0.0")
+                .repoUrl("https://github.com/test/test/blob/0123456789abcdef/")
+                .baseDir("/test")
+                .scanTimestamp("9/8/26, 7:34 PM")
+                .hasAnyDisharmony(true)
+                .build();
+
+        GraphVisualDTO classMap = GraphVisualDTO.builder()
+                .graphId("classGraph")
+                .classCount(10)
+                .relationshipCount(20)
+                .dot("digraph G {}")
+                .dotThresholdExceeded(false)
+                .build();
+
+        PackageRelationshipDTO packageRel = PackageRelationshipDTO.builder()
+                .sourcePackage("org.example.pkga<script>")
+                .targetPackage("org.example.pkgb")
+                .sourcePackagePath("src/main/java/org/example/pkga/")
+                .targetPackagePath("src/main/java/org/example/pkgb/")
+                .sourceMarked(true)
+                .targetMarked(false)
+                .weight(3)
+                .priority(1)
+                .cycleCount(2)
+                .effortRank(2)
+                .classRelationshipsToBreakPackage(List.of(ClassRelationshipDTO.builder()
+                        .sourceClass("org.example.pkga.ClassA")
+                        .targetClass("org.example.pkgb.ClassB")
+                        .sourceClassPath("src/main/java/org/example/pkga/ClassA.java")
+                        .targetClassPath("src/main/java/org/example/pkgb/ClassB.java")
+                        .simpleSourceClassName("ClassA")
+                        .simpleTargetClassName("ClassB")
+                        .sourceMarked(true)
+                        .weight(2)
+                        .build()))
+                .build();
+
+        PackageRelationshipsToRemoveDTO packageRels = PackageRelationshipsToRemoveDTO.builder()
+                .cycleCount(2)
+                .relationshipsToRemoveCount(1)
+                .hasRelationships(true)
+                .relationships(List.of(packageRel))
+                .build();
+
+        RefactorFirstReportDTO report = RefactorFirstReportDTO.builder()
+                .project(project)
+                .classMap(classMap)
+                .classRelationshipsToRemove(ClassRelationshipsToRemoveDTO.builder()
+                        .cycleCount(0)
+                        .relationshipsToRemoveCount(0)
+                        .relationships(List.of())
+                        .build())
+                .packageMap(GraphVisualDTO.builder().hasEdges(false).build())
+                .packageRelationshipsToRemove(packageRels)
+                .hasDisharmonies(false)
+                .disharmonies(List.of())
+                .classCycles(ClassCyclesDTO.builder().hasCycles(false).build())
+                .build();
+
+        String rendered = renderTemplate(template, report);
+
+        // Verify table headers
+        assertTrue(rendered.contains("<th>Package Relationship</th>"));
+        assertTrue(rendered.contains("Class Relationships to Remove<br>To Break Package Relationship"));
+
+        // The package endpoints render as anchors built from the repo URL and the
+        // package paths, with the removal marker outside the anchor; Mustache
+        // escapes the names so no markup can be injected
+        assertTrue(rendered.contains(
+                "<a href=\"https://github.com/test/test/blob/0123456789abcdef/src/main/java/org/example/pkga/\""
+                        + " target=\"_blank\">org.example.pkga&lt;script&gt;</a>* &#8594; "
+                        + "<a href=\"https://github.com/test/test/blob/0123456789abcdef/src/main/java/org/example/pkgb/\""
+                        + " target=\"_blank\">org.example.pkgb</a>"));
+        assertFalse(rendered.contains("<script>"));
+
+        // The nested class-break cell anchors the simple class names to their source
+        // files; the removal marker and relationship weight remain plain text
+        assertTrue(rendered.contains(
+                "<a href=\"https://github.com/test/test/blob/0123456789abcdef/src/main/java/org/example/pkga/ClassA.java\""
+                        + " target=\"_blank\">ClassA</a>* &#8594; "
+                        + "<a href=\"https://github.com/test/test/blob/0123456789abcdef/src/main/java/org/example/pkgb/ClassB.java\""
+                        + " target=\"_blank\">ClassB</a> : 2"));
     }
 
     /** Verifies that the template renders disharmony charts and tables. */
@@ -177,7 +279,7 @@ class MustacheTemplateRenderingTest {
         ProjectMetadataDTO project = ProjectMetadataDTO.builder()
                 .name("TestProject")
                 .version("1.0.0")
-                .repoUrl("https://github.com/test/test")
+                .repoUrl("https://github.com/test/test/blob/0123456789abcdef/")
                 .baseDir("/test")
                 .scanTimestamp("9/8/26, 7:34 PM")
                 .hasAnyDisharmony(true)
@@ -217,6 +319,7 @@ class MustacheTemplateRenderingTest {
                         .cells(List.of(
                                 DisharmonyTableCellDTO.builder()
                                         .content("TestClass.java")
+                                        .path("src/main/java/TestClass.java")
                                         .align("left")
                                         .build(),
                                 DisharmonyTableCellDTO.builder()
@@ -272,6 +375,12 @@ class MustacheTemplateRenderingTest {
         // Verify table
         assertTrue(rendered.contains("<th>Class</th>"));
         assertTrue(rendered.contains("<th>Priority</th>"));
+        // The disharmony file renders as an anchor built from the repo URL and its
+        // relative path; non-path cells remain plain text
+        assertTrue(rendered.contains(
+                "<td align=\"left\"><a href=\"https://github.com/test/test/blob/0123456789abcdef/src/main/java/TestClass.java\""
+                        + " target=\"_blank\">TestClass.java</a></td>"));
+        assertTrue(rendered.contains("<td align=\"right\">1</td>"));
     }
 
     /** Verifies that the template renders cycle maps and breakdown data. */
@@ -282,7 +391,7 @@ class MustacheTemplateRenderingTest {
         ProjectMetadataDTO project = ProjectMetadataDTO.builder()
                 .name("TestProject")
                 .version("1.0.0")
-                .repoUrl("https://github.com/test/test")
+                .repoUrl("https://github.com/test/test/blob/0123456789abcdef/")
                 .baseDir("/test")
                 .scanTimestamp("9/8/26, 7:34 PM")
                 .hasAnyDisharmony(true)
@@ -304,7 +413,9 @@ class MustacheTemplateRenderingTest {
                 .build();
 
         CycleBreakdownRowDTO breakdownRow = CycleBreakdownRowDTO.builder()
-                .className("<a href=\"...\">A</a><strong>*</strong>")
+                .className("A")
+                .classPath("src/main/java/com/example/A.java")
+                .marked(true)
                 .edgesHtml("<strong>A &rarr; B<strong>*</strong></strong><br/>")
                 .build();
 
@@ -364,7 +475,148 @@ class MustacheTemplateRenderingTest {
         // Verify cycle breakdown table
         assertTrue(rendered.contains("<th>Classes</th>"));
         assertTrue(rendered.contains("<th>Relationships</th>"));
+        // The cycle class name renders as an anchor built from the repo URL and its
+        // relative path; the removal marker stays outside the anchor
+        assertTrue(rendered.contains(
+                "<td align=\"left\"><a href=\"https://github.com/test/test/blob/0123456789abcdef/src/main/java/com/example/A.java\""
+                        + " target=\"_blank\">A</a>*</td>"));
         assertTrue(rendered.contains("<strong>*</strong>"));
+    }
+
+    /**
+     * Verifies that entries without relative paths render as plain text so the
+     * bundled viewer degrades gracefully when the JSON payload carries no path.
+     */
+    @Test
+    void testTemplateLeavesEntriesWithoutPathsAsPlainText() throws Exception {
+        String template = loadTemplate();
+
+        ProjectMetadataDTO project = ProjectMetadataDTO.builder()
+                .name("TestProject")
+                .version("1.0.0")
+                .repoUrl("https://github.com/test/test/blob/0123456789abcdef/")
+                .baseDir("/test")
+                .scanTimestamp("9/8/26, 7:34 PM")
+                .hasAnyDisharmony(true)
+                .build();
+
+        GraphVisualDTO classMap = GraphVisualDTO.builder()
+                .graphId("classGraph")
+                .classCount(10)
+                .relationshipCount(20)
+                .dot("digraph G {}")
+                .dotThresholdExceeded(false)
+                .build();
+
+        PackageRelationshipDTO packageRel = PackageRelationshipDTO.builder()
+                .sourcePackage("org.example.pkga")
+                .targetPackage("org.example.pkgb")
+                .sourceMarked(true)
+                .targetMarked(false)
+                .weight(3)
+                .priority(1)
+                .cycleCount(2)
+                .effortRank(2)
+                .classRelationshipsToBreakPackage(List.of(ClassRelationshipDTO.builder()
+                        .sourceClass("org.example.pkga.ClassA")
+                        .targetClass("org.example.pkgb.ClassB")
+                        .simpleSourceClassName("ClassA")
+                        .simpleTargetClassName("ClassB")
+                        .sourceMarked(true)
+                        .weight(2)
+                        .build()))
+                .build();
+
+        ClassRelationshipsToRemoveDTO classRels = ClassRelationshipsToRemoveDTO.builder()
+                .cycleCount(1)
+                .relationshipsToRemoveCount(1)
+                .hasRelationships(true)
+                .relationships(List.of(ClassRelationshipDTO.builder()
+                        .sourceClass("org.example.pkgx.ClassX")
+                        .targetClass("org.example.pkgy.ClassY")
+                        .simpleSourceClassName("ClassX")
+                        .simpleTargetClassName("ClassY")
+                        .sourceMarked(true)
+                        .weight(2)
+                        .priority(1)
+                        .cycleCount(1)
+                        .effortRank(1)
+                        .build()))
+                .build();
+
+        PackageRelationshipsToRemoveDTO packageRels = PackageRelationshipsToRemoveDTO.builder()
+                .cycleCount(2)
+                .relationshipsToRemoveCount(1)
+                .hasRelationships(true)
+                .relationships(List.of(packageRel))
+                .build();
+
+        DisharmonySectionDTO section = DisharmonySectionDTO.builder()
+                .type("God Class")
+                .anchorId("GOD")
+                .title("God Classes")
+                .problem("God Classes take on too much responsibility")
+                .solution("Extract related functionality")
+                .table(DisharmonyTableDTO.builder()
+                        .headers(List.of("Class", "Priority"))
+                        .rows(List.of(DisharmonyTableRowDTO.builder()
+                                .cells(List.of(
+                                        DisharmonyTableCellDTO.builder()
+                                                .content("TestClass.java")
+                                                .align("left")
+                                                .build(),
+                                        DisharmonyTableCellDTO.builder()
+                                                .content("1")
+                                                .align("right")
+                                                .build()))
+                                .build()))
+                        .build())
+                .build();
+
+        // A blank class path mirrors JsonGenerator's default for unmapped classes
+        CycleBreakdownRowDTO breakdownRow = CycleBreakdownRowDTO.builder()
+                .className("A")
+                .classPath("")
+                .marked(true)
+                .edgesHtml("A &#8594; B : 1<br/>")
+                .build();
+
+        RefactorFirstReportDTO report = RefactorFirstReportDTO.builder()
+                .project(project)
+                .classMap(classMap)
+                .classRelationshipsToRemove(classRels)
+                .packageMap(GraphVisualDTO.builder().hasEdges(false).build())
+                .packageRelationshipsToRemove(packageRels)
+                .hasDisharmonies(true)
+                .disharmonies(List.of(section))
+                .classCycles(ClassCyclesDTO.builder()
+                        .hasCycles(true)
+                        .summary(List.of())
+                        .largestCycle(LargestCycleDTO.builder()
+                                .hasCycleMap(true)
+                                .cycleName("A -> B -> A")
+                                .cycleIdentifier("graph_A_B_A_abc123")
+                                .dotThresholdExceeded(false)
+                                .dot("digraph G {}")
+                                .breakdown(List.of(breakdownRow))
+                                .build())
+                        .build())
+                .build();
+
+        String rendered = renderTemplate(template, report);
+
+        // Class relationships without class paths render as plain text
+        assertTrue(rendered.contains("<td align=\"left\">ClassX* &#8594; ClassY</td>"));
+        // Package endpoints without package paths render as plain text
+        assertTrue(rendered.contains("<td align=\"left\">org.example.pkga* &#8594; org.example.pkgb</td>"));
+        // Nested class relationships without class paths render as plain text
+        assertTrue(rendered.contains("ClassA* &#8594; ClassB : 2"));
+        // Disharmony cells without a path render as plain text
+        assertTrue(rendered.contains("<td align=\"left\">TestClass.java</td>"));
+        // Cycle class names without a class path render as plain text
+        assertTrue(rendered.contains("<td align=\"left\">A*</td>"));
+        // No repository URLs are built from the project repo URL beyond the header link
+        assertFalse(rendered.contains("0123456789abcdef/src/"));
     }
 
     /** Renders a template with the supplied report data. */

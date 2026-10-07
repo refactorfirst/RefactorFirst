@@ -12,10 +12,13 @@ import lombok.NoArgsConstructor;
 public class ClassRelationshipDTO {
     private String sourceClass;
     private String targetClass;
+    private String sourceClassPath;
+    private String targetClassPath;
+    private String simpleSourceClassName;
+    private String simpleTargetClassName;
     private boolean sourceMarked;
     private boolean targetMarked;
     private int weight;
-    private String renderedLabel;
     private int priority;
     private int cycleCount;
     private int effortRank;

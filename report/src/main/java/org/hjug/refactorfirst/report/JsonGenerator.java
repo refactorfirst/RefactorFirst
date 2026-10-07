@@ -266,25 +266,16 @@ public class JsonGenerator extends HtmlReport {
                 String startVertex = vertexes[0].trim();
                 String endVertex = vertexes[1].trim();
 
-                String sourcePath =
-                        codebaseGraphDTO.getClassToSourceFilePathMapping().get(startVertex);
-                String targetPath =
-                        codebaseGraphDTO.getClassToSourceFilePathMapping().get(endVertex);
-                String sourceUrl = (sourcePath != null && !sourcePath.isBlank()) ? repoUrl + sourcePath : "";
-                String targetUrl = (targetPath != null && !targetPath.isBlank()) ? repoUrl + targetPath : "";
-
-                // Build rendered label with links to class files
-                String renderedLabel =
-                        buildClassLinkLabel(startVertex, endVertex, sourceUrl, targetUrl, classesToRemove, (int)
-                                classGraph.getEdgeWeight(edgeInfo.getEdge()));
-
                 classRelList.add(ClassRelationshipDTO.builder()
                         .sourceClass(startVertex)
                         .targetClass(endVertex)
+                        .sourceClassPath(classSourcePath(startVertex, codebaseGraphDTO))
+                        .targetClassPath(classSourcePath(endVertex, codebaseGraphDTO))
+                        .simpleSourceClassName(getClassName(startVertex))
+                        .simpleTargetClassName(getClassName(endVertex))
                         .sourceMarked(classesToRemove.contains(startVertex))
                         .targetMarked(classesToRemove.contains(endVertex))
                         .weight((int) classGraph.getEdgeWeight(edgeInfo.getEdge()))
-                        .renderedLabel(renderedLabel)
                         .priority(edgeInfo.getPriority())
                         .cycleCount(edgeInfo.getCycleCount())
                         .effortRank(edgeInfo.getEffortRank())
@@ -319,14 +310,13 @@ public class JsonGenerator extends HtmlReport {
             // 4. Package Relationships To Remove
             List<PackageRelationshipDTO> packageRelList = new ArrayList<>();
             for (RankedDisharmony edgeInfo : packageRelationshipDisharmonies) {
-                String[] cells = getPackageRelationshipDisharmony(edgeInfo, repoUrl, codebaseGraphDTO);
                 String[] vertexes = extractVertexes(edgeInfo.getEdge());
                 String startVertex = vertexes[0].trim();
                 String endVertex = vertexes[1].trim();
 
-                // Extract package URLs from class relationships in the package edge
-                String sourceUrl = "";
-                String targetUrl = "";
+                // Extract package paths from class relationships in the package edge
+                String sourcePackagePath = "";
+                String targetPackagePath = "";
                 Set<DefaultWeightedEdge> classRelationshipsInPackageRelationship = codebaseGraphDTO
                         .getClassRelationshipsInPackageRelationship()
                         .get(edgeInfo.getEdge());
@@ -351,11 +341,11 @@ public class JsonGenerator extends HtmlReport {
                                 String packageDir = classStartPath.substring(0, lastSlash + 1);
                                 // Check if this class belongs to the source package
                                 if (isClassInPackage(classStart, startVertex, codebaseGraphDTO)) {
-                                    sourceUrl = repoUrl + packageDir;
+                                    sourcePackagePath = packageDir;
                                 }
                                 // Check if this class belongs to the target package
                                 if (isClassInPackage(classStart, endVertex, codebaseGraphDTO)) {
-                                    targetUrl = repoUrl + packageDir;
+                                    targetPackagePath = packageDir;
                                 }
                             }
                         }
@@ -366,11 +356,11 @@ public class JsonGenerator extends HtmlReport {
                                 String packageDir = classEndPath.substring(0, lastSlash + 1);
                                 // Check if this class belongs to the source package
                                 if (isClassInPackage(classEnd, startVertex, codebaseGraphDTO)) {
-                                    sourceUrl = repoUrl + packageDir;
+                                    sourcePackagePath = packageDir;
                                 }
                                 // Check if this class belongs to the target package
                                 if (isClassInPackage(classEnd, endVertex, codebaseGraphDTO)) {
-                                    targetUrl = repoUrl + packageDir;
+                                    targetPackagePath = packageDir;
                                 }
                             }
                         }
@@ -378,27 +368,24 @@ public class JsonGenerator extends HtmlReport {
                 }
 
                 // Fallback to package name conversion if no class edges found
-                if (sourceUrl.isBlank()) {
-                    sourceUrl = repoUrl + startVertex.replace('.', '/');
+                if (sourcePackagePath.isBlank()) {
+                    sourcePackagePath = startVertex.replace('.', '/');
                 }
-                if (targetUrl.isBlank()) {
-                    targetUrl = repoUrl + endVertex.replace('.', '/');
+                if (targetPackagePath.isBlank()) {
+                    targetPackagePath = endVertex.replace('.', '/');
                 }
 
                 List<ClassRelationshipDTO> breakClassRels = buildClassRelationshipsToBreakPackage(
-                        classRelationshipsInPackageRelationship, repoUrl, codebaseGraphDTO);
-
-                // Build rendered label with links to package directories
-                String renderedLabel =
-                        buildPackageLinkLabel(cells[0], startVertex, endVertex, sourceUrl, targetUrl, packagesToRemove);
+                        classRelationshipsInPackageRelationship, codebaseGraphDTO);
 
                 packageRelList.add(PackageRelationshipDTO.builder()
                         .sourcePackage(startVertex)
                         .targetPackage(endVertex)
+                        .sourcePackagePath(sourcePackagePath)
+                        .targetPackagePath(targetPackagePath)
                         .sourceMarked(packagesToRemove.contains(startVertex))
                         .targetMarked(packagesToRemove.contains(endVertex))
                         .weight((int) packageGraph.getEdgeWeight(edgeInfo.getEdge()))
-                        .renderedLabel(renderedLabel)
                         .priority(edgeInfo.getPriority())
                         .cycleCount(edgeInfo.getCycleCount())
                         .effortRank(edgeInfo.getEffortRank())
@@ -418,7 +405,7 @@ public class JsonGenerator extends HtmlReport {
             for (DisharmonySpec spec : DISHARMONY_SPECS) {
                 List<RankedDisharmony> ranked = rankedDisharmoniesByAnchor.get(spec.anchorId());
                 if (ranked != null && !ranked.isEmpty()) {
-                    disharmonySections.add(buildDisharmonySection(spec, showDetails, ranked, repoUrl));
+                    disharmonySections.add(buildDisharmonySection(spec, showDetails, ranked));
                 }
             }
 
@@ -445,12 +432,7 @@ public class JsonGenerator extends HtmlReport {
 
                 List<CycleBreakdownRowDTO> breakdown = new ArrayList<>();
                 for (String vertex : largestCycle.getVertexSet()) {
-                    String className;
-                    if (classesToRemove.contains(vertex)) {
-                        className = hyperlinkClass(vertex, repoUrl, codebaseGraphDTO) + "*";
-                    } else {
-                        className = hyperlinkClass(vertex, repoUrl, codebaseGraphDTO);
-                    }
+                    boolean marked = classesToRemove.contains(vertex);
 
                     StringBuilder edges = new StringBuilder();
                     for (DefaultWeightedEdge edge : largestCycle.getEdgeSet()) {
@@ -465,8 +447,13 @@ public class JsonGenerator extends HtmlReport {
                             edges.append("<br/>\n");
                         }
                     }
+                    // The row carries the simple class name, the source path relative to the
+                    // project root and the removal marker; viewers build the URL from
+                    // project.repoUrl
                     breakdown.add(CycleBreakdownRowDTO.builder()
-                            .className(className)
+                            .className(getClassName(vertex))
+                            .classPath(classSourcePath(vertex, codebaseGraphDTO))
+                            .marked(marked)
                             .edgesHtml(edges.toString())
                             .build());
                 }
@@ -515,9 +502,13 @@ public class JsonGenerator extends HtmlReport {
         }
     }
 
-    /** Converts ranked instances of one disharmony type into chart and table data. */
-    private DisharmonySectionDTO buildDisharmonySection(
-            DisharmonySpec spec, boolean showDetails, List<RankedDisharmony> ranked, String repoUrl) {
+    /**
+     * Converts ranked instances of one disharmony type into chart and table data. Table cells
+     * carry only plain text and paths relative to the project root; viewers combine the paths
+     * with the repository URL from the project metadata.
+     */
+    DisharmonySectionDTO buildDisharmonySection(
+            DisharmonySpec spec, boolean showDetails, List<RankedDisharmony> ranked) {
 
         int maxPriority = ranked.get(ranked.size() - 1).getPriority();
 
@@ -527,7 +518,6 @@ public class JsonGenerator extends HtmlReport {
             String label = rd.getFileName() != null
                     ? rd.getFileName()
                     : rd.getRawPriority().toString();
-            String url = repoUrl + rd.getPath();
             bubbles.add(createBubble(
                     rd.getFileName(),
                     label,
@@ -535,7 +525,7 @@ public class JsonGenerator extends HtmlReport {
                     rd.getChangePronenessRank(),
                     rd.getPriority(),
                     maxPriority,
-                    url));
+                    rd.getPath()));
         }
 
         DisharmonyChartDTO chartDTO = DisharmonyChartDTO.builder()
@@ -579,10 +569,11 @@ public class JsonGenerator extends HtmlReport {
         for (RankedDisharmony rd : ranked) {
             List<DisharmonyTableCellDTO> cells = new ArrayList<>();
 
-            // Class link
+            // Class link: the cell carries the plain file name and the source path
+            // relative to the project root; viewers build the URL from project.repoUrl
             cells.add(DisharmonyTableCellDTO.builder()
-                    .content("<a href=\"" + escapeHtmlAttribute(repoUrl + rd.getPath()) + "\" target=\"_blank\">"
-                            + escapeHtmlLabel(rd.getFileName()) + "</a>")
+                    .content(escapeHtmlLabel(rd.getFileName()))
+                    .path(rd.getPath())
                     .align("left")
                     .build());
 
@@ -693,7 +684,11 @@ public class JsonGenerator extends HtmlReport {
                 .build();
     }
 
-    /** Creates a chart bubble whose size and color reflect the finding priority. */
+    /**
+     * Creates a chart bubble whose size and color reflect the finding priority. The bubble
+     * carries only the source file path relative to the project root; viewers combine it with
+     * the repository URL from the project metadata.
+     */
     public ChartJsBubbleDTO createBubble(
             String id,
             String label,
@@ -701,7 +696,7 @@ public class JsonGenerator extends HtmlReport {
             int changePronenessRank,
             int priority,
             int maxPriority,
-            String url) {
+            String path) {
 
         int minRadius = 6;
         int maxRadius = 24;
@@ -741,7 +736,7 @@ public class JsonGenerator extends HtmlReport {
                 .changePronenessRank(changePronenessRank)
                 .color(color)
                 .borderColor(borderColor)
-                .url(url)
+                .path(path)
                 .build();
     }
 
@@ -766,83 +761,6 @@ public class JsonGenerator extends HtmlReport {
     }
 
     /**
-     * Builds a rendered label with HTML links to package directories.
-     * Transforms "org.hjug.graphbuilder.metrics &#8594; org.hjug.graphbuilder<strong>*</strong> : 1"
-     * into "<a href="...">org.hjug.graphbuilder.metrics</a> &#8594; <a href="...">org.hjug.graphbuilder</a>* : 1"
-     */
-    private String buildPackageLinkLabel(
-            String originalLabel,
-            String startVertex,
-            String endVertex,
-            String sourceUrl,
-            String targetUrl,
-            Set<String> packagesToRemove) {
-        if (originalLabel == null || originalLabel.isBlank()) {
-            return originalLabel;
-        }
-
-        // The original label format is: "startPackage &#8594; endPackage : weight"
-        // We need to wrap the package names with links
-        String arrow = " &#8594; ";
-        String weightSeparator = " : ";
-
-        // Split the label into parts
-        String[] parts = originalLabel.split(weightSeparator);
-        if (parts.length < 2) {
-            return originalLabel;
-        }
-
-        String edgePart = parts[0];
-        String weight = parts[1];
-
-        // Split the edge part by arrow
-        String[] packages = edgePart.split(arrow, 2);
-        if (packages.length < 2) {
-            return originalLabel;
-        }
-
-        String startPackage = packages[0].trim();
-        String endPackage = packages[1].trim();
-
-        // Check if start package has the removal marker (escaped or unescaped)
-        boolean startMarked =
-                startPackage.contains("<strong>*</strong>") || startPackage.contains("&lt;strong&gt;*&lt;/strong&gt;");
-        if (startMarked) {
-            startPackage = startPackage.replace("<strong>*</strong>", "").replace("&lt;strong&gt;*&lt;/strong&gt;", "");
-        }
-
-        // Check if end package has the removal marker (escaped or unescaped)
-        boolean endMarked =
-                endPackage.contains("<strong>*</strong>") || endPackage.contains("&lt;strong&gt;*&lt;/strong&gt;");
-        if (endMarked) {
-            endPackage = endPackage.replace("<strong>*</strong>", "").replace("&lt;strong&gt;*&lt;/strong&gt;", "");
-        }
-
-        // Build the new label with links
-        StringBuilder newLabel = new StringBuilder();
-        newLabel.append("<a href=\"")
-                .append(escapeHtmlAttribute(sourceUrl))
-                .append("\" target=\"_blank\">")
-                .append(escapeHtmlLabel(startPackage))
-                .append("</a>");
-        if (startMarked) {
-            newLabel.append("*");
-        }
-        newLabel.append(arrow);
-        newLabel.append("<a href=\"")
-                .append(escapeHtmlAttribute(targetUrl))
-                .append("\" target=\"_blank\">")
-                .append(escapeHtmlLabel(endPackage))
-                .append("</a>");
-        if (endMarked) {
-            newLabel.append("*");
-        }
-        newLabel.append(weightSeparator).append(weight);
-
-        return newLabel.toString();
-    }
-
-    /**
      * Converts the class edges behind a package edge into structured DTOs.
      * Cycle membership is calculated for every class edge from {@code classCycles} before the
      * DTOs are constructed: {@code classEdgeCycleCounts} only covers edges of the class
@@ -850,7 +768,7 @@ public class JsonGenerator extends HtmlReport {
      * feedback-arc-set members — as members of zero class cycles.
      */
     List<ClassRelationshipDTO> buildClassRelationshipsToBreakPackage(
-            Set<DefaultWeightedEdge> classEdges, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
+            Set<DefaultWeightedEdge> classEdges, CodebaseGraphDTO codebaseGraphDTO) {
         if (classEdges == null || classEdges.isEmpty()) {
             return List.of();
         }
@@ -866,27 +784,28 @@ public class JsonGenerator extends HtmlReport {
             String[] vertexes = extractVertexes(classEdge);
             String startVertex = vertexes[0].trim();
             String endVertex = vertexes[1].trim();
-
-            String sourcePath =
-                    codebaseGraphDTO.getClassToSourceFilePathMapping().get(startVertex);
-            String targetPath =
-                    codebaseGraphDTO.getClassToSourceFilePathMapping().get(endVertex);
-            String sourceUrl = (sourcePath != null && !sourcePath.isBlank()) ? repoUrl + sourcePath : "";
-            String targetUrl = (targetPath != null && !targetPath.isBlank()) ? repoUrl + targetPath : "";
             int weight = (int) classGraph.getEdgeWeight(classEdge);
 
             relationships.add(ClassRelationshipDTO.builder()
                     .sourceClass(startVertex)
                     .targetClass(endVertex)
+                    .sourceClassPath(classSourcePath(startVertex, codebaseGraphDTO))
+                    .targetClassPath(classSourcePath(endVertex, codebaseGraphDTO))
+                    .simpleSourceClassName(getClassName(startVertex))
+                    .simpleTargetClassName(getClassName(endVertex))
                     .sourceMarked(classesToRemove.contains(startVertex))
                     .targetMarked(classesToRemove.contains(endVertex))
                     .weight(weight)
-                    .renderedLabel(
-                            buildClassLinkLabel(startVertex, endVertex, sourceUrl, targetUrl, classesToRemove, weight))
                     .cycleCount(cycleCounts.get(classEdge))
                     .build());
         }
         return relationships;
+    }
+
+    /** Returns the class's source file path relative to the project root, or an empty string. */
+    private String classSourcePath(String className, CodebaseGraphDTO codebaseGraphDTO) {
+        String path = codebaseGraphDTO.getClassToSourceFilePathMapping().get(className);
+        return path != null ? path : "";
     }
 
     /**
@@ -905,57 +824,5 @@ public class JsonGenerator extends HtmlReport {
             }
         }
         return cycleCount;
-    }
-
-    /**
-     * Builds a rendered label with HTML links to class files.
-     * Transforms "GraphMetricsCollector → DependencyCollector : 1"
-     * into "<a href="...">GraphMetricsCollector</a> → <a href="...">DependencyCollector</a>* : 1"
-     */
-    private String buildClassLinkLabel(
-            String startVertex,
-            String endVertex,
-            String sourceUrl,
-            String targetUrl,
-            Set<String> classesToRemove,
-            int weight) {
-        // Extract simple class names for display
-        String startClass = getClassName(startVertex);
-        String endClass = getClassName(endVertex);
-
-        // Check if classes are marked for removal
-        boolean startMarked = classesToRemove.contains(startVertex);
-        boolean endMarked = classesToRemove.contains(endVertex);
-
-        // Build the new label with links
-        StringBuilder newLabel = new StringBuilder();
-        if (sourceUrl != null && !sourceUrl.isBlank()) {
-            newLabel.append("<a href=\"")
-                    .append(escapeHtmlAttribute(sourceUrl))
-                    .append("\" target=\"_blank\">")
-                    .append(escapeHtmlLabel(startClass))
-                    .append("</a>");
-        } else {
-            newLabel.append(escapeHtmlLabel(startClass));
-        }
-        if (startMarked) {
-            newLabel.append("*");
-        }
-        newLabel.append(" &#8594; ");
-        if (targetUrl != null && !targetUrl.isBlank()) {
-            newLabel.append("<a href=\"")
-                    .append(escapeHtmlAttribute(targetUrl))
-                    .append("\" target=\"_blank\">")
-                    .append(escapeHtmlLabel(endClass))
-                    .append("</a>");
-        } else {
-            newLabel.append(escapeHtmlLabel(endClass));
-        }
-        if (endMarked) {
-            newLabel.append("*");
-        }
-        newLabel.append(" : ").append(weight);
-
-        return newLabel.toString();
     }
 }

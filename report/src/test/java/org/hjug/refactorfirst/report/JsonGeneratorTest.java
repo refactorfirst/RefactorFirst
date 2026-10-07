@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import java.util.Comparator;
 import org.hjug.refactorfirst.report.model.ChartJsBubbleDTO;
 import org.hjug.refactorfirst.report.model.ClassRelationshipDTO;
+import org.hjug.refactorfirst.report.model.CycleBreakdownRowDTO;
 import org.hjug.refactorfirst.report.model.PackageRelationshipDTO;
 import org.hjug.refactorfirst.report.model.RefactorFirstReportDTO;
 import org.junit.jupiter.api.AfterEach;
@@ -137,27 +138,27 @@ class JsonGeneratorTest {
                 "Lowest priority should be green");
     }
 
-    /** Verifies that bubble URL is set to the class file path. */
+    /** Verifies that the bubble carries only the source file path relative to the project root. */
     @Test
-    void given_createBubble_when_urlProvided_then_urlIsSet() {
+    void given_createBubble_when_pathProvided_then_pathIsSet() {
         // Given
         JsonGenerator generator = new JsonGenerator();
         String classPath = "src/main/java/com/example/TestClass.java";
-        String repoUrl = "https://github.com/example/repo/blob/main/";
 
         // When
-        ChartJsBubbleDTO bubble =
-                generator.createBubble("TestClass", "TestClass.java", 5, 10, 1, 10, repoUrl + classPath);
+        ChartJsBubbleDTO bubble = generator.createBubble("TestClass", "TestClass.java", 5, 10, 1, 10, classPath);
 
         // Then
-        assertNotNull(bubble.getUrl());
+        assertNotNull(bubble.getPath());
         assertEquals(
-                "https://github.com/example/repo/blob/main/src/main/java/com/example/TestClass.java", bubble.getUrl());
+                "src/main/java/com/example/TestClass.java",
+                bubble.getPath(),
+                "The bubble should carry the source file path relative to the project root, not a full URL");
     }
 
-    /** Verifies that generated and serialized chart bubbles carry repoUrl + source path. */
+    /** Verifies that generated and serialized chart bubbles carry only the source path. */
     @Test
-    void given_repoWithOrigin_when_reportGenerated_then_bubbleUrlsPointToSourceFiles() throws Exception {
+    void given_repoWithOrigin_when_reportGenerated_then_bubblePathsListSourceFiles() throws Exception {
         // Given
         File repoDir = tempDir.toFile();
         File srcDir = new File(repoDir, "src/main/java/com/example");
@@ -221,11 +222,25 @@ class JsonGeneratorTest {
         assumeTrue(!bubbles.isEmpty(), "Fixture produced no disharmony bubbles");
 
         for (ChartJsBubbleDTO bubble : bubbles) {
-            assertNotNull(bubble.getUrl(), "Bubble " + bubble.getLabel() + " should have a url");
-            assertTrue(bubble.getUrl().startsWith(repoUrl), "Bubble url should start with repoUrl: " + bubble.getUrl());
-            assertTrue(
-                    bubble.getUrl().endsWith("src/main/java/com/example/" + bubble.getLabel()),
-                    "Bubble url should point to the source file: " + bubble.getUrl());
+            assertNotNull(bubble.getPath(), "Bubble " + bubble.getLabel() + " should have a path");
+            assertEquals(
+                    "src/main/java/com/example/" + bubble.getLabel(),
+                    bubble.getPath(),
+                    "Bubble path should be the source file path relative to the project root: " + bubble.getPath());
+        }
+
+        // The viewer constructs the bubble URLs from project.repoUrl + path, so the
+        // payload must not embed a full URL per bubble
+        com.fasterxml.jackson.databind.JsonNode root = objectMapper.readTree(jsonFile.toFile());
+        for (com.fasterxml.jackson.databind.JsonNode disharmony : root.get("disharmonies")) {
+            if (!disharmony.has("chart") || !disharmony.get("chart").has("bubbles")) {
+                continue;
+            }
+            for (com.fasterxml.jackson.databind.JsonNode bubble :
+                    disharmony.get("chart").get("bubbles")) {
+                assertFalse(bubble.has("url"), "Bubbles must not embed a full url: " + bubble);
+                assertTrue(bubble.has("path"), "Bubbles must carry the source path: " + bubble);
+            }
         }
     }
 
@@ -337,10 +352,12 @@ class JsonGeneratorTest {
     }
 
     /**
-     * Verifies that sourceUrl and targetUrl are set in ClassRelationshipDTO and PackageRelationshipDTO.
+     * Verifies that sourceClassPath, targetClassPath, simpleSourceClassName and
+     * simpleTargetClassName are set in ClassRelationshipDTO, and that the label
+     * is no longer pre-rendered server-side.
      */
     @Test
-    void given_circularDependency_when_reportGenerated_then_relationshipUrlsAreSet() throws Exception {
+    void given_circularDependency_when_reportGenerated_then_classPathsAndSimpleNamesAreSet() throws Exception {
         // Given
         File repoDir = tempDir.toFile();
         new File(repoDir, ".git").mkdirs();
@@ -402,30 +419,32 @@ class JsonGeneratorTest {
         RefactorFirstReportDTO report = objectMapper.readValue(jsonFile.toFile(), RefactorFirstReportDTO.class);
         assertNotNull(report);
 
-        // Verify ClassRelationshipDTO renderedLabel contains HTML links
+        // Verify ClassRelationshipDTO carries the source file paths and simple class names
+        // so the viewer can combine them with project.repoUrl itself
         assertNotNull(report.getClassRelationshipsToRemove());
         assertNotNull(report.getClassRelationshipsToRemove().getRelationships());
         assertFalse(report.getClassRelationshipsToRemove().getRelationships().isEmpty());
         var classRel = report.getClassRelationshipsToRemove().getRelationships().get(0);
-        assertNotNull(classRel.getRenderedLabel(), "ClassRelationshipDTO should have renderedLabel");
-        assertTrue(classRel.getRenderedLabel().contains("<a href=\""));
-        assertTrue(
-                classRel.getRenderedLabel().contains("target=\"_blank\""),
-                "renderedLabel should have target=\"_blank\" attribute");
+        assertEquals(
+                "src/main/java/com/example/ClassA.java",
+                classRel.getSourceClassPath(),
+                "sourceClassPath should be the source file path relative to the project root");
+        assertEquals(
+                "src/main/java/com/example/ClassB.java",
+                classRel.getTargetClassPath(),
+                "targetClassPath should be the source file path relative to the project root");
+        assertEquals("ClassA", classRel.getSimpleSourceClassName());
+        assertEquals("ClassB", classRel.getSimpleTargetClassName());
 
-        // Verify PackageRelationshipDTO renderedLabel contains HTML links
-        if (report.getPackageRelationshipsToRemove() != null
-                && report.getPackageRelationshipsToRemove().getRelationships() != null
-                && !report.getPackageRelationshipsToRemove().getRelationships().isEmpty()) {
-            var packageRel =
-                    report.getPackageRelationshipsToRemove().getRelationships().get(0);
-            assertNotNull(packageRel.getRenderedLabel(), "PackageRelationshipDTO should have renderedLabel");
-            assertTrue(
-                    packageRel.getRenderedLabel().contains("<a href=\""),
-                    "renderedLabel should contain HTML anchor tags");
-            assertTrue(
-                    packageRel.getRenderedLabel().contains("target=\"_blank\""),
-                    "renderedLabel should have target=\"_blank\" attribute");
+        // Verify the raw JSON no longer carries a server-rendered label on class relationships
+        com.fasterxml.jackson.databind.JsonNode root = objectMapper.readTree(jsonFile.toFile());
+        for (com.fasterxml.jackson.databind.JsonNode rel :
+                root.get("classRelationshipsToRemove").get("relationships")) {
+            assertFalse(rel.has("renderedLabel"), "Class relationships must not carry a renderedLabel");
+            assertTrue(rel.has("sourceClassPath"), "Class relationships must carry sourceClassPath");
+            assertTrue(rel.has("targetClassPath"), "Class relationships must carry targetClassPath");
+            assertTrue(rel.has("simpleSourceClassName"), "Class relationships must carry simpleSourceClassName");
+            assertTrue(rel.has("simpleTargetClassName"), "Class relationships must carry simpleTargetClassName");
         }
     }
 
@@ -505,6 +524,20 @@ class JsonGeneratorTest {
         for (PackageRelationshipDTO packageRel :
                 report.getPackageRelationshipsToRemove().getRelationships()) {
             assertNotNull(packageRel.getClassRelationshipsToBreakPackage());
+            // Package-level relationships carry the package directory paths relative to the
+            // project root so the viewer can combine them with project.repoUrl itself
+            assertTrue(
+                    packageRel.getSourcePackagePath().startsWith("src/main/java/com/example/pkg"),
+                    "sourcePackagePath should be the package directory relative to the project root: "
+                            + packageRel.getSourcePackagePath());
+            assertTrue(
+                    packageRel.getTargetPackagePath().startsWith("src/main/java/com/example/pkg"),
+                    "targetPackagePath should be the package directory relative to the project root: "
+                            + packageRel.getTargetPackagePath());
+            assertTrue(
+                    packageRel.getSourcePackagePath().endsWith("/"),
+                    "sourcePackagePath derived from a class source file should end with a slash: "
+                            + packageRel.getSourcePackagePath());
             for (ClassRelationshipDTO classRel : packageRel.getClassRelationshipsToBreakPackage()) {
                 totalClassRelationships++;
                 assertTrue(
@@ -514,12 +547,75 @@ class JsonGeneratorTest {
                         classRel.getTargetClass().startsWith("com.example.pkg"),
                         "targetClass should be a fully qualified class name: " + classRel.getTargetClass());
                 assertTrue(classRel.getWeight() >= 1, "weight should be at least 1");
-                assertNotNull(classRel.getRenderedLabel(), "ClassRelationshipDTO should have renderedLabel");
                 assertTrue(
-                        classRel.getRenderedLabel().contains("&#8594;"),
-                        "renderedLabel should contain the relationship arrow");
+                        classRel.getSourceClassPath().startsWith("src/main/java/com/example/pkg"),
+                        "sourceClassPath should be the source file path relative to the project root: "
+                                + classRel.getSourceClassPath());
+                assertTrue(
+                        classRel.getTargetClassPath().startsWith("src/main/java/com/example/pkg"),
+                        "targetClassPath should be the source file path relative to the project root: "
+                                + classRel.getTargetClassPath());
+                assertTrue(
+                        classRel.getSimpleSourceClassName().startsWith("Class"),
+                        "simpleSourceClassName should be the simple source class name: "
+                                + classRel.getSimpleSourceClassName());
+                assertTrue(
+                        classRel.getSimpleTargetClassName().startsWith("Class"),
+                        "simpleTargetClassName should be the simple target class name: "
+                                + classRel.getSimpleTargetClassName());
             }
         }
         assertTrue(totalClassRelationships > 0, "Expected at least one class relationship to break the package cycle");
+
+        // The nested class relationships must not carry a server-rendered label either
+        com.fasterxml.jackson.databind.JsonNode root = objectMapper.readTree(jsonFile.toFile());
+        for (com.fasterxml.jackson.databind.JsonNode packageRel :
+                root.get("packageRelationshipsToRemove").get("relationships")) {
+            assertFalse(packageRel.has("renderedLabel"), "Package relationships must not carry a renderedLabel");
+            assertTrue(packageRel.has("sourcePackagePath"), "Package relationships must carry sourcePackagePath");
+            assertTrue(packageRel.has("targetPackagePath"), "Package relationships must carry targetPackagePath");
+            for (com.fasterxml.jackson.databind.JsonNode classRel :
+                    packageRel.get("classRelationshipsToBreakPackage")) {
+                assertFalse(classRel.has("renderedLabel"), "Nested class relationships must not carry a renderedLabel");
+                assertTrue(classRel.has("sourceClassPath"));
+                assertTrue(classRel.has("targetClassPath"));
+                assertTrue(classRel.has("simpleSourceClassName"));
+                assertTrue(classRel.has("simpleTargetClassName"));
+            }
+        }
+
+        // The largest-cycle breakdown rows carry the simple class name, the source path
+        // relative to the project root and the removal marker; viewers build the URL
+        // from project.repoUrl themselves
+        assertNotNull(report.getClassCycles(), "Class cycles should be analyzed");
+        assertNotNull(report.getClassCycles().getLargestCycle(), "A largest cycle should exist");
+        assertNotNull(
+                report.getClassCycles().getLargestCycle().getBreakdown(), "The largest cycle should have a breakdown");
+        var breakdown = report.getClassCycles().getLargestCycle().getBreakdown();
+        assertFalse(breakdown.isEmpty(), "The largest cycle breakdown should not be empty");
+        var classNames =
+                breakdown.stream().map(CycleBreakdownRowDTO::getClassName).toList();
+        assertEquals(2, classNames.size(), "The two-class cycle should produce two breakdown rows");
+        assertTrue(classNames.contains("ClassA"), "Breakdown rows should list the simple class names: " + classNames);
+        assertTrue(classNames.contains("ClassB"), "Breakdown rows should list the simple class names: " + classNames);
+        for (CycleBreakdownRowDTO row : breakdown) {
+            assertEquals(
+                    "src/main/java/com/example/"
+                            + (row.getClassName().equals("ClassA") ? "pkga/ClassA.java" : "pkgb/ClassB.java"),
+                    row.getClassPath(),
+                    "classPath should be the source file path relative to the project root");
+            assertFalse(
+                    row.getClassName().contains("<a"),
+                    "The breakdown row must not embed a server-built link: " + row.getClassName());
+        }
+        for (com.fasterxml.jackson.databind.JsonNode row :
+                root.get("classCycles").get("largestCycle").get("breakdown")) {
+            assertTrue(row.has("classPath"), "Breakdown rows must carry classPath");
+            assertTrue(row.has("marked"), "Breakdown rows must carry the removal marker flag");
+            assertTrue(row.get("marked").isBoolean(), "The removal marker flag must serialize as a JSON boolean");
+            assertFalse(
+                    row.get("className").asText().contains("<a"),
+                    "Breakdown classNames must not embed a server-built link");
+        }
     }
 }
