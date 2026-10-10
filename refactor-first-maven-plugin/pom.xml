@@ -35,6 +35,7 @@
         <dependency>
             <groupId>org.apache.maven</groupId>
             <artifactId>maven-core</artifactId>
+            <scope>provided</scope>
         </dependency>
 
         <!-- CVE-2025-48734 (maven-reporting-impl 4.0.0) mitigation
@@ -74,6 +75,7 @@
             <groupId>org.apache.maven</groupId>
             <artifactId>maven-plugin-api</artifactId>
             <version>3.9.9</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.maven.plugin-tools</groupId>

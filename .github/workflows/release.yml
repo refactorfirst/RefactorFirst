@@ -36,7 +36,15 @@ jobs:
           distribution: 'temurin'
           cache: maven
       - name: Set release version
-        run: mvn --no-transfer-progress --batch-mode versions:set -DnewVersion=${{ github.event.inputs.version }}
+        # Gradle plugin version sync: refactor-first-gradle-plugin/gradle.properties
+        # (refactorFirstVersion) must be bumped to the same version in the commits
+        # produced by this workflow. The Gradle plugin is published separately
+        # (./gradlew publishPlugins, maintainer-only) and must only be published
+        # AFTER this workflow has landed the matching `report` artifact on Maven
+        # Central — the plugin jar is thin and resolves `report` at runtime.
+        run: |
+          mvn --no-transfer-progress --batch-mode versions:set -DnewVersion=${{ github.event.inputs.version }}
+          sed -i "s/^refactorFirstVersion=.*/refactorFirstVersion=${{ github.event.inputs.version }}/" refactor-first-gradle-plugin/gradle.properties
 
       - name: Commit & Push changes
         uses: actions-js/push@master
@@ -72,7 +80,9 @@ jobs:
           JRELEASER_DEPLOY_MAVEN_MAVENCENTRAL_RELEASE_DEPLOY_PASSWORD: ${{ secrets.JRELEASER_MAVENCENTRAL_SONATYPE_PASSWORD }}
 
       - name: Set release version
-        run: mvn --no-transfer-progress --batch-mode versions:set -DnewVersion=${{ github.event.inputs.nextVersion }}-SNAPSHOT
+        run: |
+          mvn --no-transfer-progress --batch-mode versions:set -DnewVersion=${{ github.event.inputs.nextVersion }}-SNAPSHOT
+          sed -i "s/^refactorFirstVersion=.*/refactorFirstVersion=${{ github.event.inputs.nextVersion }}-SNAPSHOT/" refactor-first-gradle-plugin/gradle.properties
 
       - name: Commit & Push changes
         uses: actions-js/push@master

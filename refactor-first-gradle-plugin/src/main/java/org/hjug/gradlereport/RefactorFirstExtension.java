@@ -1,7 +1,5 @@
 package org.hjug.gradlereport;
 
-import java.io.File;
-
 /**
  * Gradle extension to configure RefactorFirst plugin.<br>
  * Mirrors the Maven plugin parameters where possible.
@@ -19,14 +17,15 @@ public class RefactorFirstExtension {
      */
     private String testSourceDirectory; // e.g. "src/test"
 
-    private String projectName;   // default to Gradle project name if null
+    private String projectName; // default to Gradle project name if null
     private String projectVersion; // default to Gradle project version if null
 
     /**
-     * Output directory relative to project root for generated site files.
-     * Defaults to target/site (to match Maven plugin output paths).
+     * Output directory for the HTML / simple HTML / CSV reports, relative to the project
+     * directory or absolute. Defaults to {@code <projectDir>/build/reports/refactorfirst}.
+     * Does not apply to the JSON report, which always writes to {@code <projectDir>/.refactorfirst}.
      */
-    private String outputDirectory; // e.g. "target/site"
+    private String outputDirectory; // e.g. "build/rf"
 
     public boolean isShowDetails() {
         return showDetails;
@@ -98,14 +97,5 @@ public class RefactorFirstExtension {
 
     public void setOutputDirectory(String outputDirectory) {
         this.outputDirectory = outputDirectory;
-    }
-
-    // Convenience to resolve output directory to an absolute File
-    File resolveOutputDir(File projectDir) {
-        String out = outputDirectory;
-        if (out == null || out.trim().isEmpty()) {
-            out = "target/site"; // match Maven default location
-        }
-        return new File(projectDir, out);
     }
 }

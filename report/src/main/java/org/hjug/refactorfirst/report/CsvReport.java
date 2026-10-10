@@ -3,6 +3,7 @@ package org.hjug.refactorfirst.report;
 import static org.hjug.refactorfirst.report.ReportWriter.writeReportToDisk;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -71,14 +72,37 @@ public class CsvReport {
         }
 
         String parentOfGitDir = gitDir.getParentFile().getPath();
+        Path gitRootPath;
+        Path projectBaseDirPath;
+        try {
+            gitRootPath = gitDir.getParentFile().toPath().toRealPath();
+            projectBaseDirPath = Path.of(projectBaseDir).toRealPath();
+        } catch (IOException e) {
+            log.error(
+                    "Error resolving project directory {} against Git repository root {}",
+                    projectBaseDir,
+                    parentOfGitDir,
+                    e);
+            throw new RuntimeException(e);
+        }
+
         log.info("Project Base Dir: {} ", projectBaseDir);
         log.info("Parent of Git Dir: {}", parentOfGitDir);
 
-        if (!projectBaseDir.equals(parentOfGitDir)) {
-            log.warn("Project Base Directory does not match Git Parent Directory");
-            contentBuilder.append("Project Base Directory does not match Git Parent Directory.  "
-                    + "Please refer to the report at the root of the site directory.");
+        if (!projectBaseDirPath.startsWith(gitRootPath)) {
+            log.warn("Project Base Directory {} is not within Git repository root {}", projectBaseDir, parentOfGitDir);
+            contentBuilder.append("Project Base Directory is not within Git repository root "
+                    + parentOfGitDir
+                    + ".  Please refer to the report at the root of the site directory.");
+            writeReportToDisk(outputDirectory, filename, contentBuilder.toString());
             return;
+        }
+
+        if (!projectBaseDirPath.equals(gitRootPath)) {
+            log.info(
+                    "Project Base Directory {} is beneath the Git repository root; "
+                            + "analyzing sources within the project directory only.",
+                    projectBaseDir);
         }
 
         // actual calcualte
