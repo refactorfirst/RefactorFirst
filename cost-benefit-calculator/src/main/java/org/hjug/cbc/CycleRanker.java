@@ -10,6 +10,7 @@ import org.hjug.dsm.CircularReferenceChecker;
 import org.hjug.graphbuilder.CodebaseGraphDTO;
 import org.hjug.graphbuilder.CompositeGraphBuilder;
 import org.hjug.graphbuilder.GraphBuilderConfig;
+import org.hjug.graphbuilder.VertexInfo;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.AsSubgraph;
 import org.jgrapht.graph.DefaultWeightedEdge;
@@ -63,7 +64,7 @@ public class CycleRanker {
         return codebaseGraphDTO;
     }
 
-    public List<RankedCycle> rankCycles(Graph<String, DefaultWeightedEdge> graph) {
+    public List<RankedCycle> rankCycles(Graph<VertexInfo, DefaultWeightedEdge> graph) {
         List<RankedCycle> rankedCycles;
         try {
             rankedCycles = new ArrayList<>(identifyRankedCycles(graph));
@@ -75,20 +76,24 @@ public class CycleRanker {
         return rankedCycles;
     }
 
-    private List<RankedCycle> identifyRankedCycles(Graph<String, DefaultWeightedEdge> classReferencesGraph)
+    private List<RankedCycle> identifyRankedCycles(Graph<VertexInfo, DefaultWeightedEdge> classReferencesGraph)
             throws IOException {
         List<RankedCycle> rankedCycles = new ArrayList<>();
-        CircularReferenceChecker<String, DefaultWeightedEdge> circularReferenceChecker =
+        CircularReferenceChecker<VertexInfo, DefaultWeightedEdge> circularReferenceChecker =
                 new CircularReferenceChecker<>();
-        Map<String, AsSubgraph<String, DefaultWeightedEdge>> cycles =
+        Map<VertexInfo, AsSubgraph<VertexInfo, DefaultWeightedEdge>> cycles =
                 circularReferenceChecker.getCycles(classReferencesGraph);
         cycles.forEach((vertex, subGraph) -> {
             List<CycleNode> cycleNodes = subGraph.vertexSet().stream()
-                    .map(classInCycle -> new CycleNode(classInCycle, getClassRepoPath(classInCycle)))
+                    .map(classInCycle ->
+                            new CycleNode(classInCycle.getName(), getClassRepoPath(classInCycle.getName())))
                     //                        .peek(cycleNode -> log.info(cycleNode.toString()))
                     .collect(Collectors.toList());
 
-            rankedCycles.add(new RankedCycle(vertex, subGraph.vertexSet(), subGraph.edgeSet(), cycleNodes));
+            Set<String> vertexNames =
+                    subGraph.vertexSet().stream().map(VertexInfo::getName).collect(Collectors.toSet());
+
+            rankedCycles.add(new RankedCycle(vertex.getName(), vertexNames, subGraph.edgeSet(), cycleNodes));
         });
 
         return rankedCycles;

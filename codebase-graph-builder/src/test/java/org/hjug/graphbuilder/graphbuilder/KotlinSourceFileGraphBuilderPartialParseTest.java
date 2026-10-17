@@ -8,6 +8,7 @@ import java.nio.file.Path;
 import java.util.Map;
 import org.hjug.graphbuilder.CodebaseGraphDTO;
 import org.hjug.graphbuilder.GraphBuilderConfig;
+import org.hjug.graphbuilder.VertexInfo;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultWeightedEdge;
 import org.junit.jupiter.api.DisplayName;
@@ -59,13 +60,13 @@ class KotlinSourceFileGraphBuilderPartialParseTest {
         CodebaseGraphDTO dto = builder.buildGraph(tempDir.toString(), "", config);
 
         // The classes should be registered despite the ParseError
-        Graph<String, DefaultWeightedEdge> classGraph = dto.getClassReferencesGraph();
+        Graph<VertexInfo, DefaultWeightedEdge> classGraph = dto.getClassReferencesGraph();
 
         assertTrue(
-                classGraph.containsVertex("com.example.parseerror.GameSettings"),
+                classGraph.containsVertex(VertexInfo.forName("com.example.parseerror.GameSettings")),
                 "GameSettings class should be registered despite ParseError");
         assertTrue(
-                classGraph.containsVertex("com.example.parseerror.ReadOnlyGameSettings"),
+                classGraph.containsVertex(VertexInfo.forName("com.example.parseerror.ReadOnlyGameSettings")),
                 "ReadOnlyGameSettings class should be registered despite ParseError");
 
         // Verify the source path mapping is correct
@@ -106,9 +107,11 @@ class KotlinSourceFileGraphBuilderPartialParseTest {
 
         CodebaseGraphDTO dto = builder.buildGraph(tempDir.toString(), "", config);
 
-        Graph<String, DefaultWeightedEdge> classGraph = dto.getClassReferencesGraph();
+        Graph<VertexInfo, DefaultWeightedEdge> classGraph = dto.getClassReferencesGraph();
 
-        assertTrue(classGraph.containsVertex("com.example.normal.NormalClass"), "NormalClass should be registered");
+        assertTrue(
+                classGraph.containsVertex(VertexInfo.forName("com.example.normal.NormalClass")),
+                "NormalClass should be registered");
     }
 
     @DisplayName("ParseError without partial tree is handled gracefully")
@@ -136,7 +139,7 @@ class KotlinSourceFileGraphBuilderPartialParseTest {
         CodebaseGraphDTO dto = builder.buildGraph(tempDir.toString(), "", config);
 
         // The graph might be empty or have no vertices for this file, but shouldn't crash
-        Graph<String, DefaultWeightedEdge> classGraph = dto.getClassReferencesGraph();
+        Graph<VertexInfo, DefaultWeightedEdge> classGraph = dto.getClassReferencesGraph();
         // Just verify it doesn't throw and returns a valid DTO
         assertNotNull(dto);
         assertNotNull(classGraph);
@@ -172,12 +175,17 @@ class KotlinSourceFileGraphBuilderPartialParseTest {
 
         CodebaseGraphDTO dto = builder.buildGraph(tempDir.toString(), "", config);
 
-        Graph<String, DefaultWeightedEdge> classGraph = dto.getClassReferencesGraph();
+        Graph<VertexInfo, DefaultWeightedEdge> classGraph = dto.getClassReferencesGraph();
 
-        assertTrue(classGraph.containsVertex("com.example.multi.FirstClass"), "FirstClass should be registered");
-        assertTrue(classGraph.containsVertex("com.example.multi.SecondClass"), "SecondClass should be registered");
         assertTrue(
-                classGraph.containsVertex("com.example.multi.ThirdDataClass"), "ThirdDataClass should be registered");
+                classGraph.containsVertex(VertexInfo.forName("com.example.multi.FirstClass")),
+                "FirstClass should be registered");
+        assertTrue(
+                classGraph.containsVertex(VertexInfo.forName("com.example.multi.SecondClass")),
+                "SecondClass should be registered");
+        assertTrue(
+                classGraph.containsVertex(VertexInfo.forName("com.example.multi.ThirdDataClass")),
+                "ThirdDataClass should be registered");
 
         // Verify all have source path mappings
         Map<String, String> pathMapping = dto.getClassToSourceFilePathMapping();

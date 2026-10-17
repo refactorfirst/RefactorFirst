@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import org.hjug.graphbuilder.CodebaseGraphDTO;
 import org.hjug.graphbuilder.GraphBuilderConfig;
+import org.hjug.graphbuilder.VertexInfo;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultWeightedEdge;
 import org.junit.jupiter.api.DisplayName;
@@ -57,13 +58,15 @@ class SourceFileGraphBuilderTestPathExclusionTest {
                 .build();
 
         CodebaseGraphDTO dto = builder.buildGraph(tempDir.toString(), "", config);
-        Graph<String, DefaultWeightedEdge> classGraph = dto.getClassReferencesGraph();
+        Graph<VertexInfo, DefaultWeightedEdge> classGraph = dto.getClassReferencesGraph();
 
         // Main class should be included
-        assertTrue(classGraph.containsVertex("com.example.Main"), "Main class should be in graph");
+        assertTrue(classGraph.containsVertex(VertexInfo.forName("com.example.Main")), "Main class should be in graph");
 
         // Test class should be EXCLUDED (this verifies the fix works)
-        assertFalse(classGraph.containsVertex("com.example.MainTest"), "MainTest class should be excluded from graph");
+        assertFalse(
+                classGraph.containsVertex(VertexInfo.forName("com.example.MainTest")),
+                "MainTest class should be excluded from graph");
     }
 
     @DisplayName("Java builder excludes test files with backslash testSourceDirectory")
@@ -89,11 +92,11 @@ class SourceFileGraphBuilderTestPathExclusionTest {
                 .build();
 
         CodebaseGraphDTO dto = builder.buildGraph(tempDir.toString(), "", config);
-        Graph<String, DefaultWeightedEdge> classGraph = dto.getClassReferencesGraph();
+        Graph<VertexInfo, DefaultWeightedEdge> classGraph = dto.getClassReferencesGraph();
 
-        assertTrue(classGraph.containsVertex("com.example.Main"), "Main class should be in graph");
+        assertTrue(classGraph.containsVertex(VertexInfo.forName("com.example.Main")), "Main class should be in graph");
         assertFalse(
-                classGraph.containsVertex("com.example.MainTest"),
+                classGraph.containsVertex(VertexInfo.forName("com.example.MainTest")),
                 "MainTest class should be excluded with backslash pattern");
     }
 
@@ -116,10 +119,12 @@ class SourceFileGraphBuilderTestPathExclusionTest {
                 .build();
 
         CodebaseGraphDTO dto = builder.buildGraph(tempDir.toString(), "", config);
-        Graph<String, DefaultWeightedEdge> classGraph = dto.getClassReferencesGraph();
+        Graph<VertexInfo, DefaultWeightedEdge> classGraph = dto.getClassReferencesGraph();
 
-        assertTrue(classGraph.containsVertex("com.example.Main"), "Main class should be in graph");
-        assertFalse(classGraph.containsVertex("com.example.MainTest"), "MainTest class should be excluded from graph");
+        assertTrue(classGraph.containsVertex(VertexInfo.forName("com.example.Main")), "Main class should be in graph");
+        assertFalse(
+                classGraph.containsVertex(VertexInfo.forName("com.example.MainTest")),
+                "MainTest class should be excluded from graph");
     }
 
     @DisplayName("Kotlin builder excludes test files with backslash testSourceDirectory")
@@ -141,11 +146,11 @@ class SourceFileGraphBuilderTestPathExclusionTest {
                 .build();
 
         CodebaseGraphDTO dto = builder.buildGraph(tempDir.toString(), "", config);
-        Graph<String, DefaultWeightedEdge> classGraph = dto.getClassReferencesGraph();
+        Graph<VertexInfo, DefaultWeightedEdge> classGraph = dto.getClassReferencesGraph();
 
-        assertTrue(classGraph.containsVertex("com.example.Main"), "Main class should be in graph");
+        assertTrue(classGraph.containsVertex(VertexInfo.forName("com.example.Main")), "Main class should be in graph");
         assertFalse(
-                classGraph.containsVertex("com.example.MainTest"),
+                classGraph.containsVertex(VertexInfo.forName("com.example.MainTest")),
                 "MainTest class should be excluded with backslash pattern");
     }
 
@@ -171,11 +176,11 @@ class SourceFileGraphBuilderTestPathExclusionTest {
                 .build();
 
         CodebaseGraphDTO dto = builder.buildGraph(tempDir.toString(), "", config);
-        Graph<String, DefaultWeightedEdge> classGraph = dto.getClassReferencesGraph();
+        Graph<VertexInfo, DefaultWeightedEdge> classGraph = dto.getClassReferencesGraph();
 
-        assertTrue(classGraph.containsVertex("com.example.Main"), "Main class should be in graph");
+        assertTrue(classGraph.containsVertex(VertexInfo.forName("com.example.Main")), "Main class should be in graph");
         assertTrue(
-                classGraph.containsVertex("com.example.MainTest"),
+                classGraph.containsVertex(VertexInfo.forName("com.example.MainTest")),
                 "MainTest class should be included when excludeTests=false");
     }
 
@@ -198,11 +203,11 @@ class SourceFileGraphBuilderTestPathExclusionTest {
                 .build();
 
         CodebaseGraphDTO dto = builder.buildGraph(tempDir.toString(), "", config);
-        Graph<String, DefaultWeightedEdge> classGraph = dto.getClassReferencesGraph();
+        Graph<VertexInfo, DefaultWeightedEdge> classGraph = dto.getClassReferencesGraph();
 
-        assertTrue(classGraph.containsVertex("com.example.Main"), "Main class should be in graph");
+        assertTrue(classGraph.containsVertex(VertexInfo.forName("com.example.Main")), "Main class should be in graph");
         assertTrue(
-                classGraph.containsVertex("com.example.MainTest"),
+                classGraph.containsVertex(VertexInfo.forName("com.example.MainTest")),
                 "MainTest class should be included when excludeTests=false");
     }
 }

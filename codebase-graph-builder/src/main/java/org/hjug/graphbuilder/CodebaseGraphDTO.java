@@ -22,8 +22,8 @@ import org.jgrapht.graph.DefaultWeightedEdge;
 @ToString
 public class CodebaseGraphDTO {
 
-    private final Graph<String, DefaultWeightedEdge> classReferencesGraph;
-    private final Graph<String, DefaultWeightedEdge> packageReferencesGraph;
+    private final Graph<VertexInfo, DefaultWeightedEdge> classReferencesGraph;
+    private final Graph<VertexInfo, DefaultWeightedEdge> packageReferencesGraph;
     private final Map<DefaultWeightedEdge, Set<DefaultWeightedEdge>> classRelationshipsInPackageRelationship;
     // used for looking up files where classes reside
     private final Map<String, String> classToSourceFilePathMapping;
@@ -35,15 +35,17 @@ public class CodebaseGraphDTO {
      * Creates a new CodebaseGraphDTO.
      *
      * @param classReferencesGraph                    the class reference graph
+     *                                            (vertices are {@link VertexInfo})
      * @param packageReferencesGraph                  the package reference graph
+     *                                            (vertices are {@link VertexInfo})
      * @param classRelationshipsInPackageRelationship the class-to-package relationships
      * @param classToSourceFilePathMapping            the class to source file path mapping
      * @param classDisharmonies                       the list of class disharmonies
      * @param methodDisharmonies                      the list of method disharmonies
      */
     public CodebaseGraphDTO(
-            Graph<String, DefaultWeightedEdge> classReferencesGraph,
-            Graph<String, DefaultWeightedEdge> packageReferencesGraph,
+            Graph<VertexInfo, DefaultWeightedEdge> classReferencesGraph,
+            Graph<VertexInfo, DefaultWeightedEdge> packageReferencesGraph,
             Map<DefaultWeightedEdge, Set<DefaultWeightedEdge>> classRelationshipsInPackageRelationship,
             Map<String, String> classToSourceFilePathMapping,
             List<ClassDisharmony> classDisharmonies,

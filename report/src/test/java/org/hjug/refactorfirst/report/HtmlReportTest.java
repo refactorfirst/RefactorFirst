@@ -8,6 +8,7 @@ import java.util.*;
 import org.hjug.cbc.CycleNode;
 import org.hjug.cbc.RankedCycle;
 import org.hjug.graphbuilder.CodebaseGraphDTO;
+import org.hjug.graphbuilder.VertexInfo;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultDirectedWeightedGraph;
 import org.jgrapht.graph.DefaultWeightedEdge;
@@ -41,18 +42,25 @@ class HtmlReportTest {
     /** Verifies cycle DOT preserves Java source links and edge weights while omitting redundant labels. */
     @Test
     void buildClassCycleDot() {
-        Graph<String, DefaultWeightedEdge> classGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-        classGraph.addVertex("A");
-        classGraph.addVertex("B");
-        classGraph.addVertex("C");
-        classGraph.addEdge("A", "B");
-        classGraph.addEdge("B", "C");
-        classGraph.addEdge("C", "A");
-        classGraph.setEdgeWeight("A", "B", 2);
+        Graph<VertexInfo, DefaultWeightedEdge> classGraph =
+                new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        classGraph.addVertex(VertexInfo.forName("A"));
+        classGraph.addVertex(VertexInfo.forName("B"));
+        classGraph.addVertex(VertexInfo.forName("C"));
+        classGraph.addEdge(VertexInfo.forName("A"), VertexInfo.forName("B"));
+        classGraph.addEdge(VertexInfo.forName("B"), VertexInfo.forName("C"));
+        classGraph.addEdge(VertexInfo.forName("C"), VertexInfo.forName("A"));
+        classGraph.setEdgeWeight(VertexInfo.forName("A"), VertexInfo.forName("B"), 2);
 
         String cycleName = "Test";
         List<CycleNode> cycleNodes = new ArrayList<>();
-        RankedCycle rankedCycle = new RankedCycle(cycleName, classGraph.vertexSet(), classGraph.edgeSet(), cycleNodes);
+        RankedCycle rankedCycle = new RankedCycle(
+                cycleName,
+                classGraph.vertexSet().stream()
+                        .map(VertexInfo::getName)
+                        .collect(java.util.stream.Collectors.toCollection(java.util.LinkedHashSet::new)),
+                classGraph.edgeSet(),
+                cycleNodes);
 
         HtmlReport htmlReport = new HtmlReport();
         CodebaseGraphDTO dto = mock(CodebaseGraphDTO.class);
@@ -82,20 +90,21 @@ class HtmlReportTest {
      */
     @Test
     void isSinkAnonymousOrSyntheticVertex_truthTable() {
-        Graph<String, DefaultWeightedEdge> classGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-        classGraph.addVertex("com.foo.Outer$1");
-        classGraph.addVertex("com.foo.Outer$");
-        classGraph.addVertex("com.foo.Outer$2");
-        classGraph.addVertex("com.foo.Outer$Inner");
-        classGraph.addVertex("<anonymous>");
-        classGraph.addVertex("<anon2>");
-        classGraph.addVertex("com.foo.Named");
+        Graph<VertexInfo, DefaultWeightedEdge> classGraph =
+                new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        classGraph.addVertex(VertexInfo.forName("com.foo.Outer$1"));
+        classGraph.addVertex(VertexInfo.forName("com.foo.Outer$"));
+        classGraph.addVertex(VertexInfo.forName("com.foo.Outer$2"));
+        classGraph.addVertex(VertexInfo.forName("com.foo.Outer$Inner"));
+        classGraph.addVertex(VertexInfo.forName("<anonymous>"));
+        classGraph.addVertex(VertexInfo.forName("<anon2>"));
+        classGraph.addVertex(VertexInfo.forName("com.foo.Named"));
         // give the "active" vertices an outgoing edge
-        classGraph.addVertex("com.foo.Other");
-        classGraph.addEdge("com.foo.Outer$1", "com.foo.Other");
-        classGraph.addEdge("<anonymous>", "com.foo.Other");
-        classGraph.addEdge("com.foo.Outer$Inner", "com.foo.Other");
-        classGraph.addEdge("com.foo.Named", "com.foo.Other");
+        classGraph.addVertex(VertexInfo.forName("com.foo.Other"));
+        classGraph.addEdge(VertexInfo.forName("com.foo.Outer$1"), VertexInfo.forName("com.foo.Other"));
+        classGraph.addEdge(VertexInfo.forName("<anonymous>"), VertexInfo.forName("com.foo.Other"));
+        classGraph.addEdge(VertexInfo.forName("com.foo.Outer$Inner"), VertexInfo.forName("com.foo.Other"));
+        classGraph.addEdge(VertexInfo.forName("com.foo.Named"), VertexInfo.forName("com.foo.Other"));
 
         // sinks (outDegreeOf == 0) and anonymous/synthetic -> suppressed
         assertTrue(HtmlReport.isSinkAnonymousOrSyntheticVertex(classGraph, "com.foo.Outer$2"), "Outer$2 numeric sink");
@@ -129,22 +138,29 @@ class HtmlReportTest {
      */
     @Test
     void buildClassCycleDot_rendersAnonymousAndSyntheticVertices() {
-        Graph<String, DefaultWeightedEdge> classGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-        classGraph.addVertex("com.example.Outer");
-        classGraph.addVertex("com.example.Outer$1"); // active (outgoing edge)
-        classGraph.addVertex("com.example.Outer$2"); // sink (no outgoing edge)
-        classGraph.addVertex("com.example.Other");
-        classGraph.addVertex("<anonymous>"); // active (outgoing edge)
-        classGraph.addVertex("<anonSink>"); // sink
+        Graph<VertexInfo, DefaultWeightedEdge> classGraph =
+                new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        classGraph.addVertex(VertexInfo.forName("com.example.Outer"));
+        classGraph.addVertex(VertexInfo.forName("com.example.Outer$1")); // active (outgoing edge)
+        classGraph.addVertex(VertexInfo.forName("com.example.Outer$2")); // sink (no outgoing edge)
+        classGraph.addVertex(VertexInfo.forName("com.example.Other"));
+        classGraph.addVertex(VertexInfo.forName("<anonymous>")); // active (outgoing edge)
+        classGraph.addVertex(VertexInfo.forName("<anonSink>")); // sink
         // wire a cycle: Outer -> Outer$1 -> Other -> Outer; anonymous -> Outer; Outer -> anonymous
-        classGraph.addEdge("com.example.Outer", "com.example.Outer$1");
-        classGraph.addEdge("com.example.Outer$1", "com.example.Other");
-        classGraph.addEdge("com.example.Other", "com.example.Outer");
-        classGraph.addEdge("com.example.Outer", "<anonymous>");
-        classGraph.addEdge("<anonymous>", "com.example.Outer");
+        classGraph.addEdge(VertexInfo.forName("com.example.Outer"), VertexInfo.forName("com.example.Outer$1"));
+        classGraph.addEdge(VertexInfo.forName("com.example.Outer$1"), VertexInfo.forName("com.example.Other"));
+        classGraph.addEdge(VertexInfo.forName("com.example.Other"), VertexInfo.forName("com.example.Outer"));
+        classGraph.addEdge(VertexInfo.forName("com.example.Outer"), VertexInfo.forName("<anonymous>"));
+        classGraph.addEdge(VertexInfo.forName("<anonymous>"), VertexInfo.forName("com.example.Outer"));
 
         List<CycleNode> cycleNodes = new ArrayList<>();
-        RankedCycle rankedCycle = new RankedCycle("Cycle", classGraph.vertexSet(), classGraph.edgeSet(), cycleNodes);
+        RankedCycle rankedCycle = new RankedCycle(
+                "Cycle",
+                classGraph.vertexSet().stream()
+                        .map(VertexInfo::getName)
+                        .collect(java.util.stream.Collectors.toCollection(java.util.LinkedHashSet::new)),
+                classGraph.edgeSet(),
+                cycleNodes);
 
         HtmlReport htmlReport = new HtmlReport();
         CodebaseGraphDTO dto = mock(CodebaseGraphDTO.class);
@@ -201,20 +217,33 @@ class HtmlReportTest {
      */
     @Test
     void buildClassCycleDot_rendersKotlinAnonymousWithEnclosingSourceFileName() {
-        Graph<String, DefaultWeightedEdge> classGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-        classGraph.addVertex("dev.DeveloperWASDControl");
+        Graph<VertexInfo, DefaultWeightedEdge> classGraph =
+                new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        classGraph.addVertex(VertexInfo.forName("dev.DeveloperWASDControl"));
         // OpenRewrite attributes Kotlin anonymous objects with an FQN whose trailing segment is
         // the literal "<anonymous>" but whose prefix carries the enclosing class, e.g.
         // "dev.DeveloperWASDControl.<anonymous>". The source-mapping key equals this full FQN.
-        classGraph.addVertex("dev.DeveloperWASDControl.<anonymous>");
-        classGraph.addVertex("com.almasb.fxgl.app.GameApplication");
+        classGraph.addVertex(VertexInfo.forName("dev.DeveloperWASDControl.<anonymous>"));
+        classGraph.addVertex(VertexInfo.forName("com.almasb.fxgl.app.GameApplication"));
         // anonymous depends on GameApplication; DeveloperWASDControl depends on anonymous -> cycle
-        classGraph.addEdge("dev.DeveloperWASDControl.<anonymous>", "com.almasb.fxgl.app.GameApplication");
-        classGraph.addEdge("dev.DeveloperWASDControl", "dev.DeveloperWASDControl.<anonymous>");
-        classGraph.addEdge("com.almasb.fxgl.app.GameApplication", "dev.DeveloperWASDControl");
+        classGraph.addEdge(
+                VertexInfo.forName("dev.DeveloperWASDControl.<anonymous>"),
+                VertexInfo.forName("com.almasb.fxgl.app.GameApplication"));
+        classGraph.addEdge(
+                VertexInfo.forName("dev.DeveloperWASDControl"),
+                VertexInfo.forName("dev.DeveloperWASDControl.<anonymous>"));
+        classGraph.addEdge(
+                VertexInfo.forName("com.almasb.fxgl.app.GameApplication"),
+                VertexInfo.forName("dev.DeveloperWASDControl"));
 
         List<CycleNode> cycleNodes = new ArrayList<>();
-        RankedCycle rankedCycle = new RankedCycle("Cycle", classGraph.vertexSet(), classGraph.edgeSet(), cycleNodes);
+        RankedCycle rankedCycle = new RankedCycle(
+                "Cycle",
+                classGraph.vertexSet().stream()
+                        .map(VertexInfo::getName)
+                        .collect(java.util.stream.Collectors.toCollection(java.util.LinkedHashSet::new)),
+                classGraph.edgeSet(),
+                cycleNodes);
 
         HtmlReport htmlReport = new HtmlReport();
         CodebaseGraphDTO dto = mock(CodebaseGraphDTO.class);
@@ -307,12 +336,12 @@ class HtmlReportTest {
 
     @Test
     void buildPackageGraphDot_usesDistinctIdsAndEscapesRawScriptContext() {
-        Graph<String, DefaultWeightedEdge> graph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        Graph<VertexInfo, DefaultWeightedEdge> graph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
         String dotted = "1.a.b";
         String underscored = "1.a_b\\name</script>";
-        graph.addVertex(dotted);
-        graph.addVertex(underscored);
-        graph.addEdge(dotted, underscored);
+        graph.addVertex(VertexInfo.forName(dotted));
+        graph.addVertex(VertexInfo.forName(underscored));
+        graph.addEdge(VertexInfo.forName(dotted), VertexInfo.forName(underscored));
 
         String dot = new HtmlReport().buildPackageGraphDot(graph, "", null);
 
@@ -340,9 +369,10 @@ class HtmlReportTest {
         String pixel = "com.almasb.fxgl.texture.Pixel";
 
         // Create a graph with only one Pixel class
-        Graph<String, DefaultWeightedEdge> classGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-        classGraph.addVertex("com.almasb.fxgl.texture.Pixel");
-        classGraph.addVertex("com.almasb.fxgl.texture.Texture");
+        Graph<VertexInfo, DefaultWeightedEdge> classGraph =
+                new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        classGraph.addVertex(VertexInfo.forName("com.almasb.fxgl.texture.Pixel"));
+        classGraph.addVertex(VertexInfo.forName("com.almasb.fxgl.texture.Texture"));
 
         String nodeId = htmlReport.renderSafeNodeId(pixel, classGraph);
 
@@ -361,10 +391,11 @@ class HtmlReportTest {
         String pixel2 = "com.almasb.fxgl.texture.Pixel";
 
         // Create a graph with both Pixel classes
-        Graph<String, DefaultWeightedEdge> classGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-        classGraph.addVertex("com.almasb.fxgl.app.scene.Pixel");
-        classGraph.addVertex("com.almasb.fxgl.texture.Pixel");
-        classGraph.addVertex("com.almasb.fxgl.texture.Texture");
+        Graph<VertexInfo, DefaultWeightedEdge> classGraph =
+                new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        classGraph.addVertex(VertexInfo.forName("com.almasb.fxgl.app.scene.Pixel"));
+        classGraph.addVertex(VertexInfo.forName("com.almasb.fxgl.texture.Pixel"));
+        classGraph.addVertex(VertexInfo.forName("com.almasb.fxgl.texture.Texture"));
 
         String nodeId1 = htmlReport.renderSafeNodeId("com.almasb.fxgl.app.scene.Pixel", classGraph);
         String nodeId2 = htmlReport.renderSafeNodeId("com.almasb.fxgl.texture.Pixel", classGraph);
@@ -383,9 +414,10 @@ class HtmlReportTest {
     void renderSafeNodeId_withGraphContext_innerClassUsesFqn() {
         HtmlReport htmlReport = new HtmlReport();
 
-        Graph<String, DefaultWeightedEdge> classGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-        classGraph.addVertex("com.example.Outer$Inner");
-        classGraph.addVertex("com.example.Outer");
+        Graph<VertexInfo, DefaultWeightedEdge> classGraph =
+                new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        classGraph.addVertex(VertexInfo.forName("com.example.Outer$Inner"));
+        classGraph.addVertex(VertexInfo.forName("com.example.Outer"));
 
         String nodeId = htmlReport.renderSafeNodeId("com.example.Outer$Inner", classGraph);
 
@@ -401,8 +433,9 @@ class HtmlReportTest {
     void renderSafeNodeId_withGraphContext_anonymousUsesSpecialEncoding() {
         HtmlReport htmlReport = new HtmlReport();
 
-        Graph<String, DefaultWeightedEdge> classGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-        classGraph.addVertex("<anonymous>");
+        Graph<VertexInfo, DefaultWeightedEdge> classGraph =
+                new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        classGraph.addVertex(VertexInfo.forName("<anonymous>"));
 
         String nodeId = htmlReport.renderSafeNodeId("<anonymous>", classGraph);
 
@@ -417,8 +450,9 @@ class HtmlReportTest {
     void renderSafeNodeId_withGraphContext_anonymousWithPrefixUsesFqn() {
         HtmlReport htmlReport = new HtmlReport();
 
-        Graph<String, DefaultWeightedEdge> classGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-        classGraph.addVertex("dev.DeveloperWASDControl.<anonymous>");
+        Graph<VertexInfo, DefaultWeightedEdge> classGraph =
+                new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        classGraph.addVertex(VertexInfo.forName("dev.DeveloperWASDControl.<anonymous>"));
 
         String nodeId = htmlReport.renderSafeNodeId("dev.DeveloperWASDControl.<anonymous>", classGraph);
 

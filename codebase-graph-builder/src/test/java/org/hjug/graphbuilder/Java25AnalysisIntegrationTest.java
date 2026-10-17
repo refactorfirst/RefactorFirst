@@ -37,7 +37,8 @@ class Java25AnalysisIntegrationTest {
         CodebaseGraphDTO dto = new CompositeGraphBuilder().getCodebaseGraphDTO(srcDirectory.getAbsolutePath(), config);
 
         assertTrue(
-                dto.getClassReferencesGraph().containsVertex("com.example.java25.FlexibleConstructorBody"),
+                dto.getClassReferencesGraph()
+                        .containsVertex(VertexInfo.forName("com.example.java25.FlexibleConstructorBody")),
                 "Java 25 fixture class must be a vertex in the class graph. Vertices: "
                         + dto.getClassReferencesGraph().vertexSet());
         assertTrue(

@@ -12,6 +12,7 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.hjug.git.ScmLogInfo;
 import org.hjug.graphbuilder.CodebaseGraphDTO;
+import org.hjug.graphbuilder.VertexInfo;
 import org.hjug.metrics.Disharmony;
 import org.jetbrains.annotations.NotNull;
 import org.jgrapht.graph.AsSubgraph;
@@ -125,20 +126,20 @@ class CostBenefitCalculatorTest {
         git.add().addFilepattern(".").call();
         git.commit().setMessage("initial commit").call();
 
-        SimpleDirectedWeightedGraph<String, DefaultWeightedEdge> classGraph =
+        SimpleDirectedWeightedGraph<VertexInfo, DefaultWeightedEdge> classGraph =
                 new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
 
-        classGraph.addVertex("ClassA");
-        classGraph.addVertex("ClassB");
-        classGraph.addVertex("ClassC");
-        classGraph.addVertex("ClassD");
-        classGraph.addVertex("ClassE");
-        classGraph.addVertex("ClassF");
+        classGraph.addVertex(VertexInfo.forName("ClassA"));
+        classGraph.addVertex(VertexInfo.forName("ClassB"));
+        classGraph.addVertex(VertexInfo.forName("ClassC"));
+        classGraph.addVertex(VertexInfo.forName("ClassD"));
+        classGraph.addVertex(VertexInfo.forName("ClassE"));
+        classGraph.addVertex(VertexInfo.forName("ClassF"));
 
-        DefaultWeightedEdge edge1 = classGraph.addEdge("ClassA", "ClassB");
+        DefaultWeightedEdge edge1 = classGraph.addEdge(VertexInfo.forName("ClassA"), VertexInfo.forName("ClassB"));
         classGraph.setEdgeWeight(edge1, 4);
 
-        DefaultWeightedEdge edge2 = classGraph.addEdge("ClassC", "ClassD");
+        DefaultWeightedEdge edge2 = classGraph.addEdge(VertexInfo.forName("ClassC"), VertexInfo.forName("ClassD"));
         classGraph.setEdgeWeight(edge2, 2);
 
         Map<DefaultWeightedEdge, CycleNode> edgeSourceNodeInfos = new HashMap<>();
@@ -153,7 +154,8 @@ class CostBenefitCalculatorTest {
         edgeToRemoveCycleCounts.put(edge1, 5);
         edgeToRemoveCycleCounts.put(edge2, 3);
 
-        Set<String> vertexesToRemove = new HashSet<>(Arrays.asList("ClassA", "ClassD"));
+        Set<VertexInfo> vertexesToRemove =
+                new HashSet<>(Arrays.asList(VertexInfo.forName("ClassA"), VertexInfo.forName("ClassD")));
 
         ScmLogInfo scmLogInfo1 = new ScmLogInfo(hudsonPath + "ClassA.java", null, 1, 2, 3);
         scmLogInfo1.setChangePronenessRank(4);
@@ -202,17 +204,17 @@ class CostBenefitCalculatorTest {
         git.add().addFilepattern(".").call();
         git.commit().setMessage("initial commit").call();
 
-        SimpleDirectedWeightedGraph<String, DefaultWeightedEdge> classGraph =
+        SimpleDirectedWeightedGraph<VertexInfo, DefaultWeightedEdge> classGraph =
                 new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
 
-        classGraph.addVertex("Alpha");
-        classGraph.addVertex("Beta");
-        classGraph.addVertex("Gamma");
+        classGraph.addVertex(VertexInfo.forName("Alpha"));
+        classGraph.addVertex(VertexInfo.forName("Beta"));
+        classGraph.addVertex(VertexInfo.forName("Gamma"));
 
-        DefaultWeightedEdge edge1 = classGraph.addEdge("Alpha", "Beta");
+        DefaultWeightedEdge edge1 = classGraph.addEdge(VertexInfo.forName("Alpha"), VertexInfo.forName("Beta"));
         classGraph.setEdgeWeight(edge1, 3);
 
-        DefaultWeightedEdge edge2 = classGraph.addEdge("Gamma", "Beta");
+        DefaultWeightedEdge edge2 = classGraph.addEdge(VertexInfo.forName("Gamma"), VertexInfo.forName("Beta"));
         classGraph.setEdgeWeight(edge2, 3);
 
         Map<DefaultWeightedEdge, CycleNode> edgeSourceNodeInfos = new HashMap<>();
@@ -226,7 +228,8 @@ class CostBenefitCalculatorTest {
         edgeToRemoveCycleCounts.put(edge1, 4);
         edgeToRemoveCycleCounts.put(edge2, 4);
 
-        Set<String> vertexesToRemove = new HashSet<>(Arrays.asList("Alpha", "Gamma"));
+        Set<VertexInfo> vertexesToRemove =
+                new HashSet<>(Arrays.asList(VertexInfo.forName("Alpha"), VertexInfo.forName("Gamma")));
 
         ScmLogInfo scmLogInfo1 = new ScmLogInfo(faceletsPath + "Alpha.java", null, 2, 3, 1);
         scmLogInfo1.setChangePronenessRank(2);
@@ -262,32 +265,40 @@ class CostBenefitCalculatorTest {
         git.add().addFilepattern(".").call();
         git.commit().setMessage("initial commit").call();
 
-        SimpleDirectedWeightedGraph<String, DefaultWeightedEdge> packageGraph =
+        SimpleDirectedWeightedGraph<VertexInfo, DefaultWeightedEdge> packageGraph =
                 new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-        packageGraph.addVertex("pkga");
-        packageGraph.addVertex("pkgb");
-        packageGraph.addVertex("pkgc");
-        packageGraph.addVertex("pkgd");
-        packageGraph.addEdge("pkga", "pkgb");
-        packageGraph.addEdge("pkgb", "pkgc");
-        packageGraph.addEdge("pkgc", "pkga");
+        packageGraph.addVertex(VertexInfo.forName("pkga"));
+        packageGraph.addVertex(VertexInfo.forName("pkgb"));
+        packageGraph.addVertex(VertexInfo.forName("pkgc"));
+        packageGraph.addVertex(VertexInfo.forName("pkgd"));
+        packageGraph.addEdge(VertexInfo.forName("pkga"), VertexInfo.forName("pkgb"));
+        packageGraph.addEdge(VertexInfo.forName("pkgb"), VertexInfo.forName("pkgc"));
+        packageGraph.addEdge(VertexInfo.forName("pkgc"), VertexInfo.forName("pkga"));
         // dangling relationship: pkga depends on pkgd, but pkgd is not part of the pkga/pkgb/pkgc cycle
-        packageGraph.addEdge("pkga", "pkgd");
+        packageGraph.addEdge(VertexInfo.forName("pkga"), VertexInfo.forName("pkgd"));
 
-        Map<String, AsSubgraph<String, DefaultWeightedEdge>> packageCycles = new HashMap<>();
-        packageCycles.put("cycle1", new AsSubgraph<>(packageGraph, Set.of("pkga", "pkgb", "pkgc")));
+        Map<VertexInfo, AsSubgraph<VertexInfo, DefaultWeightedEdge>> packageCycles = new HashMap<>();
+        packageCycles.put(
+                VertexInfo.forName("cycle1"),
+                new AsSubgraph<>(
+                        packageGraph,
+                        Set.of(VertexInfo.forName("pkga"), VertexInfo.forName("pkgb"), VertexInfo.forName("pkgc"))));
 
-        SimpleDirectedWeightedGraph<String, DefaultWeightedEdge> classGraph =
+        SimpleDirectedWeightedGraph<VertexInfo, DefaultWeightedEdge> classGraph =
                 new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-        classGraph.addVertex("pkga.Foo");
-        classGraph.addVertex("pkgb.Bar");
-        classGraph.addVertex("pkgc.Baz");
-        classGraph.addVertex("pkgd.Qux");
+        classGraph.addVertex(VertexInfo.forName("pkga.Foo"));
+        classGraph.addVertex(VertexInfo.forName("pkgb.Bar"));
+        classGraph.addVertex(VertexInfo.forName("pkgc.Baz"));
+        classGraph.addVertex(VertexInfo.forName("pkgd.Qux"));
 
-        DefaultWeightedEdge fooToBar = classGraph.addEdge("pkga.Foo", "pkgb.Bar");
-        DefaultWeightedEdge barToBaz = classGraph.addEdge("pkgb.Bar", "pkgc.Baz");
-        DefaultWeightedEdge bazToFoo = classGraph.addEdge("pkgc.Baz", "pkga.Foo");
-        DefaultWeightedEdge fooToQux = classGraph.addEdge("pkga.Foo", "pkgd.Qux");
+        DefaultWeightedEdge fooToBar =
+                classGraph.addEdge(VertexInfo.forName("pkga.Foo"), VertexInfo.forName("pkgb.Bar"));
+        DefaultWeightedEdge barToBaz =
+                classGraph.addEdge(VertexInfo.forName("pkgb.Bar"), VertexInfo.forName("pkgc.Baz"));
+        DefaultWeightedEdge bazToFoo =
+                classGraph.addEdge(VertexInfo.forName("pkgc.Baz"), VertexInfo.forName("pkga.Foo"));
+        DefaultWeightedEdge fooToQux =
+                classGraph.addEdge(VertexInfo.forName("pkga.Foo"), VertexInfo.forName("pkgd.Qux"));
 
         Map<DefaultWeightedEdge, Integer> edgeToRemoveCycleCounts = new HashMap<>();
         edgeToRemoveCycleCounts.put(fooToBar, 1);
@@ -325,31 +336,34 @@ class CostBenefitCalculatorTest {
         git.add().addFilepattern(".").call();
         git.commit().setMessage("initial commit").call();
 
-        SimpleDirectedWeightedGraph<String, DefaultWeightedEdge> packageGraph =
+        SimpleDirectedWeightedGraph<VertexInfo, DefaultWeightedEdge> packageGraph =
                 new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-        packageGraph.addVertex("pkga");
-        packageGraph.addVertex("pkgb");
-        packageGraph.addVertex("pkgc");
-        DefaultWeightedEdge pkgaToPkgb = packageGraph.addEdge("pkga", "pkgb");
-        packageGraph.addEdge("pkgb", "pkgc");
+        packageGraph.addVertex(VertexInfo.forName("pkga"));
+        packageGraph.addVertex(VertexInfo.forName("pkgb"));
+        packageGraph.addVertex(VertexInfo.forName("pkgc"));
+        DefaultWeightedEdge pkgaToPkgb = packageGraph.addEdge(VertexInfo.forName("pkga"), VertexInfo.forName("pkgb"));
+        packageGraph.addEdge(VertexInfo.forName("pkgb"), VertexInfo.forName("pkgc"));
 
         // Only pkga -> pkgb is flagged as a package relationship that needs to be removed
         RankedDisharmony packageEdgeToRemove = new RankedDisharmony("pkga", pkgaToPkgb, 1, 1, false, false, 0, false);
         List<RankedDisharmony> packageRelationshipDisharmonies = List.of(packageEdgeToRemove);
 
-        SimpleDirectedWeightedGraph<String, DefaultWeightedEdge> classGraph =
+        SimpleDirectedWeightedGraph<VertexInfo, DefaultWeightedEdge> classGraph =
                 new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-        classGraph.addVertex("pkga.Foo");
-        classGraph.addVertex("pkgb.Bar");
-        classGraph.addVertex("pkgc.Baz");
-        classGraph.addVertex("pkga.Other");
+        classGraph.addVertex(VertexInfo.forName("pkga.Foo"));
+        classGraph.addVertex(VertexInfo.forName("pkgb.Bar"));
+        classGraph.addVertex(VertexInfo.forName("pkgc.Baz"));
+        classGraph.addVertex(VertexInfo.forName("pkga.Other"));
 
         // matches the removed package relationship pkga -> pkgb
-        DefaultWeightedEdge fooToBar = classGraph.addEdge("pkga.Foo", "pkgb.Bar");
+        DefaultWeightedEdge fooToBar =
+                classGraph.addEdge(VertexInfo.forName("pkga.Foo"), VertexInfo.forName("pkgb.Bar"));
         // corresponds to pkgb -> pkgc, which is not in packageRelationshipDisharmonies
-        DefaultWeightedEdge barToBaz = classGraph.addEdge("pkgb.Bar", "pkgc.Baz");
+        DefaultWeightedEdge barToBaz =
+                classGraph.addEdge(VertexInfo.forName("pkgb.Bar"), VertexInfo.forName("pkgc.Baz"));
         // same-package relationship: no package edge exists at all
-        DefaultWeightedEdge fooToOther = classGraph.addEdge("pkga.Foo", "pkga.Other");
+        DefaultWeightedEdge fooToOther =
+                classGraph.addEdge(VertexInfo.forName("pkga.Foo"), VertexInfo.forName("pkga.Other"));
 
         Map<DefaultWeightedEdge, Integer> edgeToRemoveCycleCounts = new HashMap<>();
         edgeToRemoveCycleCounts.put(fooToBar, 1);

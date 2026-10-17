@@ -26,43 +26,50 @@ class KotlinGraphBuilderTest {
     void parseKotlinSourceDirectoryTest() throws IOException {
         File srcDirectory = new File("src/test/resources/kotlinSrcDirectory");
         CodebaseGraphDTO dto = compositeGraphBuilder.getCodebaseGraphDTO(srcDirectory.getAbsolutePath(), false, "");
-        Graph<String, DefaultWeightedEdge> classReferencesGraph = dto.getClassReferencesGraph();
+        Graph<VertexInfo, DefaultWeightedEdge> classReferencesGraph = dto.getClassReferencesGraph();
         assertNotNull(classReferencesGraph);
         assertEquals(5, classReferencesGraph.vertexSet().size());
         assertEquals(7, classReferencesGraph.edgeSet().size());
-        assertTrue(classReferencesGraph.containsVertex("com.ideacrest.parser.testclasses.A"));
-        assertTrue(classReferencesGraph.containsVertex("com.ideacrest.parser.testclasses.B"));
-        assertTrue(classReferencesGraph.containsVertex("com.ideacrest.parser.testclasses.C"));
-        assertTrue(classReferencesGraph.containsVertex("com.ideacrest.parser.testclasses.D"));
-        assertTrue(classReferencesGraph.containsVertex("com.ideacrest.parser.testclasses.E"));
+        assertTrue(classReferencesGraph.containsVertex(VertexInfo.forName("com.ideacrest.parser.testclasses.A")));
+        assertTrue(classReferencesGraph.containsVertex(VertexInfo.forName("com.ideacrest.parser.testclasses.B")));
+        assertTrue(classReferencesGraph.containsVertex(VertexInfo.forName("com.ideacrest.parser.testclasses.C")));
+        assertTrue(classReferencesGraph.containsVertex(VertexInfo.forName("com.ideacrest.parser.testclasses.D")));
+        assertTrue(classReferencesGraph.containsVertex(VertexInfo.forName("com.ideacrest.parser.testclasses.E")));
         assertTrue(classReferencesGraph.containsEdge(
-                "com.ideacrest.parser.testclasses.A", "com.ideacrest.parser.testclasses.B"));
+                VertexInfo.forName("com.ideacrest.parser.testclasses.A"),
+                VertexInfo.forName("com.ideacrest.parser.testclasses.B")));
         assertTrue(classReferencesGraph.containsEdge(
-                "com.ideacrest.parser.testclasses.B", "com.ideacrest.parser.testclasses.C"));
+                VertexInfo.forName("com.ideacrest.parser.testclasses.B"),
+                VertexInfo.forName("com.ideacrest.parser.testclasses.C")));
         assertTrue(classReferencesGraph.containsEdge(
-                "com.ideacrest.parser.testclasses.C", "com.ideacrest.parser.testclasses.A"));
+                VertexInfo.forName("com.ideacrest.parser.testclasses.C"),
+                VertexInfo.forName("com.ideacrest.parser.testclasses.A")));
         assertTrue(classReferencesGraph.containsEdge(
-                "com.ideacrest.parser.testclasses.C", "com.ideacrest.parser.testclasses.E"));
+                VertexInfo.forName("com.ideacrest.parser.testclasses.C"),
+                VertexInfo.forName("com.ideacrest.parser.testclasses.E")));
         assertTrue(classReferencesGraph.containsEdge(
-                "com.ideacrest.parser.testclasses.D", "com.ideacrest.parser.testclasses.A"));
+                VertexInfo.forName("com.ideacrest.parser.testclasses.D"),
+                VertexInfo.forName("com.ideacrest.parser.testclasses.A")));
         assertTrue(classReferencesGraph.containsEdge(
-                "com.ideacrest.parser.testclasses.D", "com.ideacrest.parser.testclasses.C"));
+                VertexInfo.forName("com.ideacrest.parser.testclasses.D"),
+                VertexInfo.forName("com.ideacrest.parser.testclasses.C")));
         assertTrue(classReferencesGraph.containsEdge(
-                "com.ideacrest.parser.testclasses.E", "com.ideacrest.parser.testclasses.D"));
+                VertexInfo.forName("com.ideacrest.parser.testclasses.E"),
+                VertexInfo.forName("com.ideacrest.parser.testclasses.D")));
 
         // confirm edge weight calculations
         assertEquals(
                 1,
                 getEdgeWeight(
                         classReferencesGraph,
-                        "com.ideacrest.parser.testclasses.A",
-                        "com.ideacrest.parser.testclasses.B"));
+                        VertexInfo.forName("com.ideacrest.parser.testclasses.A"),
+                        VertexInfo.forName("com.ideacrest.parser.testclasses.B")));
         assertEquals(
                 2,
                 getEdgeWeight(
                         classReferencesGraph,
-                        "com.ideacrest.parser.testclasses.E",
-                        "com.ideacrest.parser.testclasses.D"));
+                        VertexInfo.forName("com.ideacrest.parser.testclasses.E"),
+                        VertexInfo.forName("com.ideacrest.parser.testclasses.D")));
     }
 
     @DisplayName("Kotlin class-header dependencies are recorded exactly once.")
@@ -70,14 +77,14 @@ class KotlinGraphBuilderTest {
     void classHeaderDependencyHasWeightOne() throws IOException {
         File srcDirectory = new File("src/test/resources/kotlinClassHeaderSrcDirectory");
         CodebaseGraphDTO dto = compositeGraphBuilder.getCodebaseGraphDTO(srcDirectory.getAbsolutePath(), false, "");
-        Graph<String, DefaultWeightedEdge> classReferencesGraph = dto.getClassReferencesGraph();
+        Graph<VertexInfo, DefaultWeightedEdge> classReferencesGraph = dto.getClassReferencesGraph();
         String source = "com.ideacrest.parser.classheader.HeaderImplementation";
         String target = "com.ideacrest.parser.classheader.HeaderContract";
 
-        assertTrue(classReferencesGraph.containsVertex(source));
-        assertTrue(classReferencesGraph.containsVertex(target));
-        assertTrue(classReferencesGraph.containsEdge(source, target));
-        assertEquals(1.0, getEdgeWeight(classReferencesGraph, source, target));
+        assertTrue(classReferencesGraph.containsVertex(VertexInfo.forName(source)));
+        assertTrue(classReferencesGraph.containsVertex(VertexInfo.forName(target)));
+        assertTrue(classReferencesGraph.containsEdge(VertexInfo.forName(source), VertexInfo.forName(target)));
+        assertEquals(1.0, getEdgeWeight(classReferencesGraph, VertexInfo.forName(source), VertexInfo.forName(target)));
     }
 
     @DisplayName("Kotlin callable references produce edges between caller and target's declaring class.")
@@ -85,15 +92,16 @@ class KotlinGraphBuilderTest {
     void parseKotlinCallableReferenceTest() throws IOException {
         File srcDirectory = new File("src/test/resources/kotlinCallableRefSrcDirectory");
         CodebaseGraphDTO dto = compositeGraphBuilder.getCodebaseGraphDTO(srcDirectory.getAbsolutePath(), false, "");
-        Graph<String, DefaultWeightedEdge> classReferencesGraph = dto.getClassReferencesGraph();
+        Graph<VertexInfo, DefaultWeightedEdge> classReferencesGraph = dto.getClassReferencesGraph();
         assertNotNull(classReferencesGraph);
 
         // Both classes should appear as vertices
         assertTrue(
-                classReferencesGraph.containsVertex("com.ideacrest.parser.callref.CallableRefTarget"),
+                classReferencesGraph.containsVertex(
+                        VertexInfo.forName("com.ideacrest.parser.callref.CallableRefTarget")),
                 "CallableRefTarget should be a graph vertex, vertices: " + classReferencesGraph.vertexSet());
         assertTrue(
-                classReferencesGraph.containsVertex("com.ideacrest.parser.callref.CallableRefUser"),
+                classReferencesGraph.containsVertex(VertexInfo.forName("com.ideacrest.parser.callref.CallableRefUser")),
                 "CallableRefUser should be a graph vertex, vertices: " + classReferencesGraph.vertexSet());
 
         // The two callable references (`CallableRefTarget::alpha` and
@@ -102,7 +110,8 @@ class KotlinGraphBuilderTest {
         // The implementation weight-merges duplicates, so we just require
         // the edge exists and its weight is at least 1.
         boolean edgeExists = classReferencesGraph.containsEdge(
-                "com.ideacrest.parser.callref.CallableRefUser", "com.ideacrest.parser.callref.CallableRefTarget");
+                VertexInfo.forName("com.ideacrest.parser.callref.CallableRefUser"),
+                VertexInfo.forName("com.ideacrest.parser.callref.CallableRefTarget"));
         assertTrue(
                 edgeExists,
                 "CallableRefUser -> CallableRefTarget edge should exist (callable references + .call() invocation), edges: "
@@ -111,15 +120,17 @@ class KotlinGraphBuilderTest {
         if (edgeExists) {
             double weight = getEdgeWeight(
                     classReferencesGraph,
-                    "com.ideacrest.parser.callref.CallableRefUser",
-                    "com.ideacrest.parser.callref.CallableRefTarget");
+                    VertexInfo.forName("com.ideacrest.parser.callref.CallableRefUser"),
+                    VertexInfo.forName("com.ideacrest.parser.callref.CallableRefTarget"));
             assertTrue(
                     weight >= 1.0, "CallableRefUser -> CallableRefTarget edge weight should be >= 1, was: " + weight);
         }
     }
 
     private static double getEdgeWeight(
-            Graph<String, DefaultWeightedEdge> classReferencesGraph, String sourceVertex, String targetVertex) {
+            Graph<VertexInfo, DefaultWeightedEdge> classReferencesGraph,
+            VertexInfo sourceVertex,
+            VertexInfo targetVertex) {
         return classReferencesGraph.getEdgeWeight(classReferencesGraph.getEdge(sourceVertex, targetVertex));
     }
 }

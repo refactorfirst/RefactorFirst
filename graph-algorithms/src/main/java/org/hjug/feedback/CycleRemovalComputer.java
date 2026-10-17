@@ -17,36 +17,36 @@ import org.jgrapht.graph.DefaultWeightedEdge;
 @Slf4j
 public class CycleRemovalComputer {
 
-    public CycleRemovalResult computeCycleRemovalInformation(Graph<String, DefaultWeightedEdge> graph) {
-        Map<String, AsSubgraph<String, DefaultWeightedEdge>> cycles =
-                new CircularReferenceChecker<String, DefaultWeightedEdge>().getCycles(graph);
+    public <V> CycleRemovalResult<V> computeCycleRemovalInformation(Graph<V, DefaultWeightedEdge> graph) {
+        Map<V, AsSubgraph<V, DefaultWeightedEdge>> cycles =
+                new CircularReferenceChecker<V, DefaultWeightedEdge>().getCycles(graph);
         Map<DefaultWeightedEdge, Integer> edgeCycleCounts = new HashMap<>();
-        Set<String> vertexesToRemove = new HashSet<>();
+        Set<V> vertexesToRemove = new HashSet<>();
         Set<DefaultWeightedEdge> edgesToRemove = new HashSet<>();
 
         // Skip vertex and edge removal analysis if there are no cycles
         if (!cycles.isEmpty()) {
             // Identify vertexes to remove
             log.info("Identifying vertexes to remove");
-            EnhancedParameterComputer<String, DefaultWeightedEdge> enhancedParameterComputer =
+            EnhancedParameterComputer<V, DefaultWeightedEdge> enhancedParameterComputer =
                     new EnhancedParameterComputer<>(new SuperTypeToken<>() {});
-            EnhancedParameterComputer.EnhancedParameters<String> parameters =
+            EnhancedParameterComputer.EnhancedParameters<V> parameters =
                     enhancedParameterComputer.computeOptimalParameters(graph, 4);
-            DirectedFeedbackVertexSetSolver<String, DefaultWeightedEdge> vertexSolver =
+            DirectedFeedbackVertexSetSolver<V, DefaultWeightedEdge> vertexSolver =
                     new DirectedFeedbackVertexSetSolver<>(
                             graph, parameters.getModulator(), null, parameters.getEta(), new SuperTypeToken<>() {});
-            DirectedFeedbackVertexSetResult<String> vertexSetResult = vertexSolver.solve(parameters.getK());
+            DirectedFeedbackVertexSetResult<V> vertexSetResult = vertexSolver.solve(parameters.getK());
             vertexesToRemove.addAll(vertexSetResult.getFeedbackVertices());
 
             // Identify edges to remove
             log.info("Identifying edges to remove");
-            PageRankFAS<String, DefaultWeightedEdge> pageRankFAS = new PageRankFAS<>(graph, new SuperTypeToken<>() {});
+            PageRankFAS<V, DefaultWeightedEdge> pageRankFAS = new PageRankFAS<>(graph, new SuperTypeToken<>() {});
             edgesToRemove.addAll(pageRankFAS.computeFeedbackArcSet());
 
             // capture the number of cycles each edge to remove is in
             for (DefaultWeightedEdge edgeToRemove : edgesToRemove) {
                 int cycleCount = 0;
-                for (AsSubgraph<String, DefaultWeightedEdge> cycle : cycles.values()) {
+                for (AsSubgraph<V, DefaultWeightedEdge> cycle : cycles.values()) {
                     if (cycle.containsEdge(edgeToRemove)) {
                         cycleCount++;
                     }

@@ -9,6 +9,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.hjug.graphbuilder.VertexInfo;
 import org.hjug.graphbuilder.metrics.DisharmonyDetector.ClassDisharmony;
 import org.jgrapht.graph.DefaultDirectedWeightedGraph;
 import org.jgrapht.graph.DefaultWeightedEdge;
@@ -51,9 +52,9 @@ class KotlinDisharmonyTest {
                 .build();
         ExecutionContext ctx = new InMemoryExecutionContext(Throwable::printStackTrace);
 
-        DefaultDirectedWeightedGraph<String, DefaultWeightedEdge> classGraph =
+        DefaultDirectedWeightedGraph<VertexInfo, DefaultWeightedEdge> classGraph =
                 new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-        DefaultDirectedWeightedGraph<String, DefaultWeightedEdge> packageGraph =
+        DefaultDirectedWeightedGraph<VertexInfo, DefaultWeightedEdge> packageGraph =
                 new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
 
         GraphMetricsCollector metricsCollector = new GraphMetricsCollector(classGraph, packageGraph);

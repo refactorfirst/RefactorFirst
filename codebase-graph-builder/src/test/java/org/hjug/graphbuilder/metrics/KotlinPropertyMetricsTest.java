@@ -8,6 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.hjug.graphbuilder.VertexInfo;
 import org.jgrapht.graph.DefaultDirectedWeightedGraph;
 import org.jgrapht.graph.DefaultWeightedEdge;
 import org.junit.jupiter.api.DisplayName;
@@ -37,9 +38,9 @@ class KotlinPropertyMetricsTest {
                 .build();
         ExecutionContext ctx = new InMemoryExecutionContext(Throwable::printStackTrace);
 
-        DefaultDirectedWeightedGraph<String, DefaultWeightedEdge> classGraph =
+        DefaultDirectedWeightedGraph<VertexInfo, DefaultWeightedEdge> classGraph =
                 new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-        DefaultDirectedWeightedGraph<String, DefaultWeightedEdge> packageGraph =
+        DefaultDirectedWeightedGraph<VertexInfo, DefaultWeightedEdge> packageGraph =
                 new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
 
         GraphMetricsCollector metricsCollector = new GraphMetricsCollector(classGraph, packageGraph);

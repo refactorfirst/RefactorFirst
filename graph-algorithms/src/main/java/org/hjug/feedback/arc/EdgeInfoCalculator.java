@@ -8,12 +8,12 @@ import org.jgrapht.graph.AsSubgraph;
 import org.jgrapht.graph.DefaultWeightedEdge;
 
 @RequiredArgsConstructor
-public class EdgeInfoCalculator {
+public class EdgeInfoCalculator<V> {
 
-    private final Graph<String, DefaultWeightedEdge> graph;
+    private final Graph<V, DefaultWeightedEdge> graph;
     private final Collection<DefaultWeightedEdge> edgesToRemove;
-    private final Set<String> vertexesToRemove;
-    private final Map<String, AsSubgraph<String, DefaultWeightedEdge>> cycles;
+    private final Set<V> vertexesToRemove;
+    private final Map<V, AsSubgraph<V, DefaultWeightedEdge>> cycles;
 
     public Collection<EdgeInfo> calculateEdgeInformation() {
         List<EdgeInfo> edgeInfos = new ArrayList<>();

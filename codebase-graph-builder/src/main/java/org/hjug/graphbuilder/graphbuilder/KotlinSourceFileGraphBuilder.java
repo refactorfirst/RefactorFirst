@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.hjug.graphbuilder.CodebaseGraphDTO;
 import org.hjug.graphbuilder.GraphBuilderConfig;
 import org.hjug.graphbuilder.GraphDependencyCollector;
+import org.hjug.graphbuilder.VertexInfo;
 import org.hjug.graphbuilder.metrics.GraphMetricsCollector;
 import org.hjug.graphbuilder.metrics.KotlinMetricsCollectingVisitor;
 import org.hjug.graphbuilder.visitor.KotlinDependencyVisitor;
@@ -57,9 +58,9 @@ public class KotlinSourceFileGraphBuilder implements SourceFileGraphBuilder {
 
         ExecutionContext ctx = new InMemoryExecutionContext(e -> log.warn("OpenRewrite parse/visit error", e));
 
-        final Graph<String, DefaultWeightedEdge> classReferencesGraph =
+        final Graph<VertexInfo, DefaultWeightedEdge> classReferencesGraph =
                 new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-        final Graph<String, DefaultWeightedEdge> packageReferencesGraph =
+        final Graph<VertexInfo, DefaultWeightedEdge> packageReferencesGraph =
                 new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
 
         final GraphDependencyCollector dependencyCollector =

@@ -16,6 +16,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.hjug.graphbuilder.CodebaseGraphDTO;
 import org.hjug.graphbuilder.GraphBuilderConfig;
 import org.hjug.graphbuilder.GraphDependencyCollector;
+import org.hjug.graphbuilder.VertexInfo;
+import org.hjug.graphbuilder.VertexInfoHydrator;
 import org.hjug.graphbuilder.metrics.ClassMetrics;
 import org.hjug.graphbuilder.metrics.DisharmonyDetector;
 import org.hjug.graphbuilder.metrics.DisharmonyDetector.ClassDisharmony;
@@ -48,9 +50,9 @@ public class JavaSourceFileGraphBuilder implements SourceFileGraphBuilder {
         JavaParser javaParser = createJavaParser();
         ExecutionContext ctx = new InMemoryExecutionContext(e -> log.warn("OpenRewrite parse/visit error", e));
 
-        final Graph<String, DefaultWeightedEdge> classReferencesGraph =
+        final Graph<VertexInfo, DefaultWeightedEdge> classReferencesGraph =
                 new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-        final Graph<String, DefaultWeightedEdge> packageReferencesGraph =
+        final Graph<VertexInfo, DefaultWeightedEdge> packageReferencesGraph =
                 new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
 
         final GraphDependencyCollector dependencyCollector =
@@ -118,14 +120,18 @@ public class JavaSourceFileGraphBuilder implements SourceFileGraphBuilder {
 
     /** Finalizes collected metrics and assembles the Java codebase graph result. */
     static CodebaseGraphDTO finalizeDto(
-            Graph<String, DefaultWeightedEdge> classReferencesGraph,
-            Graph<String, DefaultWeightedEdge> packageReferencesGraph,
+            Graph<VertexInfo, DefaultWeightedEdge> classReferencesGraph,
+            Graph<VertexInfo, DefaultWeightedEdge> packageReferencesGraph,
             GraphDependencyCollector dependencyCollector,
             Map<String, String> classToSourceFilePathMapping,
             GraphMetricsCollector metricsCollector) {
 
         removeClassesNotInCodebase(dependencyCollector.getPackagesInCodebase(), classReferencesGraph);
         removePackagesNotInCodebase(dependencyCollector.getPackagesInCodebase(), packageReferencesGraph);
+
+        // Populate VertexInfo locations (repo-relative source paths / package
+        // directories) from the canonical mapping before the DTO leaves the builder
+        VertexInfoHydrator.hydrate(classReferencesGraph, packageReferencesGraph, classToSourceFilePathMapping);
 
         dependencyCollector
                 .getClassRelationshipsInPackageRelationship()
@@ -152,11 +158,11 @@ public class JavaSourceFileGraphBuilder implements SourceFileGraphBuilder {
 
     /** Removes graph vertices whose packages were not discovered in the analyzed codebase. */
     static void removeClassesNotInCodebase(
-            Set<String> packagesInCodebase, Graph<String, DefaultWeightedEdge> classReferencesGraph) {
-        Set<String> classesToRemove = new HashSet<>();
-        for (String classFqn : classReferencesGraph.vertexSet()) {
-            if (!packagesInCodebase.contains(getPackage(classFqn))) {
-                classesToRemove.add(classFqn);
+            Set<String> packagesInCodebase, Graph<VertexInfo, DefaultWeightedEdge> classReferencesGraph) {
+        Set<VertexInfo> classesToRemove = new HashSet<>();
+        for (VertexInfo classVertex : classReferencesGraph.vertexSet()) {
+            if (!packagesInCodebase.contains(getPackage(classVertex.getName()))) {
+                classesToRemove.add(classVertex);
             }
         }
         classReferencesGraph.removeAllVertices(classesToRemove);
@@ -164,11 +170,11 @@ public class JavaSourceFileGraphBuilder implements SourceFileGraphBuilder {
 
     /** Removes package vertices that were not discovered in the analyzed codebase. */
     static void removePackagesNotInCodebase(
-            Set<String> packagesInCodebase, Graph<String, DefaultWeightedEdge> packageReferencesGraph) {
-        Set<String> packagesToRemove = new HashSet<>();
-        for (String aPackage : packageReferencesGraph.vertexSet()) {
-            if (!packagesInCodebase.contains(aPackage)) {
-                packagesToRemove.add(aPackage);
+            Set<String> packagesInCodebase, Graph<VertexInfo, DefaultWeightedEdge> packageReferencesGraph) {
+        Set<VertexInfo> packagesToRemove = new HashSet<>();
+        for (VertexInfo packageVertex : packageReferencesGraph.vertexSet()) {
+            if (!packagesInCodebase.contains(packageVertex.getName())) {
+                packagesToRemove.add(packageVertex);
             }
         }
         packageReferencesGraph.removeAllVertices(packagesToRemove);

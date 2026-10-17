@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.hjug.graphbuilder.DependencyCollector;
 import org.hjug.graphbuilder.GraphDependencyCollector;
+import org.hjug.graphbuilder.VertexInfo;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultDirectedWeightedGraph;
 import org.jgrapht.graph.DefaultWeightedEdge;
@@ -49,18 +50,20 @@ class JavaVisitorTest {
         javaParser.parse(list, Path.of(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> visitor.visit(cu, ctx));
     }
 
-    private static Graph<String, DefaultWeightedEdge> buildAndVisit(String pathString) throws IOException {
-        Graph<String, DefaultWeightedEdge> classGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-        Graph<String, DefaultWeightedEdge> pkgGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+    private static Graph<VertexInfo, DefaultWeightedEdge> buildAndVisit(String pathString) throws IOException {
+        Graph<VertexInfo, DefaultWeightedEdge> classGraph =
+                new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        Graph<VertexInfo, DefaultWeightedEdge> pkgGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
         GraphDependencyCollector collector = new GraphDependencyCollector(classGraph, pkgGraph);
         JavaVisitor<ExecutionContext> visitor = new JavaVisitor<>(repoFrom(pathString), "", collector);
         visitAll(visitor, pathString);
         return classGraph;
     }
 
-    private static Graph<String, DefaultWeightedEdge> buildAndVisitSimple(String pathString) throws IOException {
-        Graph<String, DefaultWeightedEdge> classGraph = new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-        Graph<String, DefaultWeightedEdge> pkgGraph = new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+    private static Graph<VertexInfo, DefaultWeightedEdge> buildAndVisitSimple(String pathString) throws IOException {
+        Graph<VertexInfo, DefaultWeightedEdge> classGraph =
+                new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        Graph<VertexInfo, DefaultWeightedEdge> pkgGraph = new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
         GraphDependencyCollector collector = new GraphDependencyCollector(classGraph, pkgGraph);
         JavaVisitor<ExecutionContext> visitor = new JavaVisitor<>(repoFrom(pathString), "", collector);
         visitAll(visitor, pathString);
@@ -135,60 +138,64 @@ class JavaVisitorTest {
 
     @Test
     void visitClasses_capturesAllExpectedVertices() throws IOException {
-        Graph<String, DefaultWeightedEdge> graph = buildAndVisit(TESTCLASSES);
-        assertTrue(graph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.A"));
-        assertTrue(graph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.B"));
-        assertTrue(graph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.C"));
-        assertTrue(graph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.D"));
-        assertTrue(graph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.E"));
-        assertTrue(graph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.F"));
-        assertTrue(graph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.G"));
-        assertTrue(graph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.MyAnnotation"));
+        Graph<VertexInfo, DefaultWeightedEdge> graph = buildAndVisit(TESTCLASSES);
+        assertTrue(graph.containsVertex(VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.A")));
+        assertTrue(graph.containsVertex(VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.B")));
+        assertTrue(graph.containsVertex(VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.C")));
+        assertTrue(graph.containsVertex(VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.D")));
+        assertTrue(graph.containsVertex(VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.E")));
+        assertTrue(graph.containsVertex(VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.F")));
+        assertTrue(graph.containsVertex(VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.G")));
+        assertTrue(graph.containsVertex(VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.MyAnnotation")));
     }
 
     @Test
     void visitMethodDeclarations_capturesMethodOwnerVertex() throws IOException {
-        Graph<String, DefaultWeightedEdge> graph = buildAndVisit(TESTCLASSES);
-        assertTrue(graph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.A"));
+        Graph<VertexInfo, DefaultWeightedEdge> graph = buildAndVisit(TESTCLASSES);
+        assertTrue(graph.containsVertex(VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.A")));
     }
 
     @Test
     void visitLambdaBodiesRecursively() throws IOException {
-        Graph<String, DefaultWeightedEdge> graph = buildAndVisit(LAMBDA);
+        Graph<VertexInfo, DefaultWeightedEdge> graph = buildAndVisit(LAMBDA);
 
         assertTrue(
-                graph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.lambda.LambdaTestClass"),
+                graph.containsVertex(
+                        VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.lambda.LambdaTestClass")),
                 "LambdaTestClass should be in the graph");
         assertTrue(
-                graph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.lambda.HelperClass"),
+                graph.containsVertex(
+                        VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.lambda.HelperClass")),
                 "HelperClass should be captured from lambda body method invocation");
         assertTrue(
                 graph.containsEdge(
-                        "org.hjug.graphbuilder.visitor.testclasses.lambda.LambdaTestClass",
-                        "org.hjug.graphbuilder.visitor.testclasses.lambda.HelperClass"),
+                        VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.lambda.LambdaTestClass"),
+                        VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.lambda.HelperClass")),
                 "Should have edge from LambdaTestClass to HelperClass");
         assertTrue(
-                graph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.lambda.DataProcessor"),
+                graph.containsVertex(
+                        VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.lambda.DataProcessor")),
                 "DataProcessor should be captured from new class instantiation in lambda body");
         assertTrue(
                 graph.containsEdge(
-                        "org.hjug.graphbuilder.visitor.testclasses.lambda.LambdaTestClass",
-                        "org.hjug.graphbuilder.visitor.testclasses.lambda.DataProcessor"),
+                        VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.lambda.LambdaTestClass"),
+                        VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.lambda.DataProcessor")),
                 "Should have edge from LambdaTestClass to DataProcessor from lambda body");
         assertTrue(
-                graph.containsVertex("java.lang.StringBuilder"),
+                graph.containsVertex(VertexInfo.forName("java.lang.StringBuilder")),
                 "StringBuilder should be captured from new class instantiation in lambda body");
         assertTrue(
                 graph.containsEdge(
-                        "org.hjug.graphbuilder.visitor.testclasses.lambda.LambdaTestClass", "java.lang.StringBuilder"),
+                        VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.lambda.LambdaTestClass"),
+                        VertexInfo.forName("java.lang.StringBuilder")),
                 "Should have edge from LambdaTestClass to StringBuilder from lambda body");
         assertTrue(
-                graph.containsVertex("java.lang.String"),
+                graph.containsVertex(VertexInfo.forName("java.lang.String")),
                 "String should be captured from method invocations in lambda body");
 
         DefaultWeightedEdge edge = graph.getEdge(
-                "org.hjug.graphbuilder.visitor.testclasses.lambda.LambdaTestClass",
-                "org.hjug.graphbuilder.visitor.testclasses.lambda.DataProcessor");
+                VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.lambda.LambdaTestClass"),
+                VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.lambda.DataProcessor"));
         assertTrue(
                 graph.getEdgeWeight(edge) >= 2.0,
                 "Edge weight should reflect multiple uses of DataProcessor in lambda bodies");
@@ -196,38 +203,41 @@ class JavaVisitorTest {
 
     @Test
     void visitNestedLambdaBodiesRecursively() throws IOException {
-        Graph<String, DefaultWeightedEdge> graph = buildAndVisit(LAMBDA);
+        Graph<VertexInfo, DefaultWeightedEdge> graph = buildAndVisit(LAMBDA);
 
         assertTrue(
-                graph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.lambda.NestedLambdaTestClass"),
+                graph.containsVertex(
+                        VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.lambda.NestedLambdaTestClass")),
                 "NestedLambdaTestClass should be in the graph");
         assertTrue(
-                graph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.lambda.DataProcessor"),
+                graph.containsVertex(
+                        VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.lambda.DataProcessor")),
                 "DataProcessor should be captured from inner nested lambda body");
         assertTrue(
                 graph.containsEdge(
-                        "org.hjug.graphbuilder.visitor.testclasses.lambda.NestedLambdaTestClass",
-                        "org.hjug.graphbuilder.visitor.testclasses.lambda.DataProcessor"),
+                        VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.lambda.NestedLambdaTestClass"),
+                        VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.lambda.DataProcessor")),
                 "Should have edge from NestedLambdaTestClass to DataProcessor from nested lambda");
         assertTrue(
-                graph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.lambda.HelperClass"),
+                graph.containsVertex(
+                        VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.lambda.HelperClass")),
                 "HelperClass should be captured from nested lambda method invocation");
         assertTrue(
                 graph.containsEdge(
-                        "org.hjug.graphbuilder.visitor.testclasses.lambda.NestedLambdaTestClass",
-                        "org.hjug.graphbuilder.visitor.testclasses.lambda.HelperClass"),
+                        VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.lambda.NestedLambdaTestClass"),
+                        VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.lambda.HelperClass")),
                 "Should have edge from NestedLambdaTestClass to HelperClass from nested lambda");
 
         DefaultWeightedEdge dataProcessorEdge = graph.getEdge(
-                "org.hjug.graphbuilder.visitor.testclasses.lambda.NestedLambdaTestClass",
-                "org.hjug.graphbuilder.visitor.testclasses.lambda.DataProcessor");
+                VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.lambda.NestedLambdaTestClass"),
+                VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.lambda.DataProcessor"));
         assertTrue(
                 graph.getEdgeWeight(dataProcessorEdge) >= 2.0,
                 "Edge weight should reflect multiple uses of DataProcessor in nested lambda bodies");
 
         DefaultWeightedEdge helperEdge = graph.getEdge(
-                "org.hjug.graphbuilder.visitor.testclasses.lambda.NestedLambdaTestClass",
-                "org.hjug.graphbuilder.visitor.testclasses.lambda.HelperClass");
+                VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.lambda.NestedLambdaTestClass"),
+                VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.lambda.HelperClass"));
         assertTrue(
                 graph.getEdgeWeight(helperEdge) >= 2.0,
                 "Edge weight should reflect HelperClass usage in nested lambda blocks");
@@ -235,204 +245,228 @@ class JavaVisitorTest {
 
     @Test
     void visitMethodInvocations() throws IOException {
-        Graph<String, DefaultWeightedEdge> graph = buildAndVisitSimple(METHOD_INVOCATION);
+        Graph<VertexInfo, DefaultWeightedEdge> graph = buildAndVisitSimple(METHOD_INVOCATION);
 
-        assertTrue(graph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.methodInvocation.A"));
-        assertTrue(graph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.methodInvocation.B"));
-        assertTrue(graph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.methodInvocation.C"));
+        assertTrue(graph.containsVertex(
+                VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.methodInvocation.A")));
+        assertTrue(graph.containsVertex(
+                VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.methodInvocation.B")));
+        assertTrue(graph.containsVertex(
+                VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.methodInvocation.C")));
         assertEquals(
                 3,
                 graph.getEdgeWeight(graph.getEdge(
-                        "org.hjug.graphbuilder.visitor.testclasses.methodInvocation.A",
-                        "org.hjug.graphbuilder.visitor.testclasses.methodInvocation.B")));
+                        VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.methodInvocation.A"),
+                        VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.methodInvocation.B"))));
         assertEquals(
                 3,
                 graph.getEdgeWeight(graph.getEdge(
-                        "org.hjug.graphbuilder.visitor.testclasses.methodInvocation.A",
-                        "org.hjug.graphbuilder.visitor.testclasses.methodInvocation.C")));
+                        VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.methodInvocation.A"),
+                        VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.methodInvocation.C"))));
     }
 
     @Test
     void visitNewClass() throws IOException {
-        Graph<String, DefaultWeightedEdge> graph = buildAndVisitSimple(NEW_CLASS);
+        Graph<VertexInfo, DefaultWeightedEdge> graph = buildAndVisitSimple(NEW_CLASS);
 
-        assertTrue(graph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.newClass.A"));
-        assertTrue(graph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.newClass.B"));
-        assertTrue(graph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.newClass.C"));
+        assertTrue(graph.containsVertex(VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.newClass.A")));
+        assertTrue(graph.containsVertex(VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.newClass.B")));
+        assertTrue(graph.containsVertex(VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.newClass.C")));
         assertEquals(
                 6,
                 graph.getEdgeWeight(graph.getEdge(
-                        "org.hjug.graphbuilder.visitor.testclasses.newClass.A",
-                        "org.hjug.graphbuilder.visitor.testclasses.newClass.B")));
+                        VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.newClass.A"),
+                        VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.newClass.B"))));
         assertEquals(
                 3,
                 graph.getEdgeWeight(graph.getEdge(
-                        "org.hjug.graphbuilder.visitor.testclasses.newClass.A",
-                        "org.hjug.graphbuilder.visitor.testclasses.newClass.C")));
+                        VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.newClass.A"),
+                        VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.newClass.C"))));
     }
 
     @Test
     void visitInstanceInitializerBlocks() throws IOException {
-        Graph<String, DefaultWeightedEdge> graph = buildAndVisit(INITIALIZERS);
+        Graph<VertexInfo, DefaultWeightedEdge> graph = buildAndVisit(INITIALIZERS);
 
         assertTrue(
-                graph.containsVertex(
-                        "org.hjug.graphbuilder.visitor.testclasses.initializers.InitializerBlockTestClass"),
+                graph.containsVertex(VertexInfo.forName(
+                        "org.hjug.graphbuilder.visitor.testclasses.initializers.InitializerBlockTestClass")),
                 "InitializerBlockTestClass should be in the graph");
         assertTrue(
-                graph.containsVertex("java.util.ArrayList"),
+                graph.containsVertex(VertexInfo.forName("java.util.ArrayList")),
                 "ArrayList should be captured from instance initializer block");
         assertTrue(
                 graph.containsEdge(
-                        "org.hjug.graphbuilder.visitor.testclasses.initializers.InitializerBlockTestClass",
-                        "java.util.ArrayList"),
+                        VertexInfo.forName(
+                                "org.hjug.graphbuilder.visitor.testclasses.initializers.InitializerBlockTestClass"),
+                        VertexInfo.forName("java.util.ArrayList")),
                 "Should have edge from InitializerBlockTestClass to ArrayList from initializer block");
         assertTrue(
-                graph.containsVertex("java.util.HashMap"),
+                graph.containsVertex(VertexInfo.forName("java.util.HashMap")),
                 "HashMap should be captured from instance initializer block");
         assertTrue(
                 graph.containsEdge(
-                        "org.hjug.graphbuilder.visitor.testclasses.initializers.InitializerBlockTestClass",
-                        "java.util.HashMap"),
+                        VertexInfo.forName(
+                                "org.hjug.graphbuilder.visitor.testclasses.initializers.InitializerBlockTestClass"),
+                        VertexInfo.forName("java.util.HashMap")),
                 "Should have edge from InitializerBlockTestClass to HashMap from initializer block");
         assertTrue(
-                graph.containsVertex("java.lang.StringBuilder"),
+                graph.containsVertex(VertexInfo.forName("java.lang.StringBuilder")),
                 "StringBuilder should be captured from instance initializer block");
         assertTrue(
                 graph.containsEdge(
-                        "org.hjug.graphbuilder.visitor.testclasses.initializers.InitializerBlockTestClass",
-                        "java.lang.StringBuilder"),
+                        VertexInfo.forName(
+                                "org.hjug.graphbuilder.visitor.testclasses.initializers.InitializerBlockTestClass"),
+                        VertexInfo.forName("java.lang.StringBuilder")),
                 "Should have edge from InitializerBlockTestClass to StringBuilder from initializer block");
     }
 
     @Test
     void visitStaticInitializerBlocks() throws IOException {
-        Graph<String, DefaultWeightedEdge> graph = buildAndVisit(INITIALIZERS);
+        Graph<VertexInfo, DefaultWeightedEdge> graph = buildAndVisit(INITIALIZERS);
 
         assertTrue(
-                graph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.initializers.ComplexInitializerClass"),
+                graph.containsVertex(VertexInfo.forName(
+                        "org.hjug.graphbuilder.visitor.testclasses.initializers.ComplexInitializerClass")),
                 "ComplexInitializerClass should be in the graph");
         assertTrue(
-                graph.containsVertex("java.util.concurrent.ConcurrentHashMap"),
+                graph.containsVertex(VertexInfo.forName("java.util.concurrent.ConcurrentHashMap")),
                 "ConcurrentHashMap should be captured from static initializer block");
         assertTrue(
                 graph.containsEdge(
-                        "org.hjug.graphbuilder.visitor.testclasses.initializers.ComplexInitializerClass",
-                        "java.util.concurrent.ConcurrentHashMap"),
+                        VertexInfo.forName(
+                                "org.hjug.graphbuilder.visitor.testclasses.initializers.ComplexInitializerClass"),
+                        VertexInfo.forName("java.util.concurrent.ConcurrentHashMap")),
                 "Should have edge from ComplexInitializerClass to ConcurrentHashMap from static initializer");
         assertTrue(
-                graph.containsVertex("java.util.concurrent.atomic.AtomicInteger"),
+                graph.containsVertex(VertexInfo.forName("java.util.concurrent.atomic.AtomicInteger")),
                 "AtomicInteger should be captured from static initializer block");
         assertTrue(
                 graph.containsEdge(
-                        "org.hjug.graphbuilder.visitor.testclasses.initializers.ComplexInitializerClass",
-                        "java.util.concurrent.atomic.AtomicInteger"),
+                        VertexInfo.forName(
+                                "org.hjug.graphbuilder.visitor.testclasses.initializers.ComplexInitializerClass"),
+                        VertexInfo.forName("java.util.concurrent.atomic.AtomicInteger")),
                 "Should have edge from ComplexInitializerClass to AtomicInteger from static initializer");
         assertTrue(
                 graph.containsVertex(
-                        "org.hjug.graphbuilder.visitor.testclasses.initializers.ComplexInitializerClass$DataProcessor"),
+                        VertexInfo.forName(
+                                "org.hjug.graphbuilder.visitor.testclasses.initializers.ComplexInitializerClass$DataProcessor")),
                 "DataProcessor nested class should be captured from instance initializer");
         assertTrue(
                 graph.containsVertex(
-                        "org.hjug.graphbuilder.visitor.testclasses.initializers.ComplexInitializerClass$HelperService"),
+                        VertexInfo.forName(
+                                "org.hjug.graphbuilder.visitor.testclasses.initializers.ComplexInitializerClass$HelperService")),
                 "HelperService nested class should be captured from instance initializer");
     }
 
     @Test
     void instanceInitializerVariableTypeIsRecorded() throws IOException {
-        Graph<String, DefaultWeightedEdge> graph = buildAndVisit(VARIABLE_INITIALIZERS);
+        Graph<VertexInfo, DefaultWeightedEdge> graph = buildAndVisit(VARIABLE_INITIALIZERS);
 
         assertTrue(
                 graph.containsEdge(
-                        "org.hjug.graphbuilder.visitor.testclasses.variableInitializers.InstanceInitOwner",
-                        "org.hjug.graphbuilder.visitor.testclasses.variableInitializers.InstanceInitDependency"),
+                        VertexInfo.forName(
+                                "org.hjug.graphbuilder.visitor.testclasses.variableInitializers.InstanceInitOwner"),
+                        VertexInfo.forName(
+                                "org.hjug.graphbuilder.visitor.testclasses.variableInitializers.InstanceInitDependency")),
                 "instance initializer variable type should be recorded as a dependency via currentOwnerFqn");
     }
 
     @Test
     void catchClauseTypeIsCountedOnce() throws IOException {
-        Graph<String, DefaultWeightedEdge> graph = buildAndVisit(TRY_CATCH);
+        Graph<VertexInfo, DefaultWeightedEdge> graph = buildAndVisit(TRY_CATCH);
 
         assertEquals(
                 2.0,
                 getEdgeWeight(
                         graph,
-                        "org.hjug.graphbuilder.visitor.testclasses.tryCatch.TryCatchOwner",
-                        "org.hjug.graphbuilder.visitor.testclasses.tryCatch.CaughtDependency"),
+                        VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.tryCatch.TryCatchOwner"),
+                        VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.tryCatch.CaughtDependency")),
                 "catch clause exception type is double-processed by visitTry manual loop after super already handled it");
     }
 
     @Test
     void javadocReferencedClassDoesNotCreateSpuriousDependencyEdge() throws IOException {
-        Graph<String, DefaultWeightedEdge> graph = buildAndVisit(JAVADOC_TESTCLASSES);
+        Graph<VertexInfo, DefaultWeightedEdge> graph = buildAndVisit(JAVADOC_TESTCLASSES);
         assertFalse(
                 graph.containsEdge(
-                        "org.hjug.graphbuilder.visitor.testclasses.javadoc.JavaDocOwner",
-                        "org.hjug.graphbuilder.visitor.testclasses.javadoc.JavaDocSibling"),
+                        VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.javadoc.JavaDocOwner"),
+                        VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.javadoc.JavaDocSibling")),
                 "JavaDocSibling is referenced only in Javadoc {@link} and must not create a dependency edge from JavaDocOwner");
     }
 
     @Test
     void visitRecordDeclaration_capturesRecordAsVertex() throws IOException {
-        Graph<String, DefaultWeightedEdge> graph = buildAndVisit(RECORD);
+        Graph<VertexInfo, DefaultWeightedEdge> graph = buildAndVisit(RECORD);
         assertTrue(
-                graph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.record.SimpleRecord"),
+                graph.containsVertex(
+                        VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.record.SimpleRecord")),
                 "SimpleRecord should be in the graph");
     }
 
     @Test
     void visitRecordDeclaration_capturesRecordComponentsAsDependencies() throws IOException {
-        Graph<String, DefaultWeightedEdge> graph = buildAndVisit(RECORD);
+        Graph<VertexInfo, DefaultWeightedEdge> graph = buildAndVisit(RECORD);
 
         // ComplexRecord has components: String, List<String>, Map<String, Integer>, NestedRecord, SimpleRecord[]
         assertTrue(
-                graph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.record.ComplexRecord"),
+                graph.containsVertex(
+                        VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.record.ComplexRecord")),
                 "ComplexRecord should be in the graph");
         assertTrue(
-                graph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.record.ComplexRecord$NestedRecord"),
+                graph.containsVertex(VertexInfo.forName(
+                        "org.hjug.graphbuilder.visitor.testclasses.record.ComplexRecord$NestedRecord")),
                 "NestedRecord should be in the graph");
         assertTrue(
-                graph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.record.SimpleRecord"),
+                graph.containsVertex(
+                        VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.record.SimpleRecord")),
                 "SimpleRecord should be in the graph");
 
         // Check dependencies from ComplexRecord to its component types
         assertTrue(
                 graph.containsEdge(
-                        "org.hjug.graphbuilder.visitor.testclasses.record.ComplexRecord", "java.lang.String"),
+                        VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.record.ComplexRecord"),
+                        VertexInfo.forName("java.lang.String")),
                 "Should have edge from ComplexRecord to String");
         assertTrue(
-                graph.containsEdge("org.hjug.graphbuilder.visitor.testclasses.record.ComplexRecord", "java.util.List"),
+                graph.containsEdge(
+                        VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.record.ComplexRecord"),
+                        VertexInfo.forName("java.util.List")),
                 "Should have edge from ComplexRecord to List");
         assertTrue(
-                graph.containsEdge("org.hjug.graphbuilder.visitor.testclasses.record.ComplexRecord", "java.util.Map"),
+                graph.containsEdge(
+                        VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.record.ComplexRecord"),
+                        VertexInfo.forName("java.util.Map")),
                 "Should have edge from ComplexRecord to Map");
     }
 
     @Test
     void visitGenericRecordDeclaration_capturesTypeParameters() throws IOException {
-        Graph<String, DefaultWeightedEdge> graph = buildAndVisit(RECORD);
+        Graph<VertexInfo, DefaultWeightedEdge> graph = buildAndVisit(RECORD);
 
         assertTrue(
-                graph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.record.GenericRecord"),
+                graph.containsVertex(
+                        VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.record.GenericRecord")),
                 "GenericRecord should be in the graph");
         assertTrue(
-                graph.containsVertex("java.lang.Comparable"),
+                graph.containsVertex(VertexInfo.forName("java.lang.Comparable")),
                 "Should have edge from GenericRecord to Comparable (type bound)");
     }
 
     @Test
     void visitAnnotatedRecordDeclaration_capturesAnnotations() throws IOException {
-        Graph<String, DefaultWeightedEdge> graph = buildAndVisit(RECORD);
+        Graph<VertexInfo, DefaultWeightedEdge> graph = buildAndVisit(RECORD);
 
         assertTrue(
-                graph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.record.AnnotatedRecord"),
+                graph.containsVertex(
+                        VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.record.AnnotatedRecord")),
                 "AnnotatedRecord should be in the graph");
         assertTrue(
-                graph.containsVertex("java.io.Serializable"),
+                graph.containsVertex(VertexInfo.forName("java.io.Serializable")),
                 "Should have edge from AnnotatedRecord to Serializable (implements)");
         // Deprecated annotation should also be captured
         assertTrue(
-                graph.containsVertex("java.lang.Deprecated"),
+                graph.containsVertex(VertexInfo.forName("java.lang.Deprecated")),
                 "Should have edge from AnnotatedRecord to Deprecated annotation");
     }
 
@@ -454,27 +488,33 @@ class JavaVisitorTest {
     @DisplayName("Anonymous inner classes (Outer$<digit>) enter the graph as first-class vertices")
     @Test
     void anonymousInnerClasses_enterTheGraphAsVertices() throws IOException {
-        Graph<String, DefaultWeightedEdge> graph = buildAndVisit(ANONYMOUS);
+        Graph<VertexInfo, DefaultWeightedEdge> graph = buildAndVisit(ANONYMOUS);
 
         // owner + target (named classes) must still be present
         assertTrue(
-                graph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.anonymous.AnonymousOwner"),
+                graph.containsVertex(
+                        VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.anonymous.AnonymousOwner")),
                 "AnonymousOwner (named) must be a vertex");
         assertTrue(
-                graph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.anonymous.AnonymousTarget"),
+                graph.containsVertex(
+                        VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.anonymous.AnonymousTarget")),
                 "AnonymousTarget (named) must be a vertex");
 
         // anonymous inner classes serialise as Outer$1 / Outer$2 — they ARE first-class graph members now
         assertTrue(
-                graph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.anonymous.AnonymousOwner$1"),
+                graph.containsVertex(
+                        VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.anonymous.AnonymousOwner$1")),
                 "AnonymousOwner$1 (anonymous inner class) must enter the graph as a vertex");
         assertTrue(
-                graph.containsVertex("org.hjug.graphbuilder.visitor.testclasses.anonymous.AnonymousOwner$2"),
+                graph.containsVertex(
+                        VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.anonymous.AnonymousOwner$2")),
                 "AnonymousOwner$2 (anonymous inner class) must enter the graph as a vertex");
     }
 
     private static double getEdgeWeight(
-            Graph<String, DefaultWeightedEdge> classReferencesGraph, String sourceVertex, String targetVertex) {
+            Graph<VertexInfo, DefaultWeightedEdge> classReferencesGraph,
+            VertexInfo sourceVertex,
+            VertexInfo targetVertex) {
         return classReferencesGraph.getEdgeWeight(classReferencesGraph.getEdge(sourceVertex, targetVertex));
     }
 }

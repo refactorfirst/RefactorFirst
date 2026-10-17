@@ -10,6 +10,7 @@ import java.util.List;
 import org.hjug.cbc.CycleNode;
 import org.hjug.cbc.RankedCycle;
 import org.hjug.graphbuilder.CodebaseGraphDTO;
+import org.hjug.graphbuilder.VertexInfo;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultDirectedWeightedGraph;
 import org.jgrapht.graph.DefaultWeightedEdge;
@@ -57,24 +58,30 @@ class HtmlReportKotlinTest {
     @DisplayName("HtmlReport.buildClassCycleDot emits .kt URLs from Kotlin source-path mapping")
     @Test
     void buildClassCycleDot_kotlinSourcePaths() {
-        Graph<String, DefaultWeightedEdge> classGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        Graph<VertexInfo, DefaultWeightedEdge> classGraph =
+                new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
         // The renderer uses simple class names for the edge spec (matches the
         // existing Java case which expects A -> B, not FQN). The class-graph
         // vertices are still FQNs; the renderer strips the package prefix.
         String a = "com.kotlin.cycles.KotlinCycleA";
         String b = "com.kotlin.cycles.KotlinCycleB";
         String c = "com.kotlin.cycles.KotlinCycleC";
-        classGraph.addVertex(a);
-        classGraph.addVertex(b);
-        classGraph.addVertex(c);
-        classGraph.addEdge(a, b);
-        classGraph.addEdge(b, c);
-        classGraph.addEdge(c, a);
-        classGraph.setEdgeWeight(a, b, 2);
+        classGraph.addVertex(VertexInfo.forName(a));
+        classGraph.addVertex(VertexInfo.forName(b));
+        classGraph.addVertex(VertexInfo.forName(c));
+        classGraph.addEdge(VertexInfo.forName(a), VertexInfo.forName(b));
+        classGraph.addEdge(VertexInfo.forName(b), VertexInfo.forName(c));
+        classGraph.addEdge(VertexInfo.forName(c), VertexInfo.forName(a));
+        classGraph.setEdgeWeight(VertexInfo.forName(a), VertexInfo.forName(b), 2);
 
         List<CycleNode> cycleNodes = new ArrayList<>();
-        RankedCycle rankedCycle =
-                new RankedCycle("KotlinCycle", classGraph.vertexSet(), classGraph.edgeSet(), cycleNodes);
+        RankedCycle rankedCycle = new RankedCycle(
+                "KotlinCycle",
+                classGraph.vertexSet().stream()
+                        .map(VertexInfo::getName)
+                        .collect(java.util.stream.Collectors.toCollection(java.util.LinkedHashSet::new)),
+                classGraph.edgeSet(),
+                cycleNodes);
 
         HtmlReport htmlReport = new HtmlReport();
         CodebaseGraphDTO dto = mock(CodebaseGraphDTO.class);

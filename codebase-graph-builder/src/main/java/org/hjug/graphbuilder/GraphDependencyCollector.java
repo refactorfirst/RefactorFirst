@@ -13,10 +13,10 @@ import org.jgrapht.graph.DefaultWeightedEdge;
 public class GraphDependencyCollector implements DependencyCollector {
 
     @Getter
-    private final Graph<String, DefaultWeightedEdge> classReferencesGraph;
+    private final Graph<VertexInfo, DefaultWeightedEdge> classReferencesGraph;
 
     @Getter
-    private final Graph<String, DefaultWeightedEdge> packageReferencesGraph;
+    private final Graph<VertexInfo, DefaultWeightedEdge> packageReferencesGraph;
 
     @Getter
     private final Set<String> packagesInCodebase = new HashSet<>();
@@ -25,9 +25,22 @@ public class GraphDependencyCollector implements DependencyCollector {
     private final Map<DefaultWeightedEdge, Set<DefaultWeightedEdge>> classRelationshipsInPackageRelationship =
             new HashMap<>();
 
+    /**
+     * Class locations (as reported by the visitors) captured during collection,
+     * keyed by class FQN. The repository-relative locations used for rendering
+     * are hydrated onto the {@link VertexInfo} vertices from the canonical
+     * class-to-source-file mapping after the walk (see {@link VertexInfoHydrator});
+     * this map keeps the raw information captured at collection time.
+     */
+    @Getter
+    private final Map<String, String> recordedClassLocations = new HashMap<>();
+
+    /** Registry of the VertexInfo instances created for each vertex name. */
+    private final Map<String, VertexInfo> vertexRegistry = new HashMap<>();
+
     public GraphDependencyCollector(
-            Graph<String, DefaultWeightedEdge> classReferencesGraph,
-            Graph<String, DefaultWeightedEdge> packageReferencesGraph) {
+            Graph<VertexInfo, DefaultWeightedEdge> classReferencesGraph,
+            Graph<VertexInfo, DefaultWeightedEdge> packageReferencesGraph) {
         this.classReferencesGraph = classReferencesGraph;
         this.packageReferencesGraph = packageReferencesGraph;
     }
@@ -38,14 +51,16 @@ public class GraphDependencyCollector implements DependencyCollector {
             return;
         }
 
-        classReferencesGraph.addVertex(fromClassFqn);
-        classReferencesGraph.addVertex(toClassFqn);
+        VertexInfo fromVertex = getOrCreateVertex(fromClassFqn);
+        VertexInfo toVertex = getOrCreateVertex(toClassFqn);
+        classReferencesGraph.addVertex(fromVertex);
+        classReferencesGraph.addVertex(toVertex);
 
         DefaultWeightedEdge classRelationship;
-        if (!classReferencesGraph.containsEdge(fromClassFqn, toClassFqn)) {
-            classRelationship = classReferencesGraph.addEdge(fromClassFqn, toClassFqn);
+        if (!classReferencesGraph.containsEdge(fromVertex, toVertex)) {
+            classRelationship = classReferencesGraph.addEdge(fromVertex, toVertex);
         } else {
-            classRelationship = classReferencesGraph.getEdge(fromClassFqn, toClassFqn);
+            classRelationship = classReferencesGraph.getEdge(fromVertex, toVertex);
             classReferencesGraph.setEdgeWeight(
                     classRelationship, classReferencesGraph.getEdgeWeight(classRelationship) + 1);
         }
@@ -80,14 +95,16 @@ public class GraphDependencyCollector implements DependencyCollector {
             return null;
         }
 
-        packageReferencesGraph.addVertex(fromPackageName);
-        packageReferencesGraph.addVertex(toPackageName);
+        VertexInfo fromPackageVertex = getOrCreateVertex(fromPackageName);
+        VertexInfo toPackageVertex = getOrCreateVertex(toPackageName);
+        packageReferencesGraph.addVertex(fromPackageVertex);
+        packageReferencesGraph.addVertex(toPackageVertex);
 
         DefaultWeightedEdge packageEdge;
-        if (!packageReferencesGraph.containsEdge(fromPackageName, toPackageName)) {
-            packageEdge = packageReferencesGraph.addEdge(fromPackageName, toPackageName);
+        if (!packageReferencesGraph.containsEdge(fromPackageVertex, toPackageVertex)) {
+            packageEdge = packageReferencesGraph.addEdge(fromPackageVertex, toPackageVertex);
         } else {
-            packageEdge = packageReferencesGraph.getEdge(fromPackageName, toPackageName);
+            packageEdge = packageReferencesGraph.getEdge(fromPackageVertex, toPackageVertex);
             packageReferencesGraph.setEdgeWeight(packageEdge, packageReferencesGraph.getEdgeWeight(packageEdge) + 1);
         }
 
@@ -102,9 +119,20 @@ public class GraphDependencyCollector implements DependencyCollector {
         return fqn.substring(0, lastIndex);
     }
 
+    /**
+     * Returns the registered {@link VertexInfo} for the given class or package
+     * name, creating and registering one (with the parent namespace derived
+     * from the name) when absent.
+     */
+    private VertexInfo getOrCreateVertex(String name) {
+        return vertexRegistry.computeIfAbsent(name, VertexInfo::forName);
+    }
+
     @Override
     public void recordClassLocation(String classFqn, String sourceFilePath) {
-        // This will be handled by JavaVisitor which maintains the mapping
+        // Capture the location reported during collection; repository-relative
+        // hydration of the VertexInfo vertices happens after the walk.
+        recordedClassLocations.put(classFqn, sourceFilePath);
     }
 
     @Override
@@ -114,6 +142,6 @@ public class GraphDependencyCollector implements DependencyCollector {
 
     @Override
     public void registerClassVertex(String classFqn) {
-        classReferencesGraph.addVertex(classFqn);
+        classReferencesGraph.addVertex(getOrCreateVertex(classFqn));
     }
 }

@@ -20,6 +20,7 @@ import org.hjug.feedback.CycleRemovalComputer;
 import org.hjug.feedback.CycleRemovalResult;
 import org.hjug.git.GitLogReader;
 import org.hjug.graphbuilder.CodebaseGraphDTO;
+import org.hjug.graphbuilder.VertexInfo;
 import org.hjug.graphbuilder.metrics.DisharmonyMetric;
 import org.hjug.graphbuilder.metrics.DisharmonyTypes;
 import org.hjug.metrics.DisharmonyInstance;
@@ -159,12 +160,12 @@ public class SimpleHtmlReport {
                     "Data class contains non-accessor methods with business logic, violating the data carrier principle.",
                     "Move business logic to separate service classes. Keep data classes as pure data holders with only accessor methods."));
 
-    Graph<String, DefaultWeightedEdge> classGraph;
-    Graph<String, DefaultWeightedEdge> packageGraph;
-    Map<String, AsSubgraph<String, DefaultWeightedEdge>> classCycles;
-    Map<String, AsSubgraph<String, DefaultWeightedEdge>> packageCycles;
-    Set<String> classesToRemove = Set.of(); // initialize for unit tests
-    Set<String> packagesToRemove = Set.of(); // initialize for unit tests
+    Graph<VertexInfo, DefaultWeightedEdge> classGraph;
+    Graph<VertexInfo, DefaultWeightedEdge> packageGraph;
+    Map<VertexInfo, AsSubgraph<VertexInfo, DefaultWeightedEdge>> classCycles;
+    Map<VertexInfo, AsSubgraph<VertexInfo, DefaultWeightedEdge>> packageCycles;
+    Set<VertexInfo> classesToRemove = Set.of(); // initialize for unit tests
+    Set<VertexInfo> packagesToRemove = Set.of(); // initialize for unit tests
     Set<DefaultWeightedEdge> classRelationshipsToRemove = Set.of();
     Set<DefaultWeightedEdge> packageRelationshipsToRemove = Set.of();
 
@@ -678,7 +679,10 @@ public class SimpleHtmlReport {
             return List.of();
         }
         return classEdges.stream()
-                .sorted(Comparator.comparing(classGraph::getEdgeSource).thenComparing(classGraph::getEdgeTarget))
+                .sorted(Comparator.comparing((DefaultWeightedEdge classEdge) ->
+                                classGraph.getEdgeSource(classEdge).getName())
+                        .thenComparing(
+                                classEdge -> classGraph.getEdgeTarget(classEdge).getName()))
                 .toList();
     }
 
@@ -738,7 +742,7 @@ public class SimpleHtmlReport {
 
         String startVertex = vertexes[0].trim();
         String start;
-        if (classesToRemove.contains(startVertex)) {
+        if (classesToRemove.contains(VertexInfo.forName(startVertex))) {
             start = hyperlinkClass(startVertex, repoUrl, codebaseGraphDTO) + "<strong>*</strong>";
         } else {
             start = hyperlinkClass(startVertex, repoUrl, codebaseGraphDTO);
@@ -746,7 +750,7 @@ public class SimpleHtmlReport {
 
         String endVertex = vertexes[1].trim();
         String end;
-        if (classesToRemove.contains(endVertex)) {
+        if (classesToRemove.contains(VertexInfo.forName(endVertex))) {
             end = hyperlinkClass(endVertex, repoUrl, codebaseGraphDTO) + "<strong>*</strong>";
         } else {
             end = hyperlinkClass(endVertex, repoUrl, codebaseGraphDTO);
@@ -765,7 +769,7 @@ public class SimpleHtmlReport {
 
         String startVertex = vertexes[0].trim();
         String start;
-        if (packagesToRemove.contains(startVertex)) {
+        if (packagesToRemove.contains(VertexInfo.forName(startVertex))) {
             start = escapeHtmlLabel(startVertex) + "<strong>*</strong>";
         } else {
             start = escapeHtmlLabel(startVertex);
@@ -773,7 +777,7 @@ public class SimpleHtmlReport {
 
         String endVertex = vertexes[1].trim();
         String end;
-        if (packagesToRemove.contains(endVertex)) {
+        if (packagesToRemove.contains(VertexInfo.forName(endVertex))) {
             end = escapeHtmlLabel(endVertex) + "<strong>*</strong>";
         } else {
             end = escapeHtmlLabel(endVertex);
@@ -877,7 +881,7 @@ public class SimpleHtmlReport {
         for (String vertex : cycle.getVertexSet()) {
             stringBuilder.append("<tr>");
             String className;
-            if (classesToRemove.contains(vertex)) {
+            if (classesToRemove.contains(VertexInfo.forName(vertex))) {
                 className = hyperlinkClass(vertex, repoUrl, codebaseGraphDTO) + "<strong>*</strong>";
             } else {
                 className = hyperlinkClass(vertex, repoUrl, codebaseGraphDTO);

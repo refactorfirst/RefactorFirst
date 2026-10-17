@@ -5,16 +5,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import org.hjug.cbc.RankedDisharmony;
 import org.hjug.graphbuilder.CodebaseGraphDTO;
+import org.hjug.graphbuilder.VertexInfo;
 import org.hjug.refactorfirst.report.model.ClassRelationshipDTO;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultDirectedWeightedGraph;
@@ -45,14 +39,15 @@ class PackageRelationshipClassEdgeOrderTest {
      * {@link #PKG_B}, plus two edges sharing one source whose targets' natural order differs
      * from their insertion order ({@code TargetZ} is inserted before {@code TargetB}).
      */
-    private Graph<String, DefaultWeightedEdge> createClassGraph() {
-        Graph<String, DefaultWeightedEdge> classGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+    private Graph<VertexInfo, DefaultWeightedEdge> createClassGraph() {
+        Graph<VertexInfo, DefaultWeightedEdge> classGraph =
+                new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
         for (int i = 0; i < EDGE_COUNT; i++) {
             String source = PKG_A + ".Class" + (char) ('A' + i);
             String target = PKG_B + ".Target" + (char) ('A' + i);
-            classGraph.addVertex(source);
-            classGraph.addVertex(target);
-            DefaultWeightedEdge edge = classGraph.addEdge(source, target);
+            classGraph.addVertex(VertexInfo.forName(source));
+            classGraph.addVertex(VertexInfo.forName(target));
+            DefaultWeightedEdge edge = classGraph.addEdge(VertexInfo.forName(source), VertexInfo.forName(target));
             classGraph.setEdgeWeight(edge, i + 1);
         }
 
@@ -61,23 +56,26 @@ class PackageRelationshipClassEdgeOrderTest {
         String multiSource = PKG_A + ".Multi";
         String targetZ = PKG_B + ".TargetZ";
         String targetB = PKG_B + ".TargetB";
-        classGraph.addVertex(multiSource);
-        classGraph.addVertex(targetZ);
-        classGraph.addVertex(targetB);
-        DefaultWeightedEdge multiToTargetZ = classGraph.addEdge(multiSource, targetZ);
+        classGraph.addVertex(VertexInfo.forName(multiSource));
+        classGraph.addVertex(VertexInfo.forName(targetZ));
+        classGraph.addVertex(VertexInfo.forName(targetB));
+        DefaultWeightedEdge multiToTargetZ =
+                classGraph.addEdge(VertexInfo.forName(multiSource), VertexInfo.forName(targetZ));
         classGraph.setEdgeWeight(multiToTargetZ, EDGE_COUNT + 1);
-        DefaultWeightedEdge multiToTargetB = classGraph.addEdge(multiSource, targetB);
+        DefaultWeightedEdge multiToTargetB =
+                classGraph.addEdge(VertexInfo.forName(multiSource), VertexInfo.forName(targetB));
         classGraph.setEdgeWeight(multiToTargetB, EDGE_COUNT + 2);
 
         return classGraph;
     }
 
     /** Builds a package graph with a single A -> B edge. */
-    private Graph<String, DefaultWeightedEdge> createPackageGraph() {
-        Graph<String, DefaultWeightedEdge> packageGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-        packageGraph.addVertex(PKG_A);
-        packageGraph.addVertex(PKG_B);
-        packageGraph.addEdge(PKG_A, PKG_B);
+    private Graph<VertexInfo, DefaultWeightedEdge> createPackageGraph() {
+        Graph<VertexInfo, DefaultWeightedEdge> packageGraph =
+                new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        packageGraph.addVertex(VertexInfo.forName(PKG_A));
+        packageGraph.addVertex(VertexInfo.forName(PKG_B));
+        packageGraph.addEdge(VertexInfo.forName(PKG_A), VertexInfo.forName(PKG_B));
         return packageGraph;
     }
 
@@ -142,8 +140,8 @@ class PackageRelationshipClassEdgeOrderTest {
     void classRelationshipsToBreakPackage_areOrderedDeterministically() throws Exception {
         // Given: a class graph with edges crossing a package boundary, and DTOs whose
         // class-relationship sets are populated in many different insertion orders
-        Graph<String, DefaultWeightedEdge> classGraph = createClassGraph();
-        Graph<String, DefaultWeightedEdge> packageGraph = createPackageGraph();
+        Graph<VertexInfo, DefaultWeightedEdge> classGraph = createClassGraph();
+        Graph<VertexInfo, DefaultWeightedEdge> packageGraph = createPackageGraph();
         DefaultWeightedEdge packageEdge = packageGraph.edgeSet().iterator().next();
         List<DefaultWeightedEdge> edges = new ArrayList<>(classGraph.edgeSet());
         RankedDisharmony edgeInfo = mockRankedDisharmony(packageEdge);
@@ -188,22 +186,21 @@ class PackageRelationshipClassEdgeOrderTest {
 
         // Then: the order is the deterministic source-class order, identical in both reports
         List<DefaultWeightedEdge> expectedOrder = edges.stream()
-                .sorted((e1, e2) -> {
-                    int bySource = classGraph.getEdgeSource(e1).compareTo(classGraph.getEdgeSource(e2));
-                    return bySource != 0
-                            ? bySource
-                            : classGraph.getEdgeTarget(e1).compareTo(classGraph.getEdgeTarget(e2));
-                })
+                .sorted(Comparator.comparing((DefaultWeightedEdge e) ->
+                                classGraph.getEdgeSource(e).getName())
+                        .thenComparing(e -> classGraph.getEdgeTarget(e).getName()))
                 .toList();
         assertEquals(
-                expectedOrder.stream().map(classGraph::getEdgeSource).toList(),
+                expectedOrder.stream()
+                        .map(edge -> classGraph.getEdgeSource(edge).getName())
+                        .toList(),
                 firstJsonList.stream().map(ClassRelationshipDTO::getSourceClass).toList(),
                 "JSON class relationships must be ordered by source class FQN");
         String expectedHtmlCell = String.join(
                 "<br>",
                 expectedOrder.stream()
-                        .map(edge -> simpleName(classGraph.getEdgeSource(edge)) + " &#8594; "
-                                + simpleName(classGraph.getEdgeTarget(edge)) + " : "
+                        .map(edge -> simpleName(classGraph.getEdgeSource(edge).getName()) + " &#8594; "
+                                + simpleName(classGraph.getEdgeTarget(edge).getName()) + " : "
                                 + (int) classGraph.getEdgeWeight(edge))
                         .toList());
         assertEquals(
