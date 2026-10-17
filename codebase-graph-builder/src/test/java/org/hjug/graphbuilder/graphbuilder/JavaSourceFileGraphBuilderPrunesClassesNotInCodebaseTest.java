@@ -25,6 +25,7 @@ import org.junit.jupiter.api.io.TempDir;
  */
 class JavaSourceFileGraphBuilderPrunesClassesNotInCodebaseTest {
 
+    /** Verifies that pruning external classes also removes their incident dependency edges. */
     @Test
     void removeClassesNotInCodebase() throws IOException {
         File srcDirectory = new File("src/test/resources/javaSrcDirectory");
@@ -55,6 +56,7 @@ class JavaSourceFileGraphBuilderPrunesClassesNotInCodebaseTest {
         assertFalse(classReferencesGraph.containsEdge(edge2));
     }
 
+    /** Verifies that package pruning removes vertices outside the set of codebase packages. */
     @Test
     @DisplayName("removePackagesNotInCodebase drops packages outside the codebase package set")
     void removePackagesNotInCodebase() throws IOException {
@@ -77,6 +79,7 @@ class JavaSourceFileGraphBuilderPrunesClassesNotInCodebaseTest {
         assertFalse(packageReferencesGraph.containsVertex(VertexInfo.forName("org.favioriteoss")));
     }
 
+    /** Verifies that JavaFX library references are excluded from the final codebase graph. */
     @Test
     @DisplayName("External JavaFX classes referenced in source are pruned from class graph")
     void externalJavaFXClassesArePruned(@TempDir File tempDir) throws IOException {

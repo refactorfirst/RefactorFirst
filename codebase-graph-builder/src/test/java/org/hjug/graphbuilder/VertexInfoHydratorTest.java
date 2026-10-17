@@ -18,10 +18,12 @@ import org.junit.jupiter.api.Test;
  */
 class VertexInfoHydratorTest {
 
+    /** Creates an empty graph for testing class and package location hydration. */
     private static Graph<VertexInfo, DefaultWeightedEdge> newGraph() {
         return new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
     }
 
+    /** Returns the stored graph vertex with the supplied name so its hydrated metadata can be inspected. */
     private static VertexInfo vertex(Graph<VertexInfo, DefaultWeightedEdge> graph, String name) {
         return graph.vertexSet().stream()
                 .filter(v -> v.getName().equals(name))
@@ -29,6 +31,7 @@ class VertexInfoHydratorTest {
                 .orElseThrow();
     }
 
+    /** Verifies that a directly mapped class receives its repository-relative source path. */
     @DisplayName("Hydration sets the repo-relative source path for mapped classes")
     @Test
     void hydrate_mappedClass_getsLocationOnDisk() {
@@ -45,6 +48,7 @@ class VertexInfoHydratorTest {
                 vertex(classGraph, "com.foo.Bar").getLocationOnDisk());
     }
 
+    /** Verifies that a nested class inherits its outer class's mapped source location. */
     @DisplayName("Hydration resolves a nested class through its enclosing class's mapping")
     @Test
     void hydrate_nestedClass_fallsBackToEnclosingClassMapping() {
@@ -61,6 +65,7 @@ class VertexInfoHydratorTest {
                 vertex(classGraph, "com.foo.Outer$Inner").getLocationOnDisk());
     }
 
+    /** Verifies that a Kotlin anonymous vertex uses its enclosing class's source location. */
     @DisplayName("Hydration resolves a Kotlin <anonymous> vertex through its enclosing mapping")
     @Test
     void hydrate_kotlinAnonymous_fallsBackToEnclosingMapping() {
@@ -77,6 +82,7 @@ class VertexInfoHydratorTest {
                 vertex(classGraph, "dev.Control.<anonymous>").getLocationOnDisk());
     }
 
+    /** Verifies that an unmapped class keeps its parent namespace and an unknown disk location. */
     @DisplayName("Hydration leaves an unmapped class location null but keeps the derived parent namespace")
     @Test
     void hydrate_unmappedClass_locationStaysNullAndParentNamespaceIsKept() {
@@ -91,6 +97,7 @@ class VertexInfoHydratorTest {
         assertEquals("com.foo", vertex(classGraph, "com.foo.Unmapped").getParentNamespace());
     }
 
+    /** Verifies that a package location is its direct member's directory and its parent namespace is retained. */
     @DisplayName("Hydration sets a package vertex's location to a member file's directory")
     @Test
     void hydrate_packageVertex_getsMemberFileDirectory() {
@@ -107,6 +114,7 @@ class VertexInfoHydratorTest {
         assertEquals("com", vertex(packageGraph, "com.foo").getParentNamespace());
     }
 
+    /** Verifies that a package without mapped members has no disk location. */
     @DisplayName("Hydration leaves a package without mapped members location null")
     @Test
     void hydrate_packageWithoutMembers_locationStaysNull() {
@@ -120,6 +128,7 @@ class VertexInfoHydratorTest {
         assertNull(vertex(packageGraph, "com.bare").getLocationOnDisk());
     }
 
+    /** Verifies that subpackage members cannot supply a parent package location. */
     @DisplayName("A package whose only mapped members live in subpackages keeps a null location")
     @Test
     void hydrate_packageWithOnlySubpackageMembers_locationStaysNull() {
@@ -136,6 +145,7 @@ class VertexInfoHydratorTest {
                 "a subpackage member's directory must not be used as the parent package's location");
     }
 
+    /** Verifies that a nested Java class mapping can locate its enclosing package's directory. */
     @DisplayName("A nested $ class is a direct member of its outer package for location resolution")
     @Test
     void hydrate_packageVertex_nestedDollarClassCountsAsDirectMember() {
@@ -150,6 +160,7 @@ class VertexInfoHydratorTest {
         assertEquals("src/main/java/com/foo", vertex(packageGraph, "com.foo").getLocationOnDisk());
     }
 
+    /** Verifies that a Kotlin anonymous class mapping contributes to its enclosing package location. */
     @DisplayName("A Kotlin <anonymous> member is a direct member of its package for location resolution")
     @Test
     void hydrate_packageVertex_kotlinAnonymousCountsAsDirectMember() {
@@ -164,6 +175,7 @@ class VertexInfoHydratorTest {
         assertEquals("src/main/kotlin/com/foo", vertex(packageGraph, "com.foo").getLocationOnDisk());
     }
 
+    /** Verifies that package hydration selects the shortest direct-member path and ignores subpackage paths. */
     @DisplayName("A package with multiple direct members resolves to the shortest mapped member path")
     @Test
     void hydrate_packageVertex_selectsShortestDirectMemberPath() {
@@ -180,6 +192,7 @@ class VertexInfoHydratorTest {
         assertEquals("src/com/foo", vertex(packageGraph, "com.foo").getLocationOnDisk());
     }
 
+    /** Verifies that repeated hydration with the same mapping preserves class and package locations. */
     @DisplayName("Hydration is idempotent: re-hydrating does not change populated locations")
     @Test
     void hydrate_twice_isIdempotent() {

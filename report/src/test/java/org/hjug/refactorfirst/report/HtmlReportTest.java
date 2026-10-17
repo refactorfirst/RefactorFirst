@@ -334,6 +334,7 @@ class HtmlReportTest {
         assertFalse(result.contains("const _dot"));
     }
 
+    /** Verifies distinct package node IDs and escaping of script terminators and backslashes in embedded DOT. */
     @Test
     void buildPackageGraphDot_usesDistinctIdsAndEscapesRawScriptContext() {
         Graph<VertexInfo, DefaultWeightedEdge> graph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);

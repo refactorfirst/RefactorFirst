@@ -39,6 +39,7 @@ import org.junit.jupiter.api.Test;
  */
 class TypeParameterReferenceTest {
 
+    /** Verifies that Kotlin type-parameter bounds create class edges while a top-level typealias adds no vertex. */
     @DisplayName("Kotlin class/method/property type-parameter bounds produce edges to the bound class; "
             + "top-level typealias does not break the visitor")
     @Test

@@ -892,6 +892,7 @@ public class HtmlReport extends SimpleHtmlReport {
         return dollar >= 0 ? afterDot.substring(dollar + 1) : afterDot;
     }
 
+    /** Appends a weighted class edge to DOT, highlighting removals and suppressing edges to hidden sink vertices. */
     private void renderClassGraphEdge(
             Graph<VertexInfo, DefaultWeightedEdge> classGraph,
             DefaultWeightedEdge edge,
@@ -1057,6 +1058,7 @@ public class HtmlReport extends SimpleHtmlReport {
         return toJavaScriptTemplateLiteral(buildRawPackageGraphDot(packageGraph, repoUrl, codebaseGraphDTO));
     }
 
+    /** Appends a weighted package edge to DOT, using safe node IDs and highlighting selected removals. */
     private void renderPackageGraphEdge(
             Graph<VertexInfo, DefaultWeightedEdge> packageGraph, DefaultWeightedEdge edge, StringBuilder dot) {
         // render edge
@@ -1087,6 +1089,7 @@ public class HtmlReport extends SimpleHtmlReport {
         dot.append(" ];\n");
     }
 
+    /** Appends escaped package nodes to DOT and highlights packages selected for removal. */
     private void renderPackageVertices(
             Graph<VertexInfo, DefaultWeightedEdge> classGraph,
             String repoUrl,

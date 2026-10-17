@@ -83,6 +83,7 @@ class CompositeGraphBuilderJavaOnlyTest {
                                 Arrays.stream(methods).map(Method::getName).toArray()));
     }
 
+    /** Verifies that the default configuration includes Kotlin declarations and their source mappings. */
     @DisplayName("Default config parses Kotlin sources unconditionally (.kt entries appear)")
     @Test
     void defaultConfigParsesKotlinSources() throws IOException {

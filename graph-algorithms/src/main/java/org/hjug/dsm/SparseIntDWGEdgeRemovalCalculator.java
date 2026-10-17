@@ -24,6 +24,10 @@ class SparseIntDWGEdgeRemovalCalculator<V> {
     Map<V, Integer> vertexToInt;
     Map<Integer, V> intToVertex;
 
+    /**
+     * Captures the sparse graph, candidate edges, and vertex-index mappings used to evaluate removals.
+     * Mutable edge lists and mappings are copied into concurrent collections.
+     */
     SparseIntDWGEdgeRemovalCalculator(
             Graph<V, DefaultWeightedEdge> graph,
             SparseIntDirectedWeightedGraph sparseGraph,

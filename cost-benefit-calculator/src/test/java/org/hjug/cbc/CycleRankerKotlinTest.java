@@ -85,6 +85,7 @@ class CycleRankerKotlinTest {
         }
     }
 
+    /** Verifies that Kotlin cycle ranking preserves the three cycle vertices and their Kotlin source paths. */
     @DisplayName("CycleRanker detects cycles in a Kotlin-only repo")
     @Test
     void cycleRanker_detectsKotlinCycleViaCompositeGraphBuilder() throws IOException, GitAPIException {

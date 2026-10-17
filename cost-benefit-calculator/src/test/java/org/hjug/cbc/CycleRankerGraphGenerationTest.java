@@ -25,6 +25,7 @@ class CycleRankerGraphGenerationTest {
     @TempDir
     Path tempDir;
 
+    /** Verifies that cycle graph generation includes a class declared in the repository fixture. */
     @Test
     @DisplayName("generateClassReferencesGraph builds the graph")
     void generatesClassReferencesGraph() throws IOException {
@@ -59,6 +60,7 @@ class CycleRankerGraphGenerationTest {
         assertNull(ranker.getCodebaseGraphDTO(), "A rejected request must not populate the graph DTO");
     }
 
+    /** Verifies that graph generation honors the caller's custom test directory and exclusion setting. */
     @ParameterizedTest(name = "excludeTests={0} should include custom test source={1}")
     @CsvSource({"true, false", "false, true"})
     @DisplayName("generateClassReferencesGraph forwards test exclusion configuration")

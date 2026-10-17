@@ -19,12 +19,24 @@ public class EdgeRemovalCalculator<V> {
     private final Map<V, AsSubgraph<V, DefaultWeightedEdge>> cycles;
     private Set<DefaultWeightedEdge> edgesToRemove;
 
+    /**
+     * Creates an edge-impact calculator using the supplied dependency structure matrix.
+     *
+     * @param graph the dependency graph to analyze
+     * @param dsm the matrix identifying candidate edges above the diagonal
+     */
     public EdgeRemovalCalculator(Graph<V, DefaultWeightedEdge> graph, DSM<V, DefaultWeightedEdge> dsm) {
         this.graph = graph;
         this.dsm = dsm;
         this.cycles = new CircularReferenceChecker<V, DefaultWeightedEdge>().getCycles(graph);
     }
 
+    /**
+     * Creates an edge-impact calculator for an explicit set of candidate edges.
+     *
+     * @param graph the dependency graph to analyze
+     * @param edgesToRemove the edges whose individual removal impact will be evaluated
+     */
     public EdgeRemovalCalculator(Graph<V, DefaultWeightedEdge> graph, Set<DefaultWeightedEdge> edgesToRemove) {
         this.graph = graph;
         this.edgesToRemove = edgesToRemove;
@@ -71,6 +83,12 @@ public class EdgeRemovalCalculator<V> {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Measures the remaining cycles after removing one edge from a copy of the graph.
+     *
+     * @param edgeToRemove the edge to evaluate
+     * @return the removed weight, remaining cycle count, and remaining cycles per unit of removed weight
+     */
     public EdgeToRemoveInfo calculateEdgeToRemoveInfo(DefaultWeightedEdge edgeToRemove) {
         // clone graph and remove edge
         Graph<V, DefaultWeightedEdge> improvedGraph = new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);

@@ -338,6 +338,18 @@ public class CostBenefitCalculator implements AutoCloseable {
         return cboClasses;
     }
 
+    /**
+     * Ranks candidate class edges using cycle impact, removal flags, and package relationships.
+     * Only edges present in {@code edgeToRemoveCycleCounts} are considered.
+     *
+     * @param classGraph the class dependency graph
+     * @param edgeToRemoveCycleCounts the candidate edges and their cycle counts
+     * @param dto the codebase graph containing corresponding package relationships
+     * @param vertexesToRemove the class vertices selected for removal
+     * @param packageCycles the package cycles used to count each relationship's participation
+     * @param packageRelationshipDisharmonies the package relationships selected for removal
+     * @return the ranked class relationships with assigned priorities
+     */
     public List<RankedDisharmony> calculateRelationshipCostBenefitValues(
             Graph<VertexInfo, DefaultWeightedEdge> classGraph,
             Map<DefaultWeightedEdge, Integer> edgeToRemoveCycleCounts,

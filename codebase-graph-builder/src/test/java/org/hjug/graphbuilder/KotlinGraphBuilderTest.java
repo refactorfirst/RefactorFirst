@@ -21,6 +21,7 @@ class KotlinGraphBuilderTest {
 
     private final CompositeGraphBuilder compositeGraphBuilder = new CompositeGraphBuilder();
 
+    /** Verifies the Kotlin fixture graph contains the expected classes, dependencies, and edge weights. */
     @DisplayName("Given a valid Kotlin source directory input parameter return a valid graph.")
     @Test
     void parseKotlinSourceDirectoryTest() throws IOException {
@@ -72,6 +73,7 @@ class KotlinGraphBuilderTest {
                         VertexInfo.forName("com.ideacrest.parser.testclasses.D")));
     }
 
+    /** Verifies that a Kotlin class-header dependency contributes exactly one unit of edge weight. */
     @DisplayName("Kotlin class-header dependencies are recorded exactly once.")
     @Test
     void classHeaderDependencyHasWeightOne() throws IOException {
@@ -87,6 +89,7 @@ class KotlinGraphBuilderTest {
         assertEquals(1.0, getEdgeWeight(classReferencesGraph, VertexInfo.forName(source), VertexInfo.forName(target)));
     }
 
+    /** Verifies that Kotlin callable references create dependencies on their declaring classes. */
     @DisplayName("Kotlin callable references produce edges between caller and target's declaring class.")
     @Test
     void parseKotlinCallableReferenceTest() throws IOException {
@@ -127,6 +130,7 @@ class KotlinGraphBuilderTest {
         }
     }
 
+    /** Returns the weight of the dependency between the supplied source and target vertices. */
     private static double getEdgeWeight(
             Graph<VertexInfo, DefaultWeightedEdge> classReferencesGraph,
             VertexInfo sourceVertex,

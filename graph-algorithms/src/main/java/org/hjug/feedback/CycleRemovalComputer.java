@@ -17,6 +17,14 @@ import org.jgrapht.graph.DefaultWeightedEdge;
 @Slf4j
 public class CycleRemovalComputer {
 
+    /**
+     * Identifies cyclic subgraphs, feedback vertices, and feedback edges for a dependency graph.
+     * Acyclic graphs yield empty removal sets; selected edges include their cycle participation counts.
+     *
+     * @param graph the dependency graph to analyze
+     * @param <V> the graph vertex type
+     * @return the cycles and proposed vertex and edge removals
+     */
     public <V> CycleRemovalResult<V> computeCycleRemovalInformation(Graph<V, DefaultWeightedEdge> graph) {
         Map<V, AsSubgraph<V, DefaultWeightedEdge>> cycles =
                 new CircularReferenceChecker<V, DefaultWeightedEdge>().getCycles(graph);

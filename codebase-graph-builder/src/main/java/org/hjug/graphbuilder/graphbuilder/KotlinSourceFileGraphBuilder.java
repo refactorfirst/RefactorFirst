@@ -36,6 +36,16 @@ import org.openrewrite.tree.ParseError;
 @Slf4j
 public class KotlinSourceFileGraphBuilder implements SourceFileGraphBuilder {
 
+    /**
+     * Builds dependency graphs and metrics from Kotlin source files, honoring configured test exclusions.
+     * Recoverable partial parse trees are visited before the resulting graph metadata is finalized.
+     *
+     * @param repositoryPath the source directory to scan
+     * @param repositoryRoot the repository root used to canonicalize source locations
+     * @param config the parser and source-exclusion settings
+     * @return the Kotlin codebase graph with hydrated vertex locations
+     * @throws IOException if source files cannot be read
+     */
     @Override
     public CodebaseGraphDTO buildGraph(String repositoryPath, String repositoryRoot, GraphBuilderConfig config)
             throws IOException {

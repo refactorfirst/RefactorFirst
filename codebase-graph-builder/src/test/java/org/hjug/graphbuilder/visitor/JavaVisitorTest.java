@@ -50,6 +50,7 @@ class JavaVisitorTest {
         javaParser.parse(list, Path.of(srcDirectory.getAbsolutePath()), ctx).forEach(cu -> visitor.visit(cu, ctx));
     }
 
+    /** Visits the Java fixtures at the supplied path using directed weighted graphs that permit self-loops. */
     private static Graph<VertexInfo, DefaultWeightedEdge> buildAndVisit(String pathString) throws IOException {
         Graph<VertexInfo, DefaultWeightedEdge> classGraph =
                 new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
@@ -60,6 +61,7 @@ class JavaVisitorTest {
         return classGraph;
     }
 
+    /** Visits the Java fixtures at the supplied path using directed weighted graphs that reject self-loops. */
     private static Graph<VertexInfo, DefaultWeightedEdge> buildAndVisitSimple(String pathString) throws IOException {
         Graph<VertexInfo, DefaultWeightedEdge> classGraph =
                 new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
@@ -136,6 +138,7 @@ class JavaVisitorTest {
                 .recordClassLocation(eq("org.hjug.graphbuilder.visitor.testclasses.A$StaticInnerClass"), anyString());
     }
 
+    /** Verifies that the visitor registers the expected class and annotation declarations. */
     @Test
     void visitClasses_capturesAllExpectedVertices() throws IOException {
         Graph<VertexInfo, DefaultWeightedEdge> graph = buildAndVisit(TESTCLASSES);
@@ -149,12 +152,14 @@ class JavaVisitorTest {
         assertTrue(graph.containsVertex(VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.MyAnnotation")));
     }
 
+    /** Verifies that visiting method declarations registers their owning class. */
     @Test
     void visitMethodDeclarations_capturesMethodOwnerVertex() throws IOException {
         Graph<VertexInfo, DefaultWeightedEdge> graph = buildAndVisit(TESTCLASSES);
         assertTrue(graph.containsVertex(VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.A")));
     }
 
+    /** Verifies that lambda bodies contribute dependency vertices and repeated-use edge weights. */
     @Test
     void visitLambdaBodiesRecursively() throws IOException {
         Graph<VertexInfo, DefaultWeightedEdge> graph = buildAndVisit(LAMBDA);
@@ -201,6 +206,7 @@ class JavaVisitorTest {
                 "Edge weight should reflect multiple uses of DataProcessor in lambda bodies");
     }
 
+    /** Verifies that dependencies within nested lambda bodies are visited recursively. */
     @Test
     void visitNestedLambdaBodiesRecursively() throws IOException {
         Graph<VertexInfo, DefaultWeightedEdge> graph = buildAndVisit(LAMBDA);
@@ -243,6 +249,7 @@ class JavaVisitorTest {
                 "Edge weight should reflect HelperClass usage in nested lambda blocks");
     }
 
+    /** Verifies that method invocations contribute the expected dependency edges and weights. */
     @Test
     void visitMethodInvocations() throws IOException {
         Graph<VertexInfo, DefaultWeightedEdge> graph = buildAndVisitSimple(METHOD_INVOCATION);
@@ -265,6 +272,7 @@ class JavaVisitorTest {
                         VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.methodInvocation.C"))));
     }
 
+    /** Verifies that class instantiations contribute the expected dependency edges and weights. */
     @Test
     void visitNewClass() throws IOException {
         Graph<VertexInfo, DefaultWeightedEdge> graph = buildAndVisitSimple(NEW_CLASS);
@@ -284,6 +292,7 @@ class JavaVisitorTest {
                         VertexInfo.forName("org.hjug.graphbuilder.visitor.testclasses.newClass.C"))));
     }
 
+    /** Verifies that instance initializer bodies contribute dependencies to the enclosing class. */
     @Test
     void visitInstanceInitializerBlocks() throws IOException {
         Graph<VertexInfo, DefaultWeightedEdge> graph = buildAndVisit(INITIALIZERS);
@@ -321,6 +330,7 @@ class JavaVisitorTest {
                 "Should have edge from InitializerBlockTestClass to StringBuilder from initializer block");
     }
 
+    /** Verifies that initializer processing captures referenced types and nested class vertices. */
     @Test
     void visitStaticInitializerBlocks() throws IOException {
         Graph<VertexInfo, DefaultWeightedEdge> graph = buildAndVisit(INITIALIZERS);
@@ -359,6 +369,7 @@ class JavaVisitorTest {
                 "HelperService nested class should be captured from instance initializer");
     }
 
+    /** Verifies that an instance initializer variable type is attributed to the enclosing class. */
     @Test
     void instanceInitializerVariableTypeIsRecorded() throws IOException {
         Graph<VertexInfo, DefaultWeightedEdge> graph = buildAndVisit(VARIABLE_INITIALIZERS);
@@ -372,6 +383,7 @@ class JavaVisitorTest {
                 "instance initializer variable type should be recorded as a dependency via currentOwnerFqn");
     }
 
+    /** Verifies the expected exception dependency weight for the try/catch fixture. */
     @Test
     void catchClauseTypeIsCountedOnce() throws IOException {
         Graph<VertexInfo, DefaultWeightedEdge> graph = buildAndVisit(TRY_CATCH);
@@ -385,6 +397,7 @@ class JavaVisitorTest {
                 "catch clause exception type is double-processed by visitTry manual loop after super already handled it");
     }
 
+    /** Verifies that a class referenced only in Javadoc does not create a dependency edge. */
     @Test
     void javadocReferencedClassDoesNotCreateSpuriousDependencyEdge() throws IOException {
         Graph<VertexInfo, DefaultWeightedEdge> graph = buildAndVisit(JAVADOC_TESTCLASSES);
@@ -395,6 +408,7 @@ class JavaVisitorTest {
                 "JavaDocSibling is referenced only in Javadoc {@link} and must not create a dependency edge from JavaDocOwner");
     }
 
+    /** Verifies that a record declaration is registered as a class graph vertex. */
     @Test
     void visitRecordDeclaration_capturesRecordAsVertex() throws IOException {
         Graph<VertexInfo, DefaultWeightedEdge> graph = buildAndVisit(RECORD);
@@ -404,6 +418,7 @@ class JavaVisitorTest {
                 "SimpleRecord should be in the graph");
     }
 
+    /** Verifies that record component types contribute dependencies to the record. */
     @Test
     void visitRecordDeclaration_capturesRecordComponentsAsDependencies() throws IOException {
         Graph<VertexInfo, DefaultWeightedEdge> graph = buildAndVisit(RECORD);
@@ -440,6 +455,7 @@ class JavaVisitorTest {
                 "Should have edge from ComplexRecord to Map");
     }
 
+    /** Verifies that a generic record and its type-parameter bound are registered as vertices. */
     @Test
     void visitGenericRecordDeclaration_capturesTypeParameters() throws IOException {
         Graph<VertexInfo, DefaultWeightedEdge> graph = buildAndVisit(RECORD);
@@ -453,6 +469,7 @@ class JavaVisitorTest {
                 "Should have edge from GenericRecord to Comparable (type bound)");
     }
 
+    /** Verifies that an annotated record contributes its implemented interface and annotation types. */
     @Test
     void visitAnnotatedRecordDeclaration_capturesAnnotations() throws IOException {
         Graph<VertexInfo, DefaultWeightedEdge> graph = buildAndVisit(RECORD);
@@ -485,6 +502,7 @@ class JavaVisitorTest {
                 "NestedRecord should have source file mapping");
     }
 
+    /** Verifies that anonymous inner classes remain distinct vertices alongside their enclosing class. */
     @DisplayName("Anonymous inner classes (Outer$<digit>) enter the graph as first-class vertices")
     @Test
     void anonymousInnerClasses_enterTheGraphAsVertices() throws IOException {
@@ -511,6 +529,7 @@ class JavaVisitorTest {
                 "AnonymousOwner$2 (anonymous inner class) must enter the graph as a vertex");
     }
 
+    /** Returns the weight of the dependency between the supplied source and target vertices. */
     private static double getEdgeWeight(
             Graph<VertexInfo, DefaultWeightedEdge> classReferencesGraph,
             VertexInfo sourceVertex,

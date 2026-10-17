@@ -123,6 +123,16 @@ public class CompositeGraphBuilder {
         return getCodebaseGraphDTO(repositoryPath, repositoryRoot, config);
     }
 
+    /**
+     * Combines Java and Kotlin graphs, source mappings, and disharmonies.
+     *
+     * <p>Shared edge weights are summed before unattributed vertices are reconciled,
+     * locations are hydrated, and package-to-class relationships are rebuilt.
+     *
+     * @param javaDto the Java analysis result
+     * @param kotlinDto the Kotlin analysis result
+     * @return the unified codebase graph
+     */
     static CodebaseGraphDTO merge(CodebaseGraphDTO javaDto, CodebaseGraphDTO kotlinDto) {
         Graph<VertexInfo, DefaultWeightedEdge> mergedClassGraph =
                 new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
@@ -312,6 +322,10 @@ public class CompositeGraphBuilder {
         return lastDot >= 0 ? fqn.substring(lastDot + 1) : fqn;
     }
 
+    /**
+     * Redirects a fabricated vertex's edges to its canonical declaration, summing duplicate weights.
+     * Self-loops introduced by contraction are dropped, and new cross-package edges are recorded.
+     */
     private static void contractVertex(
             Graph<VertexInfo, DefaultWeightedEdge> classGraph,
             Graph<VertexInfo, DefaultWeightedEdge> packageGraph,
@@ -372,6 +386,7 @@ public class CompositeGraphBuilder {
         classGraph.removeVertex(fabricatedVertex);
     }
 
+    /** Adds or increments a package edge when both class endpoints have distinct, nonempty packages. */
     private static void addPackageEdgeIfCrossPackage(
             Graph<VertexInfo, DefaultWeightedEdge> packageGraph, VertexInfo classSource, VertexInfo classTarget) {
         String pkgSource = packageName(classSource.getName());
@@ -400,6 +415,7 @@ public class CompositeGraphBuilder {
         return lastDot >= 0 ? fqn.substring(0, lastDot) : "";
     }
 
+    /** Copies source vertices and edges into the target, adding weights for edges already present. */
     private static void mergeGraph(
             Graph<VertexInfo, DefaultWeightedEdge> source, Graph<VertexInfo, DefaultWeightedEdge> target) {
         // Add vertices
@@ -422,6 +438,7 @@ public class CompositeGraphBuilder {
         }
     }
 
+    /** Maps a source DTO's package-to-class relationships onto the corresponding merged graph edges. */
     private static void mergeClassRelationships(
             CodebaseGraphDTO dto,
             Graph<VertexInfo, DefaultWeightedEdge> sourceClassGraph,

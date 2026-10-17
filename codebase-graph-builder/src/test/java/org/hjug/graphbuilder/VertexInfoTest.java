@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test;
  */
 class VertexInfoTest {
 
+    /** Verifies that a top-level class derives its package namespace and starts with no disk location. */
     @DisplayName("forName captures the vertex name and derives the enclosing package for a top-level class")
     @Test
     void forName_topLevelClass_parentNamespaceIsEnclosingPackage() {
@@ -29,6 +30,7 @@ class VertexInfoTest {
         assertNull(vertex.getLocationOnDisk(), "location is hydrated later, not at creation");
     }
 
+    /** Verifies that a nested class identifies its enclosing class as its parent namespace. */
     @DisplayName("forName derives the enclosing class for a nested class")
     @Test
     void forName_nestedClass_parentNamespaceIsEnclosingClass() {
@@ -37,6 +39,7 @@ class VertexInfoTest {
         assertEquals("com.foo.Outer", vertex.getParentNamespace());
     }
 
+    /** Verifies parent derivation for anonymous, synthetic, and multiply nested Java classes. */
     @DisplayName("forName derives the enclosing class for Java anonymous and synthetic classes")
     @Test
     void forName_anonymousAndSyntheticClasses_parentNamespaceIsEnclosingClass() {
@@ -47,6 +50,7 @@ class VertexInfoTest {
                 VertexInfo.forName("com.foo.Outer$Inner$2").getParentNamespace());
     }
 
+    /** Verifies that a Kotlin anonymous vertex identifies its enclosing construct. */
     @DisplayName("forName derives the enclosing class for a Kotlin <anonymous> vertex")
     @Test
     void forName_kotlinAnonymous_parentNamespaceIsEnclosingConstruct() {
@@ -55,6 +59,7 @@ class VertexInfoTest {
         assertEquals("dev.DeveloperWASDControl", vertex.getParentNamespace());
     }
 
+    /** Verifies that unqualified classes and standalone anonymous vertices have no parent namespace. */
     @DisplayName("forName yields no parent namespace for packageless and top-level anonymous vertices")
     @Test
     void forName_packagelessVertex_parentNamespaceIsNull() {
@@ -62,6 +67,7 @@ class VertexInfoTest {
         assertNull(VertexInfo.forName("<anonymous>").getParentNamespace());
     }
 
+    /** Verifies that package vertices derive parent packages and top-level packages have no parent. */
     @DisplayName("forName derives the parent package for a package vertex")
     @Test
     void forName_packageVertex_parentNamespaceIsParentPackage() {
@@ -71,6 +77,7 @@ class VertexInfoTest {
         assertNull(VertexInfo.forName("com").getParentNamespace(), "top-level package has no parent");
     }
 
+    /** Verifies that vertex identity depends only on the name and is unaffected by location hydration. */
     @DisplayName("VertexInfo equality and hashing are name-based only")
     @Test
     void equalsAndHashCode_considerOnlyTheName() {
@@ -83,6 +90,7 @@ class VertexInfoTest {
         assertNotEquals(bare, VertexInfo.forName("com.foo.Baz"));
     }
 
+    /** Verifies that a fresh vertex probe finds a graph vertex with the same name. */
     @DisplayName("A VertexInfo probe created by forName is found in a graph by name")
     @Test
     void probe_matchesGraphVertexWithSameName() {
@@ -95,6 +103,7 @@ class VertexInfoTest {
         assertTrue(graph.vertexSet().contains(collected));
     }
 
+    /** Verifies that string conversion preserves named and anonymous vertex names for edge rendering. */
     @DisplayName("toString returns the vertex name so edge rendering is unchanged")
     @Test
     void toString_returnsName() {
@@ -102,6 +111,7 @@ class VertexInfoTest {
         assertEquals("<anonymous>", VertexInfo.forName("<anonymous>").toString());
     }
 
+    /** Verifies that hydration can assign a repository-relative disk location. */
     @DisplayName("locationOnDisk can be set during hydration and read back")
     @Test
     void locationOnDisk_canBeHydrated() {
@@ -112,6 +122,7 @@ class VertexInfoTest {
         assertEquals("src/main/java/com/foo/Bar.java", vertex.getLocationOnDisk());
     }
 
+    /** Verifies that vertex creation rejects null and empty names with the expected exceptions. */
     @DisplayName("forName rejects null and empty names")
     @Test
     void forName_rejectsNullAndEmptyNames() {

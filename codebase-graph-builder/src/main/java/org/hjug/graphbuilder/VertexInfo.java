@@ -32,6 +32,7 @@ public class VertexInfo {
     private final String parentNamespace;
     private String locationOnDisk;
 
+    /** Creates a vertex with the supplied identity and parent namespace, leaving its disk location unset. */
     private VertexInfo(String name, String parentNamespace) {
         this.name = name;
         this.parentNamespace = parentNamespace;
@@ -128,6 +129,12 @@ public class VertexInfo {
         return parentNamespace;
     }
 
+    /**
+     * Compares vertex names; parent namespaces and hydrated disk locations do not affect identity.
+     *
+     * @param o the object to compare
+     * @return whether the other object is a vertex with the same name
+     */
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -139,11 +146,21 @@ public class VertexInfo {
         return name.equals(((VertexInfo) o).name);
     }
 
+    /**
+     * Returns a name-based hash that remains stable when the disk location is hydrated.
+     *
+     * @return the vertex name's hash code
+     */
     @Override
     public int hashCode() {
         return name.hashCode();
     }
 
+    /**
+     * Returns the vertex name for graph edge rendering.
+     *
+     * @return the fully qualified class name or package name
+     */
     @Override
     public String toString() {
         return name;

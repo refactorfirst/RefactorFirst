@@ -118,6 +118,7 @@ class CostBenefitCalculatorTest {
         Assertions.assertEquals(2, disharmonies.get(1).getPriority().intValue());
     }
 
+    /** Verifies candidate edge priorities, cycle counts, effort ranks, and endpoint removal flags. */
     @Test
     void calculateRelationshipCostBenefitValues_filtersMissingLogInfoAndAssignsPriority() throws Exception {
 
@@ -196,6 +197,7 @@ class CostBenefitCalculatorTest {
         }
     }
 
+    /** Verifies that candidate edges receive sequential priorities when change-proneness ranks differ. */
     @Test
     void calculateRelationshipCostBenefitValues_prefersHigherChangePronenessRank() throws Exception {
 
@@ -257,6 +259,7 @@ class CostBenefitCalculatorTest {
         }
     }
 
+    /** Verifies that package cycle counts reflect the relationship itself rather than only its source package. */
     @Test
     void calculateRelationshipCostBenefitValues_packageCycleCountReflectsRelationshipNotJustSourcePackage()
             throws Exception {
@@ -328,6 +331,7 @@ class CostBenefitCalculatorTest {
         }
     }
 
+    /** Verifies that only class edges matching a selected package relationship inherit its removal flag. */
     @Test
     void calculateRelationshipCostBenefitValues_flagsClassEdgesWhosePackageRelationshipIsAlsoBeingRemoved()
             throws Exception {

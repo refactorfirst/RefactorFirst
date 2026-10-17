@@ -43,6 +43,7 @@ class DependencyVisitorLogicJavaKotlinParityTest {
     private static final String JAVA_TESTCLASSES = "src/test/java/org/hjug/graphbuilder/visitor/testclasses";
     private static final String KOTLIN_SOURCE_PATH_DIR = "src/test/resources/kotlinSourcePathSrcDirectory";
 
+    /** Verifies that Java declarations with missing type attribution can still register class vertices. */
     @DisplayName("1. visitCompilationUnit handles null ClassDeclaration type without NPE (Java)")
     @Test
     void javaVisitCompilationUnit_nullTypeDoesNotNPE(@TempDir Path tempDir) throws IOException {
@@ -83,6 +84,7 @@ class DependencyVisitorLogicJavaKotlinParityTest {
                         .containsVertex(VertexInfo.forName("com.example.nulltype.AnotherClass")));
     }
 
+    /** Verifies that Kotlin declarations with missing type attribution can still register class vertices. */
     @DisplayName("2. visitCompilationUnit handles null ClassDeclaration type without NPE (Kotlin)")
     @Test
     void kotlinVisitCompilationUnit_nullTypeDoesNotNPE(@TempDir Path tempDir) throws IOException {
@@ -124,6 +126,7 @@ class DependencyVisitorLogicJavaKotlinParityTest {
                         .containsVertex(VertexInfo.forName("com.example.nulltype.AnotherClass")));
     }
 
+    /** Compares normalized project dependency edges and weights from corresponding Java and Kotlin fixtures. */
     @DisplayName("3. Identical J-level overrides produce same edges for minimal fixture (Java vs Kotlin)")
     @Test
     void identicalMethods_sameEdges() throws IOException {
@@ -147,6 +150,7 @@ class DependencyVisitorLogicJavaKotlinParityTest {
                 "com.ideacrest.parser.kotlin.sourcepath");
     }
 
+    /** Parses a Java source fixture and returns its collected class dependency graph. */
     private Graph<VertexInfo, DefaultWeightedEdge> buildJavaGraph(Path sourceFile) throws IOException {
         Graph<VertexInfo, DefaultWeightedEdge> classGraph =
                 new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
@@ -166,6 +170,7 @@ class DependencyVisitorLogicJavaKotlinParityTest {
         return classGraph;
     }
 
+    /** Parses a Kotlin source fixture and returns its collected class dependency graph. */
     private Graph<VertexInfo, DefaultWeightedEdge> buildKotlinGraph(Path sourceFile) throws IOException {
         Graph<VertexInfo, DefaultWeightedEdge> classGraph =
                 new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
@@ -202,6 +207,7 @@ class DependencyVisitorLogicJavaKotlinParityTest {
         return classGraph;
     }
 
+    /** Asserts equality of project edges and weights after normalizing the language-specific package prefixes. */
     private void compareProjectEdges(
             Graph<VertexInfo, DefaultWeightedEdge> javaGraph,
             Graph<VertexInfo, DefaultWeightedEdge> kotlinGraph,
@@ -235,6 +241,7 @@ class DependencyVisitorLogicJavaKotlinParityTest {
                 "Java and Kotlin project edges and weights should match exactly");
     }
 
+    /** Collects edge weights keyed by normalized endpoint names when both endpoints occur in the supplied mapping. */
     private Map<String, Double> normalizedEdges(
             Graph<VertexInfo, DefaultWeightedEdge> graph, Map<String, String> normalizedVertices) {
         Map<String, Double> edges = new HashMap<>();

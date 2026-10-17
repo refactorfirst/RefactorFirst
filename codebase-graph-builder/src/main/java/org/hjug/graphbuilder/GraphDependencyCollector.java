@@ -38,6 +38,12 @@ public class GraphDependencyCollector implements DependencyCollector {
     /** Registry of the VertexInfo instances created for each vertex name. */
     private final Map<String, VertexInfo> vertexRegistry = new HashMap<>();
 
+    /**
+     * Creates a dependency collector that writes into the supplied graphs.
+     *
+     * @param classReferencesGraph the graph receiving class dependencies
+     * @param packageReferencesGraph the graph receiving cross-package dependencies
+     */
     public GraphDependencyCollector(
             Graph<VertexInfo, DefaultWeightedEdge> classReferencesGraph,
             Graph<VertexInfo, DefaultWeightedEdge> packageReferencesGraph) {
@@ -45,6 +51,13 @@ public class GraphDependencyCollector implements DependencyCollector {
         this.packageReferencesGraph = packageReferencesGraph;
     }
 
+    /**
+     * Adds or increments a class dependency and records its corresponding package relationship.
+     * Dependencies from a class to itself are ignored.
+     *
+     * @param fromClassFqn the fully qualified source class name
+     * @param toClassFqn the fully qualified target class name
+     */
     @Override
     public void addClassDependency(String fromClassFqn, String toClassFqn) {
         if (fromClassFqn.equals(toClassFqn)) {
@@ -78,6 +91,13 @@ public class GraphDependencyCollector implements DependencyCollector {
         }
     }
 
+    /**
+     * Adds or increments the package dependency implied by two class names.
+     *
+     * @param fromClassFqn the fully qualified source class name
+     * @param toClassFqn the fully qualified target class name
+     * @return the package edge, or {@code null} for equal or empty endpoint packages
+     */
     @Override
     public DefaultWeightedEdge addPackageDependency(String fromClassFqn, String toClassFqn) {
         String fromPackageName = getPackageFromFqn(fromClassFqn);
@@ -128,6 +148,12 @@ public class GraphDependencyCollector implements DependencyCollector {
         return vertexRegistry.computeIfAbsent(name, VertexInfo::forName);
     }
 
+    /**
+     * Records the raw source location reported by a visitor for later inspection.
+     *
+     * @param classFqn the fully qualified class name
+     * @param sourceFilePath the visitor-reported source location
+     */
     @Override
     public void recordClassLocation(String classFqn, String sourceFilePath) {
         // Capture the location reported during collection; repository-relative
@@ -140,6 +166,11 @@ public class GraphDependencyCollector implements DependencyCollector {
         packagesInCodebase.add(packageName);
     }
 
+    /**
+     * Registers a class vertex with its derived parent namespace, even if it has no dependencies.
+     *
+     * @param classFqn the fully qualified class name
+     */
     @Override
     public void registerClassVertex(String classFqn) {
         classReferencesGraph.addVertex(getOrCreateVertex(classFqn));

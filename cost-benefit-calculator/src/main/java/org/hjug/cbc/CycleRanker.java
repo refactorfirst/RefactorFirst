@@ -64,6 +64,12 @@ public class CycleRanker {
         return codebaseGraphDTO;
     }
 
+    /**
+     * Finds cyclic subgraphs and assigns priorities in descending order of vertex count.
+     *
+     * @param graph the dependency graph to analyze
+     * @return the detected cycles with priorities assigned
+     */
     public List<RankedCycle> rankCycles(Graph<VertexInfo, DefaultWeightedEdge> graph) {
         List<RankedCycle> rankedCycles;
         try {
@@ -76,6 +82,7 @@ public class CycleRanker {
         return rankedCycles;
     }
 
+    /** Builds cycle records from cyclic subgraphs, retaining vertex names and repository source paths. */
     private List<RankedCycle> identifyRankedCycles(Graph<VertexInfo, DefaultWeightedEdge> classReferencesGraph)
             throws IOException {
         List<RankedCycle> rankedCycles = new ArrayList<>();

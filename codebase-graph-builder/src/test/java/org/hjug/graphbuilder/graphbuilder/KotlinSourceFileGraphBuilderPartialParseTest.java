@@ -24,6 +24,7 @@ class KotlinSourceFileGraphBuilderPartialParseTest {
     @TempDir
     Path tempDir;
 
+    /** Verifies that the license-header fixture retains class vertices and source paths during parse recovery. */
     @DisplayName("Kotlin file with license header parse error still registers classes from partial parse tree")
     @Test
     void kotlinFileWithLicenseHeaderParseError_registersClassesFromPartialTree() throws IOException {
@@ -85,6 +86,7 @@ class KotlinSourceFileGraphBuilderPartialParseTest {
                 "Source path should point to Settings.kt, got: " + gameSettingsPath);
     }
 
+    /** Verifies that an ordinary Kotlin source file registers its class vertex. */
     @DisplayName("Kotlin file without parse error still works normally")
     @Test
     void kotlinFileWithoutParseError_worksNormally() throws IOException {
@@ -114,6 +116,7 @@ class KotlinSourceFileGraphBuilderPartialParseTest {
                 "NormalClass should be registered");
     }
 
+    /** Verifies that an unrecoverable Kotlin input returns a DTO without throwing. */
     @DisplayName("ParseError without partial tree is handled gracefully")
     @Test
     void parseErrorWithoutPartialTree_handledGracefully() throws IOException {
@@ -145,6 +148,7 @@ class KotlinSourceFileGraphBuilderPartialParseTest {
         assertNotNull(classGraph);
     }
 
+    /** Verifies that the parse-recovery fixture retains all classes declared in the source file. */
     @DisplayName("Multiple classes in file with ParseError are all registered")
     @Test
     void multipleClassesInFileWithParseError_allRegistered() throws IOException {

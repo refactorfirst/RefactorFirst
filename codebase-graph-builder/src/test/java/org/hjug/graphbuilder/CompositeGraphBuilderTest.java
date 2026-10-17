@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
  */
 class CompositeGraphBuilderTest {
 
+    /** Verifies that a mixed source directory produces one graph containing Java and Kotlin dependencies. */
     @DisplayName("A directory with both Java and Kotlin source files produces a single graph with cross-language edges")
     @Test
     void parseMixedSourceDirectoryTest() throws IOException {
@@ -52,6 +53,7 @@ class CompositeGraphBuilderTest {
                 VertexInfo.forName("com.ideacrest.parser.mixedclasses.SharedTarget")));
     }
 
+    /** Verifies that cross-package Java references resolve to canonical Kotlin vertices and package edges. */
     @DisplayName("Cross-package Java-to-Kotlin reference is reconciled to the canonical Kotlin FQN")
     @Test
     void parseMixedSourceDirectoryCrossPackageTest() throws IOException {

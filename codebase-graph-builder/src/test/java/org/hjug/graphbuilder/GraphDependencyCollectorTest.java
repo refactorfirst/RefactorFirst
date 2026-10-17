@@ -28,15 +28,18 @@ import org.junit.jupiter.api.Test;
  */
 class GraphDependencyCollectorTest {
 
+    /** Creates an empty directed weighted graph for dependency collection tests. */
     private static Graph<VertexInfo, DefaultWeightedEdge> newClassGraph() {
         return new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
     }
 
+    /** Asserts that a graph contains a vertex matching the supplied class or package name. */
     private static void assertHasVertex(Graph<VertexInfo, DefaultWeightedEdge> graph, String name) {
         VertexInfo vertex = VertexInfo.forName(name);
         assertTrue(graph.containsVertex(vertex), "expected vertex " + name);
     }
 
+    /** Verifies that a Java anonymous source class participates in class dependencies. */
     @DisplayName("addClassDependency creates vertex + edge for a Java anonymous source")
     @Test
     void addClassDependency_javaAnonymousSource_addsVertex() {
@@ -53,6 +56,7 @@ class GraphDependencyCollectorTest {
         assertTrue(pkgGraph.edgeSet().isEmpty());
     }
 
+    /** Verifies that an anonymous target class contributes both class and cross-package dependencies. */
     @DisplayName("addClassDependency creates vertex + edge for a Java anonymous target across packages")
     @Test
     void addClassDependency_javaAnonymousTarget_addsVertex() {
@@ -71,6 +75,7 @@ class GraphDependencyCollectorTest {
         assertEquals(1, pkgGraph.edgeSet().size());
     }
 
+    /** Verifies that dependency endpoints retain their names and derived enclosing namespaces. */
     @DisplayName("addClassDependency captures VertexInfo with parent namespace instead of a bare name")
     @Test
     void addClassDependency_capturesVertexInfoWithParentNamespace() {
@@ -90,6 +95,7 @@ class GraphDependencyCollectorTest {
         assertEquals("com.bar", target.getParentNamespace());
     }
 
+    /** Verifies that package dependency vertices identify their parent packages. */
     @DisplayName("package vertices carry their parent package as the parent namespace")
     @Test
     void addClassDependency_packageVerticesHaveParentPackageNamespace() {
@@ -109,6 +115,7 @@ class GraphDependencyCollectorTest {
         assertEquals("com", toPackage.getParentNamespace());
     }
 
+    /** Verifies that a packageless Kotlin anonymous source creates a class edge without a package edge. */
     @DisplayName("addClassDependency makes the Kotlin literal <anonymous> a vertex and edge")
     @Test
     void addClassDependency_kotlinAnonymousSource_addsVertex() {
@@ -129,6 +136,7 @@ class GraphDependencyCollectorTest {
         assertTrue(pkgGraph.edgeSet().isEmpty(), "no package edge should be created when the source package is empty");
     }
 
+    /** Verifies that a packageless anonymous source creates neither an empty package vertex nor an edge. */
     @DisplayName("addPackageDependency with a Kotlin <anonymous> source does not create an empty package vertex")
     @Test
     void addPackageDependency_kotlinAnonymousSource_doesNotPollutePackageGraph() {
@@ -149,6 +157,7 @@ class GraphDependencyCollectorTest {
         assertTrue(pkgGraph.edgeSet().isEmpty());
     }
 
+    /** Verifies that explicit registration retains anonymous and synthetic class vertices. */
     @DisplayName("registerClassVertex registers Java anonymous and Kotlin <anonymous> FQNs")
     @Test
     void registerClassVertex_syntheticFqn_registered() {
@@ -166,6 +175,7 @@ class GraphDependencyCollectorTest {
         assertEquals(3, classGraph.vertexSet().size());
     }
 
+    /** Verifies that explicit registration adds a named class without requiring dependencies. */
     @DisplayName("registerClassVertex registers real FQNs (control)")
     @Test
     void registerClassVertex_realFqn_registered() {
@@ -179,6 +189,7 @@ class GraphDependencyCollectorTest {
         assertEquals(1, classGraph.vertexSet().size());
     }
 
+    /** Verifies that the collector preserves the raw source location reported for a class. */
     @DisplayName("recordClassLocation captures the location reported during collection")
     @Test
     void recordClassLocation_capturesLocation() {
@@ -194,6 +205,7 @@ class GraphDependencyCollectorTest {
                 collector.getRecordedClassLocations().get("com.foo.Real"));
     }
 
+    /** Verifies that a cross-package class dependency populates both graphs and their relationship mapping. */
     @DisplayName("addClassDependency happy path still populates class + package graphs")
     @Test
     void addClassDependency_realCrossPackageDeps_populatesBothGraphs() {
@@ -217,6 +229,7 @@ class GraphDependencyCollectorTest {
         assertEquals(1, relationships.size(), "cross-package dependency must be tracked");
     }
 
+    /** Verifies that a dependency within one package creates only the class relationship. */
     @DisplayName("addClassDependency within the same package still records a class edge and no package edge")
     @Test
     void addClassDependency_realSamePackageDep_recordsClassEdgeOnly() {

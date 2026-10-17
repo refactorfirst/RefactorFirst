@@ -21,6 +21,7 @@ import org.jgrapht.graph.DefaultWeightedEdge;
  */
 public final class VertexInfoHydrator {
 
+    /** Prevents instantiation of this utility class. */
     private VertexInfoHydrator() {}
 
     /**
@@ -49,6 +50,13 @@ public final class VertexInfoHydrator {
         }
     }
 
+    /**
+     * Resolves a class source path, falling back to its outer Java class or enclosing Kotlin construct.
+     *
+     * @param fqn the fully qualified class name
+     * @param mapping the repository-relative class-to-source-file mapping
+     * @return the mapped source path, or {@code null} if neither the class nor its enclosing class is mapped
+     */
     private static String resolveClassLocation(String fqn, Map<String, String> mapping) {
         String direct = mapping.get(fqn);
         if (direct != null) {
@@ -135,6 +143,7 @@ public final class VertexInfoHydrator {
         return packageName;
     }
 
+    /** Returns the directory of the package's selected direct-member source file, or {@code null} if unmapped. */
     private static String resolvePackageLocation(String packageName, Map<String, String> packagePathIndex) {
         String memberPath = packagePathIndex.get(packageName);
         if (memberPath == null) {

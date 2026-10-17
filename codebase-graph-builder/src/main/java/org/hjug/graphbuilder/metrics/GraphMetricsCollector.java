@@ -30,12 +30,24 @@ public class GraphMetricsCollector implements DependencyCollector {
     /** Maps callee full-qualified method signature → set of caller class FQNs (CC). */
     private final Map<String, Set<String>> calleeToCallerClasses = new HashMap<>();
 
+    /**
+     * Creates a metrics collector backed by the supplied dependency graphs.
+     *
+     * @param classGraph the graph receiving class dependencies
+     * @param packageGraph the graph receiving package dependencies
+     */
     public GraphMetricsCollector(
             Graph<VertexInfo, DefaultWeightedEdge> classGraph, Graph<VertexInfo, DefaultWeightedEdge> packageGraph) {
         this.classGraph = classGraph;
         this.packageGraph = packageGraph;
     }
 
+    /**
+     * Adds or increments a class edge and records the target dependency in the source class metrics.
+     *
+     * @param fromClass the fully qualified source class name
+     * @param toClass the fully qualified target class name
+     */
     @Override
     public void addClassDependency(String fromClass, String toClass) {
         VertexInfo fromVertex = VertexInfo.forName(fromClass);
@@ -61,6 +73,13 @@ public class GraphMetricsCollector implements DependencyCollector {
         getOrCreateClassMetrics(fromClass).addDependency(toClass);
     }
 
+    /**
+     * Adds or increments a dependency between the supplied package names.
+     *
+     * @param fromPackage the source package name
+     * @param toPackage the target package name
+     * @return the newly created or existing package edge
+     */
     @Override
     public DefaultWeightedEdge addPackageDependency(String fromPackage, String toPackage) {
         VertexInfo fromPackageVertex = VertexInfo.forName(fromPackage);
@@ -91,6 +110,11 @@ public class GraphMetricsCollector implements DependencyCollector {
         classToSourceFileMapping.put(classFqn, sourceFilePath);
     }
 
+    /**
+     * Ensures a package vertex exists even when no dependency edge has been recorded for it.
+     *
+     * @param packageName the package to register
+     */
     @Override
     public void registerPackage(String packageName) {
         VertexInfo packageVertex = VertexInfo.forName(packageName);
@@ -99,11 +123,21 @@ public class GraphMetricsCollector implements DependencyCollector {
         }
     }
 
+    /**
+     * Ensures a class vertex exists independently of its dependency edges.
+     *
+     * @param classFqn the fully qualified class name
+     */
     @Override
     public void registerClassVertex(String classFqn) {
         classGraph.addVertex(VertexInfo.forName(classFqn));
     }
 
+    /**
+     * Returns the names of all vertices currently present in the package graph.
+     *
+     * @return a set of package names
+     */
     public Set<String> getPackagesInCodebase() {
         return packageGraph.vertexSet().stream().map(VertexInfo::getName).collect(java.util.stream.Collectors.toSet());
     }

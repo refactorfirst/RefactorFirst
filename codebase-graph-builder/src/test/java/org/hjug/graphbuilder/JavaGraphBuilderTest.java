@@ -31,6 +31,7 @@ class JavaGraphBuilderTest {
                 IllegalArgumentException.class, () -> compositeGraphBuilder.getCodebaseGraphDTO(null, false, ""));
     }
 
+    /** Verifies that Java class vertices expose repository-relative source paths and parent namespaces. */
     @DisplayName("Vertices are VertexInfo instances hydrated with repo-relative location and parent namespace")
     @Test
     void parseSourceDirectoryVerticesCarryVertexInfo() throws IOException {
@@ -51,6 +52,7 @@ class JavaGraphBuilderTest {
         assertTrue(packageGraph.edgeSet().isEmpty());
     }
 
+    /** Verifies that cross-package analysis hydrates package directories and parent namespaces. */
     @DisplayName("Cross-package builds hydrate package vertices with parent package and member-file directory")
     @Test
     void crossPackageBuildHydratesPackageVertices() throws IOException {
@@ -69,6 +71,7 @@ class JavaGraphBuilderTest {
                 "expected the package directory, got: " + fxglAppPackage.getLocationOnDisk());
     }
 
+    /** Verifies the Java fixture graph contains the expected classes, dependencies, and edge weights. */
     @DisplayName("Given a valid source directory input parameter return a valid graph.")
     @Test
     void parseSourceDirectoryTest() throws IOException {
@@ -120,6 +123,7 @@ class JavaGraphBuilderTest {
                         VertexInfo.forName("com.ideacrest.parser.testclasses.D")));
     }
 
+    /** Returns the weight of the dependency between the supplied source and target vertices. */
     private static double getEdgeWeight(
             Graph<VertexInfo, DefaultWeightedEdge> classReferencesGraph,
             VertexInfo sourceVertex,
