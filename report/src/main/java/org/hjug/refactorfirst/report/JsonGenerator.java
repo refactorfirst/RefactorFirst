@@ -20,6 +20,7 @@ import org.hjug.feedback.CycleRemovalComputer;
 import org.hjug.feedback.CycleRemovalResult;
 import org.hjug.git.GitLogReader;
 import org.hjug.graphbuilder.CodebaseGraphDTO;
+import org.hjug.graphbuilder.VertexInfo;
 import org.hjug.graphbuilder.metrics.DisharmonyMetric;
 import org.hjug.metrics.DisharmonyInstance;
 import org.hjug.refactorfirst.report.model.*;
@@ -273,8 +274,8 @@ public class JsonGenerator extends HtmlReport {
                         .targetClassPath(classSourcePath(endVertex, codebaseGraphDTO))
                         .simpleSourceClassName(getClassName(startVertex))
                         .simpleTargetClassName(getClassName(endVertex))
-                        .sourceMarked(classesToRemove.contains(startVertex))
-                        .targetMarked(classesToRemove.contains(endVertex))
+                        .sourceMarked(classesToRemove.contains(VertexInfo.forName(startVertex)))
+                        .targetMarked(classesToRemove.contains(VertexInfo.forName(endVertex)))
                         .weight((int) classGraph.getEdgeWeight(edgeInfo.getEdge()))
                         .priority(edgeInfo.getPriority())
                         .cycleCount(edgeInfo.getCycleCount())
@@ -383,8 +384,8 @@ public class JsonGenerator extends HtmlReport {
                         .targetPackage(endVertex)
                         .sourcePackagePath(sourcePackagePath)
                         .targetPackagePath(targetPackagePath)
-                        .sourceMarked(packagesToRemove.contains(startVertex))
-                        .targetMarked(packagesToRemove.contains(endVertex))
+                        .sourceMarked(packagesToRemove.contains(VertexInfo.forName(startVertex)))
+                        .targetMarked(packagesToRemove.contains(VertexInfo.forName(endVertex)))
                         .weight((int) packageGraph.getEdgeWeight(edgeInfo.getEdge()))
                         .priority(edgeInfo.getPriority())
                         .cycleCount(edgeInfo.getCycleCount())
@@ -432,7 +433,7 @@ public class JsonGenerator extends HtmlReport {
 
                 List<CycleBreakdownRowDTO> breakdown = new ArrayList<>();
                 for (String vertex : largestCycle.getVertexSet()) {
-                    boolean marked = classesToRemove.contains(vertex);
+                    boolean marked = classesToRemove.contains(VertexInfo.forName(vertex));
 
                     StringBuilder edges = new StringBuilder();
                     for (DefaultWeightedEdge edge : largestCycle.getEdgeSet()) {
@@ -793,8 +794,8 @@ public class JsonGenerator extends HtmlReport {
                     .targetClassPath(classSourcePath(endVertex, codebaseGraphDTO))
                     .simpleSourceClassName(getClassName(startVertex))
                     .simpleTargetClassName(getClassName(endVertex))
-                    .sourceMarked(classesToRemove.contains(startVertex))
-                    .targetMarked(classesToRemove.contains(endVertex))
+                    .sourceMarked(classesToRemove.contains(VertexInfo.forName(startVertex)))
+                    .targetMarked(classesToRemove.contains(VertexInfo.forName(endVertex)))
                     .weight(weight)
                     .cycleCount(cycleCounts.get(classEdge))
                     .build());
@@ -818,7 +819,7 @@ public class JsonGenerator extends HtmlReport {
             return 0;
         }
         int cycleCount = 0;
-        for (AsSubgraph<String, DefaultWeightedEdge> cycle : classCycles.values()) {
+        for (AsSubgraph<VertexInfo, DefaultWeightedEdge> cycle : classCycles.values()) {
             if (cycle.containsEdge(classEdge)) {
                 cycleCount++;
             }

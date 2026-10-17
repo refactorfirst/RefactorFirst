@@ -39,6 +39,7 @@ import org.junit.jupiter.api.Test;
  */
 class TypeParameterReferenceTest {
 
+    /** Verifies that Kotlin type-parameter bounds create class edges while a top-level typealias adds no vertex. */
     @DisplayName("Kotlin class/method/property type-parameter bounds produce edges to the bound class; "
             + "top-level typealias does not break the visitor")
     @Test
@@ -46,7 +47,7 @@ class TypeParameterReferenceTest {
         File srcDirectory = new File("src/test/resources/kotlinTypeParamSrcDirectory");
         CompositeGraphBuilder compositeGraphBuilder = new CompositeGraphBuilder();
         CodebaseGraphDTO dto = compositeGraphBuilder.getCodebaseGraphDTO(srcDirectory.getAbsolutePath(), false, "");
-        Graph<String, DefaultWeightedEdge> classReferencesGraph = dto.getClassReferencesGraph();
+        Graph<VertexInfo, DefaultWeightedEdge> classReferencesGraph = dto.getClassReferencesGraph();
         assertNotNull(classReferencesGraph);
 
         System.out.println("Vertices: " + classReferencesGraph.vertexSet());
@@ -54,18 +55,20 @@ class TypeParameterReferenceTest {
 
         // The bound class appears as a vertex.
         assertTrue(
-                classReferencesGraph.containsVertex("com.ideacrest.parser.typeparams.MetaClassA"),
+                classReferencesGraph.containsVertex(VertexInfo.forName("com.ideacrest.parser.typeparams.MetaClassA")),
                 "MetaClassA should be a vertex");
 
         // GenericHolder<T : MetaClassA> — class-level type param bound,
         // method type-param bounds, and a property of declared type
         // MetaClassA — all funnel into the GenericHolder -> MetaClassA edge.
         assertTrue(
-                classReferencesGraph.containsVertex("com.ideacrest.parser.typeparams.GenericHolder"),
+                classReferencesGraph.containsVertex(
+                        VertexInfo.forName("com.ideacrest.parser.typeparams.GenericHolder")),
                 "GenericHolder should be a vertex");
         assertTrue(
                 classReferencesGraph.containsEdge(
-                        "com.ideacrest.parser.typeparams.GenericHolder", "com.ideacrest.parser.typeparams.MetaClassA"),
+                        VertexInfo.forName("com.ideacrest.parser.typeparams.GenericHolder"),
+                        VertexInfo.forName("com.ideacrest.parser.typeparams.MetaClassA")),
                 "GenericHolder -> MetaClassA edge should exist (class/method/property type-parameter bounds)");
 
         // The top-level typealias MetaList = List<MetaClassA> has no class

@@ -22,24 +22,30 @@ class CompositeGraphBuilderReconciliationTest {
         // - Fabricated Java reference: com.other.pkg.GameSettings (no source mapping)
         // - Caller: com.other.pkg.SomeClass -> fabricated GameSettings (weight 3)
         // - Another caller: com.third.pkg.OtherClass -> canonical GameSettings (weight 2)
-        Graph<String, DefaultWeightedEdge> classGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-        classGraph.addVertex("com.almasb.fxgl.app.GameSettings"); // canonical
-        classGraph.addVertex("com.other.pkg.GameSettings"); // fabricated
-        classGraph.addVertex("com.other.pkg.SomeClass");
-        classGraph.addVertex("com.third.pkg.OtherClass");
+        Graph<VertexInfo, DefaultWeightedEdge> classGraph =
+                new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        classGraph.addVertex(VertexInfo.forName("com.almasb.fxgl.app.GameSettings")); // canonical
+        classGraph.addVertex(VertexInfo.forName("com.other.pkg.GameSettings")); // fabricated
+        classGraph.addVertex(VertexInfo.forName("com.other.pkg.SomeClass"));
+        classGraph.addVertex(VertexInfo.forName("com.third.pkg.OtherClass"));
 
-        DefaultWeightedEdge e1 = classGraph.addEdge("com.other.pkg.SomeClass", "com.other.pkg.GameSettings");
+        DefaultWeightedEdge e1 = classGraph.addEdge(
+                VertexInfo.forName("com.other.pkg.SomeClass"), VertexInfo.forName("com.other.pkg.GameSettings"));
         classGraph.setEdgeWeight(e1, 3);
-        DefaultWeightedEdge e2 = classGraph.addEdge("com.third.pkg.OtherClass", "com.almasb.fxgl.app.GameSettings");
+        DefaultWeightedEdge e2 = classGraph.addEdge(
+                VertexInfo.forName("com.third.pkg.OtherClass"), VertexInfo.forName("com.almasb.fxgl.app.GameSettings"));
         classGraph.setEdgeWeight(e2, 2);
 
         // Package graph
-        Graph<String, DefaultWeightedEdge> packageGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-        packageGraph.addVertex("com.other.pkg");
-        packageGraph.addVertex("com.third.pkg");
-        packageGraph.addVertex("com.almasb.fxgl.app");
-        packageGraph.addEdge("com.other.pkg", "com.other.pkg"); // self-edge from fabricated (ignored by collector)
-        packageGraph.addEdge("com.third.pkg", "com.almasb.fxgl.app");
+        Graph<VertexInfo, DefaultWeightedEdge> packageGraph =
+                new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        packageGraph.addVertex(VertexInfo.forName("com.other.pkg"));
+        packageGraph.addVertex(VertexInfo.forName("com.third.pkg"));
+        packageGraph.addVertex(VertexInfo.forName("com.almasb.fxgl.app"));
+        packageGraph.addEdge(
+                VertexInfo.forName("com.other.pkg"),
+                VertexInfo.forName("com.other.pkg")); // self-edge from fabricated (ignored by collector)
+        packageGraph.addEdge(VertexInfo.forName("com.third.pkg"), VertexInfo.forName("com.almasb.fxgl.app"));
 
         // Source path mapping has the canonical FQN AND the caller classes (they're in the codebase)
         Map<String, String> sourcePathMapping = new HashMap<>();
@@ -54,37 +60,46 @@ class CompositeGraphBuilderReconciliationTest {
         // Assertions
         // 1. Fabricated vertex should be removed
         assertFalse(
-                classGraph.containsVertex("com.other.pkg.GameSettings"),
+                classGraph.containsVertex(VertexInfo.forName("com.other.pkg.GameSettings")),
                 "Fabricated vertex should be removed after reconciliation");
 
         // 2. Canonical vertex should still exist
-        assertTrue(classGraph.containsVertex("com.almasb.fxgl.app.GameSettings"), "Canonical vertex should remain");
+        assertTrue(
+                classGraph.containsVertex(VertexInfo.forName("com.almasb.fxgl.app.GameSettings")),
+                "Canonical vertex should remain");
 
         // 3. Edge from SomeClass should now point to canonical with its original weight
         assertTrue(
-                classGraph.containsEdge("com.other.pkg.SomeClass", "com.almasb.fxgl.app.GameSettings"),
+                classGraph.containsEdge(
+                        VertexInfo.forName("com.other.pkg.SomeClass"),
+                        VertexInfo.forName("com.almasb.fxgl.app.GameSettings")),
                 "Edge should be redirected to canonical vertex");
-        DefaultWeightedEdge redirectedEdge =
-                classGraph.getEdge("com.other.pkg.SomeClass", "com.almasb.fxgl.app.GameSettings");
+        DefaultWeightedEdge redirectedEdge = classGraph.getEdge(
+                VertexInfo.forName("com.other.pkg.SomeClass"), VertexInfo.forName("com.almasb.fxgl.app.GameSettings"));
         assertEquals(
                 3.0, classGraph.getEdgeWeight(redirectedEdge), "Edge weight should be preserved from fabricated edge");
 
         // 4. The pre-existing edge from OtherClass to canonical should remain with its weight
         assertTrue(
-                classGraph.containsEdge("com.third.pkg.OtherClass", "com.almasb.fxgl.app.GameSettings"),
+                classGraph.containsEdge(
+                        VertexInfo.forName("com.third.pkg.OtherClass"),
+                        VertexInfo.forName("com.almasb.fxgl.app.GameSettings")),
                 "Pre-existing edge to canonical should remain");
-        DefaultWeightedEdge existingEdge =
-                classGraph.getEdge("com.third.pkg.OtherClass", "com.almasb.fxgl.app.GameSettings");
+        DefaultWeightedEdge existingEdge = classGraph.getEdge(
+                VertexInfo.forName("com.third.pkg.OtherClass"), VertexInfo.forName("com.almasb.fxgl.app.GameSettings"));
         assertEquals(2.0, classGraph.getEdgeWeight(existingEdge), "Pre-existing edge weight should be preserved");
 
         // 5. Original edge to fabricated should be gone
         assertFalse(
-                classGraph.containsEdge("com.other.pkg.SomeClass", "com.other.pkg.GameSettings"),
+                classGraph.containsEdge(
+                        VertexInfo.forName("com.other.pkg.SomeClass"),
+                        VertexInfo.forName("com.other.pkg.GameSettings")),
                 "Original edge to fabricated vertex should be removed");
 
         // 6. Package graph should have the real cross-package edge
         assertTrue(
-                packageGraph.containsEdge("com.other.pkg", "com.almasb.fxgl.app"),
+                packageGraph.containsEdge(
+                        VertexInfo.forName("com.other.pkg"), VertexInfo.forName("com.almasb.fxgl.app")),
                 "Package graph should have the real cross-package edge");
     }
 
@@ -94,18 +109,22 @@ class CompositeGraphBuilderReconciliationTest {
      */
     @Test
     void reconcileUnattributedVertices_sameSourceMultipleEdges_sumsWeights() {
-        Graph<String, DefaultWeightedEdge> classGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-        classGraph.addVertex("com.almasb.fxgl.app.GameSettings"); // canonical
-        classGraph.addVertex("com.other.pkg.GameSettings"); // fabricated
-        classGraph.addVertex("com.other.pkg.SomeClass");
+        Graph<VertexInfo, DefaultWeightedEdge> classGraph =
+                new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        classGraph.addVertex(VertexInfo.forName("com.almasb.fxgl.app.GameSettings")); // canonical
+        classGraph.addVertex(VertexInfo.forName("com.other.pkg.GameSettings")); // fabricated
+        classGraph.addVertex(VertexInfo.forName("com.other.pkg.SomeClass"));
 
         // Two edges from the SAME source: one to fabricated, one to canonical
-        DefaultWeightedEdge e1 = classGraph.addEdge("com.other.pkg.SomeClass", "com.other.pkg.GameSettings");
+        DefaultWeightedEdge e1 = classGraph.addEdge(
+                VertexInfo.forName("com.other.pkg.SomeClass"), VertexInfo.forName("com.other.pkg.GameSettings"));
         classGraph.setEdgeWeight(e1, 3);
-        DefaultWeightedEdge e2 = classGraph.addEdge("com.other.pkg.SomeClass", "com.almasb.fxgl.app.GameSettings");
+        DefaultWeightedEdge e2 = classGraph.addEdge(
+                VertexInfo.forName("com.other.pkg.SomeClass"), VertexInfo.forName("com.almasb.fxgl.app.GameSettings"));
         classGraph.setEdgeWeight(e2, 2);
 
-        Graph<String, DefaultWeightedEdge> packageGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        Graph<VertexInfo, DefaultWeightedEdge> packageGraph =
+                new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
 
         Map<String, String> sourcePathMapping = new HashMap<>();
         sourcePathMapping.put(
@@ -115,12 +134,13 @@ class CompositeGraphBuilderReconciliationTest {
         CompositeGraphBuilder.reconcileUnattributedVertices(classGraph, packageGraph, sourcePathMapping);
 
         // Fabricated vertex should be removed
-        assertFalse(classGraph.containsVertex("com.other.pkg.GameSettings"));
+        assertFalse(classGraph.containsVertex(VertexInfo.forName("com.other.pkg.GameSettings")));
 
         // The two edges from SomeClass should be merged into one with summed weight (3 + 2 = 5)
-        assertTrue(classGraph.containsEdge("com.other.pkg.SomeClass", "com.almasb.fxgl.app.GameSettings"));
-        DefaultWeightedEdge mergedEdge =
-                classGraph.getEdge("com.other.pkg.SomeClass", "com.almasb.fxgl.app.GameSettings");
+        assertTrue(classGraph.containsEdge(
+                VertexInfo.forName("com.other.pkg.SomeClass"), VertexInfo.forName("com.almasb.fxgl.app.GameSettings")));
+        DefaultWeightedEdge mergedEdge = classGraph.getEdge(
+                VertexInfo.forName("com.other.pkg.SomeClass"), VertexInfo.forName("com.almasb.fxgl.app.GameSettings"));
         assertEquals(5.0, classGraph.getEdgeWeight(mergedEdge), "Edge weights from same source should be summed");
     }
 
@@ -130,14 +150,16 @@ class CompositeGraphBuilderReconciliationTest {
      */
     @Test
     void reconcileUnattributedVertices_ambiguousMatch_leavesVertexUntouched() {
-        Graph<String, DefaultWeightedEdge> classGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-        classGraph.addVertex("com.pkg1.Node"); // canonical 1
-        classGraph.addVertex("com.pkg2.Node"); // canonical 2
-        classGraph.addVertex("com.caller.Node"); // fabricated - SAME simple name "Node"
-        classGraph.addVertex("com.caller.Caller");
+        Graph<VertexInfo, DefaultWeightedEdge> classGraph =
+                new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        classGraph.addVertex(VertexInfo.forName("com.pkg1.Node")); // canonical 1
+        classGraph.addVertex(VertexInfo.forName("com.pkg2.Node")); // canonical 2
+        classGraph.addVertex(VertexInfo.forName("com.caller.Node")); // fabricated - SAME simple name "Node"
+        classGraph.addVertex(VertexInfo.forName("com.caller.Caller"));
 
-        classGraph.addEdge("com.caller.Caller", "com.caller.Node");
-        classGraph.setEdgeWeight(classGraph.getEdge("com.caller.Caller", "com.caller.Node"), 1);
+        classGraph.addEdge(VertexInfo.forName("com.caller.Caller"), VertexInfo.forName("com.caller.Node"));
+        classGraph.setEdgeWeight(
+                classGraph.getEdge(VertexInfo.forName("com.caller.Caller"), VertexInfo.forName("com.caller.Node")), 1);
 
         Map<String, String> sourcePathMapping = new HashMap<>();
         sourcePathMapping.put("com.pkg1.Node", "/src/main/java/com/pkg1/Node.java");
@@ -148,7 +170,7 @@ class CompositeGraphBuilderReconciliationTest {
 
         // Fabricated vertex should remain (ambiguous - multiple candidates with same simple name)
         assertTrue(
-                classGraph.containsVertex("com.caller.Node"),
+                classGraph.containsVertex(VertexInfo.forName("com.caller.Node")),
                 "Fabricated vertex should remain when simple name is ambiguous");
     }
 
@@ -162,11 +184,14 @@ class CompositeGraphBuilderReconciliationTest {
      */
     @Test
     void reconcileUnattributedVertices_zeroMatch_removesExternalClass() {
-        Graph<String, DefaultWeightedEdge> classGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-        classGraph.addVertex("com.myapp.MyClass");
-        classGraph.addVertex("com.myapp.Button"); // fabricated - external JavaFX class attributed to caller's package
-        classGraph.addEdge("com.myapp.MyClass", "com.myapp.Button");
-        classGraph.setEdgeWeight(classGraph.getEdge("com.myapp.MyClass", "com.myapp.Button"), 1);
+        Graph<VertexInfo, DefaultWeightedEdge> classGraph =
+                new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        classGraph.addVertex(VertexInfo.forName("com.myapp.MyClass"));
+        classGraph.addVertex(VertexInfo.forName(
+                "com.myapp.Button")); // fabricated - external JavaFX class attributed to caller's package
+        classGraph.addEdge(VertexInfo.forName("com.myapp.MyClass"), VertexInfo.forName("com.myapp.Button"));
+        classGraph.setEdgeWeight(
+                classGraph.getEdge(VertexInfo.forName("com.myapp.MyClass"), VertexInfo.forName("com.myapp.Button")), 1);
 
         Map<String, String> sourcePathMapping = new HashMap<>();
         sourcePathMapping.put("com.myapp.MyClass", "/src/main/java/com/myapp/MyClass.java");
@@ -176,12 +201,13 @@ class CompositeGraphBuilderReconciliationTest {
 
         // Fabricated external class should be REMOVED (not left untouched)
         assertFalse(
-                classGraph.containsVertex("com.myapp.Button"),
+                classGraph.containsVertex(VertexInfo.forName("com.myapp.Button")),
                 "External class vertex should be removed when no real declaration exists");
 
         // Edge to external class should also be removed
         assertFalse(
-                classGraph.containsEdge("com.myapp.MyClass", "com.myapp.Button"),
+                classGraph.containsEdge(
+                        VertexInfo.forName("com.myapp.MyClass"), VertexInfo.forName("com.myapp.Button")),
                 "Edge to external class should be removed");
     }
 
@@ -191,11 +217,15 @@ class CompositeGraphBuilderReconciliationTest {
      */
     @Test
     void reconcileUnattributedVertices_zeroMatch_realExternalPackage_removesExternalClass() {
-        Graph<String, DefaultWeightedEdge> classGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-        classGraph.addVertex("com.myapp.MyClass");
-        classGraph.addVertex("javafx.scene.control.Button"); // external class with real package
-        classGraph.addEdge("com.myapp.MyClass", "javafx.scene.control.Button");
-        classGraph.setEdgeWeight(classGraph.getEdge("com.myapp.MyClass", "javafx.scene.control.Button"), 1);
+        Graph<VertexInfo, DefaultWeightedEdge> classGraph =
+                new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        classGraph.addVertex(VertexInfo.forName("com.myapp.MyClass"));
+        classGraph.addVertex(VertexInfo.forName("javafx.scene.control.Button")); // external class with real package
+        classGraph.addEdge(VertexInfo.forName("com.myapp.MyClass"), VertexInfo.forName("javafx.scene.control.Button"));
+        classGraph.setEdgeWeight(
+                classGraph.getEdge(
+                        VertexInfo.forName("com.myapp.MyClass"), VertexInfo.forName("javafx.scene.control.Button")),
+                1);
 
         Map<String, String> sourcePathMapping = new HashMap<>();
         sourcePathMapping.put("com.myapp.MyClass", "/src/main/java/com/myapp/MyClass.java");
@@ -205,7 +235,7 @@ class CompositeGraphBuilderReconciliationTest {
 
         // External class with real package should also be removed
         assertFalse(
-                classGraph.containsVertex("javafx.scene.control.Button"),
+                classGraph.containsVertex(VertexInfo.forName("javafx.scene.control.Button")),
                 "External class with real package should be removed when no real declaration exists");
     }
 
@@ -215,14 +245,19 @@ class CompositeGraphBuilderReconciliationTest {
      */
     @Test
     void reconcileUnattributedVertices_noPackageMatch_leavesAmbiguousUntouched() {
-        Graph<String, DefaultWeightedEdge> classGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-        classGraph.addVertex("com.pkg1.Node"); // canonical 1
-        classGraph.addVertex("com.pkg2.Node"); // canonical 2
-        classGraph.addVertex("com.unrelated.Node"); // fabricated - same simple name "Node", NO package match
-        classGraph.addVertex("com.unrelated.Caller");
+        Graph<VertexInfo, DefaultWeightedEdge> classGraph =
+                new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        classGraph.addVertex(VertexInfo.forName("com.pkg1.Node")); // canonical 1
+        classGraph.addVertex(VertexInfo.forName("com.pkg2.Node")); // canonical 2
+        classGraph.addVertex(
+                VertexInfo.forName("com.unrelated.Node")); // fabricated - same simple name "Node", NO package match
+        classGraph.addVertex(VertexInfo.forName("com.unrelated.Caller"));
 
-        classGraph.addEdge("com.unrelated.Caller", "com.unrelated.Node");
-        classGraph.setEdgeWeight(classGraph.getEdge("com.unrelated.Caller", "com.unrelated.Node"), 1);
+        classGraph.addEdge(VertexInfo.forName("com.unrelated.Caller"), VertexInfo.forName("com.unrelated.Node"));
+        classGraph.setEdgeWeight(
+                classGraph.getEdge(
+                        VertexInfo.forName("com.unrelated.Caller"), VertexInfo.forName("com.unrelated.Node")),
+                1);
 
         Map<String, String> sourcePathMapping = new HashMap<>();
         sourcePathMapping.put("com.pkg1.Node", "/src/main/java/com/pkg1/Node.java");
@@ -233,7 +268,7 @@ class CompositeGraphBuilderReconciliationTest {
 
         // Fabricated vertex should remain (no package match, ambiguous)
         assertTrue(
-                classGraph.containsVertex("com.unrelated.Node"),
+                classGraph.containsVertex(VertexInfo.forName("com.unrelated.Node")),
                 "Fabricated vertex should remain when no package match exists");
     }
 
@@ -253,17 +288,20 @@ class CompositeGraphBuilderReconciliationTest {
         // - Canonical Kotlin class: b.Bar (has source mapping)
         // - Fabricated Java reference: a.Bar (no source mapping)
         // - Caller: b.Bar -> fabricated a.Bar (weight 3)
-        Graph<String, DefaultWeightedEdge> classGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-        classGraph.addVertex("b.Bar"); // canonical
-        classGraph.addVertex("a.Bar"); // fabricated
-        classGraph.addVertex("b.Bar"); // same as canonical, but we add edge from canonical to fabricated
+        Graph<VertexInfo, DefaultWeightedEdge> classGraph =
+                new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        classGraph.addVertex(VertexInfo.forName("b.Bar")); // canonical
+        classGraph.addVertex(VertexInfo.forName("a.Bar")); // fabricated
+        classGraph.addVertex(
+                VertexInfo.forName("b.Bar")); // same as canonical, but we add edge from canonical to fabricated
 
-        DefaultWeightedEdge e1 = classGraph.addEdge("b.Bar", "a.Bar");
+        DefaultWeightedEdge e1 = classGraph.addEdge(VertexInfo.forName("b.Bar"), VertexInfo.forName("a.Bar"));
         classGraph.setEdgeWeight(e1, 3);
 
-        Graph<String, DefaultWeightedEdge> packageGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-        packageGraph.addVertex("a");
-        packageGraph.addVertex("b");
+        Graph<VertexInfo, DefaultWeightedEdge> packageGraph =
+                new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        packageGraph.addVertex(VertexInfo.forName("a"));
+        packageGraph.addVertex(VertexInfo.forName("b"));
 
         Map<String, String> sourcePathMapping = new HashMap<>();
         sourcePathMapping.put("b.Bar", "/src/main/kotlin/b/Bar.kt");
@@ -271,14 +309,14 @@ class CompositeGraphBuilderReconciliationTest {
         CompositeGraphBuilder.reconcileUnattributedVertices(classGraph, packageGraph, sourcePathMapping);
 
         // Fabricated vertex should be removed
-        assertFalse(classGraph.containsVertex("a.Bar"), "Fabricated vertex should be removed");
+        assertFalse(classGraph.containsVertex(VertexInfo.forName("a.Bar")), "Fabricated vertex should be removed");
 
         // Canonical vertex should exist
-        assertTrue(classGraph.containsVertex("b.Bar"), "Canonical vertex should remain");
+        assertTrue(classGraph.containsVertex(VertexInfo.forName("b.Bar")), "Canonical vertex should remain");
 
         // NO self-loop should exist on canonical vertex
         assertFalse(
-                classGraph.containsEdge("b.Bar", "b.Bar"),
+                classGraph.containsEdge(VertexInfo.forName("b.Bar"), VertexInfo.forName("b.Bar")),
                 "Self-loop should NOT be created when incoming edge source equals canonical vertex");
     }
 
@@ -292,16 +330,18 @@ class CompositeGraphBuilderReconciliationTest {
      */
     @Test
     void reconcileUnattributedVertices_outgoingEdgeToCanonical_guardsAgainstSelfLoop() {
-        Graph<String, DefaultWeightedEdge> classGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-        classGraph.addVertex("b.Bar"); // canonical
-        classGraph.addVertex("a.Bar"); // fabricated
+        Graph<VertexInfo, DefaultWeightedEdge> classGraph =
+                new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        classGraph.addVertex(VertexInfo.forName("b.Bar")); // canonical
+        classGraph.addVertex(VertexInfo.forName("a.Bar")); // fabricated
 
-        DefaultWeightedEdge e1 = classGraph.addEdge("a.Bar", "b.Bar");
+        DefaultWeightedEdge e1 = classGraph.addEdge(VertexInfo.forName("a.Bar"), VertexInfo.forName("b.Bar"));
         classGraph.setEdgeWeight(e1, 3);
 
-        Graph<String, DefaultWeightedEdge> packageGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-        packageGraph.addVertex("a");
-        packageGraph.addVertex("b");
+        Graph<VertexInfo, DefaultWeightedEdge> packageGraph =
+                new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        packageGraph.addVertex(VertexInfo.forName("a"));
+        packageGraph.addVertex(VertexInfo.forName("b"));
 
         Map<String, String> sourcePathMapping = new HashMap<>();
         sourcePathMapping.put("b.Bar", "/src/main/kotlin/b/Bar.kt");
@@ -309,14 +349,14 @@ class CompositeGraphBuilderReconciliationTest {
         CompositeGraphBuilder.reconcileUnattributedVertices(classGraph, packageGraph, sourcePathMapping);
 
         // Fabricated vertex should be removed
-        assertFalse(classGraph.containsVertex("a.Bar"), "Fabricated vertex should be removed");
+        assertFalse(classGraph.containsVertex(VertexInfo.forName("a.Bar")), "Fabricated vertex should be removed");
 
         // Canonical vertex should exist
-        assertTrue(classGraph.containsVertex("b.Bar"), "Canonical vertex should remain");
+        assertTrue(classGraph.containsVertex(VertexInfo.forName("b.Bar")), "Canonical vertex should remain");
 
         // NO self-loop should exist on canonical vertex
         assertFalse(
-                classGraph.containsEdge("b.Bar", "b.Bar"),
+                classGraph.containsEdge(VertexInfo.forName("b.Bar"), VertexInfo.forName("b.Bar")),
                 "Self-loop should NOT be created when outgoing edge target equals canonical vertex");
     }
 
@@ -343,14 +383,17 @@ class CompositeGraphBuilderReconciliationTest {
      */
     @Test
     void reconcileUnattributedVertices_realDeclarationWithDuplicateSimpleName_neverContracted() {
-        Graph<String, DefaultWeightedEdge> classGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-        classGraph.addVertex("com.pkg1.Target"); // real declaration (in mapping)
-        classGraph.addVertex("com.pkg2.Target"); // same-named real declaration (in mapping)
-        classGraph.addVertex("com.pkg1.Caller"); // real caller (in mapping)
+        Graph<VertexInfo, DefaultWeightedEdge> classGraph =
+                new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        classGraph.addVertex(VertexInfo.forName("com.pkg1.Target")); // real declaration (in mapping)
+        classGraph.addVertex(VertexInfo.forName("com.pkg2.Target")); // same-named real declaration (in mapping)
+        classGraph.addVertex(VertexInfo.forName("com.pkg1.Caller")); // real caller (in mapping)
 
-        DefaultWeightedEdge e1 = classGraph.addEdge("com.pkg1.Caller", "com.pkg1.Target");
+        DefaultWeightedEdge e1 =
+                classGraph.addEdge(VertexInfo.forName("com.pkg1.Caller"), VertexInfo.forName("com.pkg1.Target"));
         classGraph.setEdgeWeight(e1, 2);
-        DefaultWeightedEdge e2 = classGraph.addEdge("com.pkg1.Target", "com.pkg2.Target");
+        DefaultWeightedEdge e2 =
+                classGraph.addEdge(VertexInfo.forName("com.pkg1.Target"), VertexInfo.forName("com.pkg2.Target"));
         classGraph.setEdgeWeight(e2, 3);
 
         Map<String, String> sourcePathMapping = new HashMap<>();
@@ -362,30 +405,38 @@ class CompositeGraphBuilderReconciliationTest {
                 classGraph, new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class), sourcePathMapping);
 
         // Both real declarations must remain despite the shared simple name
-        assertTrue(classGraph.containsVertex("com.pkg1.Target"), "Real declaration com.pkg1.Target must remain");
-        assertTrue(classGraph.containsVertex("com.pkg2.Target"), "Real declaration com.pkg2.Target must remain");
+        assertTrue(
+                classGraph.containsVertex(VertexInfo.forName("com.pkg1.Target")),
+                "Real declaration com.pkg1.Target must remain");
+        assertTrue(
+                classGraph.containsVertex(VertexInfo.forName("com.pkg2.Target")),
+                "Real declaration com.pkg2.Target must remain");
         assertEquals(3, classGraph.vertexSet().size(), "No vertex may be contracted or removed");
 
         // Every edge intact with its original weight — nothing redirected
-        assertTrue(classGraph.containsEdge("com.pkg1.Caller", "com.pkg1.Target"));
+        assertTrue(
+                classGraph.containsEdge(VertexInfo.forName("com.pkg1.Caller"), VertexInfo.forName("com.pkg1.Target")));
         assertEquals(
                 2.0,
-                classGraph.getEdgeWeight(classGraph.getEdge("com.pkg1.Caller", "com.pkg1.Target")),
+                classGraph.getEdgeWeight(classGraph.getEdge(
+                        VertexInfo.forName("com.pkg1.Caller"), VertexInfo.forName("com.pkg1.Target"))),
                 "Edge to real declaration must keep its weight");
-        assertTrue(classGraph.containsEdge("com.pkg1.Target", "com.pkg2.Target"));
+        assertTrue(
+                classGraph.containsEdge(VertexInfo.forName("com.pkg1.Target"), VertexInfo.forName("com.pkg2.Target")));
         assertEquals(
                 3.0,
-                classGraph.getEdgeWeight(classGraph.getEdge("com.pkg1.Target", "com.pkg2.Target")),
+                classGraph.getEdgeWeight(classGraph.getEdge(
+                        VertexInfo.forName("com.pkg1.Target"), VertexInfo.forName("com.pkg2.Target"))),
                 "Edge between real declarations must keep its weight");
 
         // Contraction would have collapsed com.pkg1.Target into com.pkg2.Target,
         // turning its incoming edges into edges on com.pkg2.Target (and its
         // outgoing edge into a self-loop). Neither may exist.
         assertFalse(
-                classGraph.containsEdge("com.pkg2.Target", "com.pkg2.Target"),
+                classGraph.containsEdge(VertexInfo.forName("com.pkg2.Target"), VertexInfo.forName("com.pkg2.Target")),
                 "No self-loop may appear from contracting a real declaration into its same-named sibling");
         assertFalse(
-                classGraph.containsEdge("com.pkg1.Caller", "com.pkg2.Target"),
+                classGraph.containsEdge(VertexInfo.forName("com.pkg1.Caller"), VertexInfo.forName("com.pkg2.Target")),
                 "Caller edge must not be redirected to the other same-named class");
     }
 
@@ -402,13 +453,17 @@ class CompositeGraphBuilderReconciliationTest {
      */
     @Test
     void reconcileUnattributedVertices_javaAnonymousInnerClass_preservedViaEnclosingSourcePath() {
-        Graph<String, DefaultWeightedEdge> classGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-        classGraph.addVertex("com.example.Outer"); // real declaration
-        classGraph.addVertex("com.example.Outer$1"); // anonymous inner class (no source mapping initially)
-        classGraph.addVertex("com.example.Caller"); // real caller
+        Graph<VertexInfo, DefaultWeightedEdge> classGraph =
+                new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        classGraph.addVertex(VertexInfo.forName("com.example.Outer")); // real declaration
+        classGraph.addVertex(
+                VertexInfo.forName("com.example.Outer$1")); // anonymous inner class (no source mapping initially)
+        classGraph.addVertex(VertexInfo.forName("com.example.Caller")); // real caller
 
-        classGraph.addEdge("com.example.Caller", "com.example.Outer");
-        classGraph.addEdge("com.example.Outer", "com.example.Outer$1"); // Outer depends on its anonymous class
+        classGraph.addEdge(VertexInfo.forName("com.example.Caller"), VertexInfo.forName("com.example.Outer"));
+        classGraph.addEdge(
+                VertexInfo.forName("com.example.Outer"),
+                VertexInfo.forName("com.example.Outer$1")); // Outer depends on its anonymous class
 
         Map<String, String> sourcePathMapping = new HashMap<>();
         sourcePathMapping.put("com.example.Outer", "/src/main/java/com/example/Outer.java");
@@ -422,12 +477,13 @@ class CompositeGraphBuilderReconciliationTest {
 
         // Anonymous class should be preserved (mapped to enclosing class's source path)
         assertTrue(
-                classGraph.containsVertex("com.example.Outer$1"),
+                classGraph.containsVertex(VertexInfo.forName("com.example.Outer$1")),
                 "Anonymous inner class should be preserved via enclosing class source mapping");
 
         // Edge from Outer to anonymous should remain
         assertTrue(
-                classGraph.containsEdge("com.example.Outer", "com.example.Outer$1"),
+                classGraph.containsEdge(
+                        VertexInfo.forName("com.example.Outer"), VertexInfo.forName("com.example.Outer$1")),
                 "Edge to anonymous inner class should remain");
     }
 
@@ -437,9 +493,10 @@ class CompositeGraphBuilderReconciliationTest {
      */
     @Test
     void reconcileUnattributedVertices_javaSyntheticClass_preservedViaEnclosingSourcePath() {
-        Graph<String, DefaultWeightedEdge> classGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-        classGraph.addVertex("com.example.Outer");
-        classGraph.addVertex("com.example.Outer$"); // synthetic class
+        Graph<VertexInfo, DefaultWeightedEdge> classGraph =
+                new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        classGraph.addVertex(VertexInfo.forName("com.example.Outer"));
+        classGraph.addVertex(VertexInfo.forName("com.example.Outer$")); // synthetic class
 
         Map<String, String> sourcePathMapping = new HashMap<>();
         sourcePathMapping.put("com.example.Outer", "/src/main/java/com/example/Outer.java");
@@ -450,7 +507,7 @@ class CompositeGraphBuilderReconciliationTest {
                 classGraph, new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class), sourcePathMapping);
 
         assertTrue(
-                classGraph.containsVertex("com.example.Outer$"),
+                classGraph.containsVertex(VertexInfo.forName("com.example.Outer$")),
                 "Synthetic class should be preserved via enclosing class source mapping");
     }
 
@@ -460,9 +517,10 @@ class CompositeGraphBuilderReconciliationTest {
      */
     @Test
     void reconcileUnattributedVertices_kotlinAnonymousObject_preservedViaEnclosingSourcePath() {
-        Graph<String, DefaultWeightedEdge> classGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-        classGraph.addVertex("com.example.Outer");
-        classGraph.addVertex("com.example.Outer.<anonymous>"); // Kotlin anonymous object
+        Graph<VertexInfo, DefaultWeightedEdge> classGraph =
+                new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        classGraph.addVertex(VertexInfo.forName("com.example.Outer"));
+        classGraph.addVertex(VertexInfo.forName("com.example.Outer.<anonymous>")); // Kotlin anonymous object
 
         Map<String, String> sourcePathMapping = new HashMap<>();
         sourcePathMapping.put("com.example.Outer", "/src/main/kotlin/com/example/Outer.kt");
@@ -473,7 +531,7 @@ class CompositeGraphBuilderReconciliationTest {
                 classGraph, new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class), sourcePathMapping);
 
         assertTrue(
-                classGraph.containsVertex("com.example.Outer.<anonymous>"),
+                classGraph.containsVertex(VertexInfo.forName("com.example.Outer.<anonymous>")),
                 "Kotlin anonymous object should be preserved via enclosing class source mapping");
     }
 
@@ -484,8 +542,9 @@ class CompositeGraphBuilderReconciliationTest {
      */
     @Test
     void reconcileUnattributedVertices_topLevelKotlinAnonymous_noEnclosingClass_notMapped() {
-        Graph<String, DefaultWeightedEdge> classGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-        classGraph.addVertex("<anonymous>"); // Top-level Kotlin anonymous, no enclosing class
+        Graph<VertexInfo, DefaultWeightedEdge> classGraph =
+                new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        classGraph.addVertex(VertexInfo.forName("<anonymous>")); // Top-level Kotlin anonymous, no enclosing class
 
         Map<String, String> sourcePathMapping = new HashMap<>();
         // No enclosing class in mapping
@@ -498,7 +557,7 @@ class CompositeGraphBuilderReconciliationTest {
         // Top-level <anonymous> has no enclosing class to map to, so it's not in source mapping
         // and would be removed as external (zero match)
         assertFalse(
-                classGraph.containsVertex("<anonymous>"),
+                classGraph.containsVertex(VertexInfo.forName("<anonymous>")),
                 "Top-level Kotlin anonymous with no enclosing class should be removed as external");
     }
 
@@ -519,16 +578,16 @@ class CompositeGraphBuilderReconciliationTest {
         CodebaseGraphDTO merged = CompositeGraphBuilder.merge(javaDto, kotlinDto);
 
         // Verify merged package graph has both package vertices and the cross-package edge
-        Graph<String, DefaultWeightedEdge> mergedPkgGraph = merged.getPackageReferencesGraph();
-        assertTrue(mergedPkgGraph.containsVertex("com.java"));
-        assertTrue(mergedPkgGraph.containsVertex("com.kotlin"));
+        Graph<VertexInfo, DefaultWeightedEdge> mergedPkgGraph = merged.getPackageReferencesGraph();
+        assertTrue(mergedPkgGraph.containsVertex(VertexInfo.forName("com.java")));
+        assertTrue(mergedPkgGraph.containsVertex(VertexInfo.forName("com.kotlin")));
 
         // Verify merged class graph has all four class vertices
-        Graph<String, DefaultWeightedEdge> mergedClassGraph = merged.getClassReferencesGraph();
-        assertTrue(mergedClassGraph.containsVertex("com.java.A"));
-        assertTrue(mergedClassGraph.containsVertex("com.java.B"));
-        assertTrue(mergedClassGraph.containsVertex("com.kotlin.C"));
-        assertTrue(mergedClassGraph.containsVertex("com.kotlin.D"));
+        Graph<VertexInfo, DefaultWeightedEdge> mergedClassGraph = merged.getClassReferencesGraph();
+        assertTrue(mergedClassGraph.containsVertex(VertexInfo.forName("com.java.A")));
+        assertTrue(mergedClassGraph.containsVertex(VertexInfo.forName("com.java.B")));
+        assertTrue(mergedClassGraph.containsVertex(VertexInfo.forName("com.kotlin.C")));
+        assertTrue(mergedClassGraph.containsVertex(VertexInfo.forName("com.kotlin.D")));
 
         // Verify class relationship map keys are edges from MERGED package graph
         Map<DefaultWeightedEdge, Set<DefaultWeightedEdge>> relMap = merged.getClassRelationshipsInPackageRelationship();
@@ -563,28 +622,36 @@ class CompositeGraphBuilderReconciliationTest {
 
         CodebaseGraphDTO merged = CompositeGraphBuilder.merge(javaDto, kotlinDto);
 
-        Graph<String, DefaultWeightedEdge> mergedClassGraph = merged.getClassReferencesGraph();
+        Graph<VertexInfo, DefaultWeightedEdge> mergedClassGraph = merged.getClassReferencesGraph();
         Map<DefaultWeightedEdge, Set<DefaultWeightedEdge>> relMap = merged.getClassRelationshipsInPackageRelationship();
 
         // Verify Java relationship endpoints preserved
-        DefaultWeightedEdge javaPkgEdge = merged.getPackageReferencesGraph().getEdge("com.pkg1", "com.pkg2");
+        DefaultWeightedEdge javaPkgEdge = merged.getPackageReferencesGraph()
+                .getEdge(VertexInfo.forName("com.pkg1"), VertexInfo.forName("com.pkg2"));
         assertNotNull(javaPkgEdge);
         Set<DefaultWeightedEdge> javaClassEdges = relMap.get(javaPkgEdge);
         assertNotNull(javaClassEdges);
         assertEquals(1, javaClassEdges.size());
         DefaultWeightedEdge javaClassEdge = javaClassEdges.iterator().next();
-        assertEquals("com.pkg1.Source", mergedClassGraph.getEdgeSource(javaClassEdge));
-        assertEquals("com.pkg2.Target", mergedClassGraph.getEdgeTarget(javaClassEdge));
+        assertEquals(
+                "com.pkg1.Source", mergedClassGraph.getEdgeSource(javaClassEdge).getName());
+        assertEquals(
+                "com.pkg2.Target", mergedClassGraph.getEdgeTarget(javaClassEdge).getName());
 
         // Verify Kotlin relationship endpoints preserved
-        DefaultWeightedEdge kotlinPkgEdge = merged.getPackageReferencesGraph().getEdge("com.pkg3", "com.pkg4");
+        DefaultWeightedEdge kotlinPkgEdge = merged.getPackageReferencesGraph()
+                .getEdge(VertexInfo.forName("com.pkg3"), VertexInfo.forName("com.pkg4"));
         assertNotNull(kotlinPkgEdge);
         Set<DefaultWeightedEdge> kotlinClassEdges = relMap.get(kotlinPkgEdge);
         assertNotNull(kotlinClassEdges);
         assertEquals(1, kotlinClassEdges.size());
         DefaultWeightedEdge kotlinClassEdge = kotlinClassEdges.iterator().next();
-        assertEquals("com.pkg3.Source", mergedClassGraph.getEdgeSource(kotlinClassEdge));
-        assertEquals("com.pkg4.Target", mergedClassGraph.getEdgeTarget(kotlinClassEdge));
+        assertEquals(
+                "com.pkg3.Source",
+                mergedClassGraph.getEdgeSource(kotlinClassEdge).getName());
+        assertEquals(
+                "com.pkg4.Target",
+                mergedClassGraph.getEdgeTarget(kotlinClassEdge).getName());
     }
 
     /**
@@ -601,11 +668,12 @@ class CompositeGraphBuilderReconciliationTest {
 
         CodebaseGraphDTO merged = CompositeGraphBuilder.merge(javaDto, kotlinDto);
 
-        Graph<String, DefaultWeightedEdge> mergedClassGraph = merged.getClassReferencesGraph();
-        Graph<String, DefaultWeightedEdge> mergedPkgGraph = merged.getPackageReferencesGraph();
+        Graph<VertexInfo, DefaultWeightedEdge> mergedClassGraph = merged.getClassReferencesGraph();
+        Graph<VertexInfo, DefaultWeightedEdge> mergedPkgGraph = merged.getPackageReferencesGraph();
 
         // Class edge weight should be 2 + 3 = 5
-        DefaultWeightedEdge mergedClassEdge = mergedClassGraph.getEdge("com.shared.A", "com.shared.B");
+        DefaultWeightedEdge mergedClassEdge =
+                mergedClassGraph.getEdge(VertexInfo.forName("com.shared.A"), VertexInfo.forName("com.shared.B"));
         assertNotNull(mergedClassEdge);
         assertEquals(5.0, mergedClassGraph.getEdgeWeight(mergedClassEdge));
 
@@ -613,7 +681,8 @@ class CompositeGraphBuilderReconciliationTest {
         // (addPackageEdgeIfCrossPackage only adds for cross-package, so self-edge not added by mergeGraph)
         // The package self-edge comes from the dependency collector, not mergeGraph.
         // In mergeGraph, self-edges from source graphs ARE copied.
-        DefaultWeightedEdge mergedPkgEdge = mergedPkgGraph.getEdge("com.shared", "com.shared");
+        DefaultWeightedEdge mergedPkgEdge =
+                mergedPkgGraph.getEdge(VertexInfo.forName("com.shared"), VertexInfo.forName("com.shared"));
         assertNotNull(mergedPkgEdge, "mergeGraph must copy the intra-package self-edge");
         assertEquals(5.0, mergedPkgGraph.getEdgeWeight(mergedPkgEdge));
     }
@@ -627,19 +696,22 @@ class CompositeGraphBuilderReconciliationTest {
         // Java DTO with a fabricated cross-language reference:
         // Java class com.java.Caller references Kotlin class com.kotlin.Target
         // but Java parser fabricates com.java.Target (wrong package)
-        Graph<String, DefaultWeightedEdge> javaClassGraph =
+        Graph<VertexInfo, DefaultWeightedEdge> javaClassGraph =
                 new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-        javaClassGraph.addVertex("com.java.Caller");
-        javaClassGraph.addVertex("com.java.Target"); // fabricated
-        DefaultWeightedEdge javaEdge = javaClassGraph.addEdge("com.java.Caller", "com.java.Target");
+        javaClassGraph.addVertex(VertexInfo.forName("com.java.Caller"));
+        javaClassGraph.addVertex(VertexInfo.forName("com.java.Target")); // fabricated
+        DefaultWeightedEdge javaEdge =
+                javaClassGraph.addEdge(VertexInfo.forName("com.java.Caller"), VertexInfo.forName("com.java.Target"));
         javaClassGraph.setEdgeWeight(javaEdge, 2);
 
-        Graph<String, DefaultWeightedEdge> javaPkgGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-        javaPkgGraph.addVertex("com.java");
-        javaPkgGraph.addEdge("com.java", "com.java"); // self-edge
+        Graph<VertexInfo, DefaultWeightedEdge> javaPkgGraph =
+                new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        javaPkgGraph.addVertex(VertexInfo.forName("com.java"));
+        javaPkgGraph.addEdge(VertexInfo.forName("com.java"), VertexInfo.forName("com.java")); // self-edge
 
         Map<DefaultWeightedEdge, Set<DefaultWeightedEdge>> javaClassRels = new HashMap<>();
-        javaClassRels.put(javaPkgGraph.getEdge("com.java", "com.java"), Set.of(javaEdge));
+        javaClassRels.put(
+                javaPkgGraph.getEdge(VertexInfo.forName("com.java"), VertexInfo.forName("com.java")), Set.of(javaEdge));
 
         Map<String, String> javaSourceMapping = new HashMap<>();
         javaSourceMapping.put("com.java.Caller", "/src/main/java/com/java/Caller.java");
@@ -648,20 +720,23 @@ class CompositeGraphBuilderReconciliationTest {
                 javaClassGraph, javaPkgGraph, javaClassRels, javaSourceMapping, new ArrayList<>(), new ArrayList<>());
 
         // Kotlin DTO with the REAL target class
-        Graph<String, DefaultWeightedEdge> kotlinClassGraph =
+        Graph<VertexInfo, DefaultWeightedEdge> kotlinClassGraph =
                 new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-        kotlinClassGraph.addVertex("com.kotlin.Target"); // real canonical
-        kotlinClassGraph.addVertex("com.kotlin.Other");
-        DefaultWeightedEdge kotlinEdge = kotlinClassGraph.addEdge("com.kotlin.Other", "com.kotlin.Target");
+        kotlinClassGraph.addVertex(VertexInfo.forName("com.kotlin.Target")); // real canonical
+        kotlinClassGraph.addVertex(VertexInfo.forName("com.kotlin.Other"));
+        DefaultWeightedEdge kotlinEdge = kotlinClassGraph.addEdge(
+                VertexInfo.forName("com.kotlin.Other"), VertexInfo.forName("com.kotlin.Target"));
         kotlinClassGraph.setEdgeWeight(kotlinEdge, 3);
 
-        Graph<String, DefaultWeightedEdge> kotlinPkgGraph =
+        Graph<VertexInfo, DefaultWeightedEdge> kotlinPkgGraph =
                 new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-        kotlinPkgGraph.addVertex("com.kotlin");
-        kotlinPkgGraph.addEdge("com.kotlin", "com.kotlin");
+        kotlinPkgGraph.addVertex(VertexInfo.forName("com.kotlin"));
+        kotlinPkgGraph.addEdge(VertexInfo.forName("com.kotlin"), VertexInfo.forName("com.kotlin"));
 
         Map<DefaultWeightedEdge, Set<DefaultWeightedEdge>> kotlinClassRels = new HashMap<>();
-        kotlinClassRels.put(kotlinPkgGraph.getEdge("com.kotlin", "com.kotlin"), Set.of(kotlinEdge));
+        kotlinClassRels.put(
+                kotlinPkgGraph.getEdge(VertexInfo.forName("com.kotlin"), VertexInfo.forName("com.kotlin")),
+                Set.of(kotlinEdge));
 
         Map<String, String> kotlinSourceMapping = new HashMap<>();
         kotlinSourceMapping.put("com.kotlin.Target", "/src/main/kotlin/com/kotlin/Target.kt");
@@ -678,26 +753,30 @@ class CompositeGraphBuilderReconciliationTest {
         // Merge - reconciliation should contract com.java.Target into com.kotlin.Target
         CodebaseGraphDTO merged = CompositeGraphBuilder.merge(javaDto, kotlinDto);
 
-        Graph<String, DefaultWeightedEdge> mergedClassGraph = merged.getClassReferencesGraph();
-        Graph<String, DefaultWeightedEdge> mergedPkgGraph = merged.getPackageReferencesGraph();
+        Graph<VertexInfo, DefaultWeightedEdge> mergedClassGraph = merged.getClassReferencesGraph();
+        Graph<VertexInfo, DefaultWeightedEdge> mergedPkgGraph = merged.getPackageReferencesGraph();
         Map<DefaultWeightedEdge, Set<DefaultWeightedEdge>> relMap = merged.getClassRelationshipsInPackageRelationship();
 
         // Fabricated vertex should be gone
         assertFalse(
-                mergedClassGraph.containsVertex("com.java.Target"),
+                mergedClassGraph.containsVertex(VertexInfo.forName("com.java.Target")),
                 "Fabricated vertex should be removed by reconciliation");
 
         // Canonical vertex should exist
-        assertTrue(mergedClassGraph.containsVertex("com.kotlin.Target"), "Canonical vertex should remain");
+        assertTrue(
+                mergedClassGraph.containsVertex(VertexInfo.forName("com.kotlin.Target")),
+                "Canonical vertex should remain");
 
         // Edge from Caller should now point to canonical
         assertTrue(
-                mergedClassGraph.containsEdge("com.java.Caller", "com.kotlin.Target"),
+                mergedClassGraph.containsEdge(
+                        VertexInfo.forName("com.java.Caller"), VertexInfo.forName("com.kotlin.Target")),
                 "Edge should be redirected to canonical after reconciliation");
 
         // Verify relationship map was rebuilt after reconciliation
         // The package edge com.java -> com.kotlin should exist (cross-package)
-        DefaultWeightedEdge crossPkgEdge = mergedPkgGraph.getEdge("com.java", "com.kotlin");
+        DefaultWeightedEdge crossPkgEdge =
+                mergedPkgGraph.getEdge(VertexInfo.forName("com.java"), VertexInfo.forName("com.kotlin"));
         assertNotNull(crossPkgEdge, "Cross-package edge should be created by reconciliation");
 
         // The relationship map should have the cross-package edge as key
@@ -710,8 +789,12 @@ class CompositeGraphBuilderReconciliationTest {
 
         DefaultWeightedEdge redirectedEdge = classEdges.iterator().next();
         assertTrue(mergedClassGraph.containsEdge(redirectedEdge), "Redirected edge must belong to merged class graph");
-        assertEquals("com.java.Caller", mergedClassGraph.getEdgeSource(redirectedEdge));
-        assertEquals("com.kotlin.Target", mergedClassGraph.getEdgeTarget(redirectedEdge));
+        assertEquals(
+                "com.java.Caller",
+                mergedClassGraph.getEdgeSource(redirectedEdge).getName());
+        assertEquals(
+                "com.kotlin.Target",
+                mergedClassGraph.getEdgeTarget(redirectedEdge).getName());
     }
 
     /**
@@ -723,23 +806,28 @@ class CompositeGraphBuilderReconciliationTest {
     @Test
     void merge_javaAnonymousInnerClass_preservedThroughMergePipeline() {
         // Java DTO: Outer class with anonymous inner class Outer$1
-        Graph<String, DefaultWeightedEdge> javaClassGraph =
+        Graph<VertexInfo, DefaultWeightedEdge> javaClassGraph =
                 new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-        javaClassGraph.addVertex("com.example.Outer");
-        javaClassGraph.addVertex("com.example.Outer$1"); // anonymous inner class
-        javaClassGraph.addVertex("com.example.Caller");
+        javaClassGraph.addVertex(VertexInfo.forName("com.example.Outer"));
+        javaClassGraph.addVertex(VertexInfo.forName("com.example.Outer$1")); // anonymous inner class
+        javaClassGraph.addVertex(VertexInfo.forName("com.example.Caller"));
 
-        DefaultWeightedEdge e1 = javaClassGraph.addEdge("com.example.Caller", "com.example.Outer");
+        DefaultWeightedEdge e1 = javaClassGraph.addEdge(
+                VertexInfo.forName("com.example.Caller"), VertexInfo.forName("com.example.Outer"));
         javaClassGraph.setEdgeWeight(e1, 1);
-        DefaultWeightedEdge e2 = javaClassGraph.addEdge("com.example.Outer", "com.example.Outer$1");
+        DefaultWeightedEdge e2 = javaClassGraph.addEdge(
+                VertexInfo.forName("com.example.Outer"), VertexInfo.forName("com.example.Outer$1"));
         javaClassGraph.setEdgeWeight(e2, 1);
 
-        Graph<String, DefaultWeightedEdge> javaPkgGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-        javaPkgGraph.addVertex("com.example");
-        javaPkgGraph.addEdge("com.example", "com.example");
+        Graph<VertexInfo, DefaultWeightedEdge> javaPkgGraph =
+                new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        javaPkgGraph.addVertex(VertexInfo.forName("com.example"));
+        javaPkgGraph.addEdge(VertexInfo.forName("com.example"), VertexInfo.forName("com.example"));
 
         Map<DefaultWeightedEdge, Set<DefaultWeightedEdge>> javaClassRels = new HashMap<>();
-        javaClassRels.put(javaPkgGraph.getEdge("com.example", "com.example"), Set.of(e1, e2));
+        javaClassRels.put(
+                javaPkgGraph.getEdge(VertexInfo.forName("com.example"), VertexInfo.forName("com.example")),
+                Set.of(e1, e2));
 
         Map<String, String> javaSourceMapping = new HashMap<>();
         javaSourceMapping.put("com.example.Outer", "/src/main/java/com/example/Outer.java");
@@ -750,13 +838,13 @@ class CompositeGraphBuilderReconciliationTest {
                 javaClassGraph, javaPkgGraph, javaClassRels, javaSourceMapping, new ArrayList<>(), new ArrayList<>());
 
         // Kotlin DTO: just another class in a different package
-        Graph<String, DefaultWeightedEdge> kotlinClassGraph =
+        Graph<VertexInfo, DefaultWeightedEdge> kotlinClassGraph =
                 new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-        kotlinClassGraph.addVertex("com.other.KotlinClass");
+        kotlinClassGraph.addVertex(VertexInfo.forName("com.other.KotlinClass"));
 
-        Graph<String, DefaultWeightedEdge> kotlinPkgGraph =
+        Graph<VertexInfo, DefaultWeightedEdge> kotlinPkgGraph =
                 new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-        kotlinPkgGraph.addVertex("com.other");
+        kotlinPkgGraph.addVertex(VertexInfo.forName("com.other"));
 
         Map<DefaultWeightedEdge, Set<DefaultWeightedEdge>> kotlinClassRels = new HashMap<>();
 
@@ -774,16 +862,17 @@ class CompositeGraphBuilderReconciliationTest {
         // Merge - anonymous class mapping should happen before reconciliation
         CodebaseGraphDTO merged = CompositeGraphBuilder.merge(javaDto, kotlinDto);
 
-        Graph<String, DefaultWeightedEdge> mergedClassGraph = merged.getClassReferencesGraph();
+        Graph<VertexInfo, DefaultWeightedEdge> mergedClassGraph = merged.getClassReferencesGraph();
 
         // Anonymous class should be preserved (mapped to Outer's source path during merge)
         assertTrue(
-                mergedClassGraph.containsVertex("com.example.Outer$1"),
+                mergedClassGraph.containsVertex(VertexInfo.forName("com.example.Outer$1")),
                 "Anonymous inner class should be preserved through merge pipeline");
 
         // Edge to anonymous class should remain
         assertTrue(
-                mergedClassGraph.containsEdge("com.example.Outer", "com.example.Outer$1"),
+                mergedClassGraph.containsEdge(
+                        VertexInfo.forName("com.example.Outer"), VertexInfo.forName("com.example.Outer$1")),
                 "Edge to anonymous inner class should remain after merge");
     }
 
@@ -793,16 +882,18 @@ class CompositeGraphBuilderReconciliationTest {
     private static CodebaseGraphDTO createDto(
             String classSource, String classTarget, double weight, String pkgSource, String pkgTarget) {
 
-        Graph<String, DefaultWeightedEdge> classGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-        classGraph.addVertex(classSource);
-        classGraph.addVertex(classTarget);
-        DefaultWeightedEdge classEdge = classGraph.addEdge(classSource, classTarget);
+        Graph<VertexInfo, DefaultWeightedEdge> classGraph =
+                new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        classGraph.addVertex(VertexInfo.forName(classSource));
+        classGraph.addVertex(VertexInfo.forName(classTarget));
+        DefaultWeightedEdge classEdge =
+                classGraph.addEdge(VertexInfo.forName(classSource), VertexInfo.forName(classTarget));
         classGraph.setEdgeWeight(classEdge, weight);
 
-        Graph<String, DefaultWeightedEdge> pkgGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-        pkgGraph.addVertex(pkgSource);
-        pkgGraph.addVertex(pkgTarget);
-        DefaultWeightedEdge pkgEdge = pkgGraph.addEdge(pkgSource, pkgTarget);
+        Graph<VertexInfo, DefaultWeightedEdge> pkgGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        pkgGraph.addVertex(VertexInfo.forName(pkgSource));
+        pkgGraph.addVertex(VertexInfo.forName(pkgTarget));
+        DefaultWeightedEdge pkgEdge = pkgGraph.addEdge(VertexInfo.forName(pkgSource), VertexInfo.forName(pkgTarget));
         pkgGraph.setEdgeWeight(pkgEdge, weight);
 
         Map<DefaultWeightedEdge, Set<DefaultWeightedEdge>> classRels = new HashMap<>();

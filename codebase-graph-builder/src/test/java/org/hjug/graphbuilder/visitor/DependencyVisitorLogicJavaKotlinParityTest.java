@@ -9,6 +9,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import org.hjug.graphbuilder.GraphDependencyCollector;
+import org.hjug.graphbuilder.VertexInfo;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultDirectedWeightedGraph;
 import org.jgrapht.graph.DefaultWeightedEdge;
@@ -42,6 +43,7 @@ class DependencyVisitorLogicJavaKotlinParityTest {
     private static final String JAVA_TESTCLASSES = "src/test/java/org/hjug/graphbuilder/visitor/testclasses";
     private static final String KOTLIN_SOURCE_PATH_DIR = "src/test/resources/kotlinSourcePathSrcDirectory";
 
+    /** Verifies that Java declarations with missing type attribution can still register class vertices. */
     @DisplayName("1. visitCompilationUnit handles null ClassDeclaration type without NPE (Java)")
     @Test
     void javaVisitCompilationUnit_nullTypeDoesNotNPE(@TempDir Path tempDir) throws IOException {
@@ -74,10 +76,15 @@ class DependencyVisitorLogicJavaKotlinParityTest {
                         visitor.visit(cu, ctx));
 
         // Verify the visitor completed without exception and registered vertices
-        assertTrue(collector.getClassReferencesGraph().containsVertex("com.example.nulltype.NullTypeTest")
-                || collector.getClassReferencesGraph().containsVertex("com.example.nulltype.AnotherClass"));
+        assertTrue(collector
+                        .getClassReferencesGraph()
+                        .containsVertex(VertexInfo.forName("com.example.nulltype.NullTypeTest"))
+                || collector
+                        .getClassReferencesGraph()
+                        .containsVertex(VertexInfo.forName("com.example.nulltype.AnotherClass")));
     }
 
+    /** Verifies that Kotlin declarations with missing type attribution can still register class vertices. */
     @DisplayName("2. visitCompilationUnit handles null ClassDeclaration type without NPE (Kotlin)")
     @Test
     void kotlinVisitCompilationUnit_nullTypeDoesNotNPE(@TempDir Path tempDir) throws IOException {
@@ -111,10 +118,15 @@ class DependencyVisitorLogicJavaKotlinParityTest {
                         visitor.visit(cu, ctx));
 
         // Verify the visitor completed without exception and registered vertices
-        assertTrue(collector.getClassReferencesGraph().containsVertex("com.example.nulltype.NullTypeTest")
-                || collector.getClassReferencesGraph().containsVertex("com.example.nulltype.AnotherClass"));
+        assertTrue(collector
+                        .getClassReferencesGraph()
+                        .containsVertex(VertexInfo.forName("com.example.nulltype.NullTypeTest"))
+                || collector
+                        .getClassReferencesGraph()
+                        .containsVertex(VertexInfo.forName("com.example.nulltype.AnotherClass")));
     }
 
+    /** Compares normalized project dependency edges and weights from corresponding Java and Kotlin fixtures. */
     @DisplayName("3. Identical J-level overrides produce same edges for minimal fixture (Java vs Kotlin)")
     @Test
     void identicalMethods_sameEdges() throws IOException {
@@ -127,8 +139,8 @@ class DependencyVisitorLogicJavaKotlinParityTest {
         Path kotlinSource = Path.of(
                 KOTLIN_SOURCE_PATH_DIR, "com", "ideacrest", "parser", "kotlin", "sourcepath", "SourcePathSampleKt.kt");
 
-        Graph<String, DefaultWeightedEdge> javaGraph = buildJavaGraph(javaSource);
-        Graph<String, DefaultWeightedEdge> kotlinGraph = buildKotlinGraph(kotlinSource);
+        Graph<VertexInfo, DefaultWeightedEdge> javaGraph = buildJavaGraph(javaSource);
+        Graph<VertexInfo, DefaultWeightedEdge> kotlinGraph = buildKotlinGraph(kotlinSource);
 
         // Compare only the core project vertices (excluding stdlib differences)
         compareProjectEdges(
@@ -138,9 +150,11 @@ class DependencyVisitorLogicJavaKotlinParityTest {
                 "com.ideacrest.parser.kotlin.sourcepath");
     }
 
-    private Graph<String, DefaultWeightedEdge> buildJavaGraph(Path sourceFile) throws IOException {
-        Graph<String, DefaultWeightedEdge> classGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-        Graph<String, DefaultWeightedEdge> pkgGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+    /** Parses a Java source fixture and returns its collected class dependency graph. */
+    private Graph<VertexInfo, DefaultWeightedEdge> buildJavaGraph(Path sourceFile) throws IOException {
+        Graph<VertexInfo, DefaultWeightedEdge> classGraph =
+                new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        Graph<VertexInfo, DefaultWeightedEdge> pkgGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
         GraphDependencyCollector collector = new GraphDependencyCollector(classGraph, pkgGraph);
 
         JavaParser javaParser = JavaParser.fromJavaVersion().build();
@@ -156,9 +170,11 @@ class DependencyVisitorLogicJavaKotlinParityTest {
         return classGraph;
     }
 
-    private Graph<String, DefaultWeightedEdge> buildKotlinGraph(Path sourceFile) throws IOException {
-        Graph<String, DefaultWeightedEdge> classGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-        Graph<String, DefaultWeightedEdge> pkgGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+    /** Parses a Kotlin source fixture and returns its collected class dependency graph. */
+    private Graph<VertexInfo, DefaultWeightedEdge> buildKotlinGraph(Path sourceFile) throws IOException {
+        Graph<VertexInfo, DefaultWeightedEdge> classGraph =
+                new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        Graph<VertexInfo, DefaultWeightedEdge> pkgGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
         GraphDependencyCollector collector = new GraphDependencyCollector(classGraph, pkgGraph);
 
         KotlinParser kotlinParser = KotlinParser.builder()
@@ -191,16 +207,19 @@ class DependencyVisitorLogicJavaKotlinParityTest {
         return classGraph;
     }
 
+    /** Asserts equality of project edges and weights after normalizing the language-specific package prefixes. */
     private void compareProjectEdges(
-            Graph<String, DefaultWeightedEdge> javaGraph,
-            Graph<String, DefaultWeightedEdge> kotlinGraph,
+            Graph<VertexInfo, DefaultWeightedEdge> javaGraph,
+            Graph<VertexInfo, DefaultWeightedEdge> kotlinGraph,
             String javaPkgPrefix,
             String kotlinPkgPrefix) {
         // Extract project-specific vertices
         var javaVertices = javaGraph.vertexSet().stream()
+                .map(VertexInfo::getName)
                 .filter(v -> v.startsWith(javaPkgPrefix))
                 .toList();
         var kotlinVertices = kotlinGraph.vertexSet().stream()
+                .map(VertexInfo::getName)
                 .filter(v -> v.startsWith(kotlinPkgPrefix))
                 .toList();
 
@@ -222,8 +241,9 @@ class DependencyVisitorLogicJavaKotlinParityTest {
                 "Java and Kotlin project edges and weights should match exactly");
     }
 
+    /** Collects edge weights keyed by normalized endpoint names when both endpoints occur in the supplied mapping. */
     private Map<String, Double> normalizedEdges(
-            Graph<String, DefaultWeightedEdge> graph, Map<String, String> normalizedVertices) {
+            Graph<VertexInfo, DefaultWeightedEdge> graph, Map<String, String> normalizedVertices) {
         Map<String, Double> edges = new HashMap<>();
         Map<String, String> vertexNames = new HashMap<>();
         normalizedVertices.forEach((normalized, vertex) -> vertexNames.put(vertex, normalized));

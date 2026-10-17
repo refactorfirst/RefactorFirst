@@ -28,6 +28,7 @@ class Java25AnalysisIntegrationTest {
 
     private static final String FIXTURE_DIR = "src/test/resources/java25SrcDirectory";
 
+    /** Verifies that a Java 25 flexible constructor fixture appears in the analyzed class graph. */
     @DisplayName("Java 25 source using flexible constructor bodies is parsed and appears in the graph")
     @Test
     void java25SourceIsAnalyzed() throws IOException {
@@ -37,7 +38,8 @@ class Java25AnalysisIntegrationTest {
         CodebaseGraphDTO dto = new CompositeGraphBuilder().getCodebaseGraphDTO(srcDirectory.getAbsolutePath(), config);
 
         assertTrue(
-                dto.getClassReferencesGraph().containsVertex("com.example.java25.FlexibleConstructorBody"),
+                dto.getClassReferencesGraph()
+                        .containsVertex(VertexInfo.forName("com.example.java25.FlexibleConstructorBody")),
                 "Java 25 fixture class must be a vertex in the class graph. Vertices: "
                         + dto.getClassReferencesGraph().vertexSet());
         assertTrue(

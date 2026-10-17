@@ -9,6 +9,7 @@ import java.util.HashSet;
 import java.util.Set;
 import org.hjug.graphbuilder.CodebaseGraphDTO;
 import org.hjug.graphbuilder.CompositeGraphBuilder;
+import org.hjug.graphbuilder.VertexInfo;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultWeightedEdge;
 import org.junit.jupiter.api.DisplayName;
@@ -24,55 +25,61 @@ import org.junit.jupiter.api.io.TempDir;
  */
 class JavaSourceFileGraphBuilderPrunesClassesNotInCodebaseTest {
 
+    /** Verifies that pruning external classes also removes their incident dependency edges. */
     @Test
     void removeClassesNotInCodebase() throws IOException {
         File srcDirectory = new File("src/test/resources/javaSrcDirectory");
         CompositeGraphBuilder compositeGraphBuilder = new CompositeGraphBuilder();
         CodebaseGraphDTO dto = compositeGraphBuilder.getCodebaseGraphDTO(srcDirectory.getAbsolutePath(), false, "");
-        Graph<String, DefaultWeightedEdge> classReferencesGraph = dto.getClassReferencesGraph();
-        classReferencesGraph.addVertex("org.favioriteoss.FunClass");
-        classReferencesGraph.addVertex("org.favioriteoss.AnotherFunClass");
+        Graph<VertexInfo, DefaultWeightedEdge> classReferencesGraph = dto.getClassReferencesGraph();
+        classReferencesGraph.addVertex(VertexInfo.forName("org.favioriteoss.FunClass"));
+        classReferencesGraph.addVertex(VertexInfo.forName("org.favioriteoss.AnotherFunClass"));
 
-        DefaultWeightedEdge edge1 =
-                classReferencesGraph.addEdge("com.ideacrest.parser.testclasses.A", "org.favioriteoss.FunClass");
-        DefaultWeightedEdge edge2 =
-                classReferencesGraph.addEdge("com.ideacrest.parser.testclasses.A", "org.favioriteoss.AnotherFunClass");
+        DefaultWeightedEdge edge1 = classReferencesGraph.addEdge(
+                VertexInfo.forName("com.ideacrest.parser.testclasses.A"),
+                VertexInfo.forName("org.favioriteoss.FunClass"));
+        DefaultWeightedEdge edge2 = classReferencesGraph.addEdge(
+                VertexInfo.forName("com.ideacrest.parser.testclasses.A"),
+                VertexInfo.forName("org.favioriteoss.AnotherFunClass"));
 
-        assertTrue(classReferencesGraph.containsVertex("org.favioriteoss.FunClass"));
-        assertTrue(classReferencesGraph.containsVertex("org.favioriteoss.AnotherFunClass"));
+        assertTrue(classReferencesGraph.containsVertex(VertexInfo.forName("org.favioriteoss.FunClass")));
+        assertTrue(classReferencesGraph.containsVertex(VertexInfo.forName("org.favioriteoss.AnotherFunClass")));
 
         Set<String> packagesInCodebase = new HashSet<>();
         packagesInCodebase.add("com.ideacrest.parser.testclasses");
 
         JavaSourceFileGraphBuilder.removeClassesNotInCodebase(packagesInCodebase, classReferencesGraph);
 
-        assertFalse(classReferencesGraph.containsVertex("org.favioriteoss.FunClass"));
-        assertFalse(classReferencesGraph.containsVertex("org.favioriteoss.AnotherFunClass"));
+        assertFalse(classReferencesGraph.containsVertex(VertexInfo.forName("org.favioriteoss.FunClass")));
+        assertFalse(classReferencesGraph.containsVertex(VertexInfo.forName("org.favioriteoss.AnotherFunClass")));
         assertFalse(classReferencesGraph.containsEdge(edge1));
         assertFalse(classReferencesGraph.containsEdge(edge2));
     }
 
+    /** Verifies that package pruning removes vertices outside the set of codebase packages. */
     @Test
     @DisplayName("removePackagesNotInCodebase drops packages outside the codebase package set")
     void removePackagesNotInCodebase() throws IOException {
         File srcDirectory = new File("src/test/resources/javaSrcDirectory");
         CompositeGraphBuilder compositeGraphBuilder = new CompositeGraphBuilder();
         CodebaseGraphDTO dto = compositeGraphBuilder.getCodebaseGraphDTO(srcDirectory.getAbsolutePath(), false, "");
-        Graph<String, DefaultWeightedEdge> packageReferencesGraph = dto.getPackageReferencesGraph();
-        packageReferencesGraph.addVertex("org.favioriteoss");
+        Graph<VertexInfo, DefaultWeightedEdge> packageReferencesGraph = dto.getPackageReferencesGraph();
+        packageReferencesGraph.addVertex(VertexInfo.forName("org.favioriteoss"));
 
-        assertTrue(packageReferencesGraph.containsVertex("org.favioriteoss"));
+        assertTrue(packageReferencesGraph.containsVertex(VertexInfo.forName("org.favioriteoss")));
 
-        Set<String> packagesInCodebase =
-                new HashSet<>(dto.getPackageReferencesGraph().vertexSet());
+        Set<String> packagesInCodebase = dto.getPackageReferencesGraph().vertexSet().stream()
+                .map(VertexInfo::getName)
+                .collect(java.util.stream.Collectors.toCollection(HashSet::new));
         // remove the rogue package from the "in codebase" set
         packagesInCodebase.remove("org.favioriteoss");
 
         JavaSourceFileGraphBuilder.removePackagesNotInCodebase(packagesInCodebase, packageReferencesGraph);
 
-        assertFalse(packageReferencesGraph.containsVertex("org.favioriteoss"));
+        assertFalse(packageReferencesGraph.containsVertex(VertexInfo.forName("org.favioriteoss")));
     }
 
+    /** Verifies that JavaFX library references are excluded from the final codebase graph. */
     @Test
     @DisplayName("External JavaFX classes referenced in source are pruned from class graph")
     void externalJavaFXClassesArePruned(@TempDir File tempDir) throws IOException {
@@ -94,13 +101,13 @@ class JavaSourceFileGraphBuilderPrunesClassesNotInCodebaseTest {
         CodebaseGraphDTO dto = builder.getCodebaseGraphDTO(tempDir.getAbsolutePath(), false, "");
 
         // JavaFX classes should NOT be in the class graph
-        assertFalse(dto.getClassReferencesGraph().containsVertex("javafx.scene.control.Button"));
-        assertFalse(dto.getClassReferencesGraph().containsVertex("javafx.scene.layout.Pane"));
+        assertFalse(dto.getClassReferencesGraph().containsVertex(VertexInfo.forName("javafx.scene.control.Button")));
+        assertFalse(dto.getClassReferencesGraph().containsVertex(VertexInfo.forName("javafx.scene.layout.Pane")));
         // Fabricated versions (attributed to caller's package) should also be removed
-        assertFalse(dto.getClassReferencesGraph().containsVertex("com.myapp.Button"));
-        assertFalse(dto.getClassReferencesGraph().containsVertex("com.myapp.Pane"));
+        assertFalse(dto.getClassReferencesGraph().containsVertex(VertexInfo.forName("com.myapp.Button")));
+        assertFalse(dto.getClassReferencesGraph().containsVertex(VertexInfo.forName("com.myapp.Pane")));
 
         // Only the actual codebase class should remain
-        assertTrue(dto.getClassReferencesGraph().containsVertex("com.myapp.MyApp"));
+        assertTrue(dto.getClassReferencesGraph().containsVertex(VertexInfo.forName("com.myapp.MyApp")));
     }
 }

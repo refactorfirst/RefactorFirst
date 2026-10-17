@@ -14,25 +14,29 @@ import org.jgrapht.alg.util.Triple;
 import org.jgrapht.graph.DefaultWeightedEdge;
 import org.jgrapht.opt.graph.sparse.SparseIntDirectedWeightedGraph;
 
-class SparseIntDWGEdgeRemovalCalculator {
-    private final Graph<String, DefaultWeightedEdge> graph;
+class SparseIntDWGEdgeRemovalCalculator<V> {
+    private final Graph<V, DefaultWeightedEdge> graph;
     SparseIntDirectedWeightedGraph sparseGraph;
     List<Triple<Integer, Integer, Double>> sparseEdges;
     List<Integer> sparseEdgesAboveDiagonal;
     private final double sumOfEdgeWeightsAboveDiagonal;
     int vertexCount;
-    Map<String, Integer> vertexToInt;
-    Map<Integer, String> intToVertex;
+    Map<V, Integer> vertexToInt;
+    Map<Integer, V> intToVertex;
 
+    /**
+     * Captures the sparse graph, candidate edges, and vertex-index mappings used to evaluate removals.
+     * Mutable edge lists and mappings are copied into concurrent collections.
+     */
     SparseIntDWGEdgeRemovalCalculator(
-            Graph<String, DefaultWeightedEdge> graph,
+            Graph<V, DefaultWeightedEdge> graph,
             SparseIntDirectedWeightedGraph sparseGraph,
             List<Triple<Integer, Integer, Double>> sparseEdges,
             List<Integer> sparseEdgesAboveDiagonal,
             double sumOfEdgeWeightsAboveDiagonal,
             int vertexCount,
-            Map<String, Integer> vertexToInt,
-            Map<Integer, String> intToVertex) {
+            Map<V, Integer> vertexToInt,
+            Map<Integer, V> intToVertex) {
         this.graph = graph;
         this.sparseGraph = sparseGraph;
         this.sparseEdges = new CopyOnWriteArrayList<>(sparseEdges);

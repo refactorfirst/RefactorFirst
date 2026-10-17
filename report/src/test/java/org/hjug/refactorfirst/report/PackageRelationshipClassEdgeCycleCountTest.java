@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Set;
 import org.hjug.dsm.CircularReferenceChecker;
 import org.hjug.graphbuilder.CodebaseGraphDTO;
+import org.hjug.graphbuilder.VertexInfo;
 import org.hjug.refactorfirst.report.model.ClassRelationshipDTO;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.AsSubgraph;
@@ -34,17 +35,18 @@ class PackageRelationshipClassEdgeCycleCountTest {
     private static final String DELTA = PKG_A + ".Delta";
 
     /** Alpha and Beta form a 2-cycle; Delta -> Beta hangs off the cycle and is in no cycle. */
-    private Graph<String, DefaultWeightedEdge> createClassGraph() {
-        Graph<String, DefaultWeightedEdge> classGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-        classGraph.addVertex(ALPHA);
-        classGraph.addVertex(BETA);
-        classGraph.addVertex(DELTA);
+    private Graph<VertexInfo, DefaultWeightedEdge> createClassGraph() {
+        Graph<VertexInfo, DefaultWeightedEdge> classGraph =
+                new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        classGraph.addVertex(VertexInfo.forName(ALPHA));
+        classGraph.addVertex(VertexInfo.forName(BETA));
+        classGraph.addVertex(VertexInfo.forName(DELTA));
 
-        DefaultWeightedEdge alphaToBeta = classGraph.addEdge(ALPHA, BETA);
+        DefaultWeightedEdge alphaToBeta = classGraph.addEdge(VertexInfo.forName(ALPHA), VertexInfo.forName(BETA));
         classGraph.setEdgeWeight(alphaToBeta, 5);
-        DefaultWeightedEdge betaToAlpha = classGraph.addEdge(BETA, ALPHA);
+        DefaultWeightedEdge betaToAlpha = classGraph.addEdge(VertexInfo.forName(BETA), VertexInfo.forName(ALPHA));
         classGraph.setEdgeWeight(betaToAlpha, 2);
-        DefaultWeightedEdge deltaToBeta = classGraph.addEdge(DELTA, BETA);
+        DefaultWeightedEdge deltaToBeta = classGraph.addEdge(VertexInfo.forName(DELTA), VertexInfo.forName(BETA));
         classGraph.setEdgeWeight(deltaToBeta, 1);
 
         return classGraph;
@@ -63,16 +65,16 @@ class PackageRelationshipClassEdgeCycleCountTest {
     void buildClassRelationshipsToBreakPackage_reportsActualCycleMembership() throws Exception {
         // Given: a class graph whose Alpha -> Beta and Beta -> Alpha edges participate in the
         // Alpha/Beta class cycle, and a Delta -> Beta edge that participates in no cycle
-        Graph<String, DefaultWeightedEdge> classGraph = createClassGraph();
-        DefaultWeightedEdge alphaToBeta = classGraph.getEdge(ALPHA, BETA);
-        DefaultWeightedEdge betaToAlpha = classGraph.getEdge(BETA, ALPHA);
-        DefaultWeightedEdge deltaToBeta = classGraph.getEdge(DELTA, BETA);
+        Graph<VertexInfo, DefaultWeightedEdge> classGraph = createClassGraph();
+        DefaultWeightedEdge alphaToBeta = classGraph.getEdge(VertexInfo.forName(ALPHA), VertexInfo.forName(BETA));
+        DefaultWeightedEdge betaToAlpha = classGraph.getEdge(VertexInfo.forName(BETA), VertexInfo.forName(ALPHA));
+        DefaultWeightedEdge deltaToBeta = classGraph.getEdge(VertexInfo.forName(DELTA), VertexInfo.forName(BETA));
 
         JsonGenerator generator = new JsonGenerator();
         generator.classGraph = classGraph;
         // The class cycles, built the same way CycleRemovalComputer builds them
-        Map<String, AsSubgraph<String, DefaultWeightedEdge>> cycles =
-                new CircularReferenceChecker<String, DefaultWeightedEdge>().getCycles(classGraph);
+        Map<VertexInfo, AsSubgraph<VertexInfo, DefaultWeightedEdge>> cycles =
+                new CircularReferenceChecker<VertexInfo, DefaultWeightedEdge>().getCycles(classGraph);
         generator.classCycles = cycles;
         assertEquals(1, cycles.size(), "Test graph must contain exactly one class cycle");
         assertEquals(

@@ -7,9 +7,9 @@ import org.jgrapht.graph.AsSubgraph;
 import org.jgrapht.graph.DefaultWeightedEdge;
 
 @Data
-public class CycleRemovalResult {
-    private final Map<String, AsSubgraph<String, DefaultWeightedEdge>> cycles;
+public class CycleRemovalResult<V> {
+    private final Map<V, AsSubgraph<V, DefaultWeightedEdge>> cycles;
     private final Set<DefaultWeightedEdge> edgesToRemove;
-    private final Set<String> vertexesToRemove;
+    private final Set<V> vertexesToRemove;
     private final Map<DefaultWeightedEdge, Integer> edgeCycleCounts;
 }

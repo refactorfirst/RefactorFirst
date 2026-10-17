@@ -123,10 +123,20 @@ public class CompositeGraphBuilder {
         return getCodebaseGraphDTO(repositoryPath, repositoryRoot, config);
     }
 
+    /**
+     * Combines Java and Kotlin graphs, source mappings, and disharmonies.
+     *
+     * <p>Shared edge weights are summed before unattributed vertices are reconciled,
+     * locations are hydrated, and package-to-class relationships are rebuilt.
+     *
+     * @param javaDto the Java analysis result
+     * @param kotlinDto the Kotlin analysis result
+     * @return the unified codebase graph
+     */
     static CodebaseGraphDTO merge(CodebaseGraphDTO javaDto, CodebaseGraphDTO kotlinDto) {
-        Graph<String, DefaultWeightedEdge> mergedClassGraph =
+        Graph<VertexInfo, DefaultWeightedEdge> mergedClassGraph =
                 new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-        Graph<String, DefaultWeightedEdge> mergedPackageGraph =
+        Graph<VertexInfo, DefaultWeightedEdge> mergedPackageGraph =
                 new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
         Map<DefaultWeightedEdge, Set<DefaultWeightedEdge>> mergedClassRelationships = new HashMap<>();
         Map<String, String> mergedSourcePathMapping = new HashMap<>();
@@ -175,6 +185,10 @@ public class CompositeGraphBuilder {
         // Reconcile fabricated cross-language vertices against real declarations
         reconcileUnattributedVertices(mergedClassGraph, mergedPackageGraph, mergedSourcePathMapping);
 
+        // Populate VertexInfo locations on the merged graphs now that the
+        // anonymous-vertex mapping and reconciliation passes are complete
+        VertexInfoHydrator.hydrate(mergedClassGraph, mergedPackageGraph, mergedSourcePathMapping);
+
         // Rebuild class relationships after reconciliation since vertex contraction
         // may have removed/replaced edges referenced in the relationship map
         rebuildClassRelationshipsAfterReconciliation(mergedClassGraph, mergedPackageGraph, mergedClassRelationships);
@@ -215,8 +229,8 @@ public class CompositeGraphBuilder {
      * @param sourcePathMapping the merged mapping of FQN to source file path (only real declarations)
      */
     static void reconcileUnattributedVertices(
-            Graph<String, DefaultWeightedEdge> classGraph,
-            Graph<String, DefaultWeightedEdge> packageGraph,
+            Graph<VertexInfo, DefaultWeightedEdge> classGraph,
+            Graph<VertexInfo, DefaultWeightedEdge> packageGraph,
             Map<String, String> sourcePathMapping) {
         // Build index: simple name -> list of canonical FQNs that have a source mapping
         Map<String, List<String>> bySimpleName = new HashMap<>();
@@ -226,7 +240,10 @@ public class CompositeGraphBuilder {
         }
 
         // Find fabricated vertices: vertices in classGraph but NOT in sourcePathMapping
-        Set<String> verticesToCheck = new HashSet<>(classGraph.vertexSet());
+        Set<String> verticesToCheck = new HashSet<>();
+        for (VertexInfo vertex : classGraph.vertexSet()) {
+            verticesToCheck.add(vertex.getName());
+        }
         verticesToCheck.removeAll(sourcePathMapping.keySet());
 
         for (String fabricatedFqn : verticesToCheck) {
@@ -274,23 +291,24 @@ public class CompositeGraphBuilder {
      * @param fabricatedFqn the FQN of the fabricated vertex to remove
      */
     private static void removeFabricatedExternalVertex(
-            Graph<String, DefaultWeightedEdge> classGraph,
-            Graph<String, DefaultWeightedEdge> packageGraph,
+            Graph<VertexInfo, DefaultWeightedEdge> classGraph,
+            Graph<VertexInfo, DefaultWeightedEdge> packageGraph,
             String fabricatedFqn) {
+        VertexInfo fabricatedVertex = VertexInfo.forName(fabricatedFqn);
         // Remove all incoming edges
-        Set<DefaultWeightedEdge> incomingEdges = new HashSet<>(classGraph.incomingEdgesOf(fabricatedFqn));
+        Set<DefaultWeightedEdge> incomingEdges = new HashSet<>(classGraph.incomingEdgesOf(fabricatedVertex));
         for (DefaultWeightedEdge edge : incomingEdges) {
             classGraph.removeEdge(edge);
         }
 
         // Remove all outgoing edges
-        Set<DefaultWeightedEdge> outgoingEdges = new HashSet<>(classGraph.outgoingEdgesOf(fabricatedFqn));
+        Set<DefaultWeightedEdge> outgoingEdges = new HashSet<>(classGraph.outgoingEdgesOf(fabricatedVertex));
         for (DefaultWeightedEdge edge : outgoingEdges) {
             classGraph.removeEdge(edge);
         }
 
         // Remove the vertex
-        classGraph.removeVertex(fabricatedFqn);
+        classGraph.removeVertex(fabricatedVertex);
 
         // Note: We don't modify packageGraph here since the fabricated vertex's
         // package matched the caller's package (which is a real codebase package).
@@ -304,80 +322,89 @@ public class CompositeGraphBuilder {
         return lastDot >= 0 ? fqn.substring(lastDot + 1) : fqn;
     }
 
+    /**
+     * Redirects a fabricated vertex's edges to its canonical declaration, summing duplicate weights.
+     * Self-loops introduced by contraction are dropped, and new cross-package edges are recorded.
+     */
     private static void contractVertex(
-            Graph<String, DefaultWeightedEdge> classGraph,
-            Graph<String, DefaultWeightedEdge> packageGraph,
+            Graph<VertexInfo, DefaultWeightedEdge> classGraph,
+            Graph<VertexInfo, DefaultWeightedEdge> packageGraph,
             String fabricatedFqn,
             String canonicalFqn) {
+        VertexInfo fabricatedVertex = VertexInfo.forName(fabricatedFqn);
+        VertexInfo canonicalVertex = VertexInfo.forName(canonicalFqn);
         // Ensure canonical vertex exists in classGraph
-        if (!classGraph.containsVertex(canonicalFqn)) {
-            classGraph.addVertex(canonicalFqn);
+        if (!classGraph.containsVertex(canonicalVertex)) {
+            classGraph.addVertex(canonicalVertex);
         }
 
         // Redirect incoming edges to fabricated -> canonical
-        Set<DefaultWeightedEdge> incomingEdges = new HashSet<>(classGraph.incomingEdgesOf(fabricatedFqn));
+        Set<DefaultWeightedEdge> incomingEdges = new HashSet<>(classGraph.incomingEdgesOf(fabricatedVertex));
         for (DefaultWeightedEdge edge : incomingEdges) {
-            String source = classGraph.getEdgeSource(edge);
+            VertexInfo source = classGraph.getEdgeSource(edge);
             double weight = classGraph.getEdgeWeight(edge);
             classGraph.removeEdge(edge);
 
-            if (source.equals(canonicalFqn)) {
+            if (source.equals(canonicalVertex)) {
                 // Contraction would create a self-loop; drop the edge.
                 continue;
             }
-            if (!classGraph.containsEdge(source, canonicalFqn)) {
-                DefaultWeightedEdge newEdge = classGraph.addEdge(source, canonicalFqn);
+            if (!classGraph.containsEdge(source, canonicalVertex)) {
+                DefaultWeightedEdge newEdge = classGraph.addEdge(source, canonicalVertex);
                 classGraph.setEdgeWeight(newEdge, weight);
                 // Add corresponding package edge if cross-package
-                addPackageEdgeIfCrossPackage(packageGraph, source, canonicalFqn);
+                addPackageEdgeIfCrossPackage(packageGraph, source, canonicalVertex);
             } else {
-                DefaultWeightedEdge existingEdge = classGraph.getEdge(source, canonicalFqn);
+                DefaultWeightedEdge existingEdge = classGraph.getEdge(source, canonicalVertex);
                 classGraph.setEdgeWeight(existingEdge, classGraph.getEdgeWeight(existingEdge) + weight);
             }
         }
 
         // Redirect outgoing edges from fabricated -> canonical
-        Set<DefaultWeightedEdge> outgoingEdges = new HashSet<>(classGraph.outgoingEdgesOf(fabricatedFqn));
+        Set<DefaultWeightedEdge> outgoingEdges = new HashSet<>(classGraph.outgoingEdgesOf(fabricatedVertex));
         for (DefaultWeightedEdge edge : outgoingEdges) {
-            String target = classGraph.getEdgeTarget(edge);
+            VertexInfo target = classGraph.getEdgeTarget(edge);
             double weight = classGraph.getEdgeWeight(edge);
             classGraph.removeEdge(edge);
 
-            if (target.equals(canonicalFqn)) {
+            if (target.equals(canonicalVertex)) {
                 // Contraction would create a self-loop; drop the edge.
                 continue;
             }
-            if (!classGraph.containsEdge(canonicalFqn, target)) {
-                DefaultWeightedEdge newEdge = classGraph.addEdge(canonicalFqn, target);
+            if (!classGraph.containsEdge(canonicalVertex, target)) {
+                DefaultWeightedEdge newEdge = classGraph.addEdge(canonicalVertex, target);
                 classGraph.setEdgeWeight(newEdge, weight);
                 // Add corresponding package edge if cross-package
-                addPackageEdgeIfCrossPackage(packageGraph, canonicalFqn, target);
+                addPackageEdgeIfCrossPackage(packageGraph, canonicalVertex, target);
             } else {
-                DefaultWeightedEdge existingEdge = classGraph.getEdge(canonicalFqn, target);
+                DefaultWeightedEdge existingEdge = classGraph.getEdge(canonicalVertex, target);
                 classGraph.setEdgeWeight(existingEdge, classGraph.getEdgeWeight(existingEdge) + weight);
             }
         }
 
         // Remove the fabricated vertex
-        classGraph.removeVertex(fabricatedFqn);
+        classGraph.removeVertex(fabricatedVertex);
     }
 
+    /** Adds or increments a package edge when both class endpoints have distinct, nonempty packages. */
     private static void addPackageEdgeIfCrossPackage(
-            Graph<String, DefaultWeightedEdge> packageGraph, String classSource, String classTarget) {
-        String pkgSource = packageName(classSource);
-        String pkgTarget = packageName(classTarget);
-        if (!pkgSource.equals(pkgTarget)) {
-            if (!packageGraph.containsVertex(pkgSource)) {
-                packageGraph.addVertex(pkgSource);
+            Graph<VertexInfo, DefaultWeightedEdge> packageGraph, VertexInfo classSource, VertexInfo classTarget) {
+        String pkgSource = packageName(classSource.getName());
+        String pkgTarget = packageName(classTarget.getName());
+        if (!pkgSource.isEmpty() && !pkgTarget.isEmpty() && !pkgSource.equals(pkgTarget)) {
+            VertexInfo pkgSourceVertex = VertexInfo.forName(pkgSource);
+            VertexInfo pkgTargetVertex = VertexInfo.forName(pkgTarget);
+            if (!packageGraph.containsVertex(pkgSourceVertex)) {
+                packageGraph.addVertex(pkgSourceVertex);
             }
-            if (!packageGraph.containsVertex(pkgTarget)) {
-                packageGraph.addVertex(pkgTarget);
+            if (!packageGraph.containsVertex(pkgTargetVertex)) {
+                packageGraph.addVertex(pkgTargetVertex);
             }
-            if (!packageGraph.containsEdge(pkgSource, pkgTarget)) {
-                DefaultWeightedEdge newEdge = packageGraph.addEdge(pkgSource, pkgTarget);
+            if (!packageGraph.containsEdge(pkgSourceVertex, pkgTargetVertex)) {
+                DefaultWeightedEdge newEdge = packageGraph.addEdge(pkgSourceVertex, pkgTargetVertex);
                 packageGraph.setEdgeWeight(newEdge, 1);
             } else {
-                DefaultWeightedEdge existingEdge = packageGraph.getEdge(pkgSource, pkgTarget);
+                DefaultWeightedEdge existingEdge = packageGraph.getEdge(pkgSourceVertex, pkgTargetVertex);
                 packageGraph.setEdgeWeight(existingEdge, packageGraph.getEdgeWeight(existingEdge) + 1);
             }
         }
@@ -388,16 +415,17 @@ public class CompositeGraphBuilder {
         return lastDot >= 0 ? fqn.substring(0, lastDot) : "";
     }
 
+    /** Copies source vertices and edges into the target, adding weights for edges already present. */
     private static void mergeGraph(
-            Graph<String, DefaultWeightedEdge> source, Graph<String, DefaultWeightedEdge> target) {
+            Graph<VertexInfo, DefaultWeightedEdge> source, Graph<VertexInfo, DefaultWeightedEdge> target) {
         // Add vertices
-        for (String vertex : source.vertexSet()) {
+        for (VertexInfo vertex : source.vertexSet()) {
             target.addVertex(vertex);
         }
         // Add edges, preserving weights
         for (DefaultWeightedEdge edge : source.edgeSet()) {
-            String sourceVertex = source.getEdgeSource(edge);
-            String targetVertex = source.getEdgeTarget(edge);
+            VertexInfo sourceVertex = source.getEdgeSource(edge);
+            VertexInfo targetVertex = source.getEdgeTarget(edge);
             double weight = source.getEdgeWeight(edge);
 
             if (!target.containsEdge(sourceVertex, targetVertex)) {
@@ -410,17 +438,18 @@ public class CompositeGraphBuilder {
         }
     }
 
+    /** Maps a source DTO's package-to-class relationships onto the corresponding merged graph edges. */
     private static void mergeClassRelationships(
             CodebaseGraphDTO dto,
-            Graph<String, DefaultWeightedEdge> sourceClassGraph,
-            Graph<String, DefaultWeightedEdge> mergedPackageGraph,
-            Graph<String, DefaultWeightedEdge> mergedClassGraph,
+            Graph<VertexInfo, DefaultWeightedEdge> sourceClassGraph,
+            Graph<VertexInfo, DefaultWeightedEdge> mergedPackageGraph,
+            Graph<VertexInfo, DefaultWeightedEdge> mergedClassGraph,
             Map<DefaultWeightedEdge, Set<DefaultWeightedEdge>> mergedClassRelationships) {
         for (Map.Entry<DefaultWeightedEdge, Set<DefaultWeightedEdge>> entry :
                 dto.getClassRelationshipsInPackageRelationship().entrySet()) {
 
-            String pkgSource = dto.getPackageReferencesGraph().getEdgeSource(entry.getKey());
-            String pkgTarget = dto.getPackageReferencesGraph().getEdgeTarget(entry.getKey());
+            VertexInfo pkgSource = dto.getPackageReferencesGraph().getEdgeSource(entry.getKey());
+            VertexInfo pkgTarget = dto.getPackageReferencesGraph().getEdgeTarget(entry.getKey());
             DefaultWeightedEdge mergedPkgEdge = mergedPackageGraph.getEdge(pkgSource, pkgTarget);
             if (mergedPkgEdge == null) {
                 continue;
@@ -428,8 +457,8 @@ public class CompositeGraphBuilder {
 
             Set<DefaultWeightedEdge> mergedClassEdges = new HashSet<>();
             for (DefaultWeightedEdge sourceClassEdge : entry.getValue()) {
-                String classSource = sourceClassGraph.getEdgeSource(sourceClassEdge);
-                String classTarget = sourceClassGraph.getEdgeTarget(sourceClassEdge);
+                VertexInfo classSource = sourceClassGraph.getEdgeSource(sourceClassEdge);
+                VertexInfo classTarget = sourceClassGraph.getEdgeTarget(sourceClassEdge);
                 DefaultWeightedEdge mergedClassEdge = mergedClassGraph.getEdge(classSource, classTarget);
                 if (mergedClassEdge != null) {
                     mergedClassEdges.add(mergedClassEdge);
@@ -453,20 +482,23 @@ public class CompositeGraphBuilder {
      * them by their corresponding package edge in the merged package graph.
      */
     private static void rebuildClassRelationshipsAfterReconciliation(
-            Graph<String, DefaultWeightedEdge> mergedClassGraph,
-            Graph<String, DefaultWeightedEdge> mergedPackageGraph,
+            Graph<VertexInfo, DefaultWeightedEdge> mergedClassGraph,
+            Graph<VertexInfo, DefaultWeightedEdge> mergedPackageGraph,
             Map<DefaultWeightedEdge, Set<DefaultWeightedEdge>> mergedClassRelationships) {
         Map<DefaultWeightedEdge, Set<DefaultWeightedEdge>> rebuilt = new HashMap<>();
 
         // Iterate all class edges in the final merged class graph
         for (DefaultWeightedEdge classEdge : mergedClassGraph.edgeSet()) {
-            String classSource = mergedClassGraph.getEdgeSource(classEdge);
-            String classTarget = mergedClassGraph.getEdgeTarget(classEdge);
+            VertexInfo classSource = mergedClassGraph.getEdgeSource(classEdge);
+            VertexInfo classTarget = mergedClassGraph.getEdgeTarget(classEdge);
 
-            String pkgSource = packageName(classSource);
-            String pkgTarget = packageName(classTarget);
+            String pkgSource = packageName(classSource.getName());
+            String pkgTarget = packageName(classTarget.getName());
 
-            DefaultWeightedEdge pkgEdge = mergedPackageGraph.getEdge(pkgSource, pkgTarget);
+            DefaultWeightedEdge pkgEdge = null;
+            if (!pkgSource.isEmpty() && !pkgTarget.isEmpty()) {
+                pkgEdge = mergedPackageGraph.getEdge(VertexInfo.forName(pkgSource), VertexInfo.forName(pkgTarget));
+            }
             if (pkgEdge != null) {
                 rebuilt.computeIfAbsent(pkgEdge, k -> new HashSet<>()).add(classEdge);
             }
@@ -495,17 +527,18 @@ public class CompositeGraphBuilder {
      * @param sourcePathMapping the source path mapping to populate for anonymous vertices
      */
     static void mapAnonymousVerticesToEnclosingSourcePath(
-            Graph<String, DefaultWeightedEdge> classGraph, Map<String, String> sourcePathMapping) {
-        for (String vertex : classGraph.vertexSet()) {
+            Graph<VertexInfo, DefaultWeightedEdge> classGraph, Map<String, String> sourcePathMapping) {
+        for (VertexInfo vertex : classGraph.vertexSet()) {
+            String name = vertex.getName();
             // Skip if already mapped
-            if (sourcePathMapping.containsKey(vertex)) {
+            if (sourcePathMapping.containsKey(name)) {
                 continue;
             }
 
-            String enclosingFqn = getEnclosingClassFqn(vertex);
+            String enclosingFqn = getEnclosingClassFqn(name);
             if (enclosingFqn != null && sourcePathMapping.containsKey(enclosingFqn)) {
                 // Map anonymous/synthetic vertex to enclosing class's source path
-                sourcePathMapping.put(vertex, sourcePathMapping.get(enclosingFqn));
+                sourcePathMapping.put(name, sourcePathMapping.get(enclosingFqn));
             }
         }
     }

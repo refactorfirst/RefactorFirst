@@ -6,14 +6,15 @@ import java.util.Map;
 import java.util.Set;
 import lombok.Getter;
 import org.hjug.graphbuilder.DependencyCollector;
+import org.hjug.graphbuilder.VertexInfo;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultWeightedEdge;
 
 @Getter
 public class GraphMetricsCollector implements DependencyCollector {
 
-    private final Graph<String, DefaultWeightedEdge> classGraph;
-    private final Graph<String, DefaultWeightedEdge> packageGraph;
+    private final Graph<VertexInfo, DefaultWeightedEdge> classGraph;
+    private final Graph<VertexInfo, DefaultWeightedEdge> packageGraph;
     private final Map<String, ClassMetrics> classMetrics = new HashMap<>();
     private final Map<String, String> classToSourceFileMapping = new HashMap<>();
     /**
@@ -29,24 +30,38 @@ public class GraphMetricsCollector implements DependencyCollector {
     /** Maps callee full-qualified method signature → set of caller class FQNs (CC). */
     private final Map<String, Set<String>> calleeToCallerClasses = new HashMap<>();
 
+    /**
+     * Creates a metrics collector backed by the supplied dependency graphs.
+     *
+     * @param classGraph the graph receiving class dependencies
+     * @param packageGraph the graph receiving package dependencies
+     */
     public GraphMetricsCollector(
-            Graph<String, DefaultWeightedEdge> classGraph, Graph<String, DefaultWeightedEdge> packageGraph) {
+            Graph<VertexInfo, DefaultWeightedEdge> classGraph, Graph<VertexInfo, DefaultWeightedEdge> packageGraph) {
         this.classGraph = classGraph;
         this.packageGraph = packageGraph;
     }
 
+    /**
+     * Adds or increments a class edge and records the target dependency in the source class metrics.
+     *
+     * @param fromClass the fully qualified source class name
+     * @param toClass the fully qualified target class name
+     */
     @Override
     public void addClassDependency(String fromClass, String toClass) {
-        if (!classGraph.containsVertex(fromClass)) {
-            classGraph.addVertex(fromClass);
+        VertexInfo fromVertex = VertexInfo.forName(fromClass);
+        VertexInfo toVertex = VertexInfo.forName(toClass);
+        if (!classGraph.containsVertex(fromVertex)) {
+            classGraph.addVertex(fromVertex);
         }
-        if (!classGraph.containsVertex(toClass)) {
-            classGraph.addVertex(toClass);
+        if (!classGraph.containsVertex(toVertex)) {
+            classGraph.addVertex(toVertex);
         }
 
-        DefaultWeightedEdge edge = classGraph.getEdge(fromClass, toClass);
+        DefaultWeightedEdge edge = classGraph.getEdge(fromVertex, toVertex);
         if (edge == null) {
-            edge = classGraph.addEdge(fromClass, toClass);
+            edge = classGraph.addEdge(fromVertex, toVertex);
             if (edge != null) {
                 classGraph.setEdgeWeight(edge, 1.0);
             }
@@ -58,18 +73,27 @@ public class GraphMetricsCollector implements DependencyCollector {
         getOrCreateClassMetrics(fromClass).addDependency(toClass);
     }
 
+    /**
+     * Adds or increments a dependency between the supplied package names.
+     *
+     * @param fromPackage the source package name
+     * @param toPackage the target package name
+     * @return the newly created or existing package edge
+     */
     @Override
     public DefaultWeightedEdge addPackageDependency(String fromPackage, String toPackage) {
-        if (!packageGraph.containsVertex(fromPackage)) {
-            packageGraph.addVertex(fromPackage);
+        VertexInfo fromPackageVertex = VertexInfo.forName(fromPackage);
+        VertexInfo toPackageVertex = VertexInfo.forName(toPackage);
+        if (!packageGraph.containsVertex(fromPackageVertex)) {
+            packageGraph.addVertex(fromPackageVertex);
         }
-        if (!packageGraph.containsVertex(toPackage)) {
-            packageGraph.addVertex(toPackage);
+        if (!packageGraph.containsVertex(toPackageVertex)) {
+            packageGraph.addVertex(toPackageVertex);
         }
 
-        DefaultWeightedEdge edge = packageGraph.getEdge(fromPackage, toPackage);
+        DefaultWeightedEdge edge = packageGraph.getEdge(fromPackageVertex, toPackageVertex);
         if (edge == null) {
-            edge = packageGraph.addEdge(fromPackage, toPackage);
+            edge = packageGraph.addEdge(fromPackageVertex, toPackageVertex);
             if (edge != null) {
                 packageGraph.setEdgeWeight(edge, 1.0);
             }
@@ -86,20 +110,36 @@ public class GraphMetricsCollector implements DependencyCollector {
         classToSourceFileMapping.put(classFqn, sourceFilePath);
     }
 
+    /**
+     * Ensures a package vertex exists even when no dependency edge has been recorded for it.
+     *
+     * @param packageName the package to register
+     */
     @Override
     public void registerPackage(String packageName) {
-        if (!packageGraph.containsVertex(packageName)) {
-            packageGraph.addVertex(packageName);
+        VertexInfo packageVertex = VertexInfo.forName(packageName);
+        if (!packageGraph.containsVertex(packageVertex)) {
+            packageGraph.addVertex(packageVertex);
         }
     }
 
+    /**
+     * Ensures a class vertex exists independently of its dependency edges.
+     *
+     * @param classFqn the fully qualified class name
+     */
     @Override
     public void registerClassVertex(String classFqn) {
-        classGraph.addVertex(classFqn);
+        classGraph.addVertex(VertexInfo.forName(classFqn));
     }
 
+    /**
+     * Returns the names of all vertices currently present in the package graph.
+     *
+     * @return a set of package names
+     */
     public Set<String> getPackagesInCodebase() {
-        return packageGraph.vertexSet();
+        return packageGraph.vertexSet().stream().map(VertexInfo::getName).collect(java.util.stream.Collectors.toSet());
     }
 
     public void recordClassMetric(String className, String metricName, Object value) {

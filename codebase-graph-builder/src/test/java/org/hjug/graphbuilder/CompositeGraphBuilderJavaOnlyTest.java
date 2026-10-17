@@ -83,6 +83,7 @@ class CompositeGraphBuilderJavaOnlyTest {
                                 Arrays.stream(methods).map(Method::getName).toArray()));
     }
 
+    /** Verifies that the default configuration includes Kotlin declarations and their source mappings. */
     @DisplayName("Default config parses Kotlin sources unconditionally (.kt entries appear)")
     @Test
     void defaultConfigParsesKotlinSources() throws IOException {
@@ -95,12 +96,12 @@ class CompositeGraphBuilderJavaOnlyTest {
         CompositeGraphBuilder compositeGraphBuilder = new CompositeGraphBuilder();
         CodebaseGraphDTO dto = compositeGraphBuilder.getCodebaseGraphDTO(srcDirectory.getAbsolutePath(), config);
 
-        Graph<String, DefaultWeightedEdge> classGraph = dto.getClassReferencesGraph();
+        Graph<VertexInfo, DefaultWeightedEdge> classGraph = dto.getClassReferencesGraph();
         assertNotNull(classGraph);
 
         // KConsumer is declared only in a .kt file; its presence proves Kotlin parsing ran.
         assertTrue(
-                classGraph.containsVertex("com.ideacrest.parser.mixedclasses.KConsumer"),
+                classGraph.containsVertex(VertexInfo.forName("com.ideacrest.parser.mixedclasses.KConsumer")),
                 "KConsumer must be a vertex when Kotlin analysis runs unconditionally, vertices: "
                         + classGraph.vertexSet());
 

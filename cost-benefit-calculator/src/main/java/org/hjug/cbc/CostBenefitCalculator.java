@@ -20,6 +20,7 @@ import org.hjug.git.ChangePronenessRanker;
 import org.hjug.git.GitLogReader;
 import org.hjug.git.ScmLogInfo;
 import org.hjug.graphbuilder.CodebaseGraphDTO;
+import org.hjug.graphbuilder.VertexInfo;
 import org.hjug.graphbuilder.metrics.DisharmonyDetector.ClassDisharmony;
 import org.hjug.graphbuilder.metrics.DisharmonyDetector.MethodDisharmony;
 import org.hjug.graphbuilder.metrics.DisharmonyTypes;
@@ -337,12 +338,24 @@ public class CostBenefitCalculator implements AutoCloseable {
         return cboClasses;
     }
 
+    /**
+     * Ranks candidate class edges using cycle impact, removal flags, and package relationships.
+     * Only edges present in {@code edgeToRemoveCycleCounts} are considered.
+     *
+     * @param classGraph the class dependency graph
+     * @param edgeToRemoveCycleCounts the candidate edges and their cycle counts
+     * @param dto the codebase graph containing corresponding package relationships
+     * @param vertexesToRemove the class vertices selected for removal
+     * @param packageCycles the package cycles used to count each relationship's participation
+     * @param packageRelationshipDisharmonies the package relationships selected for removal
+     * @return the ranked class relationships with assigned priorities
+     */
     public List<RankedDisharmony> calculateRelationshipCostBenefitValues(
-            Graph<String, DefaultWeightedEdge> classGraph,
+            Graph<VertexInfo, DefaultWeightedEdge> classGraph,
             Map<DefaultWeightedEdge, Integer> edgeToRemoveCycleCounts,
             CodebaseGraphDTO dto,
-            Set<String> vertexesToRemove,
-            Map<String, AsSubgraph<String, DefaultWeightedEdge>> packageCycles,
+            Set<VertexInfo> vertexesToRemove,
+            Map<VertexInfo, AsSubgraph<VertexInfo, DefaultWeightedEdge>> packageCycles,
             List<RankedDisharmony> packageRelationshipDisharmonies) {
         List<RankedDisharmony> edgesThatNeedToBeRemoved = new ArrayList<>();
 
@@ -356,14 +369,14 @@ public class CostBenefitCalculator implements AutoCloseable {
                 continue;
             }
 
-            String edgeSource = classGraph.getEdgeSource(edge);
-            String edgeTarget = classGraph.getEdgeTarget(edge);
+            VertexInfo edgeSource = classGraph.getEdgeSource(edge);
+            VertexInfo edgeTarget = classGraph.getEdgeTarget(edge);
 
             boolean sourceNodeShouldBeRemoved = vertexesToRemove.contains(edgeSource);
             boolean targetNodeShouldBeRemoved = vertexesToRemove.contains(edgeTarget);
 
             RankedDisharmony edgeThatNeedsToBeRemoved = new RankedDisharmony(
-                    edgeSource,
+                    edgeSource.getName(),
                     edge,
                     edgeToRemoveCycleCounts.get(edge),
                     (int) classGraph.getEdgeWeight(edge),
@@ -401,16 +414,19 @@ public class CostBenefitCalculator implements AutoCloseable {
      * cycle, not merely cycles that happen to contain one of the endpoints.
      */
     private static int getPackageCycleCount(
-            String edgeSource,
-            String edgeTarget,
+            VertexInfo edgeSource,
+            VertexInfo edgeTarget,
             CodebaseGraphDTO dto,
-            Map<String, AsSubgraph<String, DefaultWeightedEdge>> packageCycles) {
+            Map<VertexInfo, AsSubgraph<VertexInfo, DefaultWeightedEdge>> packageCycles) {
         String sourcePackage = toPackageName(edgeSource, dto);
         String targetPackage = toPackageName(edgeTarget, dto);
+        if (sourcePackage.isEmpty() || targetPackage.isEmpty()) {
+            return 0;
+        }
 
         int packageCycleCount = 0;
-        for (AsSubgraph<String, DefaultWeightedEdge> packageCycle : packageCycles.values()) {
-            if (packageCycle.containsEdge(sourcePackage, targetPackage)) {
+        for (AsSubgraph<VertexInfo, DefaultWeightedEdge> packageCycle : packageCycles.values()) {
+            if (packageCycle.containsEdge(VertexInfo.forName(sourcePackage), VertexInfo.forName(targetPackage))) {
                 packageCycleCount++;
             }
         }
@@ -423,10 +439,17 @@ public class CostBenefitCalculator implements AutoCloseable {
      * relationship disharmonies.
      */
     private static boolean packageRelationshipShouldBeRemoved(
-            String edgeSource, String edgeTarget, CodebaseGraphDTO dto, Set<DefaultWeightedEdge> packageEdgesToRemove) {
+            VertexInfo edgeSource,
+            VertexInfo edgeTarget,
+            CodebaseGraphDTO dto,
+            Set<DefaultWeightedEdge> packageEdgesToRemove) {
         String sourcePackage = toPackageName(edgeSource, dto);
         String targetPackage = toPackageName(edgeTarget, dto);
-        DefaultWeightedEdge packageEdge = dto.getPackageReferencesGraph().getEdge(sourcePackage, targetPackage);
+        if (sourcePackage.isEmpty() || targetPackage.isEmpty()) {
+            return false;
+        }
+        DefaultWeightedEdge packageEdge = dto.getPackageReferencesGraph()
+                .getEdge(VertexInfo.forName(sourcePackage), VertexInfo.forName(targetPackage));
         return packageEdge != null && packageEdgesToRemove.contains(packageEdge);
     }
 
@@ -434,14 +457,15 @@ public class CostBenefitCalculator implements AutoCloseable {
      * The vertex may already be a package name (when classGraph is actually a package graph) or a fully-qualified
      * class name, in which case the containing package is derived from it.
      */
-    private static String toPackageName(String vertex, CodebaseGraphDTO dto) {
+    private static String toPackageName(VertexInfo vertex, CodebaseGraphDTO dto) {
         if (dto.getPackageReferencesGraph().containsVertex(vertex)) {
-            return vertex;
-        } else if (vertex.contains(".")) {
-            return vertex.substring(0, vertex.lastIndexOf('.'));
-        } else {
-            return "";
+            return vertex.getName();
         }
+        String name = vertex.getName();
+        if (name.contains(".")) {
+            return name.substring(0, name.lastIndexOf('.'));
+        }
+        return "";
     }
 
     static void sortEdgesThatNeedToBeRemoved(List<RankedDisharmony> rankedDisharmonies) {

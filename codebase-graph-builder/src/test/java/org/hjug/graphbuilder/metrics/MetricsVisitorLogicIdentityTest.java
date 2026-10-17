@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
+import org.hjug.graphbuilder.VertexInfo;
 import org.jgrapht.graph.DefaultDirectedWeightedGraph;
 import org.jgrapht.graph.DefaultWeightedEdge;
 import org.junit.jupiter.api.DisplayName;
@@ -128,9 +129,9 @@ class MetricsVisitorLogicIdentityTest {
     }
 
     private static GraphMetricsCollector newGraphMetricsCollector() {
-        DefaultDirectedWeightedGraph<String, DefaultWeightedEdge> classGraph =
+        DefaultDirectedWeightedGraph<VertexInfo, DefaultWeightedEdge> classGraph =
                 new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-        DefaultDirectedWeightedGraph<String, DefaultWeightedEdge> packageGraph =
+        DefaultDirectedWeightedGraph<VertexInfo, DefaultWeightedEdge> packageGraph =
                 new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
         return new GraphMetricsCollector(classGraph, packageGraph);
     }

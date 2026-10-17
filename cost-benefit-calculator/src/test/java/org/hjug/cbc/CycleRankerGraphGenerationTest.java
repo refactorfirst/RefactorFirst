@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.hjug.graphbuilder.CodebaseGraphDTO;
+import org.hjug.graphbuilder.VertexInfo;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -24,6 +25,7 @@ class CycleRankerGraphGenerationTest {
     @TempDir
     Path tempDir;
 
+    /** Verifies that cycle graph generation includes a class declared in the repository fixture. */
     @Test
     @DisplayName("generateClassReferencesGraph builds the graph")
     void generatesClassReferencesGraph() throws IOException {
@@ -42,7 +44,7 @@ class CycleRankerGraphGenerationTest {
         CodebaseGraphDTO dto = ranker.generateClassReferencesGraph(false, "");
 
         assertNotNull(dto);
-        assertTrue(dto.getClassReferencesGraph().containsVertex("com.example.Plain"));
+        assertTrue(dto.getClassReferencesGraph().containsVertex(VertexInfo.forName("com.example.Plain")));
     }
 
     @ParameterizedTest
@@ -58,6 +60,7 @@ class CycleRankerGraphGenerationTest {
         assertNull(ranker.getCodebaseGraphDTO(), "A rejected request must not populate the graph DTO");
     }
 
+    /** Verifies that graph generation honors the caller's custom test directory and exclusion setting. */
     @ParameterizedTest(name = "excludeTests={0} should include custom test source={1}")
     @CsvSource({"true, false", "false, true"})
     @DisplayName("generateClassReferencesGraph forwards test exclusion configuration")
@@ -68,10 +71,10 @@ class CycleRankerGraphGenerationTest {
         CycleRanker ranker = new CycleRanker(tempDir.toString(), tempDir.toString());
         CodebaseGraphDTO dto = ranker.generateClassReferencesGraph(excludeTests, "custom-tests");
 
-        assertTrue(dto.getClassReferencesGraph().containsVertex("com.example.ProductionClass"));
+        assertTrue(dto.getClassReferencesGraph().containsVertex(VertexInfo.forName("com.example.ProductionClass")));
         assertEquals(
                 expectTestSource,
-                dto.getClassReferencesGraph().containsVertex("com.example.FixtureClass"),
+                dto.getClassReferencesGraph().containsVertex(VertexInfo.forName("com.example.FixtureClass")),
                 "The custom test source directory must follow the caller's exclusion setting");
         assertSame(dto, ranker.getCodebaseGraphDTO(), "The generated DTO must remain available to cycle ranking");
     }

@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
  */
 class CompositeGraphBuilderTest {
 
+    /** Verifies that a mixed source directory produces one graph containing Java and Kotlin dependencies. */
     @DisplayName("A directory with both Java and Kotlin source files produces a single graph with cross-language edges")
     @Test
     void parseMixedSourceDirectoryTest() throws IOException {
@@ -22,29 +23,37 @@ class CompositeGraphBuilderTest {
         CompositeGraphBuilder compositeGraphBuilder = new CompositeGraphBuilder();
         CodebaseGraphDTO dto = compositeGraphBuilder.getCodebaseGraphDTO(srcDirectory.getAbsolutePath(), false, "");
 
-        Graph<String, DefaultWeightedEdge> classReferencesGraph = dto.getClassReferencesGraph();
+        Graph<VertexInfo, DefaultWeightedEdge> classReferencesGraph = dto.getClassReferencesGraph();
         assertNotNull(classReferencesGraph);
 
         // All 4 classes should be vertices
         assertEquals(4, classReferencesGraph.vertexSet().size());
-        assertTrue(classReferencesGraph.containsVertex("com.ideacrest.parser.mixedclasses.JavaClass"));
-        assertTrue(classReferencesGraph.containsVertex("com.ideacrest.parser.mixedclasses.KotlinClass"));
-        assertTrue(classReferencesGraph.containsVertex("com.ideacrest.parser.mixedclasses.SharedTarget"));
-        assertTrue(classReferencesGraph.containsVertex("com.ideacrest.parser.mixedclasses.KConsumer"));
+        assertTrue(
+                classReferencesGraph.containsVertex(VertexInfo.forName("com.ideacrest.parser.mixedclasses.JavaClass")));
+        assertTrue(classReferencesGraph.containsVertex(
+                VertexInfo.forName("com.ideacrest.parser.mixedclasses.KotlinClass")));
+        assertTrue(classReferencesGraph.containsVertex(
+                VertexInfo.forName("com.ideacrest.parser.mixedclasses.SharedTarget")));
+        assertTrue(
+                classReferencesGraph.containsVertex(VertexInfo.forName("com.ideacrest.parser.mixedclasses.KConsumer")));
 
         // Java -> Kotlin cross-language edge
         assertTrue(classReferencesGraph.containsEdge(
-                "com.ideacrest.parser.mixedclasses.JavaClass", "com.ideacrest.parser.mixedclasses.KotlinClass"));
+                VertexInfo.forName("com.ideacrest.parser.mixedclasses.JavaClass"),
+                VertexInfo.forName("com.ideacrest.parser.mixedclasses.KotlinClass")));
 
         // Kotlin -> Java cross-language edge
         assertTrue(classReferencesGraph.containsEdge(
-                "com.ideacrest.parser.mixedclasses.KotlinClass", "com.ideacrest.parser.mixedclasses.JavaClass"));
+                VertexInfo.forName("com.ideacrest.parser.mixedclasses.KotlinClass"),
+                VertexInfo.forName("com.ideacrest.parser.mixedclasses.JavaClass")));
 
         // Kotlin -> Java shared target edge
         assertTrue(classReferencesGraph.containsEdge(
-                "com.ideacrest.parser.mixedclasses.KConsumer", "com.ideacrest.parser.mixedclasses.SharedTarget"));
+                VertexInfo.forName("com.ideacrest.parser.mixedclasses.KConsumer"),
+                VertexInfo.forName("com.ideacrest.parser.mixedclasses.SharedTarget")));
     }
 
+    /** Verifies that cross-package Java references resolve to canonical Kotlin vertices and package edges. */
     @DisplayName("Cross-package Java-to-Kotlin reference is reconciled to the canonical Kotlin FQN")
     @Test
     void parseMixedSourceDirectoryCrossPackageTest() throws IOException {
@@ -52,23 +61,25 @@ class CompositeGraphBuilderTest {
         CompositeGraphBuilder compositeGraphBuilder = new CompositeGraphBuilder();
         CodebaseGraphDTO dto = compositeGraphBuilder.getCodebaseGraphDTO(srcDirectory.getAbsolutePath(), false, "");
 
-        Graph<String, DefaultWeightedEdge> classReferencesGraph = dto.getClassReferencesGraph();
+        Graph<VertexInfo, DefaultWeightedEdge> classReferencesGraph = dto.getClassReferencesGraph();
         assertNotNull(classReferencesGraph);
 
         // The canonical Kotlin class FQN should be present
         assertTrue(
-                classReferencesGraph.containsVertex("com.almasb.fxgl.app.GameSettings"),
+                classReferencesGraph.containsVertex(VertexInfo.forName("com.almasb.fxgl.app.GameSettings")),
                 "Canonical Kotlin class should be in the graph");
 
         // The fabricated vertex (caller's package + simple name) should NOT be present
         assertFalse(
-                classReferencesGraph.containsVertex("com.ideacrest.parser.mixedclasses.GameSettings"),
+                classReferencesGraph.containsVertex(
+                        VertexInfo.forName("com.ideacrest.parser.mixedclasses.GameSettings")),
                 "Fabricated cross-package vertex should be reconciled away");
 
         // The Java class should have an edge to the CANONICAL Kotlin FQN
         assertTrue(
                 classReferencesGraph.containsEdge(
-                        "com.ideacrest.parser.mixedclasses.JavaClass", "com.almasb.fxgl.app.GameSettings"),
+                        VertexInfo.forName("com.ideacrest.parser.mixedclasses.JavaClass"),
+                        VertexInfo.forName("com.almasb.fxgl.app.GameSettings")),
                 "Java class should reference the canonical Kotlin FQN after reconciliation");
 
         // Source path mapping should have the canonical FQN
@@ -77,9 +88,11 @@ class CompositeGraphBuilderTest {
                 "Source path mapping should have the canonical Kotlin FQN");
 
         // Package graph should have the cross-package edge
-        Graph<String, DefaultWeightedEdge> packageReferencesGraph = dto.getPackageReferencesGraph();
+        Graph<VertexInfo, DefaultWeightedEdge> packageReferencesGraph = dto.getPackageReferencesGraph();
         assertTrue(
-                packageReferencesGraph.containsEdge("com.ideacrest.parser.mixedclasses", "com.almasb.fxgl.app"),
+                packageReferencesGraph.containsEdge(
+                        VertexInfo.forName("com.ideacrest.parser.mixedclasses"),
+                        VertexInfo.forName("com.almasb.fxgl.app")),
                 "Package graph should have the cross-package edge after reconciliation");
     }
 }

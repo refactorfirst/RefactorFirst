@@ -9,6 +9,7 @@ import org.hjug.cbc.RankedCycle;
 import org.hjug.cbc.RankedDisharmony;
 import org.hjug.gdg.GraphDataGenerator;
 import org.hjug.graphbuilder.CodebaseGraphDTO;
+import org.hjug.graphbuilder.VertexInfo;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultWeightedEdge;
 
@@ -564,7 +565,7 @@ public class HtmlReport extends SimpleHtmlReport {
 
     /** Builds raw DOT source for the complete class relationship graph. */
     String buildRawClassGraphDot(
-            Graph<String, DefaultWeightedEdge> classGraph, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
+            Graph<VertexInfo, DefaultWeightedEdge> classGraph, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
         StringBuilder dot = new StringBuilder();
         dot.append("strict digraph G {\n");
 
@@ -590,7 +591,7 @@ public class HtmlReport extends SimpleHtmlReport {
 
     /** Builds escaped class-graph DOT suitable for a JavaScript template literal. */
     String buildClassGraphDot(
-            Graph<String, DefaultWeightedEdge> classGraph, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
+            Graph<VertexInfo, DefaultWeightedEdge> classGraph, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
         return toJavaScriptTemplateLiteral(buildRawClassGraphDot(classGraph, repoUrl, codebaseGraphDTO));
     }
 
@@ -600,7 +601,7 @@ public class HtmlReport extends SimpleHtmlReport {
      * classes selected for removal.
      */
     private void renderClassVertices(
-            Graph<String, DefaultWeightedEdge> classGraph,
+            Graph<VertexInfo, DefaultWeightedEdge> classGraph,
             String repoUrl,
             CodebaseGraphDTO codebaseGraphDTO,
             Set<String> vertexesToRender,
@@ -633,7 +634,7 @@ public class HtmlReport extends SimpleHtmlReport {
                 dot.append(" label=\"").append(label).append("\"");
             }
 
-            if (classesToRemove.contains(vertex)) {
+            if (classesToRemove.contains(VertexInfo.forName(vertex))) {
                 dot.append(" color=red style=filled");
             }
 
@@ -710,7 +711,7 @@ public class HtmlReport extends SimpleHtmlReport {
      * @param classGraph the class graph for collision detection
      * @return a deterministic DOT-legal node id for the vertex
      */
-    String renderSafeNodeId(String vertex, Graph<String, DefaultWeightedEdge> classGraph) {
+    String renderSafeNodeId(String vertex, Graph<VertexInfo, DefaultWeightedEdge> classGraph) {
         return renderSafeNodeId(vertex, classGraph, null);
     }
 
@@ -726,7 +727,7 @@ public class HtmlReport extends SimpleHtmlReport {
      * @return a deterministic DOT-legal node id for the vertex
      */
     String renderSafeNodeId(
-            String vertex, Graph<String, DefaultWeightedEdge> classGraph, CodebaseGraphDTO codebaseGraphDTO) {
+            String vertex, Graph<VertexInfo, DefaultWeightedEdge> classGraph, CodebaseGraphDTO codebaseGraphDTO) {
         // Special handling for anonymous/synthetic vertices
         if (isAnonymousFqn(vertex)) {
             // If DTO provided, try to get source-aware ID
@@ -762,7 +763,7 @@ public class HtmlReport extends SimpleHtmlReport {
 
         // Count occurrences of this simple name in the graph
         long count = classGraph.vertexSet().stream()
-                .map(this::getClassName)
+                .map(graphVertex -> getClassName(graphVertex.getName()))
                 .filter(simpleName::equals)
                 .count();
 
@@ -862,11 +863,12 @@ public class HtmlReport extends SimpleHtmlReport {
      * @param vertex the candidate vertex
      * @return {@code true} if the vertex should be suppressed from the DOT graph
      */
-    static boolean isSinkAnonymousOrSyntheticVertex(Graph<String, DefaultWeightedEdge> graph, String vertex) {
-        if (!graph.containsVertex(vertex)) {
+    static boolean isSinkAnonymousOrSyntheticVertex(Graph<VertexInfo, DefaultWeightedEdge> graph, String vertex) {
+        VertexInfo probe = VertexInfo.forName(vertex);
+        if (!graph.containsVertex(probe)) {
             return false;
         }
-        if (graph.outDegreeOf(vertex) != 0) {
+        if (graph.outDegreeOf(probe) != 0) {
             return false; // keep nodes that reach out
         }
         if (isAnonymousFqn(vertex)) {
@@ -890,8 +892,9 @@ public class HtmlReport extends SimpleHtmlReport {
         return dollar >= 0 ? afterDot.substring(dollar + 1) : afterDot;
     }
 
+    /** Appends a weighted class edge to DOT, highlighting removals and suppressing edges to hidden sink vertices. */
     private void renderClassGraphEdge(
-            Graph<String, DefaultWeightedEdge> classGraph,
+            Graph<VertexInfo, DefaultWeightedEdge> classGraph,
             DefaultWeightedEdge edge,
             CodebaseGraphDTO codebaseGraphDTO,
             StringBuilder dot) {
@@ -962,7 +965,7 @@ public class HtmlReport extends SimpleHtmlReport {
 
     /** Builds raw DOT source for a ranked class cycle. */
     String buildRawClassCycleDot(
-            Graph<String, DefaultWeightedEdge> classGraph,
+            Graph<VertexInfo, DefaultWeightedEdge> classGraph,
             RankedCycle cycle,
             String repoUrl,
             CodebaseGraphDTO codebaseGraphDTO) {
@@ -983,7 +986,7 @@ public class HtmlReport extends SimpleHtmlReport {
 
     /** Builds escaped class-cycle DOT suitable for a JavaScript template literal. */
     String buildClassCycleDot(
-            Graph<String, DefaultWeightedEdge> classGraph,
+            Graph<VertexInfo, DefaultWeightedEdge> classGraph,
             RankedCycle cycle,
             String repoUrl,
             CodebaseGraphDTO codebaseGraphDTO) {
@@ -1026,7 +1029,7 @@ public class HtmlReport extends SimpleHtmlReport {
 
     /** Builds raw DOT source for the package relationship graph. */
     String buildRawPackageGraphDot(
-            Graph<String, DefaultWeightedEdge> packageGraph, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
+            Graph<VertexInfo, DefaultWeightedEdge> packageGraph, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
         StringBuilder dot = new StringBuilder();
         dot.append("strict digraph G {\n");
 
@@ -1051,12 +1054,13 @@ public class HtmlReport extends SimpleHtmlReport {
 
     /** Builds escaped package-graph DOT suitable for a JavaScript template literal. */
     String buildPackageGraphDot(
-            Graph<String, DefaultWeightedEdge> packageGraph, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
+            Graph<VertexInfo, DefaultWeightedEdge> packageGraph, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
         return toJavaScriptTemplateLiteral(buildRawPackageGraphDot(packageGraph, repoUrl, codebaseGraphDTO));
     }
 
+    /** Appends a weighted package edge to DOT, using safe node IDs and highlighting selected removals. */
     private void renderPackageGraphEdge(
-            Graph<String, DefaultWeightedEdge> packageGraph, DefaultWeightedEdge edge, StringBuilder dot) {
+            Graph<VertexInfo, DefaultWeightedEdge> packageGraph, DefaultWeightedEdge edge, StringBuilder dot) {
         // render edge
         String[] vertexes = extractVertexes(edge);
 
@@ -1085,8 +1089,9 @@ public class HtmlReport extends SimpleHtmlReport {
         dot.append(" ];\n");
     }
 
+    /** Appends escaped package nodes to DOT and highlights packages selected for removal. */
     private void renderPackageVertices(
-            Graph<String, DefaultWeightedEdge> classGraph,
+            Graph<VertexInfo, DefaultWeightedEdge> classGraph,
             String repoUrl,
             CodebaseGraphDTO codebaseGraphDTO,
             Set<String> vertexesToRender,
@@ -1098,7 +1103,7 @@ public class HtmlReport extends SimpleHtmlReport {
             dot.append(escapeDotQuoted(packageName));
             dot.append("\"");
 
-            if (packagesToRemove.contains(packageName)) {
+            if (packagesToRemove.contains(VertexInfo.forName(packageName))) {
                 dot.append(" color=red style=filled");
             }
 

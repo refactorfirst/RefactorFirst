@@ -10,6 +10,7 @@ import java.util.List;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.hjug.graphbuilder.CodebaseGraphDTO;
+import org.hjug.graphbuilder.VertexInfo;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultWeightedEdge;
 import org.junit.jupiter.api.AfterEach;
@@ -84,6 +85,7 @@ class CycleRankerKotlinTest {
         }
     }
 
+    /** Verifies that Kotlin cycle ranking preserves the three cycle vertices and their Kotlin source paths. */
     @DisplayName("CycleRanker detects cycles in a Kotlin-only repo")
     @Test
     void cycleRanker_detectsKotlinCycleViaCompositeGraphBuilder() throws IOException, GitAPIException {
@@ -124,7 +126,7 @@ class CycleRankerKotlinTest {
         CodebaseGraphDTO dto = cycleRanker.generateClassReferencesGraph(true, "src/test");
 
         assertNotNull(dto, "CompositeGraphBuilder should produce a non-null CodebaseGraphDTO");
-        Graph<String, DefaultWeightedEdge> classGraph = dto.getClassReferencesGraph();
+        Graph<VertexInfo, DefaultWeightedEdge> classGraph = dto.getClassReferencesGraph();
         assertNotNull(classGraph);
 
         String a = "com.kotlin.cycles.KotlinCycleA";
@@ -132,21 +134,27 @@ class CycleRankerKotlinTest {
         String c = "com.kotlin.cycles.KotlinCycleC";
 
         assertTrue(
-                classGraph.containsVertex(a),
+                classGraph.containsVertex(VertexInfo.forName(a)),
                 "KotlinCycleA vertex missing from class graph. Vertices: " + classGraph.vertexSet());
         assertTrue(
-                classGraph.containsVertex(b),
+                classGraph.containsVertex(VertexInfo.forName(b)),
                 "KotlinCycleB vertex missing from class graph. Vertices: " + classGraph.vertexSet());
         assertTrue(
-                classGraph.containsVertex(c),
+                classGraph.containsVertex(VertexInfo.forName(c)),
                 "KotlinCycleC vertex missing from class graph. Vertices: " + classGraph.vertexSet());
 
         // Edges form the triangle A -> B -> C -> A (each class instantiates
         // the next one as a method return value, which KotlinDependencyVisitor
         // records as a class dependency).
-        assertTrue(classGraph.containsEdge(a, b), "Missing edge A -> B. Edges: " + classGraph.edgeSet());
-        assertTrue(classGraph.containsEdge(b, c), "Missing edge B -> C. Edges: " + classGraph.edgeSet());
-        assertTrue(classGraph.containsEdge(c, a), "Missing edge C -> A. Edges: " + classGraph.edgeSet());
+        assertTrue(
+                classGraph.containsEdge(VertexInfo.forName(a), VertexInfo.forName(b)),
+                "Missing edge A -> B. Edges: " + classGraph.edgeSet());
+        assertTrue(
+                classGraph.containsEdge(VertexInfo.forName(b), VertexInfo.forName(c)),
+                "Missing edge B -> C. Edges: " + classGraph.edgeSet());
+        assertTrue(
+                classGraph.containsEdge(VertexInfo.forName(c), VertexInfo.forName(a)),
+                "Missing edge C -> A. Edges: " + classGraph.edgeSet());
 
         List<RankedCycle> rankedCycles = cycleRanker.rankCycles(classGraph);
         assertNotNull(rankedCycles);

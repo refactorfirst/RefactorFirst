@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.util.*;
 import org.hjug.cbc.RankedDisharmony;
 import org.hjug.graphbuilder.CodebaseGraphDTO;
+import org.hjug.graphbuilder.VertexInfo;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultDirectedWeightedGraph;
 import org.jgrapht.graph.DefaultWeightedEdge;
@@ -214,10 +215,12 @@ class SimpleHtmlReportTest {
         CodebaseGraphDTO dto = Mockito.mock(CodebaseGraphDTO.class);
 
         // Mock package graph with an edge
-        Graph<String, DefaultWeightedEdge> packageGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-        packageGraph.addVertex("com.pkg1");
-        packageGraph.addVertex("com.pkg2");
-        DefaultWeightedEdge pkgEdge = packageGraph.addEdge("com.pkg1", "com.pkg2");
+        Graph<VertexInfo, DefaultWeightedEdge> packageGraph =
+                new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        packageGraph.addVertex(VertexInfo.forName("com.pkg1"));
+        packageGraph.addVertex(VertexInfo.forName("com.pkg2"));
+        DefaultWeightedEdge pkgEdge =
+                packageGraph.addEdge(VertexInfo.forName("com.pkg1"), VertexInfo.forName("com.pkg2"));
 
         // Set the packageGraph field via reflection
         java.lang.reflect.Field packageGraphField = SimpleHtmlReport.class.getDeclaredField("packageGraph");

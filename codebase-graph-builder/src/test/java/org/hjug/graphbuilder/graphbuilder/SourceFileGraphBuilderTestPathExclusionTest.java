@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import org.hjug.graphbuilder.CodebaseGraphDTO;
 import org.hjug.graphbuilder.GraphBuilderConfig;
+import org.hjug.graphbuilder.VertexInfo;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultWeightedEdge;
 import org.junit.jupiter.api.DisplayName;
@@ -31,6 +32,7 @@ class SourceFileGraphBuilderTestPathExclusionTest {
                 Path.of("project/src/testFixtures/java/Example.java"), "src/test"));
     }
 
+    /** Verifies that Java test exclusion recognizes a forward-slash directory pattern. */
     @DisplayName("Java builder excludes test files with forward-slash testSourceDirectory on Windows-style paths")
     @Test
     void javaBuilder_excludesTestsWithForwardSlashPatternOnWindowsPaths(@TempDir Path tempDir) throws IOException {
@@ -57,15 +59,18 @@ class SourceFileGraphBuilderTestPathExclusionTest {
                 .build();
 
         CodebaseGraphDTO dto = builder.buildGraph(tempDir.toString(), "", config);
-        Graph<String, DefaultWeightedEdge> classGraph = dto.getClassReferencesGraph();
+        Graph<VertexInfo, DefaultWeightedEdge> classGraph = dto.getClassReferencesGraph();
 
         // Main class should be included
-        assertTrue(classGraph.containsVertex("com.example.Main"), "Main class should be in graph");
+        assertTrue(classGraph.containsVertex(VertexInfo.forName("com.example.Main")), "Main class should be in graph");
 
         // Test class should be EXCLUDED (this verifies the fix works)
-        assertFalse(classGraph.containsVertex("com.example.MainTest"), "MainTest class should be excluded from graph");
+        assertFalse(
+                classGraph.containsVertex(VertexInfo.forName("com.example.MainTest")),
+                "MainTest class should be excluded from graph");
     }
 
+    /** Verifies Java test exclusion with a backslash-separated directory pattern. */
     @DisplayName("Java builder excludes test files with backslash testSourceDirectory")
     @Test
     void javaBuilder_excludesTestsWithBackslashPattern(@TempDir Path tempDir) throws IOException {
@@ -89,14 +94,15 @@ class SourceFileGraphBuilderTestPathExclusionTest {
                 .build();
 
         CodebaseGraphDTO dto = builder.buildGraph(tempDir.toString(), "", config);
-        Graph<String, DefaultWeightedEdge> classGraph = dto.getClassReferencesGraph();
+        Graph<VertexInfo, DefaultWeightedEdge> classGraph = dto.getClassReferencesGraph();
 
-        assertTrue(classGraph.containsVertex("com.example.Main"), "Main class should be in graph");
+        assertTrue(classGraph.containsVertex(VertexInfo.forName("com.example.Main")), "Main class should be in graph");
         assertFalse(
-                classGraph.containsVertex("com.example.MainTest"),
+                classGraph.containsVertex(VertexInfo.forName("com.example.MainTest")),
                 "MainTest class should be excluded with backslash pattern");
     }
 
+    /** Verifies that Kotlin test exclusion recognizes a forward-slash directory pattern. */
     @DisplayName("Kotlin builder excludes test files with forward-slash testSourceDirectory on Windows-style paths")
     @Test
     void kotlinBuilder_excludesTestsWithForwardSlashPatternOnWindowsPaths(@TempDir Path tempDir) throws IOException {
@@ -116,12 +122,15 @@ class SourceFileGraphBuilderTestPathExclusionTest {
                 .build();
 
         CodebaseGraphDTO dto = builder.buildGraph(tempDir.toString(), "", config);
-        Graph<String, DefaultWeightedEdge> classGraph = dto.getClassReferencesGraph();
+        Graph<VertexInfo, DefaultWeightedEdge> classGraph = dto.getClassReferencesGraph();
 
-        assertTrue(classGraph.containsVertex("com.example.Main"), "Main class should be in graph");
-        assertFalse(classGraph.containsVertex("com.example.MainTest"), "MainTest class should be excluded from graph");
+        assertTrue(classGraph.containsVertex(VertexInfo.forName("com.example.Main")), "Main class should be in graph");
+        assertFalse(
+                classGraph.containsVertex(VertexInfo.forName("com.example.MainTest")),
+                "MainTest class should be excluded from graph");
     }
 
+    /** Verifies Kotlin test exclusion with a backslash-separated directory pattern. */
     @DisplayName("Kotlin builder excludes test files with backslash testSourceDirectory")
     @Test
     void kotlinBuilder_excludesTestsWithBackslashPattern(@TempDir Path tempDir) throws IOException {
@@ -141,14 +150,15 @@ class SourceFileGraphBuilderTestPathExclusionTest {
                 .build();
 
         CodebaseGraphDTO dto = builder.buildGraph(tempDir.toString(), "", config);
-        Graph<String, DefaultWeightedEdge> classGraph = dto.getClassReferencesGraph();
+        Graph<VertexInfo, DefaultWeightedEdge> classGraph = dto.getClassReferencesGraph();
 
-        assertTrue(classGraph.containsVertex("com.example.Main"), "Main class should be in graph");
+        assertTrue(classGraph.containsVertex(VertexInfo.forName("com.example.Main")), "Main class should be in graph");
         assertFalse(
-                classGraph.containsVertex("com.example.MainTest"),
+                classGraph.containsVertex(VertexInfo.forName("com.example.MainTest")),
                 "MainTest class should be excluded with backslash pattern");
     }
 
+    /** Verifies that Java analysis retains test classes when test exclusion is disabled. */
     @DisplayName("Java builder includes test files when excludeTests=false")
     @Test
     void javaBuilder_includesTestsWhenExcludeTestsFalse(@TempDir Path tempDir) throws IOException {
@@ -171,14 +181,15 @@ class SourceFileGraphBuilderTestPathExclusionTest {
                 .build();
 
         CodebaseGraphDTO dto = builder.buildGraph(tempDir.toString(), "", config);
-        Graph<String, DefaultWeightedEdge> classGraph = dto.getClassReferencesGraph();
+        Graph<VertexInfo, DefaultWeightedEdge> classGraph = dto.getClassReferencesGraph();
 
-        assertTrue(classGraph.containsVertex("com.example.Main"), "Main class should be in graph");
+        assertTrue(classGraph.containsVertex(VertexInfo.forName("com.example.Main")), "Main class should be in graph");
         assertTrue(
-                classGraph.containsVertex("com.example.MainTest"),
+                classGraph.containsVertex(VertexInfo.forName("com.example.MainTest")),
                 "MainTest class should be included when excludeTests=false");
     }
 
+    /** Verifies that Kotlin analysis retains test classes when test exclusion is disabled. */
     @DisplayName("Kotlin builder includes test files when excludeTests=false")
     @Test
     void kotlinBuilder_includesTestsWhenExcludeTestsFalse(@TempDir Path tempDir) throws IOException {
@@ -198,11 +209,11 @@ class SourceFileGraphBuilderTestPathExclusionTest {
                 .build();
 
         CodebaseGraphDTO dto = builder.buildGraph(tempDir.toString(), "", config);
-        Graph<String, DefaultWeightedEdge> classGraph = dto.getClassReferencesGraph();
+        Graph<VertexInfo, DefaultWeightedEdge> classGraph = dto.getClassReferencesGraph();
 
-        assertTrue(classGraph.containsVertex("com.example.Main"), "Main class should be in graph");
+        assertTrue(classGraph.containsVertex(VertexInfo.forName("com.example.Main")), "Main class should be in graph");
         assertTrue(
-                classGraph.containsVertex("com.example.MainTest"),
+                classGraph.containsVertex(VertexInfo.forName("com.example.MainTest")),
                 "MainTest class should be included when excludeTests=false");
     }
 }
