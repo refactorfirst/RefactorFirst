@@ -14,8 +14,92 @@
 - Central DTO: `CodebaseGraphDTO` (JGraphT graphs + disharmony lists + metrics)
 - CLI entry point: `org.hjug.refactorfirst.Main` → `ReportCommand`
 - Fat jar location: `cli/target/cli-<version>.jar`
-- **Anonymous/synthetic classes are first-class graph members.** Java `Outer$N`/`Outer$` (anonymous/synthetic inner classes) and the Kotlin literal `"<anonymous>"` FQN are **not** sieved out by `GraphDependencyCollector`; they genuinely participate in cycles and can harbour antipatterns, so they are vertices in the class graph and rendered with `$` as the enclosing-class separator. `GraphDependencyCollector` keeps only the `from == to` self-edge guard, plus a degenerate-package guard so a packageless `"<anonymous>"` source never creates an `""` package-graph vertex. **Sink-only** anonymous/synthetic vertices (those with no outgoing edges) are suppressed only at render time in `HtmlReport.isSinkAnonymousOrSyntheticVertex` to keep the Class/Cycle Map DOT graph readable; active ones still render.
-- **Anonymous DOT node ids are source-file derived.** OpenRewrite attributes a Kotlin anonymous object / function-literal type with {@code "<anonymous>"} as the trailing simple-name segment of its FQN: standalone ({@code "<anonymous>"}) or, in real graphs (e.g. FXGL), prefixed by the enclosing class/package ({@code "dev.DeveloperWASDControl.<anonymous>"}). {@code HtmlReport.isAnonymousFqn(vertex)} detects a vertex when its trailing segment starts with {@code <}. {@code HtmlReport.renderSafeNodeId(vertex, codebaseGraphDTO)} then derives the enclosing owner from the vertex's mapped source-file path in {@code CodebaseGraphDTO.classToSourceFilePathMapping} (file base name without extension, e.g. {@code DeveloperWASDControl.kt} -> {@code DeveloperWASDControl}). The DOT node id renders as {@code DeveloperWASDControl_anonymous} and the human-readable label as {@code DeveloperWASDControl\$anonymous} ({@code $} escaped as {@code \$} for DOT). When no source path is mapped (or DTO is null) it degrades to the reversible {@code lt_}/{@code _gt} {@code <}/{@code >} encoding. The renderer is responsible for DOT/HTML-safe encoding of the literal {@code "<anonymous>"} FQN ({@code <}/{@code >} are illegal in Graphviz node ids; {@code <}/{@code >} escaping in HTML table labels).
+- **Anonymous/synthetic classes are first-class graph members.** Java `Outer$N`/`Outer$` (anonymous/synthetic inner classes) and the Kotlin literal `"<anonymous>"` FQN are **not** sieved out by `GraphDependencyCollector`; they genuinely participate in cycles and can harbour antipatterns, so they are vertices in the class graph and rendered with `$` as the enclosing-class separator. `GraphDependencyCollector` keeps only the `from == to` self-edge guard, plus a degenerate-package guard so an anonymous source never creates an `""` package-graph vertex: the package of a Kotlin anonymous FQN derives from its **enclosing class** (`dev.Owner.<anonymous>` → `dev`, and a packageless `Owner`/bare `"<anonymous>"` → no package edge), never a pseudo-package named after the owner — this keeps the package graph's names aligned with the class hierarchy's package derivation so the break-up lists in the Class and Package graphs match. **Sink-only** anonymous/synthetic vertices (those with no outgoing edges) are suppressed at hierarchy-build time in `HierarchyBuilder` (via the same `HtmlReport.isSinkAnonymousOrSyntheticVertex` static) to keep the Class/Cycle Map DOT graph readable; active ones still render, and edges touching a suppressed vertex are dropped with it.
+- **Anonymous DOT node ids are source-file derived.** OpenRewrite attributes a Kotlin anonymous object / function-literal type with {@code "<anonymous>"} as the trailing simple-name segment of its FQN: standalone ({@code "<anonymous>"}) or, in real graphs (e.g. FXGL), prefixed by the enclosing class/package ({@code "dev.DeveloperWASDControl.<anonymous>"}). {@code HtmlReport.isAnonymousFqn(vertex)} detects a vertex when its trailing segment starts with {@code <}. `HierarchyBuilder` resolves the id and label once, into the {@code ClassNodeDTO} (calling {@code HtmlReport.renderSafeNodeId(vertex, classGraph, codebaseGraphDTO)} / {@code anonymousOwnerLabel} / {@code getClassName}), deriving the enclosing owner from the vertex's mapped source-file path in {@code CodebaseGraphDTO.classToSourceFilePathMapping} (file base name without extension, e.g. {@code DeveloperWASDControl.kt} -> {@code DeveloperWASDControl}). The DOT node id renders as {@code DeveloperWASDControl_anonymous} and the human-readable label as {@code DeveloperWASDControl$anonymous}; labels are carried unescaped in the DTO and DOT-quoted at emission (the JS-template-literal wrapper additionally escapes {@code $} for the inline HTML report). When no source path is mapped (or DTO is null) it degrades to the reversible {@code lt_}/{@code _gt} {@code <}/{@code >} encoding. Note the render path (the 3-arg `renderSafeNodeId`) emits no hash discriminator, so same-named source files in different packages can collide — a pre-existing wart; the 2-arg overload's hash discriminator is not used for graphs.
+
+## Nested graph hierarchy (HierarchyDTO + DOT synthesis)
+
+Every generated graph (Class Map, Cycle Map, Package Map) renders as a nested
+package/class hierarchy. The pipeline is single-sourced:
+
+`VertexInfo` graphs → `HierarchyBuilder` → `HierarchyDTO` → DOT emission.
+
+- **`refactor-first.json` carries the hierarchy, not raw DOT** (0.11.0 breaking
+  change): `classMap.dot`, `packageMap.dot` and
+  `classCycles.largestCycle.dot` are gone, replaced by `.hierarchy` objects
+  (`packages` tree + `edges` referencing pre-resolved node ids). Counts and
+  gates (`dotThreshold`, `dotThresholdExceeded`, `hasEdges`) keep their names.
+  There is no schema version and no legacy `.dot` fallback — reports published
+  with older versions lose their graphs on hierarchy-only viewers until
+  regenerated.
+- **`HierarchyBuilder`** (report module) builds the three hierarchies:
+  `buildClassHierarchy` (endpoints of every class edge), `buildCycleHierarchy`
+  (a cycle's members, ids still resolved against the FULL class graph), and
+  `buildPackageHierarchy` (edge-endpoint packages as `renderAsNode` rectangle
+  nodes under their ancestor clusters). Nested `$`/Kotlin `<anonymous>`
+  classes resolve to the owning package; packageless classes land in the
+  synthetic `(default package)` bucket. Roots/children/classes/edges are
+  sorted for determinism and single-child ancestor chains collapse into their
+  deepest package (branching ancestors and content keep their boxes).
+- **Ids/labels are resolved once, into the DTO** (`ClassNodeDTO.id`/`label`,
+  `PackageNodeDTO.id`/`nodeId`) and carried unescaped; renderers escape at
+  emission. Class ids reuse the `HtmlReport.renderSafeNodeId` rules, package
+  node ids are `package_<sha24>` (`renderSafePackageNodeId`), cluster ids are
+  `cluster_<sha24>` (`HierarchyBuilder.clusterId`).
+- **`NestedDotBuilder`** emits the nested DOT in two modes.
+  *Class/cycle maps* (`buildNestedDot(hierarchy, repoUrl, includeHyperlinks)`):
+  packages as labelled `subgraph cluster_*` blocks (clusters BEFORE edges — in
+  DOT a node belongs to the cluster where it is first defined), classes as
+  `shape=ellipse` nodes. Removal colors: classes/edges keep
+  `color=red style=filled`; flagged clusters fill pink. Every cluster
+  declares an explicit fill — pink when flagged, `fillcolor=white` otherwise
+  — because vizdom propagates a styled cluster's fill to its nested cluster
+  rects; the explicit white keeps child packages of a pink cluster on their
+  normal fill.
+  *Package map* (`buildPackageDot(hierarchy)`): a package with child
+  packages renders **once** as a labelled cluster (no rectangle inside its
+  own box — the name never appears twice), a childless package renders once
+  as a filled rectangle. Edge endpoints are the `package_<sha24>` node ids:
+  a leaf's id is its rectangle; a cluster-represented package gets an
+  invisible anchor (`package_x [shape=point style=invis]`, emitted only
+  when an edge references it) and the edge carries `ltail`/`lhead` plus
+  graph-level `compound=true`, so relationships attach cluster ↔ rectangle
+  in both directions with the edge clipped to the cluster border.
+  `buildRawClassGraphDot`/`buildRawClassCycleDot`/`buildRawPackageGraphDot`
+  in `HtmlReport` keep their signatures and delegate here, so the classic
+  inline HTML report renders the nested graphs too.
+- **Two render engines**: the class and cycle maps render through vizdom
+  (`@vizdom/vizdom-ts-web@0.1.19`); the package map renders through
+  **`@hpcc-js/wasm-graphviz@1.7.0`** (`https://cdn.jsdelivr.net/npm/@hpcc-js/wasm-graphviz@1.7.0/dist/index.js`,
+  the pre-vizdom engine this repo used before #164; the wasm is embedded in
+  the single-file ESM module — no separate asset). The split is required:
+  vizdom silently ignores `compound`/`ltail`/`lhead`, which the redesigned
+  package graph depends on. The classic report's `printHead` prefetches both
+  modules and `generatePackageGraphImage` renders via
+  `Graphviz.load()` + `graphviz.dot(...)` (strip the engine's xml/doctype
+  preamble before injecting the SVG); the viewer and the report page mirror
+  this (page: `public/widgets/graphviz-bridge.js` exposes `window.Graphviz`
+  and reports the `graphviz` widget).
+- **The Class and Package maps
+  flag identical break-up lists by construction**: every `packagesToRemove`
+  member is seeded into both hierarchies (even when its classes/edges do not
+  render) and flagged packages survive pruning and single-child collapse. The
+  Cycle Map stays cycle-scoped: it flags only the break-up packages inside the
+  displayed cycle.
+- **Three synthesis implementations must stay byte-identical** (their goldens
+  mirror each other): Java `NestedDotBuilder` (`NestedDotBuilderTest`), the
+  inline copy in `report/src/main/resources/viewer/index.html` (self-contained
+  standalone viewer; pinned by `ViewerScriptTest`), and the report page's
+  `lib/hierarchy-dot.js` (refactorfirst-page repo, pinned by
+  `tests/unit/hierarchy-dot.test.js`) — each in both the class/cycle mode
+  (`buildNestedDot`/`hierarchyToDot`) and the package mode
+  (`buildPackageDot`/`packageHierarchyToDot`). The page copies add an
+  `edgeFontColor` option: vizdom and wasm-graphviz bake label `fontcolor`
+  into fill-only glyph paths / text at parse time, so the dark palette
+  re-synthesizes with `fontcolor = "#9fb0c0"` on edges. Node and cluster
+  labels sit on the engines' white shapes and stay default-colored in both
+  palettes. graphlib-dot flattens `subgraph` statements, so the sigma/3D
+  popups keep nodes/edges but lose the cluster boxes — accepted.
 
 ## Java 25 analysis (JEP 238 multi-release jar)
 
@@ -130,6 +214,11 @@ is for build failures, not for "Kotlin is absent".
 ## Maven Plugin Usage
 Generate reports directly:
 `mvn org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.9.0:htmlReport`
+
+Generate the JSON report data (writes `.refactorfirst/refactor-first.json`
+at the project root; the dogfooded copy in this repo is regenerated with this
+goal on the current `0.11.0-SNAPSHOT`):
+`mvn org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.11.0-SNAPSHOT:jsonReport`
 
 Configuration options (most important):
 - `showDetails`: Shows God Class metrics in table (default: false)

@@ -31,6 +31,11 @@ class MustacheTemplateRenderingTest {
     // HTML entity for > is \u0026gt; (rendered from "A -> B -> C -> A" where > is escaped)
     private static final String CYCLE_NAME_ESCAPED = "A -\u0026gt; B -\u0026gt; C -\u0026gt; A";
 
+    // The template consumes graph visuals only through the viewer-assigned window.*_dot
+    // globals and the threshold flags, so the hierarchy payload is irrelevant to rendering.
+    private static final HierarchyDTO EMPTY_HIERARCHY =
+            HierarchyDTO.builder().packages(List.of()).edges(List.of()).build();
+
     /** Verifies that the template renders project metadata and navigation. */
     @Test
     void testTemplateRendersProjectHeaderAndNav() throws Exception {
@@ -50,7 +55,7 @@ class MustacheTemplateRenderingTest {
                 .graphId("classGraph")
                 .classCount(10)
                 .relationshipCount(20)
-                .dot("digraph G {}")
+                .hierarchy(EMPTY_HIERARCHY)
                 .dotThresholdExceeded(false)
                 .build();
 
@@ -113,7 +118,7 @@ class MustacheTemplateRenderingTest {
                 .graphId("classGraph")
                 .classCount(10)
                 .relationshipCount(20)
-                .dot("digraph G {}")
+                .hierarchy(EMPTY_HIERARCHY)
                 .dotThresholdExceeded(false)
                 .build();
 
@@ -197,7 +202,7 @@ class MustacheTemplateRenderingTest {
                 .graphId("classGraph")
                 .classCount(10)
                 .relationshipCount(20)
-                .dot("digraph G {}")
+                .hierarchy(EMPTY_HIERARCHY)
                 .dotThresholdExceeded(false)
                 .build();
 
@@ -289,7 +294,7 @@ class MustacheTemplateRenderingTest {
                 .graphId("classGraph")
                 .classCount(10)
                 .relationshipCount(20)
-                .dot("digraph G {}")
+                .hierarchy(EMPTY_HIERARCHY)
                 .dotThresholdExceeded(false)
                 .build();
 
@@ -401,7 +406,7 @@ class MustacheTemplateRenderingTest {
                 .graphId("classGraph")
                 .classCount(10)
                 .relationshipCount(20)
-                .dot("digraph G {}")
+                .hierarchy(EMPTY_HIERARCHY)
                 .dotThresholdExceeded(false)
                 .build();
 
@@ -426,7 +431,7 @@ class MustacheTemplateRenderingTest {
                 .classCount(3)
                 .relationshipCount(3)
                 .dotThresholdExceeded(false)
-                .dot("digraph G { A -> B; B -> C; C -> A; }")
+                .hierarchy(EMPTY_HIERARCHY)
                 .breakdown(List.of(breakdownRow))
                 .build();
 
@@ -504,7 +509,7 @@ class MustacheTemplateRenderingTest {
                 .graphId("classGraph")
                 .classCount(10)
                 .relationshipCount(20)
-                .dot("digraph G {}")
+                .hierarchy(EMPTY_HIERARCHY)
                 .dotThresholdExceeded(false)
                 .build();
 
@@ -597,7 +602,7 @@ class MustacheTemplateRenderingTest {
                                 .cycleName("A -> B -> A")
                                 .cycleIdentifier("graph_A_B_A_abc123")
                                 .dotThresholdExceeded(false)
-                                .dot("digraph G {}")
+                                .hierarchy(EMPTY_HIERARCHY)
                                 .breakdown(List.of(breakdownRow))
                                 .build())
                         .build())

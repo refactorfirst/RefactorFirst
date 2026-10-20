@@ -17,7 +17,7 @@ public class LargestCycleDTO {
     private String cycleIdentifier;
     private int classCount;
     private int relationshipCount;
-    private String dot;
+    private HierarchyDTO hierarchy;
     private boolean dotThresholdExceeded;
 
     @Builder.Default

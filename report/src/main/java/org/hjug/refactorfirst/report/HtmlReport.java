@@ -10,6 +10,7 @@ import org.hjug.cbc.RankedDisharmony;
 import org.hjug.gdg.GraphDataGenerator;
 import org.hjug.graphbuilder.CodebaseGraphDTO;
 import org.hjug.graphbuilder.VertexInfo;
+import org.hjug.refactorfirst.report.model.HierarchyDTO;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultWeightedEdge;
 
@@ -406,6 +407,8 @@ public class HtmlReport extends SimpleHtmlReport {
                 + "<script src=\"https://cdn.jsdelivr.net/npm/graphlib-dot@0.6.4/dist/graphlib-dot.min.js\"></script>\n"
                 + "<script src=\"https://cdn.jsdelivr.net/npm/3d-force-graph\"></script>\n"
                 + "<script type=\"module\" src=\"https://cdn.jsdelivr.net/npm/@vizdom/vizdom-ts-web@0.1.19/vizdom_ts.min.js\"></script>\n"
+                // package graph renderer - the only engine honoring compound cluster edges
+                + "<script type=\"module\" src=\"https://cdn.jsdelivr.net/npm/@hpcc-js/wasm-graphviz@1.7.0/dist/index.js\"></script>\n"
                 // Make the output look decent.  Don't use in RefactorFirstMavenReport.
                 + "<link rel=\"stylesheet\" href=\"https://unpkg.com/mvp.css\">\n";
     }
@@ -563,94 +566,47 @@ public class HtmlReport extends SimpleHtmlReport {
                 + "    }\n" + "</script>\n";
     }
 
-    /** Builds raw DOT source for the complete class relationship graph. */
+    /**
+     * Renders the package graph's compound DOT (parents as clusters, childless packages as
+     * rectangles, ltail/lhead cluster edges) through the pinned @hpcc-js/wasm-graphviz
+     * module — vizdom ignores compound edge attributes, so the package graph needs the
+     * real Graphviz engine.
+     */
+    private static String generatePackageGraphImage(String graphName) {
+        return "<div id=\"" + graphName
+                + "\" style=\"width: 95%; height: 70vh; margin: auto; border: thin solid black\"></div>\n"
+                + "<script type=\"module\">\n"
+                + "import { Graphviz } from \"https://cdn.jsdelivr.net/npm/@hpcc-js/wasm-graphviz@1.7.0/dist/index.js\";\n"
+                + "    const graphviz = await Graphviz.load();\n"
+                + "    let svg = graphviz.dot("
+                + graphName + "_dot);\n"
+                + "    // strip the xml declaration and doctype, keep the svg element\n"
+                + "    svg = svg.substring(svg.indexOf('<svg'));\n"
+                + "    svg = svg.replace('<svg ', `<svg class=\"fullscreen-svg\"`);\n"
+                + "    document.getElementById(\""
+                + graphName + "\").innerHTML = svg;\n" + "\n"
+                + "    svgPanZoom('#"
+                + graphName + " svg', {\n" + "            zoomEnabled: true,\n"
+                + "            controlIconsEnabled: true\n"
+                + "        });\n"
+                + "</script>\n";
+    }
+
+    /**
+     * Builds raw DOT source for the complete class relationship graph as nested package
+     * clusters containing the classes that participate in at least one relationship.
+     */
     String buildRawClassGraphDot(
             Graph<VertexInfo, DefaultWeightedEdge> classGraph, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
-        StringBuilder dot = new StringBuilder();
-        dot.append("strict digraph G {\n");
-
-        for (DefaultWeightedEdge edge : classGraph.edgeSet()) {
-            renderClassGraphEdge(classGraph, edge, codebaseGraphDTO, dot);
-        }
-
-        // capture only classes that have a relationship with one or more other classes
-        Set<String> vertexesToRender = new HashSet<>();
-        for (DefaultWeightedEdge edge : classGraph.edgeSet()) {
-            String[] vertexes = extractVertexes(edge);
-            String originVertex = vertexes[0].trim();
-            vertexesToRender.add(originVertex);
-            vertexesToRender.add(vertexes[1].trim());
-        }
-
-        // render vertices
-        renderClassVertices(classGraph, repoUrl, codebaseGraphDTO, vertexesToRender, dot);
-
-        dot.append("}");
-        return dot.toString();
+        HierarchyDTO hierarchy = HierarchyBuilder.buildClassHierarchy(
+                classGraph, codebaseGraphDTO, classesToRemove, packagesToRemove, classRelationshipsToRemove);
+        return NestedDotBuilder.buildNestedDot(hierarchy, repoUrl, true);
     }
 
     /** Builds escaped class-graph DOT suitable for a JavaScript template literal. */
     String buildClassGraphDot(
             Graph<VertexInfo, DefaultWeightedEdge> classGraph, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
         return toJavaScriptTemplateLiteral(buildRawClassGraphDot(classGraph, repoUrl, codebaseGraphDTO));
-    }
-
-    /**
-     * Appends class DOT nodes, omitting sink-only anonymous or synthetic vertices and labels that
-     * match their node IDs. Includes source-link attributes supplied by the report and highlights
-     * classes selected for removal.
-     */
-    private void renderClassVertices(
-            Graph<VertexInfo, DefaultWeightedEdge> classGraph,
-            String repoUrl,
-            CodebaseGraphDTO codebaseGraphDTO,
-            Set<String> vertexesToRender,
-            StringBuilder dot) {
-        for (String vertex : vertexesToRender) {
-            String className = getClassName(vertex);
-
-            // Suppress sink-only anonymous/synthetic vertices (no outgoing edges) so the DOT graph
-            // stays readable; active anonymous/synthetic classes still render.
-            if (isSinkAnonymousOrSyntheticVertex(classGraph, vertex)) {
-                continue;
-            }
-
-            String safeNodeId = renderSafeNodeId(vertex, classGraph, codebaseGraphDTO);
-            dot.append(safeNodeId);
-
-            dot.append(" [");
-            dot.append(hyperlinkClassForDot(vertex, repoUrl, codebaseGraphDTO));
-
-            String label;
-            if (isAnonymousFqn(vertex)) {
-                // Kotlin "<anonymous>" renders under the enclosing source file's base name as the
-                // owner with $ as the enclosing-class separator (escaped for DOT).
-                label = escapeDotQuoted(anonymousOwnerLabel(vertex, codebaseGraphDTO));
-            } else {
-                label = escapeDotQuoted(className);
-            }
-
-            if (!label.equals(safeNodeId)) {
-                dot.append(" label=\"").append(label).append("\"");
-            }
-
-            if (classesToRemove.contains(VertexInfo.forName(vertex))) {
-                dot.append(" color=red style=filled");
-            }
-
-            dot.append("];\n");
-        }
-    }
-
-    String hyperlinkClassForDot(String fqClassName, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
-        if (codebaseGraphDTO == null || codebaseGraphDTO.getClassToSourceFilePathMapping() == null) {
-            return "";
-        }
-        String path = codebaseGraphDTO.getClassToSourceFilePathMapping().get(fqClassName);
-        if (path == null || path.isBlank()) {
-            return "";
-        }
-        return "URL=\"" + escapeDotQuoted(repoUrl + path) + "\" target=\"_blank\"";
     }
 
     /**
@@ -666,7 +622,7 @@ public class HtmlReport extends SimpleHtmlReport {
      * @param vertex the fully qualified (or literal) class vertex name
      * @return a deterministic DOT-legal node id derived from the fully qualified class name
      */
-    String renderSafeNodeId(String vertex) {
+    static String renderSafeNodeId(String vertex) {
         // Full FQN with dots→underscores for uniqueness across packages (Option A)
         // $ -> _ (Java inner/anonymous convention)
         // < -> lt_ and > -> _gt (Kotlin <anonymous> literal)
@@ -726,7 +682,7 @@ public class HtmlReport extends SimpleHtmlReport {
      * @param codebaseGraphDTO optional DTO for source-aware anonymous vertex IDs
      * @return a deterministic DOT-legal node id for the vertex
      */
-    String renderSafeNodeId(
+    static String renderSafeNodeId(
             String vertex, Graph<VertexInfo, DefaultWeightedEdge> classGraph, CodebaseGraphDTO codebaseGraphDTO) {
         // Special handling for anonymous/synthetic vertices
         if (isAnonymousFqn(vertex)) {
@@ -782,7 +738,7 @@ public class HtmlReport extends SimpleHtmlReport {
      * {@code DeveloperWASDControl}. Returns {@code null} when the vertex has no mapped source
      * path or {@code codebaseGraphDTO == null}.
      */
-    private String enclosingSourceFileBaseName(String vertex, CodebaseGraphDTO codebaseGraphDTO) {
+    private static String enclosingSourceFileBaseName(String vertex, CodebaseGraphDTO codebaseGraphDTO) {
         if (codebaseGraphDTO == null) {
             return null;
         }
@@ -813,7 +769,7 @@ public class HtmlReport extends SimpleHtmlReport {
      * e.g. {@code DeveloperWASDControl$anonymous} -> {@code DeveloperWASDControl\$anonymous}.
      * Falls back to the raw class name (e.g. {@code <anonymous>}) when no owner is recoverable.
      */
-    private String anonymousOwnerLabel(String vertex, CodebaseGraphDTO codebaseGraphDTO) {
+    static String anonymousOwnerLabel(String vertex, CodebaseGraphDTO codebaseGraphDTO) {
         String owner = enclosingSourceFileBaseName(vertex, codebaseGraphDTO);
         String simple = getClassName(vertex);
         if (owner != null) {
@@ -892,50 +848,6 @@ public class HtmlReport extends SimpleHtmlReport {
         return dollar >= 0 ? afterDot.substring(dollar + 1) : afterDot;
     }
 
-    /** Appends a weighted class edge to DOT, highlighting removals and suppressing edges to hidden sink vertices. */
-    private void renderClassGraphEdge(
-            Graph<VertexInfo, DefaultWeightedEdge> classGraph,
-            DefaultWeightedEdge edge,
-            CodebaseGraphDTO codebaseGraphDTO,
-            StringBuilder dot) {
-        // render edge
-        String[] vertexes = extractVertexes(edge);
-
-        String startVertex = vertexes[0].trim();
-        String start = renderSafeNodeId(startVertex, classGraph, codebaseGraphDTO);
-        String endVertex = vertexes[1].trim();
-        String end = renderSafeNodeId(endVertex, classGraph, codebaseGraphDTO);
-
-        // Suppress edges that touch a sink-only anonymous/synthetic vertex; the vertex itself is
-        // skipped in renderClassVertices, so an edge pointing at (or from) it would dangle.
-        if (isSinkAnonymousOrSyntheticVertex(classGraph, startVertex)
-                || isSinkAnonymousOrSyntheticVertex(classGraph, endVertex)) {
-            log.debug("Skipping edge touching a sink anonymous/synthetic vertex: {} -> {}", startVertex, endVertex);
-            return;
-        }
-
-        log.debug("Rendering edge: {} -> {}", startVertex, endVertex);
-        dot.append(start);
-        dot.append(" -> ");
-        dot.append(end);
-
-        // render edge attributes
-        int edgeWeight = (int) classGraph.getEdgeWeight(edge);
-        dot.append(" [ ");
-        dot.append("label = \"");
-        dot.append(edgeWeight);
-        dot.append("\" ");
-        dot.append("weight = \"");
-        dot.append(edgeWeight);
-        dot.append("\"");
-
-        if (classRelationshipsToRemove.contains(edge)) {
-            dot.append(" color = \"red\"");
-        }
-
-        dot.append(" ];\n");
-    }
-
     @Override
     public String renderClassCycleVisuals(RankedCycle cycle, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
         String dot = buildClassCycleDot(classGraph, cycle, repoUrl, codebaseGraphDTO);
@@ -963,25 +875,18 @@ public class HtmlReport extends SimpleHtmlReport {
         return stringBuilder.toString();
     }
 
-    /** Builds raw DOT source for a ranked class cycle. */
+    /**
+     * Builds raw DOT source for a ranked class cycle as nested package clusters, consulting the
+     * full class graph for the cycle members' node ids.
+     */
     String buildRawClassCycleDot(
             Graph<VertexInfo, DefaultWeightedEdge> classGraph,
             RankedCycle cycle,
             String repoUrl,
             CodebaseGraphDTO codebaseGraphDTO) {
-        StringBuilder dot = new StringBuilder();
-        dot.append("strict digraph G {\n");
-
-        for (DefaultWeightedEdge edge : cycle.getEdgeSet()) {
-            renderClassGraphEdge(classGraph, edge, codebaseGraphDTO, dot);
-        }
-
-        // render vertices
-        Set<String> vertexSet = cycle.getVertexSet();
-        renderClassVertices(classGraph, repoUrl, codebaseGraphDTO, vertexSet, dot);
-
-        dot.append("}");
-        return dot.toString();
+        HierarchyDTO hierarchy = HierarchyBuilder.buildCycleHierarchy(
+                classGraph, codebaseGraphDTO, classesToRemove, packagesToRemove, classRelationshipsToRemove, cycle);
+        return NestedDotBuilder.buildNestedDot(hierarchy, repoUrl, true);
     }
 
     /** Builds escaped class-cycle DOT suitable for a JavaScript template literal. */
@@ -1018,7 +923,7 @@ public class HtmlReport extends SimpleHtmlReport {
                 .append(relationshipCount)
                 .append("<br></div>");
         if (packageCount + relationshipCount < dotGraphThreshold) {
-            stringBuilder.append(generateDotImage(packageGraphName));
+            stringBuilder.append(generatePackageGraphImage(packageGraphName));
         } else {
             // revisit and add DOT SVG popup button
             stringBuilder.append("<div align=\"center\">\nSVG is too big to render quickly</div>\n");
@@ -1027,88 +932,24 @@ public class HtmlReport extends SimpleHtmlReport {
         return stringBuilder.toString();
     }
 
-    /** Builds raw DOT source for the package relationship graph. */
+    /**
+     * Builds raw compound DOT source for the package relationship graph — parents as
+     * labelled clusters, childless packages as rectangles, edges clipped to cluster
+     * borders — for rendering by @hpcc-js/wasm-graphviz. The {@code repoUrl} and
+     * {@code codebaseGraphDTO} parameters are retained for signature compatibility;
+     * package shapes carry no hyperlinks.
+     */
     String buildRawPackageGraphDot(
             Graph<VertexInfo, DefaultWeightedEdge> packageGraph, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
-        StringBuilder dot = new StringBuilder();
-        dot.append("strict digraph G {\n");
-
-        for (DefaultWeightedEdge edge : packageGraph.edgeSet()) {
-            renderPackageGraphEdge(packageGraph, edge, dot);
-        }
-
-        // capture only classes that have a relationship with one or more other classes
-        Set<String> vertexesToRender = new HashSet<>();
-        for (DefaultWeightedEdge edge : packageGraph.edgeSet()) {
-            String[] vertexes = extractVertexes(edge);
-            vertexesToRender.add(vertexes[0].trim());
-            vertexesToRender.add(vertexes[1].trim());
-        }
-
-        // render vertices
-        renderPackageVertices(packageGraph, repoUrl, codebaseGraphDTO, vertexesToRender, dot);
-
-        dot.append("}");
-        return dot.toString();
+        HierarchyDTO hierarchy =
+                HierarchyBuilder.buildPackageHierarchy(packageGraph, packagesToRemove, packageRelationshipsToRemove);
+        return NestedDotBuilder.buildPackageDot(hierarchy);
     }
 
     /** Builds escaped package-graph DOT suitable for a JavaScript template literal. */
     String buildPackageGraphDot(
             Graph<VertexInfo, DefaultWeightedEdge> packageGraph, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
         return toJavaScriptTemplateLiteral(buildRawPackageGraphDot(packageGraph, repoUrl, codebaseGraphDTO));
-    }
-
-    /** Appends a weighted package edge to DOT, using safe node IDs and highlighting selected removals. */
-    private void renderPackageGraphEdge(
-            Graph<VertexInfo, DefaultWeightedEdge> packageGraph, DefaultWeightedEdge edge, StringBuilder dot) {
-        // render edge
-        String[] vertexes = extractVertexes(edge);
-
-        String start = renderSafePackageNodeId(vertexes[0].trim());
-        String end = renderSafePackageNodeId(vertexes[1].trim());
-
-        log.debug("Rendering edge: {} -> {}", start, end);
-        dot.append(start);
-        dot.append(" -> ");
-        dot.append(end);
-
-        // render edge attributes
-        int edgeWeight = (int) packageGraph.getEdgeWeight(edge);
-        dot.append(" [ ");
-        dot.append("label = \"");
-        dot.append(edgeWeight);
-        dot.append("\" ");
-        dot.append("weight = \"");
-        dot.append(edgeWeight);
-        dot.append("\"");
-
-        if (packageRelationshipsToRemove.contains(edge)) {
-            dot.append(" color = \"red\"");
-        }
-
-        dot.append(" ];\n");
-    }
-
-    /** Appends escaped package nodes to DOT and highlights packages selected for removal. */
-    private void renderPackageVertices(
-            Graph<VertexInfo, DefaultWeightedEdge> classGraph,
-            String repoUrl,
-            CodebaseGraphDTO codebaseGraphDTO,
-            Set<String> vertexesToRender,
-            StringBuilder dot) {
-        for (String packageName : vertexesToRender) {
-            dot.append(renderSafePackageNodeId(packageName));
-
-            dot.append(" [label=\"");
-            dot.append(escapeDotQuoted(packageName));
-            dot.append("\"");
-
-            if (packagesToRemove.contains(VertexInfo.forName(packageName))) {
-                dot.append(" color=red style=filled");
-            }
-
-            dot.append("];\n");
-        }
     }
 
     static String renderSafePackageNodeId(String packageName) {

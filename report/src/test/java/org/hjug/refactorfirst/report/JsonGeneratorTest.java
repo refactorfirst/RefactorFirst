@@ -295,10 +295,11 @@ class JsonGeneratorTest {
         assertFalse(report.getProject().isAnalysisFailed());
         assertNotNull(report.getClassMap());
         assertTrue(report.getClassMap().getClassCount() >= 1);
-        assertNotNull(report.getClassMap().getDot());
-        // SampleService has no dependencies, so it has no edges and is not rendered in the DOT
-        // (buildRawClassGraphDot only renders vertices with edges)
-        assertTrue(report.getClassMap().getDot().contains("digraph G"));
+        assertNotNull(report.getClassMap().getHierarchy());
+        // SampleService has no dependencies, so it has no edges and is not rendered
+        // (the hierarchy only contains classes with relationships)
+        assertTrue(report.getClassMap().getHierarchy().getPackages().isEmpty());
+        assertTrue(report.getClassMap().getHierarchy().getEdges().isEmpty());
     }
 
     /**

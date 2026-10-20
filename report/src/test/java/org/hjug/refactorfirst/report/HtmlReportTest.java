@@ -39,7 +39,7 @@ class HtmlReportTest {
                 mavenReport.getDescription(Locale.getDefault()));
     }
 
-    /** Verifies cycle DOT preserves Java source links and edge weights while omitting redundant labels. */
+    /** Verifies cycle DOT nests classes in package clusters, keeping source links and edge weights. */
     @Test
     void buildClassCycleDot() {
         Graph<VertexInfo, DefaultWeightedEdge> classGraph =
@@ -71,13 +71,19 @@ class HtmlReportTest {
         when(dto.getClassToSourceFilePathMapping()).thenReturn(map);
         String repoUrl = "https://github.com/refactorfirst/RefactorFirst/blob";
         String dot = htmlReport.buildClassCycleDot(classGraph, rankedCycle, repoUrl, dto);
+        // The packageless classes nest inside the synthetic default-package cluster; edges are
+        // declared after the clusters so the nodes keep their cluster scope.
         String expectedDot = "`strict digraph G {\n"
+                + "subgraph " + HierarchyBuilder.clusterId(HierarchyBuilder.DEFAULT_PACKAGE) + " {\n"
+                + "label=\"(default package)\";\n"
+                + "style=filled fillcolor=white;\n"
+                + "A [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/src/main/java/org/hjug/refactorfirst/A.java\" target=\"_blank\" shape=ellipse];\n"
+                + "B [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/src/main/java/org/hjug/refactorfirst/B.java\" target=\"_blank\" shape=ellipse];\n"
+                + "C [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/src/main/java/org/hjug/refactorfirst/C.java\" target=\"_blank\" shape=ellipse];\n"
+                + "}\n"
                 + "A -\\u003E B [ label = \"2\" weight = \"2\" ];\n"
                 + "B -\\u003E C [ label = \"1\" weight = \"1\" ];\n"
                 + "C -\\u003E A [ label = \"1\" weight = \"1\" ];\n"
-                + "A [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/src/main/java/org/hjug/refactorfirst/A.java\" target=\"_blank\"];\n"
-                + "B [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/src/main/java/org/hjug/refactorfirst/B.java\" target=\"_blank\"];\n"
-                + "C [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/src/main/java/org/hjug/refactorfirst/C.java\" target=\"_blank\"];\n"
                 + "}`;";
 
         assertEquals(expectedDot, dot);
@@ -280,32 +286,6 @@ class HtmlReportTest {
         assertFalse(anonLine.isEmpty(), "anonymous node declaration line must be present");
         assertFalse(anonLine.contains("<"), "anonymous DOT id line must not contain a raw '<'");
         assertFalse(anonLine.contains(">"), "anonymous DOT id line must not contain a raw '>'");
-    }
-
-    /**
-     * A vertex absent from {@code classToSourceFilePathMapping} must render without any {@code URL=}
-     * attribute (no broken link) and must never contain the literal substring {@code "null"}.
-     * This protects both genuinely external classes (JavaFX, JDK) and any vertex that Step 2
-     * reconciliation could not resolve.
-     */
-    @Test
-    void hyperlinkClassForDot_missingPath_rendersNoUrlAttribute() {
-        HtmlReport htmlReport = new HtmlReport();
-        CodebaseGraphDTO dto = mock(CodebaseGraphDTO.class);
-        HashMap<String, String> map = new HashMap<>();
-        // Mapping exists for some classes but NOT for the one we'll query
-        map.put("com.example.Known", "/src/main/java/com/example/Known.java");
-        when(dto.getClassToSourceFilePathMapping()).thenReturn(map);
-
-        String repoUrl = "https://github.com/example/repo/blob/";
-        String result = htmlReport.hyperlinkClassForDot("com.example.Unknown", repoUrl, dto);
-
-        // No URL attribute at all
-        assertFalse(result.contains("URL="), "missing-path vertex must not render URL=");
-        // Never the literal string "null"
-        assertFalse(result.contains("null"), "result must not contain the literal 'null'");
-        // Should return empty string
-        assertEquals("", result);
     }
 
     @Test
@@ -523,38 +503,6 @@ class HtmlReportTest {
 
         // Dollar sign should become underscore
         assertEquals("com_example_Outer_Inner", nodeId);
-    }
-
-    /**
-     * Test that hyperlinkClassForDot handles null CodebaseGraphDTO gracefully,
-     * returning empty string instead of throwing NullPointerException.
-     * This matches the null-handling behavior of enclosingSourceFileBaseName.
-     */
-    @Test
-    void hyperlinkClassForDot_nullDto_returnsEmptyString() {
-        HtmlReport htmlReport = new HtmlReport();
-        String repoUrl = "https://github.com/example/repo/blob/";
-
-        String result = htmlReport.hyperlinkClassForDot("com.example.Test", repoUrl, null);
-
-        assertEquals("", result, "null DTO must return empty string");
-    }
-
-    /**
-     * Test that hyperlinkClassForDot handles null classToSourceFilePathMapping gracefully,
-     * returning empty string instead of throwing NullPointerException.
-     * This matches the null-handling behavior of enclosingSourceFileBaseName.
-     */
-    @Test
-    void hyperlinkClassForDot_nullMapping_returnsEmptyString() {
-        HtmlReport htmlReport = new HtmlReport();
-        CodebaseGraphDTO dto = mock(CodebaseGraphDTO.class);
-        when(dto.getClassToSourceFilePathMapping()).thenReturn(null);
-        String repoUrl = "https://github.com/example/repo/blob/";
-
-        String result = htmlReport.hyperlinkClassForDot("com.example.Test", repoUrl, dto);
-
-        assertEquals("", result, "null mapping must return empty string");
     }
 
     /**
