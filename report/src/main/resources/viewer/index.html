@@ -111,7 +111,16 @@
 
         // Convert graphlib graph to graphology graph
         const graphologyGraph = new graphology.Graph();
+        // graphlib-dot creates a node for every named subgraph: in the class
+        // map that is one cluster node per package, labelled with the package
+        // name. Packages are noise in the popups, so drop the cluster nodes
+        // while keeping every node the clusters contained and the edges between them.
+        const droppedClusters = new Set();
         graphlibGraph.nodes().forEach(node => {
+            if (node.startsWith('cluster_')) {
+                droppedClusters.add(node);
+                return;
+            }
             const attrs = graphlibGraph.node(node);
             graphologyGraph.addNode(node, {
                 label: attrs.label || node,
@@ -121,6 +130,7 @@
         });
 
         graphlibGraph.edges().forEach(edge => {
+            if (droppedClusters.has(edge.v) || droppedClusters.has(edge.w)) return;
             const attrs = graphlibGraph.edge(edge);
             graphologyGraph.addEdge(edge.v, edge.w, {
                 color: attrs.color,
@@ -158,7 +168,15 @@
             var nodes = [];
             var links = [];
 
+            // Packages are noise in the popups: drop the cluster nodes
+            // graphlib-dot creates per named subgraph, keeping every node they
+            // contained and the edges between the kept nodes.
+            var droppedClusters = new Set();
             graphlibGraph.nodes().forEach(function (node) {
+                if (node.startsWith('cluster_')) {
+                    droppedClusters.add(node);
+                    return;
+                }
                 var nodeData = graphlibGraph.node(node);
                 nodes.push({
                     id: node,
@@ -167,6 +185,7 @@
             });
 
             graphlibGraph.edges().forEach(function (edge) {
+                if (droppedClusters.has(edge.v) || droppedClusters.has(edge.w)) return;
                 links.push({
                     source: edge.v,
                     target: edge.w,
@@ -331,7 +350,6 @@
 
     <script type="module">
         import init, { DotParser } from "https://cdn.jsdelivr.net/npm/@vizdom/vizdom-ts-web@0.1.19/vizdom_ts.min.js";
-        import { Graphviz } from "https://cdn.jsdelivr.net/npm/@hpcc-js/wasm-graphviz@1.7.0/dist/index.js";
 
         // ------------------------------------------------------------------
         // Nested hierarchy → DOT synthesis. refactor-first.json carries the
@@ -351,15 +369,32 @@
                 .replace(/\t/g, '\\t');
         }
 
-        function hierarchyToDot(hierarchy) {
+        // Only http(s) URLs may become links: report payloads are untrusted.
+        function httpUrl(url) {
+            try {
+                const parsed = new URL(url);
+                return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+            } catch {
+                return false;
+            }
+        }
+
+        function nodeHyperlinkUrl(path, repoUrl) {
+            if (!path || path === '') return null;
+            const url = (repoUrl || '') + path;
+            return httpUrl(url) ? url : null;
+        }
+
+        function hierarchyToDot(hierarchy, options) {
+            const repoUrl = options && options.repoUrl ? options.repoUrl : '';
             const parts = ['strict digraph G {'];
-            appendPackages((hierarchy && hierarchy.packages) || [], parts);
+            appendPackages((hierarchy && hierarchy.packages) || [], repoUrl, parts);
             appendEdges((hierarchy && hierarchy.edges) || [], parts);
             parts.push('}');
             return parts.join('\n');
         }
 
-        function appendPackages(packages, parts) {
+        function appendPackages(packages, repoUrl, parts) {
             for (const pkg of packages) {
                 parts.push(`subgraph ${pkg.id} {`);
                 parts.push(`label="${escapeDotQuoted(pkg.name)}";`);
@@ -383,9 +418,11 @@
                     if (cls.label !== cls.id) line += ` label="${escapeDotQuoted(cls.label)}"`;
                     line += ' shape=ellipse';
                     if (cls.markedForRemoval) line += ' color=red style=filled';
+                    const url = nodeHyperlinkUrl(cls.path, repoUrl);
+                    if (url) line += ` URL="${escapeDotQuoted(url)}" target="_blank"`;
                     parts.push(`${line}];`);
                 }
-                appendPackages(pkg.children || [], parts);
+                appendPackages(pkg.children || [], repoUrl, parts);
                 parts.push('}');
             }
         }
@@ -399,53 +436,33 @@
         }
 
         // ------------------------------------------------------------------
-        // Package-map synthesis: parents with children render once as labelled
-        // clusters, childless packages once as filled rectangles, and edges
-        // attach to cluster-represented packages through invisible anchors
-        // clipped to the cluster borders via ltail/lhead under compound=true.
-        // The package graph renders through @hpcc-js/wasm-graphviz — the only
-        // engine that honors compound cluster edges.
+        // Package-map synthesis: the flat relationship graph — one ellipse per
+        // participating package, edges carrying only the relationship weights.
+        // Break-up packages fill red; removal relationships render red. The
+        // package graph renders through vizdom like the class and cycle maps;
+        // the full hierarchy stays in refactor-first.json for LLM consumption.
         // ------------------------------------------------------------------
-        function packageHierarchyToDot(hierarchy) {
+        function packageHierarchyToDot(hierarchy, options) {
+            const repoUrl = options && options.repoUrl ? options.repoUrl : '';
             const packages = (hierarchy && hierarchy.packages) || [];
             const edges = (hierarchy && hierarchy.edges) || [];
-            const referencedIds = new Set();
-            const byNodeId = new Map();
-            for (const edge of edges) {
-                referencedIds.add(edge.source);
-                referencedIds.add(edge.target);
-            }
-            const index = pkgs => {
+            const parts = ['strict digraph G {'];
+            const appendNodes = pkgs => {
                 for (const pkg of pkgs) {
-                    if (pkg.nodeId) byNodeId.set(pkg.nodeId, pkg);
-                    index(pkg.children || []);
+                    if (pkg.nodeId) {
+                        let line = `${pkg.nodeId} [label="${escapeDotQuoted(pkg.name)}" shape=ellipse`;
+                        if (pkg.needsBreakUp) line += ' color=red style=filled';
+                        const url = nodeHyperlinkUrl(pkg.path, repoUrl);
+                        if (url) line += ` URL="${escapeDotQuoted(url)}" target="_blank"`;
+                        parts.push(`${line}];`);
+                    }
+                    appendNodes(pkg.children || []);
                 }
             };
-            index(packages);
-
-            const parts = ['strict digraph G {', 'compound=true;'];
-            const appendShape = pkg => {
-                if (pkg.renderAsNode) {
-                    parts.push(`${pkg.nodeId} [label="${escapeDotQuoted(pkg.name)}" shape=rectangle style=filled fillcolor=${pkg.needsBreakUp ? 'pink' : 'white'}];`);
-                    return;
-                }
-                parts.push(`subgraph ${pkg.id} {`);
-                parts.push(`label="${escapeDotQuoted(pkg.name)}";`);
-                parts.push(`style=filled fillcolor=${pkg.needsBreakUp ? 'pink' : 'white'};`);
-                if (pkg.nodeId && referencedIds.has(pkg.nodeId)) {
-                    parts.push(`${pkg.nodeId} [shape=point style=invis];`);
-                }
-                for (const child of pkg.children || []) appendShape(child);
-                parts.push('}');
-            };
-            for (const pkg of packages) appendShape(pkg);
+            appendNodes(packages);
             for (const edge of edges) {
                 let line = `${edge.source} -> ${edge.target} [ label = "${edge.weight}" weight = "${edge.weight}"`;
                 if (edge.markedForRemoval) line += ' color = "red"';
-                const source = byNodeId.get(edge.source);
-                if (source && !source.renderAsNode) line += ` ltail = "${source.id}"`;
-                const target = byNodeId.get(edge.target);
-                if (target && !target.renderAsNode) line += ` lhead = "${target.id}"`;
                 parts.push(`${line} ];`);
             }
             parts.push('}');
@@ -489,15 +506,18 @@
 
             // Expose DOT strings globally for Sigma/Force3D popups,
             // synthesized from the hierarchy payloads
+            const synthesisOptions = {
+                repoUrl: data.project && data.project.repoUrl
+            };
             if (data.classMap && data.classMap.hierarchy) {
-                window.classGraph_dot = hierarchyToDot(data.classMap.hierarchy);
+                window.classGraph_dot = hierarchyToDot(data.classMap.hierarchy, synthesisOptions);
             }
             if (data.packageMap && data.packageMap.hasEdges && data.packageMap.hierarchy) {
-                window.packageGraph_dot = packageHierarchyToDot(data.packageMap.hierarchy);
+                window.packageGraph_dot = packageHierarchyToDot(data.packageMap.hierarchy, synthesisOptions);
             }
             const largestCycle = data.classCycles && data.classCycles.largestCycle;
             if (largestCycle && largestCycle.hierarchy) {
-                window[largestCycle.cycleIdentifier + '_dot'] = hierarchyToDot(largestCycle.hierarchy);
+                window[largestCycle.cycleIdentifier + '_dot'] = hierarchyToDot(largestCycle.hierarchy, synthesisOptions);
             }
 
             // 1. Render HTML via Mustache
@@ -616,11 +636,16 @@
                 await init();
                 const parser = new DotParser();
 
-                const renderGraph = (containerId, hierarchy) => {
+                const synthesisOptions = {
+                    repoUrl: data.project && data.project.repoUrl
+                };
+                const renderGraph = (containerId, hierarchy, synthesis) => {
                     const el = document.getElementById(containerId);
                     if (!el || !hierarchy) return;
-                    const parsed = parser.parse(hierarchyToDot(hierarchy)).to_directed().layout();
+                    const parsed = parser.parse(synthesis(hierarchy, synthesisOptions)).to_directed().layout();
                     let svg = parsed.to_svg().to_string();
+                    // vizdom drops the target attribute on hyperlinked nodes; restore new-tab behavior
+                    svg = svg.replace('<a href=', '<a target="_blank" href=');
                     svg = svg.replace('<svg ', '<svg class="fullscreen-svg" ');
                     el.innerHTML = svg;
                     if (window.svgPanZoom) {
@@ -629,26 +654,14 @@
                 };
 
                 if (data.classMap && !data.classMap.dotThresholdExceeded) {
-                    renderGraph('classGraph', data.classMap.hierarchy);
+                    renderGraph('classGraph', data.classMap.hierarchy, hierarchyToDot);
                 }
-                // The package graph's compound cluster edges (ltail/lhead) only
-                // render under @hpcc-js/wasm-graphviz; vizdom ignores them.
                 if (data.packageMap && !data.packageMap.dotThresholdExceeded && data.packageMap.hasEdges) {
-                    const graphviz = await Graphviz.load();
-                    const el = document.getElementById('packageGraph');
-                    if (el) {
-                        let svg = graphviz.dot(packageHierarchyToDot(data.packageMap.hierarchy));
-                        svg = svg.substring(svg.indexOf('<svg'));
-                        svg = svg.replace('<svg ', '<svg class="fullscreen-svg" ');
-                        el.innerHTML = svg;
-                        if (window.svgPanZoom) {
-                            svgPanZoom('#packageGraph svg', { zoomEnabled: true, controlIconsEnabled: true });
-                        }
-                    }
+                    renderGraph('packageGraph', data.packageMap.hierarchy, packageHierarchyToDot);
                 }
                 const cycle = data.classCycles && data.classCycles.largestCycle;
                 if (cycle && !cycle.dotThresholdExceeded) {
-                    renderGraph(cycle.cycleIdentifier, cycle.hierarchy);
+                    renderGraph(cycle.cycleIdentifier, cycle.hierarchy, hierarchyToDot);
                 }
             } catch (wasmErr) {
                 console.warn("Graph renderer unavailable:", wasmErr);

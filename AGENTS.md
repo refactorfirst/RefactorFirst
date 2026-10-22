@@ -56,30 +56,32 @@ package/class hierarchy. The pipeline is single-sourced:
   — because vizdom propagates a styled cluster's fill to its nested cluster
   rects; the explicit white keeps child packages of a pink cluster on their
   normal fill.
-  *Package map* (`buildPackageDot(hierarchy)`): a package with child
-  packages renders **once** as a labelled cluster (no rectangle inside its
-  own box — the name never appears twice), a childless package renders once
-  as a filled rectangle. Edge endpoints are the `package_<sha24>` node ids:
-  a leaf's id is its rectangle; a cluster-represented package gets an
-  invisible anchor (`package_x [shape=point style=invis]`, emitted only
-  when an edge references it) and the edge carries `ltail`/`lhead` plus
-  graph-level `compound=true`, so relationships attach cluster ↔ rectangle
-  in both directions with the edge clipped to the cluster border.
+  *Package map* (`buildPackageDot(hierarchy)`): the flat relationship graph,
+  matching the main-branch package map — every package that participates in
+  at least one relationship (or was selected for removal to break cycles)
+  renders once as a `shape=ellipse` node carrying its name, and the edges
+  carry only the relationship weights. Break-up packages fill red
+  (`color=red style=filled`), removal relationships render red, and the
+  package map renders through **vizdom** like the class and cycle maps (no
+  separate engine). Every graph's nodes are **hyperlinked**: class nodes link
+  to their source files and package nodes to their source directories via
+  `URL="<repoUrl><path>" target="_blank"` (http(s)-gated — payloads are
+  untrusted on the page/viewer). vizdom honors node `URL` but drops
+  `target`, so every render site restores it with a post-render
+  `svg.replace('<a href=', '<a target="_blank" href=')`. The full hierarchy
+  — package tree, break-up flags, source directories (`path`), and edges
+  — stays in `refactor-first.json` for LLM consumption; only the
+  relationship information renders.
   `buildRawClassGraphDot`/`buildRawClassCycleDot`/`buildRawPackageGraphDot`
   in `HtmlReport` keep their signatures and delegate here, so the classic
-  inline HTML report renders the nested graphs too.
-- **Two render engines**: the class and cycle maps render through vizdom
-  (`@vizdom/vizdom-ts-web@0.1.19`); the package map renders through
-  **`@hpcc-js/wasm-graphviz@1.7.0`** (`https://cdn.jsdelivr.net/npm/@hpcc-js/wasm-graphviz@1.7.0/dist/index.js`,
-  the pre-vizdom engine this repo used before #164; the wasm is embedded in
-  the single-file ESM module — no separate asset). The split is required:
-  vizdom silently ignores `compound`/`ltail`/`lhead`, which the redesigned
-  package graph depends on. The classic report's `printHead` prefetches both
-  modules and `generatePackageGraphImage` renders via
-  `Graphviz.load()` + `graphviz.dot(...)` (strip the engine's xml/doctype
-  preamble before injecting the SVG); the viewer and the report page mirror
-  this (page: `public/widgets/graphviz-bridge.js` exposes `window.Graphviz`
-  and reports the `graphviz` widget).
+  inline HTML report renders the graphs too.
+- **Render engine**: every graph — class, cycle, and package maps — renders
+  through vizdom (`@vizdom/vizdom-ts-web@0.1.19`). The package map's flat DOT
+  (ellipse nodes + edges) parses under the same vizdom path as the nested
+  class/cycle DOT: the classic report's `printHead` prefetches the module and
+  `generateDotImage` renders each container; the viewer and the report page
+  mirror this. vizdom silently ignores `compound`/`ltail`/`lhead`, which is
+  fine — the flat package map no longer uses them.
 - **The Class and Package maps
   flag identical break-up lists by construction**: every `packagesToRemove`
   member is seeded into both hierarchies (even when its classes/edges do not
@@ -94,12 +96,16 @@ package/class hierarchy. The pipeline is single-sourced:
   `tests/unit/hierarchy-dot.test.js`) — each in both the class/cycle mode
   (`buildNestedDot`/`hierarchyToDot`) and the package mode
   (`buildPackageDot`/`packageHierarchyToDot`). The page copies add an
-  `edgeFontColor` option: vizdom and wasm-graphviz bake label `fontcolor`
-  into fill-only glyph paths / text at parse time, so the dark palette
-  re-synthesizes with `fontcolor = "#9fb0c0"` on edges. Node and cluster
-  labels sit on the engines' white shapes and stay default-colored in both
-  palettes. graphlib-dot flattens `subgraph` statements, so the sigma/3D
-  popups keep nodes/edges but lose the cluster boxes — accepted.
+  `edgeFontColor` option: vizdom bakes label `fontcolor` into fill-only
+  glyph paths at parse time, so the dark palette re-synthesizes with
+  `fontcolor = "#9fb0c0"` on edges. Node and cluster labels sit on vizdom's
+  white shapes and stay default-colored in both palettes. graphlib-dot
+  creates a **node for every named subgraph** (one per package in the class
+  map, labelled with the package name), so packages would appear as noise in
+  the sigma/3D popups: all popup graph builders (2D `renderGraph`/`buildGraphologyGraph`
+  and 3D `createForceGraph`, in the viewer, the classic report's popup scripts,
+  and the page) drop `cluster_` nodes and any edge touching them while
+  keeping every class node the clusters contained.
 
 ## Java 25 analysis (JEP 238 multi-release jar)
 

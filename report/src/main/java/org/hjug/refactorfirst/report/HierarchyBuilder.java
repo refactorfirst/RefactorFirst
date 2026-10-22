@@ -108,15 +108,20 @@ public final class HierarchyBuilder {
 
     /**
      * Builds the package-map hierarchy: packages participating in at least one package
-     * relationship become rectangle nodes nested inside their (collapsed) ancestor clusters.
+     * relationship join the tree (parents render once as clusters, childless packages
+     * once as rectangle nodes under their ancestor clusters), each carrying the
+     * repo-relative source directory derived from the class source mapping for the
+     * package graph's hyperlinks.
      *
      * @param packageGraph the package reference graph
+     * @param codebaseGraphDTO the DTO carrying the {@code vertex -> source file path} mapping
      * @param packagesToRemove packages selected for removal to break cycles
      * @param packageRelationshipsToRemove package relationships selected for removal
      * @return the nested package hierarchy with rectangle node packages and their edges
      */
     public static HierarchyDTO buildPackageHierarchy(
             Graph<VertexInfo, DefaultWeightedEdge> packageGraph,
+            CodebaseGraphDTO codebaseGraphDTO,
             Set<VertexInfo> packagesToRemove,
             Set<DefaultWeightedEdge> packageRelationshipsToRemove) {
         // the package map renders the endpoints of every package edge
@@ -137,6 +142,12 @@ public final class HierarchyBuilder {
             Pkg pkg = packageNode(packages, name);
             pkg.renderAsNode = true;
             pkg.nodeId = HtmlReport.renderSafePackageNodeId(name);
+        }
+        // each package's hyperlink target is its source directory, taken from any mapped
+        // class in the package (accurate for multi-module repos)
+        Map<String, String> packageDirs = packageSourceDirectories(codebaseGraphDTO);
+        for (Pkg pkg : packages.values()) {
+            pkg.path = packageDirs.getOrDefault(pkg.name, "");
         }
 
         List<EdgeDTO> edges = new ArrayList<>();
@@ -272,6 +283,28 @@ public final class HierarchyBuilder {
         return path == null ? "" : path;
     }
 
+    /**
+     * Derives each package's repo-relative source directory (with trailing slash) from the
+     * mapped class source paths: {@code org.a.A -> module/src/main/java/org/a/A.java} yields
+     * {@code org.a -> module/src/main/java/org/a/}. The first mapped class wins.
+     */
+    private static Map<String, String> packageSourceDirectories(CodebaseGraphDTO codebaseGraphDTO) {
+        Map<String, String> packageDirs = new HashMap<>();
+        if (codebaseGraphDTO == null || codebaseGraphDTO.getClassToSourceFilePathMapping() == null) {
+            return packageDirs;
+        }
+        for (Map.Entry<String, String> entry :
+                codebaseGraphDTO.getClassToSourceFilePathMapping().entrySet()) {
+            String packageName = packageOf(entry.getKey());
+            String path = entry.getValue();
+            if (packageName == null || path == null || !path.contains("/")) {
+                continue;
+            }
+            packageDirs.putIfAbsent(packageName, path.substring(0, path.lastIndexOf('/') + 1));
+        }
+        return packageDirs;
+    }
+
     /** Creates (or returns) the package node for the name, creating and linking all ancestors. */
     private static Pkg packageNode(Map<String, Pkg> packages, String packageName) {
         String name = packageName == null || packageName.isEmpty() ? DEFAULT_PACKAGE : packageName;
@@ -368,6 +401,7 @@ public final class HierarchyBuilder {
                 .name(pkg.name)
                 .id(clusterId(pkg.name))
                 .nodeId(pkg.nodeId)
+                .path(pkg.path)
                 .renderAsNode(pkg.renderAsNode)
                 .needsBreakUp(pkg.needsBreakUp)
                 .children(children)
@@ -391,6 +425,7 @@ public final class HierarchyBuilder {
         final List<Pkg> children = new ArrayList<>();
         final List<ClassNodeDTO> classes = new ArrayList<>();
         String nodeId;
+        String path = "";
         boolean renderAsNode;
         boolean needsBreakUp;
 

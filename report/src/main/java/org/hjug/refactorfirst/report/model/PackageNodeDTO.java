@@ -37,6 +37,13 @@ public class PackageNodeDTO {
     /** Whether the package was selected for removal to break cycles (pink fill). */
     private boolean needsBreakUp;
 
+    /**
+     * Repo-relative source directory of the package (with trailing slash), derived from
+     * the mapped class source paths; empty when no mapped class is known. Feeds the
+     * package graph's hyperlinks.
+     */
+    private String path;
+
     /** Child package clusters, sorted by name, with single-child chains collapsed. */
     @Builder.Default
     private List<PackageNodeDTO> children = new ArrayList<>();

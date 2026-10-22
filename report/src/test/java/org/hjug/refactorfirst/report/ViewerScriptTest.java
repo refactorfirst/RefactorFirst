@@ -1,5 +1,6 @@
 package org.hjug.refactorfirst.report;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -69,12 +70,15 @@ class ViewerScriptTest {
         assertTrue(viewer.contains("color=red style=filled"), "marked classes must stay red");
         assertTrue(viewer.contains("color = \"red\""), "marked relationships must stay red");
         assertTrue(viewer.contains("strict digraph G {"), "synthesis must emit the digraph header");
-        // package-mode contract: compound cluster edges via invisible anchors
-        assertTrue(viewer.contains("compound=true"), "package graph must enable compound cluster edges");
+        // package-mode contract: the flat relationship graph — one ellipse per
+        // package, edges only, red break-up fills, no clusters or anchors
+        assertTrue(viewer.contains("shape=ellipse"), "package nodes must render as ellipses");
         assertTrue(
-                viewer.contains("shape=point style=invis"), "edge-referenced parent packages need invisible anchors");
-        assertTrue(viewer.contains("ltail = \""), "edges leaving cluster packages must clip via ltail");
-        assertTrue(viewer.contains("lhead = \""), "edges entering cluster packages must clip via lhead");
+                viewer.contains("if (pkg.needsBreakUp) line += ' color=red style=filled'"),
+                "break-up packages must fill red");
+        assertFalse(viewer.contains("compound=true"), "the flat package map has no compound cluster edges");
+        assertFalse(viewer.contains("shape=point style=invis"), "the flat package map has no invisible anchors");
+        assertFalse(viewer.contains("@hpcc-js/wasm-graphviz"), "the package graph renders through vizdom");
     }
 
     @DisplayName("viewer escapes names and labels with the DOT-quoted rules")
@@ -89,24 +93,58 @@ class ViewerScriptTest {
         assertTrue(viewer.contains("replace(/\"/g, '\\\\\"')"), "quotes must be escaped for DOT strings");
     }
 
-    @DisplayName("viewer renders the package graph with the pinned hpcc-js wasm-graphviz module")
+    @DisplayName("viewer renders the package graph through vizdom like the class and cycle maps")
     @Test
-    void viewer_rendersPackageGraphWithGraphviz() throws Exception {
+    void viewer_rendersPackageGraphThroughVizdom() throws Exception {
         // Given: the bundled viewer script
         String viewer = loadViewer();
 
-        // Then: the package graph renders via the pinned @hpcc-js/wasm-graphviz module —
-        // the only engine that honors the compound ltail/lhead cluster edges — while
-        // the class and cycle graphs stay on vizdom
+        // Then: all three graphs render through the single vizdom DotParser path,
+        // the package graph using the flat package-mode synthesis
         assertTrue(
-                viewer.contains("https://cdn.jsdelivr.net/npm/@hpcc-js/wasm-graphviz@1.7.0/dist/index.js"),
-                "the viewer must import Graphviz from the pinned wasm-graphviz URL");
-        assertTrue(viewer.contains("Graphviz.load()"), "the Graphviz module must be initialized before rendering");
-        assertTrue(viewer.contains("graphviz.dot("), "the package graph must render through graphviz.dot");
+                viewer.contains("renderGraph('packageGraph', data.packageMap.hierarchy, packageHierarchyToDot)"),
+                "the package graph must render via the shared vizdom renderGraph path");
         assertTrue(
-                viewer.contains("packageHierarchyToDot(data.packageMap.hierarchy)"),
-                "the package graph must use the package-mode synthesis");
-        assertTrue(viewer.contains("vizdom_ts.min.js"), "the class and cycle graphs must keep rendering via vizdom");
+                viewer.contains("renderGraph('classGraph', data.classMap.hierarchy, hierarchyToDot)"),
+                "the class graph must render via the shared vizdom renderGraph path");
+        assertFalse(viewer.contains("wasm-graphviz"), "the retired hpcc-js engine must be fully removed");
+    }
+
+    @DisplayName("popup graph builders drop package cluster nodes but keep the classes inside them")
+    @Test
+    void popupBuilders_dropClusterNodes() throws Exception {
+        // Given: the bundled viewer script
+        String viewer = loadViewer();
+
+        // Then: both popup builders (the 2D sugiyama/sigma renderGraph and the 3D
+        // createForceGraph) drop the cluster nodes graphlib-dot creates per named
+        // subgraph — packages are noise in the popups — while keeping every class
+        // node the clusters contained, and skip edges touching dropped clusters
+        int nodeFilters = viewer.split("startsWith\\('cluster_'\\)", -1).length - 1;
+        assertEquals(2, nodeFilters, "both the 2D and 3D popup builders must filter cluster nodes");
+        int edgeGuards = viewer.split("droppedClusters.has", -1).length - 1;
+        assertEquals(4, edgeGuards, "both popup builders must also guard edges against dropped clusters");
+    }
+
+    @DisplayName("viewer hyperlinks every graph's nodes through the project repository URL")
+    @Test
+    void viewer_hyperlinksAllGraphNodes() throws Exception {
+        // Given: the bundled viewer script
+        String viewer = loadViewer();
+
+        // Then: both synthesis modes accept a repository URL and emit http(s)-gated
+        // new-tab hyperlinks on nodes with a source path, wired from project.repoUrl
+        // for all three graphs and the popup globals
+        assertTrue(viewer.contains("function httpUrl"), "the viewer must gate hyperlinks to http(s)");
+        assertTrue(
+                viewer.contains("repoUrl: data.project && data.project.repoUrl"),
+                "the viewer must wire project.repoUrl");
+        assertTrue(viewer.contains("URL=\""), "the synthesis must emit URL attributes");
+        assertTrue(viewer.contains("target=\"_blank\""), "hyperlinks must open a new browser tab");
+        // the inline vizdom render restores the anchor target vizdom drops
+        assertTrue(
+                viewer.contains("svg = svg.replace('<a href=', '<a target=\"_blank\" href=')"),
+                "the viewer's inline render must restore the new-tab anchor target");
     }
 
     @DisplayName("viewer keeps exposing synthesized DOT through the window globals")
@@ -120,6 +158,8 @@ class ViewerScriptTest {
         assertTrue(viewer.contains("window.classGraph_dot ="), "class map global must be assigned");
         assertTrue(viewer.contains("window.packageGraph_dot ="), "package map global must be assigned");
         assertTrue(viewer.contains("_dot']"), "cycle global must be assigned by identifier");
-        assertTrue(viewer.contains("hierarchyToDot(data.classMap.hierarchy)"), "globals must hold synthesized DOT");
+        assertTrue(
+                viewer.contains("hierarchyToDot(data.classMap.hierarchy, synthesisOptions)"),
+                "globals must hold synthesized DOT");
     }
 }

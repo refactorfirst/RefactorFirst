@@ -545,4 +545,36 @@ class HtmlReportTest {
         assertTrue(result.contains("Test<script>Project"), "Project name should be escaped in title: " + result);
         assertTrue(result.contains("1.0\"onload=alert(1)"), "Project version should be escaped in title: " + result);
     }
+
+    /** The classic report's inline graphs must restore the new-tab anchor target vizdom drops. */
+    @Test
+    void generateDotImage_restoresAnchorTarget() {
+        // Given: the classic report's inline vizdom render script (via the cycle visuals)
+        HtmlReport htmlReport = new HtmlReport();
+        htmlReport.classGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        RankedCycle cycle = new RankedCycle("C", Set.of(), Set.of(), List.of());
+
+        String visuals = htmlReport.renderClassCycleVisuals(cycle, "", null);
+
+        // Then: the inline render restores target="_blank" on the hyperlinked anchors
+        // (vizdom drops the target attribute when emitting <a href>)
+        assertTrue(
+                visuals.contains("svg = svg.replace('<a href=', '<a target=\\\"_blank\\\" href=')"),
+                "the inline graph scripts must restore the new-tab anchor target");
+    }
+
+    /** The classic report's popup scripts must drop package cluster nodes like the viewer's. */
+    @Test
+    void popupScripts_dropClusterNodes() {
+        // Given: the classic report's inline popup scripts
+        String scripts = mavenReport.printScripts();
+
+        // Then: both the 2D sugiyama/sigma builder and the 3D force-graph builder
+        // filter the cluster nodes graphlib-dot creates per named subgraph —
+        // packages are noise in the popups — and guard edges against them
+        int nodeFilters = scripts.split("startsWith\\('cluster_'\\)", -1).length - 1;
+        assertEquals(2, nodeFilters, "both popup script builders must filter cluster nodes");
+        int edgeGuards = scripts.split("droppedClusters.has", -1).length - 1;
+        assertEquals(4, edgeGuards, "both popup script builders must guard edges against dropped clusters");
+    }
 }

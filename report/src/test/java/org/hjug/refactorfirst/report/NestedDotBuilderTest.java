@@ -1,6 +1,8 @@
 package org.hjug.refactorfirst.report;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 import org.hjug.refactorfirst.report.model.ClassNodeDTO;
@@ -159,15 +161,14 @@ class NestedDotBuilderTest {
     }
 
     // ------------------------------------------------------------------
-    // package graph (rendered by @hpcc-js/wasm-graphviz)
+    // package graph (flat ellipse nodes + relationship edges, vizdom-rendered)
     // ------------------------------------------------------------------
 
-    @DisplayName("package graph renders parents as clusters, leaves as rectangles, edges via compound anchors")
+    @DisplayName("package graph renders one ellipse per package with only the relationship edges")
     @Test
-    void buildPackageDot_rendersParentsAsClustersAndLeavesAsRectangles() {
-        // Given: a parent package that participates in a relationship (it needs the
-        // invisible anchor its edges reference) with two childless packages, one
-        // relationship to a child and one between the children
+    void buildPackageDot_rendersFlatEllipseNodesAndEdges() {
+        // Given: a parent package participating in a relationship with two child
+        // packages, one flagged for breakup, and two relationships
         String hjugNodeId = HtmlReport.renderSafePackageNodeId("org.hjug");
         String cbcNodeId = HtmlReport.renderSafePackageNodeId("org.hjug.cbc");
         String dsmNodeId = HtmlReport.renderSafePackageNodeId("org.hjug.dsm");
@@ -175,19 +176,21 @@ class NestedDotBuilderTest {
                 .name("org.hjug")
                 .id(HierarchyBuilder.clusterId("org.hjug"))
                 .nodeId(hjugNodeId)
+                .path("src/main/java/org/hjug/")
                 .renderAsNode(false)
                 .children(List.of(
                         PackageNodeDTO.builder()
                                 .name("org.hjug.cbc")
                                 .id(HierarchyBuilder.clusterId("org.hjug.cbc"))
                                 .nodeId(cbcNodeId)
-                                .renderAsNode(true)
+                                .path("src/main/java/org/hjug/cbc/")
+                                .needsBreakUp(true)
                                 .build(),
                         PackageNodeDTO.builder()
                                 .name("org.hjug.dsm")
                                 .id(HierarchyBuilder.clusterId("org.hjug.dsm"))
                                 .nodeId(dsmNodeId)
-                                .renderAsNode(true)
+                                .path("src/main/java/org/hjug/dsm/")
                                 .build()))
                 .build();
         HierarchyDTO hierarchy = HierarchyDTO.builder()
@@ -202,165 +205,98 @@ class NestedDotBuilderTest {
                         EdgeDTO.builder()
                                 .source(cbcNodeId)
                                 .target(dsmNodeId)
-                                .weight(1)
-                                .markedForRemoval(false)
+                                .weight(2)
+                                .markedForRemoval(true)
                                 .build()))
                 .build();
 
         // When: the package graph DOT is built
-        String dot = NestedDotBuilder.buildPackageDot(hierarchy);
+        String dot = NestedDotBuilder.buildPackageDot(hierarchy, "");
 
-        // Then: the parent renders once, as a labelled cluster with an invisible
-        // edge anchor; the childless packages render once, as filled rectangles;
-        // the cluster-touching edge carries ltail, the leaf edge does not
+        // Then: the graph is flat — every participating package renders once as an
+        // ellipse (no subgraphs, clusters, or anchors), break-up packages fill red,
+        // and the edges carry only the relationship weights with removals in red
         String expected = "strict digraph G {\n"
-                + "compound=true;\n"
-                + "subgraph " + HierarchyBuilder.clusterId("org.hjug") + " {\n"
-                + "label=\"org.hjug\";\n"
-                + "style=filled fillcolor=white;\n"
                 + hjugNodeId
-                + " [shape=point style=invis];\n"
+                + " [label=\"org.hjug\" shape=ellipse];\n"
                 + cbcNodeId
-                + " [label=\"org.hjug.cbc\" shape=rectangle style=filled fillcolor=white];\n"
+                + " [label=\"org.hjug.cbc\" shape=ellipse color=red style=filled];\n"
                 + dsmNodeId
-                + " [label=\"org.hjug.dsm\" shape=rectangle style=filled fillcolor=white];\n"
-                + "}\n"
+                + " [label=\"org.hjug.dsm\" shape=ellipse];\n"
                 + hjugNodeId
-                + " -> " + cbcNodeId + " [ label = \"1\" weight = \"1\" ltail = \""
-                + HierarchyBuilder.clusterId("org.hjug") + "\" ];\n"
+                + " -> " + cbcNodeId + " [ label = \"1\" weight = \"1\" ];\n"
                 + cbcNodeId
-                + " -> " + dsmNodeId + " [ label = \"1\" weight = \"1\" ];\n"
+                + " -> " + dsmNodeId + " [ label = \"2\" weight = \"2\" color = \"red\" ];\n"
                 + "}";
         assertEquals(expected, dot);
     }
 
-    @DisplayName("package graph flags pink parents and leaves, red edges attach to clusters via lhead")
+    @DisplayName("package graph hyperlinks nodes with a source path when the repository URL resolves to http(s)")
     @Test
-    void buildPackageDot_flagsPinkShapesAndClusterEdgeHeads() {
-        // Given: a flagged parent cluster with an anchor, a flagged leaf, and a
-        // red relationship ending at the parent
-        String hjugNodeId = HtmlReport.renderSafePackageNodeId("org.hjug");
+    void buildPackageDot_hyperlinksPackagesWithPaths() {
+        // Given: two participating packages, one with a source path and one without
+        String cbcNodeId = HtmlReport.renderSafePackageNodeId("org.hjug.cbc");
         String dsmNodeId = HtmlReport.renderSafePackageNodeId("org.hjug.dsm");
         PackageNodeDTO hjug = PackageNodeDTO.builder()
                 .name("org.hjug")
                 .id(HierarchyBuilder.clusterId("org.hjug"))
-                .nodeId(hjugNodeId)
                 .renderAsNode(false)
-                .needsBreakUp(true)
-                .children(List.of(PackageNodeDTO.builder()
-                        .name("org.hjug.dsm")
-                        .id(HierarchyBuilder.clusterId("org.hjug.dsm"))
-                        .nodeId(dsmNodeId)
-                        .renderAsNode(true)
-                        .needsBreakUp(true)
-                        .build()))
+                .children(List.of(
+                        PackageNodeDTO.builder()
+                                .name("org.hjug.cbc")
+                                .id(HierarchyBuilder.clusterId("org.hjug.cbc"))
+                                .nodeId(cbcNodeId)
+                                .path("src/main/java/org/hjug/cbc/")
+                                .build(),
+                        PackageNodeDTO.builder()
+                                .name("org.hjug.dsm")
+                                .id(HierarchyBuilder.clusterId("org.hjug.dsm"))
+                                .nodeId(dsmNodeId)
+                                .path("")
+                                .build()))
                 .build();
         HierarchyDTO hierarchy = HierarchyDTO.builder()
                 .packages(List.of(hjug))
                 .edges(List.of(EdgeDTO.builder()
-                        .source(dsmNodeId)
-                        .target(hjugNodeId)
-                        .weight(2)
-                        .markedForRemoval(true)
-                        .build()))
-                .build();
-
-        // When: the package graph DOT is built
-        String dot = NestedDotBuilder.buildPackageDot(hierarchy);
-
-        // Then: both package shapes fill pink, and the red edge carries lhead so
-        // the arrow clips to the parent cluster's border
-        String expected = "strict digraph G {\n"
-                + "compound=true;\n"
-                + "subgraph " + HierarchyBuilder.clusterId("org.hjug") + " {\n"
-                + "label=\"org.hjug\";\n"
-                + "style=filled fillcolor=pink;\n"
-                + hjugNodeId
-                + " [shape=point style=invis];\n"
-                + dsmNodeId
-                + " [label=\"org.hjug.dsm\" shape=rectangle style=filled fillcolor=pink];\n"
-                + "}\n"
-                + dsmNodeId
-                + " -> " + hjugNodeId + " [ label = \"2\" weight = \"2\" color = \"red\" lhead = \""
-                + HierarchyBuilder.clusterId("org.hjug") + "\" ];\n"
-                + "}";
-        assertEquals(expected, dot);
-    }
-
-    @DisplayName("package graph emits anchors only for edge-referenced parents")
-    @Test
-    void buildPackageDot_emitsAnchorsOnlyForReferencedParents() {
-        // Given: a neutral ancestor with no relationships of its own (no anchor) that
-        // contains a referenced parent cluster with a leaf
-        String bNodeId = HtmlReport.renderSafePackageNodeId("a.b");
-        String cNodeId = HtmlReport.renderSafePackageNodeId("a.b.c");
-        PackageNodeDTO root = PackageNodeDTO.builder()
-                .name("a")
-                .id(HierarchyBuilder.clusterId("a"))
-                .renderAsNode(false)
-                .children(List.of(PackageNodeDTO.builder()
-                        .name("a.b")
-                        .id(HierarchyBuilder.clusterId("a.b"))
-                        .nodeId(bNodeId)
-                        .renderAsNode(false)
-                        .children(List.of(PackageNodeDTO.builder()
-                                .name("a.b.c")
-                                .id(HierarchyBuilder.clusterId("a.b.c"))
-                                .nodeId(cNodeId)
-                                .renderAsNode(true)
-                                .build()))
-                        .build()))
-                .build();
-        HierarchyDTO hierarchy = HierarchyDTO.builder()
-                .packages(List.of(root))
-                .edges(List.of(EdgeDTO.builder()
-                        .source(bNodeId)
-                        .target(cNodeId)
+                        .source(cbcNodeId)
+                        .target(dsmNodeId)
                         .weight(1)
                         .markedForRemoval(false)
                         .build()))
                 .build();
 
-        // When: the package graph DOT is built
-        String dot = NestedDotBuilder.buildPackageDot(hierarchy);
+        // When: rendered with a valid repository URL
+        String withRepoUrl = NestedDotBuilder.buildPackageDot(hierarchy, "https://github.com/x/y/blob/main/");
 
-        // Then: only the edge-referenced parent carries an invisible anchor; the
-        // neutral ancestor cluster does not
-        String expected = "strict digraph G {\n"
-                + "compound=true;\n"
-                + "subgraph " + HierarchyBuilder.clusterId("a") + " {\n"
-                + "label=\"a\";\n"
-                + "style=filled fillcolor=white;\n"
-                + "subgraph " + HierarchyBuilder.clusterId("a.b") + " {\n"
-                + "label=\"a.b\";\n"
-                + "style=filled fillcolor=white;\n"
-                + bNodeId
-                + " [shape=point style=invis];\n"
-                + cNodeId
-                + " [label=\"a.b.c\" shape=rectangle style=filled fillcolor=white];\n"
-                + "}\n"
-                + "}\n"
-                + bNodeId
-                + " -> " + cNodeId + " [ label = \"1\" weight = \"1\" ltail = \""
-                + HierarchyBuilder.clusterId("a.b") + "\" ];\n"
-                + "}";
-        assertEquals(expected, dot);
+        // Then: the package with a path is hyperlinked in a new tab; the pathless one is not
+        assertTrue(withRepoUrl.contains(
+                "URL=\"https://github.com/x/y/blob/main/src/main/java/org/hjug/cbc/\" target=\"_blank\""));
+        assertFalse(
+                withRepoUrl.contains("URL=\"https://github.com/x/y/blob/main/\""), "pathless packages carry no link");
+
+        // And When: rendered without a repository URL or with a non-http(s) scheme
+        String noRepoUrl = NestedDotBuilder.buildPackageDot(hierarchy, "");
+        assertFalse(noRepoUrl.contains("URL="), "no hyperlink without a repository URL");
+        String javascriptUrl = NestedDotBuilder.buildPackageDot(hierarchy, "javascript:alert(1)/");
+        assertFalse(javascriptUrl.contains("URL="), "non-http(s) repository URLs must not become links");
     }
 
-    @DisplayName("package graph renders empty and null hierarchies as the bare compound skeleton")
+    @DisplayName("package graph renders packages without edges and empty/null hierarchies as the bare skeleton")
     @Test
     void buildPackageDot_rendersEmptyHierarchyAsBareSkeleton() {
-        String bare = "strict digraph G {\ncompound=true;\n}";
+        // Given: an empty and a null hierarchy
+        String bare = "strict digraph G {\n}";
         assertEquals(
                 bare,
-                NestedDotBuilder.buildPackageDot(HierarchyDTO.builder()
-                        .packages(List.of())
-                        .edges(List.of())
-                        .build()));
-        assertEquals(bare, NestedDotBuilder.buildPackageDot(null));
+                NestedDotBuilder.buildPackageDot(
+                        HierarchyDTO.builder()
+                                .packages(List.of())
+                                .edges(List.of())
+                                .build(),
+                        ""));
+        assertEquals(bare, NestedDotBuilder.buildPackageDot(null, ""));
     }
 
-    // ------------------------------------------------------------------
     // hyperlinks
     // ------------------------------------------------------------------
 

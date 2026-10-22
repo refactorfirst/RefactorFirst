@@ -1,24 +1,20 @@
 package org.hjug.refactorfirst.report;
 
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import org.hjug.refactorfirst.report.model.ClassNodeDTO;
 import org.hjug.refactorfirst.report.model.EdgeDTO;
 import org.hjug.refactorfirst.report.model.HierarchyDTO;
 import org.hjug.refactorfirst.report.model.PackageNodeDTO;
 
 /**
- * Renders a {@link HierarchyDTO} as nested DOT: packages become labelled clusters (rectangles),
- * package-map participants become rectangle nodes inside their ancestor clusters, and classes
- * become ellipse nodes inside their owning package cluster.
+ * Renders a {@link HierarchyDTO} in two modes: the class/cycle maps as nested DOT (packages
+ * become labelled clusters, classes become ellipse nodes inside their owning package cluster),
+ * and the package map as the flat relationship graph — one ellipse per participating package
+ * with only the relationship edges, matching the main-branch package map.
  *
- * <p>Visual contract: classes marked for removal keep the {@code color=red style=filled} fill;
- * packages that need to be broken up render pink — clusters via {@code style=filled
- * fillcolor=pink}, package nodes via {@code color=pink style=filled} — replacing the red
- * previously used for packages.
+ * <p>Visual contract: classes marked for removal keep the {@code color=red style=filled} fill
+ * in the class/cycle maps; packages flagged for breakup fill red in the flat package map,
+ * and relationships flagged for removal render red everywhere.
  *
  * <p>Clusters are emitted before the edges so every node keeps its cluster scope: in DOT a node
  * belongs to the cluster where it is first defined, and edges declared afterwards may freely
@@ -56,106 +52,6 @@ public final class NestedDotBuilder {
         return dot.toString();
     }
 
-    /**
-     * Renders the package-map hierarchy as DOT for @hpcc-js/wasm-graphviz (the only renderer
-     * that honors compound cluster edges): packages with children render once as labelled
-     * clusters, childless packages render once as filled rectangles, and edges attach to
-     * cluster-represented packages through invisible anchor nodes clipped to the cluster
-     * borders via {@code ltail}/{@code lhead} under {@code compound=true}.
-     *
-     * @param hierarchy the package-map hierarchy
-     * @return DOT source for a strict compound digraph
-     */
-    public static String buildPackageDot(HierarchyDTO hierarchy) {
-        StringBuilder dot = new StringBuilder();
-        dot.append("strict digraph G {\n");
-        dot.append("compound=true;\n");
-        if (hierarchy != null) {
-            List<PackageNodeDTO> packages = hierarchy.getPackages() == null ? List.of() : hierarchy.getPackages();
-            List<EdgeDTO> edges = hierarchy.getEdges() == null ? List.of() : hierarchy.getEdges();
-
-            Set<String> referencedIds = new HashSet<>();
-            Map<String, PackageNodeDTO> packagesByNodeId = new HashMap<>();
-            for (EdgeDTO edge : edges) {
-                referencedIds.add(edge.getSource());
-                referencedIds.add(edge.getTarget());
-            }
-            indexPackagesByNodeId(packages, packagesByNodeId);
-
-            for (PackageNodeDTO pkg : packages) {
-                renderPackageGraphPackage(pkg, referencedIds, dot);
-            }
-            for (EdgeDTO edge : edges) {
-                renderPackageGraphEdge(edge, packagesByNodeId, dot);
-            }
-        }
-        dot.append("}");
-        return dot.toString();
-    }
-
-    /** Indexes the tree's packages by their node ids so edges can resolve cluster endpoints. */
-    private static void indexPackagesByNodeId(List<PackageNodeDTO> packages, Map<String, PackageNodeDTO> byNodeId) {
-        for (PackageNodeDTO pkg : packages) {
-            if (pkg.getNodeId() != null) {
-                byNodeId.put(pkg.getNodeId(), pkg);
-            }
-            indexPackagesByNodeId(pkg.getChildren() == null ? List.of() : pkg.getChildren(), byNodeId);
-        }
-    }
-    /**
-     * Appends one package-map shape: childless packages as filled rectangles, packages with
-     * children as labelled clusters whose invisible anchor is emitted only when an edge
-     * references it.
-     */
-    private static void renderPackageGraphPackage(PackageNodeDTO pkg, Set<String> referencedIds, StringBuilder dot) {
-        if (pkg.isRenderAsNode()) {
-            dot.append(pkg.getNodeId())
-                    .append(" [label=\"")
-                    .append(HtmlReport.escapeDotQuoted(pkg.getName()))
-                    .append("\" shape=rectangle style=filled fillcolor=")
-                    .append(pkg.isNeedsBreakUp() ? "pink" : "white")
-                    .append("];\n");
-            return;
-        }
-        dot.append("subgraph ").append(pkg.getId()).append(" {\n");
-        dot.append("label=\"").append(HtmlReport.escapeDotQuoted(pkg.getName())).append("\";\n");
-        dot.append("style=filled fillcolor=")
-                .append(pkg.isNeedsBreakUp() ? "pink" : "white")
-                .append(";\n");
-        if (pkg.getNodeId() != null && referencedIds.contains(pkg.getNodeId())) {
-            dot.append(pkg.getNodeId()).append(" [shape=point style=invis];\n");
-        }
-        List<PackageNodeDTO> children = pkg.getChildren() == null ? List.of() : pkg.getChildren();
-        for (PackageNodeDTO child : children) {
-            renderPackageGraphPackage(child, referencedIds, dot);
-        }
-        dot.append("}\n");
-    }
-
-    /**
-     * Appends one package relationship, clipping at the cluster border of any endpoint
-     * whose package is cluster-represented.
-     */
-    private static void renderPackageGraphEdge(
-            EdgeDTO edge, Map<String, PackageNodeDTO> packagesByNodeId, StringBuilder dot) {
-        dot.append(edge.getSource()).append(" -> ").append(edge.getTarget());
-        dot.append(" [ ");
-        dot.append("label = \"").append(edge.getWeight()).append("\" ");
-        dot.append("weight = \"").append(edge.getWeight()).append("\"");
-        if (edge.isMarkedForRemoval()) {
-            dot.append(" color = \"red\"");
-        }
-        PackageNodeDTO source = packagesByNodeId.get(edge.getSource());
-        if (source != null && !source.isRenderAsNode()) {
-            dot.append(" ltail = \"").append(source.getId()).append("\"");
-        }
-        PackageNodeDTO target = packagesByNodeId.get(edge.getTarget());
-        if (target != null && !target.isRenderAsNode()) {
-            dot.append(" lhead = \"").append(target.getId()).append("\"");
-        }
-        dot.append(" ];\n");
-    }
-
     /** Appends one package cluster: label, explicit fill, its node, its classes, and children. */
     private static void renderPackage(
             PackageNodeDTO pkg, String repoUrl, boolean includeHyperlinks, StringBuilder dot) {
@@ -164,8 +60,7 @@ public final class NestedDotBuilder {
         // Every cluster declares an explicit fill: vizdom propagates a styled cluster's fill
         // to its nested cluster rects, so an unflagged child of a pink break-up cluster must
         // say white explicitly or it would inherit the pink. White is vizdom's default
-        // cluster fill, so unflagged clusters look unchanged. In the package map the pink
-        // signal belongs to the rectangle node, not its own cluster box.
+        // cluster fill, so unflagged clusters look unchanged.
         if (pkg.isNeedsBreakUp() && !pkg.isRenderAsNode()) {
             dot.append("style=filled fillcolor=pink;\n");
         } else {
@@ -213,6 +108,83 @@ public final class NestedDotBuilder {
             dot.append(" color=red style=filled");
         }
         dot.append("];\n");
+    }
+
+    /**
+     * Renders the package-map hierarchy as the flat relationship graph: every
+     * package that participates in at least one relationship (or was selected for
+     * removal to break cycles) renders once as an ellipse node carrying its name,
+     * and the edges carry only the relationship weights — matching the
+     * main-branch package map, rendered by vizdom like the class and cycle maps.
+     * Packages flagged {@code needsBreakUp} fill red; relationships flagged for
+     * removal render red. Packages with a source path also carry a hyperlink —
+     * {@code URL} + {@code target="_blank"} — built from the repository URL
+     * prefix; only http(s) URLs are ever emitted. The full hierarchy stays in
+     * refactor-first.json for LLM consumption; only the relationship information
+     * renders.
+     *
+     * @param hierarchy the package-map hierarchy
+     * @param repoUrl repository URL prefix for package hyperlinks
+     * @return DOT source for a strict digraph of ellipse package nodes and edges
+     */
+    public static String buildPackageDot(HierarchyDTO hierarchy, String repoUrl) {
+        StringBuilder dot = new StringBuilder();
+        dot.append("strict digraph G {\n");
+        if (hierarchy != null) {
+            List<PackageNodeDTO> packages = hierarchy.getPackages() == null ? List.of() : hierarchy.getPackages();
+            renderFlatPackageNodes(packages, repoUrl, dot);
+            List<EdgeDTO> edges = hierarchy.getEdges() == null ? List.of() : hierarchy.getEdges();
+            for (EdgeDTO edge : edges) {
+                renderEdge(edge, dot);
+            }
+        }
+        dot.append("}");
+        return dot.toString();
+    }
+
+    /** Appends one ellipse node for every package in the tree that carries a node id. */
+    private static void renderFlatPackageNodes(List<PackageNodeDTO> packages, String repoUrl, StringBuilder dot) {
+        for (PackageNodeDTO pkg : packages) {
+            if (pkg.getNodeId() != null) {
+                dot.append(pkg.getNodeId())
+                        .append(" [label=\"")
+                        .append(HtmlReport.escapeDotQuoted(pkg.getName()))
+                        .append("\" shape=ellipse");
+                if (pkg.isNeedsBreakUp()) {
+                    dot.append(" color=red style=filled");
+                }
+                String url = packageHyperlinkUrl(pkg, repoUrl);
+                if (url != null) {
+                    dot.append(" URL=\"")
+                            .append(HtmlReport.escapeDotQuoted(url))
+                            .append("\" target=\"_blank\"");
+                }
+                dot.append("];\n");
+            }
+            renderFlatPackageNodes(pkg.getChildren() == null ? List.of() : pkg.getChildren(), repoUrl, dot);
+        }
+    }
+
+    /**
+     * Returns the package node's hyperlink target when the repository URL and the
+     * package's source directory resolve to an http(s) URL; {@code null} otherwise.
+     */
+    private static String packageHyperlinkUrl(PackageNodeDTO pkg, String repoUrl) {
+        if (pkg.getPath() == null || pkg.getPath().isEmpty()) {
+            return null;
+        }
+        String url = (repoUrl == null ? "" : repoUrl) + pkg.getPath();
+        return isHttpUrl(url) ? url : null;
+    }
+
+    /** Only http(s) URLs may become links. */
+    private static boolean isHttpUrl(String url) {
+        try {
+            String scheme = java.net.URI.create(url).getScheme();
+            return "http".equals(scheme) || "https".equals(scheme);
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
     }
 
     /** Appends one weighted edge, red when the relationship is marked for removal. */

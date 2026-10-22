@@ -287,6 +287,40 @@ class HierarchyBuilderTest {
         assertTrue(hasEdge(hierarchy, "p_b_Foo", "Solo"));
     }
 
+    @DisplayName("package hierarchy derives each package's source directory from the class source mapping")
+    @Test
+    void buildPackageHierarchy_derivesPackagePathsFromSourceMapping() {
+        // Given: an org.a -> org.b dependency and a source mapping that places
+        // org.a's classes under a module root and org.b's under another root
+        Graph<VertexInfo, DefaultWeightedEdge> packageGraph = newGraph();
+        addEdge(packageGraph, "org.a", "org.b", 1);
+        Map<String, String> sourcePaths = new HashMap<>();
+        sourcePaths.put("org.a.A", "cost-benefit-calculator/src/main/java/org/a/A.java");
+        sourcePaths.put("org.b.B", "graph-algorithms/src/main/java/org/b/B.java");
+
+        // When: the package hierarchy is built
+        HierarchyDTO hierarchy =
+                HierarchyBuilder.buildPackageHierarchy(packageGraph, dto(sourcePaths), Set.of(), Set.of());
+
+        // Then: each package carries its repo-relative source directory (the
+        // hyperlinked location in the package graph); a package without a mapped
+        // class carries an empty path and renders without a hyperlink
+        PackageNodeDTO org = hierarchy.getPackages().get(0);
+        assertEquals(
+                "cost-benefit-calculator/src/main/java/org/a/",
+                childByName(org, "org.a").getPath());
+        assertEquals(
+                "graph-algorithms/src/main/java/org/b/",
+                childByName(org, "org.b").getPath());
+
+        // And When: the same hierarchy is built without a source mapping
+        HierarchyDTO withoutPaths =
+                HierarchyBuilder.buildPackageHierarchy(packageGraph, dto(new HashMap<>()), Set.of(), Set.of());
+
+        // Then: the packages carry empty paths
+        assertEquals("", childByName(withoutPaths.getPackages().get(0), "org.a").getPath());
+    }
+
     // ------------------------------------------------------------------
     // cycle hierarchy
     // ------------------------------------------------------------------
@@ -357,7 +391,8 @@ class HierarchyBuilderTest {
         addEdge(packageGraph, "org.hjug.report", "org.hjug.cbc", 2);
 
         // When: the package hierarchy is built
-        HierarchyDTO hierarchy = HierarchyBuilder.buildPackageHierarchy(packageGraph, Set.of(), Set.of());
+        HierarchyDTO hierarchy =
+                HierarchyBuilder.buildPackageHierarchy(packageGraph, dto(new HashMap<>()), Set.of(), Set.of());
 
         // Then: org collapsed into org.hjug, which contains the three rectangle node packages
         assertEquals(1, hierarchy.getPackages().size());
@@ -390,7 +425,8 @@ class HierarchyBuilderTest {
         addEdge(packageGraph, "org.hjug.cbc", "org.hjug.dsm", 1);
 
         // When: the package hierarchy is built
-        HierarchyDTO hierarchy = HierarchyBuilder.buildPackageHierarchy(packageGraph, Set.of(), Set.of());
+        HierarchyDTO hierarchy =
+                HierarchyBuilder.buildPackageHierarchy(packageGraph, dto(new HashMap<>()), Set.of(), Set.of());
 
         // Then: org.hjug renders as a cluster carrying the anchor id its edges
         // reference — no duplicate rectangle node inside its own box — and only
@@ -418,7 +454,7 @@ class HierarchyBuilderTest {
 
         // When: the package hierarchy is built with that removal set
         HierarchyDTO hierarchy = HierarchyBuilder.buildPackageHierarchy(
-                packageGraph, Set.of(VertexInfo.forName("org.hjug.cbc")), Set.of());
+                packageGraph, dto(new HashMap<>()), Set.of(VertexInfo.forName("org.hjug.cbc")), Set.of());
 
         // Then: only cbc is flagged while its parent container stays neutral
         PackageNodeDTO hjug = hierarchy.getPackages().get(0);
@@ -497,7 +533,10 @@ class HierarchyBuilderTest {
 
         // When: the package hierarchy is built
         HierarchyDTO hierarchy = HierarchyBuilder.buildPackageHierarchy(
-                packageGraph, Set.of(VertexInfo.forName("org.x"), VertexInfo.forName("org.w")), Set.of());
+                packageGraph,
+                dto(new HashMap<>()),
+                Set.of(VertexInfo.forName("org.x"), VertexInfo.forName("org.w")),
+                Set.of());
 
         // Then: both are flagged, and the edge-less break-up package renders as a
         // pink rectangle node so the package map lists it
@@ -526,7 +565,7 @@ class HierarchyBuilderTest {
         HierarchyDTO classHierarchy = HierarchyBuilder.buildClassHierarchy(
                 classGraph, dto(new HashMap<>()), Set.of(), packagesToRemove, Set.of());
         HierarchyDTO packageHierarchy =
-                HierarchyBuilder.buildPackageHierarchy(packageGraph, packagesToRemove, Set.of());
+                HierarchyBuilder.buildPackageHierarchy(packageGraph, dto(new HashMap<>()), packagesToRemove, Set.of());
 
         // Then: the class graph and the package graph show the same packages to break up
         assertEquals(Set.of("org.a", "org.z"), collectNeedsBreakUp(classHierarchy));

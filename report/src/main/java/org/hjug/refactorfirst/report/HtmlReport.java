@@ -103,7 +103,17 @@ public class HtmlReport extends SimpleHtmlReport {
 
                 // Convert graphlib graph to graphology graph
                 const graphologyGraph = new graphology.Graph();
+                // graphlib-dot creates a node for every named subgraph: in the
+                // class map that is one cluster node per package, labelled with
+                // the package name. Packages are noise in the popups, so drop
+                // the cluster nodes while keeping every node the clusters
+                // contained and the edges between them.
+                const droppedClusters = new Set();
                 graphlibGraph.nodes().forEach(node => {
+                    if (node.startsWith('cluster_')) {
+                        droppedClusters.add(node);
+                        return;
+                    }
                     const attrs = graphlibGraph.node(node);
                     graphologyGraph.addNode(node, {
                         label: attrs.label || node,
@@ -113,6 +123,7 @@ public class HtmlReport extends SimpleHtmlReport {
                 });
 
                 graphlibGraph.edges().forEach(edge => {
+                    if (droppedClusters.has(edge.v) || droppedClusters.has(edge.w)) return;
                     const attrs = graphlibGraph.edge(edge);
                     graphologyGraph.addEdge(edge.v, edge.w, {
                         color: attrs.color,
@@ -152,7 +163,16 @@ public class HtmlReport extends SimpleHtmlReport {
                         var nodes = [];
                         var links = [];
 
+                        // Packages are noise in the popups: drop the cluster
+                        // nodes graphlib-dot creates per named subgraph,
+                        // keeping every node they contained and the edges
+                        // between the kept nodes.
+                        var droppedClusters = new Set();
                         graphlibGraph.nodes().forEach(function (node) {
+                            if (node.startsWith('cluster_')) {
+                                droppedClusters.add(node);
+                                return;
+                            }
                             var nodeData = graphlibGraph.node(node);
                             nodes.push({
                                 id: node,
@@ -162,6 +182,7 @@ public class HtmlReport extends SimpleHtmlReport {
                         });
 
                         graphlibGraph.edges().forEach(function (edge) {
+                            if (droppedClusters.has(edge.v) || droppedClusters.has(edge.w)) return;
                             links.push({
                                 source: edge.v,
                                 target: edge.w,
@@ -407,8 +428,6 @@ public class HtmlReport extends SimpleHtmlReport {
                 + "<script src=\"https://cdn.jsdelivr.net/npm/graphlib-dot@0.6.4/dist/graphlib-dot.min.js\"></script>\n"
                 + "<script src=\"https://cdn.jsdelivr.net/npm/3d-force-graph\"></script>\n"
                 + "<script type=\"module\" src=\"https://cdn.jsdelivr.net/npm/@vizdom/vizdom-ts-web@0.1.19/vizdom_ts.min.js\"></script>\n"
-                // package graph renderer - the only engine honoring compound cluster edges
-                + "<script type=\"module\" src=\"https://cdn.jsdelivr.net/npm/@hpcc-js/wasm-graphviz@1.7.0/dist/index.js\"></script>\n"
                 // Make the output look decent.  Don't use in RefactorFirstMavenReport.
                 + "<link rel=\"stylesheet\" href=\"https://unpkg.com/mvp.css\">\n";
     }
@@ -553,6 +572,8 @@ public class HtmlReport extends SimpleHtmlReport {
                 + graphName + "_dot);\n" + "        const directedGraph = dotGraph.to_directed();\n"
                 + "        const positioned = directedGraph.layout();\n"
                 + "        let svg = positioned.to_svg().to_string();\n"
+                + "        // vizdom drops the target attribute on hyperlinked nodes; restore new-tab behavior\n"
+                + "        svg = svg.replace('<a href=', '<a target=\\\"_blank\\\" href=');\n"
                 + "        // Modify the SVG string to include width and height attributes\n"
                 + "        svg = svg.replace('<svg ', `<svg class=\"fullscreen-svg\"`);\n"
                 + "\n"
@@ -564,32 +585,6 @@ public class HtmlReport extends SimpleHtmlReport {
                 + "            controlIconsEnabled: true\n"
                 + "        });\n"
                 + "    }\n" + "</script>\n";
-    }
-
-    /**
-     * Renders the package graph's compound DOT (parents as clusters, childless packages as
-     * rectangles, ltail/lhead cluster edges) through the pinned @hpcc-js/wasm-graphviz
-     * module — vizdom ignores compound edge attributes, so the package graph needs the
-     * real Graphviz engine.
-     */
-    private static String generatePackageGraphImage(String graphName) {
-        return "<div id=\"" + graphName
-                + "\" style=\"width: 95%; height: 70vh; margin: auto; border: thin solid black\"></div>\n"
-                + "<script type=\"module\">\n"
-                + "import { Graphviz } from \"https://cdn.jsdelivr.net/npm/@hpcc-js/wasm-graphviz@1.7.0/dist/index.js\";\n"
-                + "    const graphviz = await Graphviz.load();\n"
-                + "    let svg = graphviz.dot("
-                + graphName + "_dot);\n"
-                + "    // strip the xml declaration and doctype, keep the svg element\n"
-                + "    svg = svg.substring(svg.indexOf('<svg'));\n"
-                + "    svg = svg.replace('<svg ', `<svg class=\"fullscreen-svg\"`);\n"
-                + "    document.getElementById(\""
-                + graphName + "\").innerHTML = svg;\n" + "\n"
-                + "    svgPanZoom('#"
-                + graphName + " svg', {\n" + "            zoomEnabled: true,\n"
-                + "            controlIconsEnabled: true\n"
-                + "        });\n"
-                + "</script>\n";
     }
 
     /**
@@ -923,7 +918,7 @@ public class HtmlReport extends SimpleHtmlReport {
                 .append(relationshipCount)
                 .append("<br></div>");
         if (packageCount + relationshipCount < dotGraphThreshold) {
-            stringBuilder.append(generatePackageGraphImage(packageGraphName));
+            stringBuilder.append(generateDotImage(packageGraphName));
         } else {
             // revisit and add DOT SVG popup button
             stringBuilder.append("<div align=\"center\">\nSVG is too big to render quickly</div>\n");
@@ -933,17 +928,17 @@ public class HtmlReport extends SimpleHtmlReport {
     }
 
     /**
-     * Builds raw compound DOT source for the package relationship graph — parents as
-     * labelled clusters, childless packages as rectangles, edges clipped to cluster
-     * borders — for rendering by @hpcc-js/wasm-graphviz. The {@code repoUrl} and
-     * {@code codebaseGraphDTO} parameters are retained for signature compatibility;
-     * package shapes carry no hyperlinks.
+     * Builds raw DOT source for the package relationship graph: one ellipse node per
+     * participating package and the relationship edges between them — the main-branch
+     * package map, rendered by vizdom like the class and cycle graphs. The
+     * {@code repoUrl} and {@code codebaseGraphDTO} parameters are retained for
+     * signature compatibility; the full hierarchy stays in refactor-first.json.
      */
     String buildRawPackageGraphDot(
             Graph<VertexInfo, DefaultWeightedEdge> packageGraph, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
-        HierarchyDTO hierarchy =
-                HierarchyBuilder.buildPackageHierarchy(packageGraph, packagesToRemove, packageRelationshipsToRemove);
-        return NestedDotBuilder.buildPackageDot(hierarchy);
+        HierarchyDTO hierarchy = HierarchyBuilder.buildPackageHierarchy(
+                packageGraph, codebaseGraphDTO, packagesToRemove, packageRelationshipsToRemove);
+        return NestedDotBuilder.buildPackageDot(hierarchy, repoUrl);
     }
 
     /** Builds escaped package-graph DOT suitable for a JavaScript template literal. */

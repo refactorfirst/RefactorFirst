@@ -287,7 +287,7 @@ public class JsonGenerator extends HtmlReport {
             int packageRelationshipCount = packageGraph.edgeSet().size();
             boolean hasPackageEdges = !packageGraph.edgeSet().isEmpty();
             HierarchyDTO packageGraphHierarchy = HierarchyBuilder.buildPackageHierarchy(
-                    packageGraph, packagesToRemove, packageRelationshipsToRemove);
+                    packageGraph, codebaseGraphDTO, packagesToRemove, packageRelationshipsToRemove);
             GraphVisualDTO packageMapDTO = GraphVisualDTO.builder()
                     .hasEdges(hasPackageEdges)
                     .graphId("packageGraph")
