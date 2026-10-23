@@ -119,9 +119,13 @@ class ViewerScriptTest {
         // Then: both popup builders (the 2D sugiyama/sigma renderGraph and the 3D
         // createForceGraph) drop the cluster nodes graphlib-dot creates per named
         // subgraph — packages are noise in the popups — while keeping every class
-        // node the clusters contained, and skip edges touching dropped clusters
-        int nodeFilters = viewer.split("startsWith\\('cluster_'\\)", -1).length - 1;
-        assertEquals(2, nodeFilters, "both the 2D and 3D popup builders must filter cluster nodes");
+        // node the clusters contained, including class ids like cluster_Helper,
+        // and skip edges touching dropped clusters
+        int nodeFilters = viewer.split("graphlibGraph\\.children\\(node\\)\\.length > 0", -1).length - 1;
+        assertEquals(2, nodeFilters, "both the 2D and 3D popup builders must filter subgraph nodes by structure");
+        assertFalse(
+                viewer.contains("startsWith('cluster_')"),
+                "real class nodes such as cluster_Helper must keep their incident edges");
         int edgeGuards = viewer.split("droppedClusters.has", -1).length - 1;
         assertEquals(4, edgeGuards, "both popup builders must also guard edges against dropped clusters");
     }

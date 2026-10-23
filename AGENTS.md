@@ -109,8 +109,9 @@ package/class hierarchy. The pipeline is single-sourced:
   map, labelled with the package name), so packages would appear as noise in
   the sigma/3D popups: all popup graph builders (2D `renderGraph`/`buildGraphologyGraph`
   and 3D `createForceGraph`, in the viewer, the classic report's popup scripts,
-  and the page) drop `cluster_` nodes and any edge touching them while
-  keeping every class node the clusters contained.
+  and the page) identify subgraph nodes structurally with
+  `graphlibGraph.children(node).length > 0` and drop them and any edge touching
+  them, while keeping every class node, including ids such as `cluster_Helper`.
 
 ## Java 25 analysis (JEP 238 multi-release jar)
 
