@@ -87,17 +87,15 @@ public final class NestedDotBuilder {
         dot.append("}\n");
     }
 
-    /** Appends one class node: hyperlink, label, ellipse shape, and the red removal fill. */
+    /**
+     * Appends one class node: label, ellipse shape, the red removal fill, then the hyperlink.
+     * The {@code URL}/{@code target} attributes come last — mirroring the package nodes — and
+     * are emitted only when the constructed URL passes the http(s) validation the package
+     * hyperlinks apply.
+     */
     private static void renderClassNode(
             ClassNodeDTO cls, String repoUrl, boolean includeHyperlinks, StringBuilder dot) {
         dot.append(cls.getId()).append(" [");
-        if (includeHyperlinks && cls.getPath() != null && !cls.getPath().isBlank()) {
-            String url = (repoUrl == null ? "" : repoUrl) + cls.getPath();
-            dot.append("URL=\"")
-                    .append(HtmlReport.escapeDotQuoted(url))
-                    .append("\"")
-                    .append(" target=\"_blank\"");
-        }
         if (!cls.getLabel().equals(cls.getId())) {
             dot.append(" label=\"")
                     .append(HtmlReport.escapeDotQuoted(cls.getLabel()))
@@ -106,6 +104,12 @@ public final class NestedDotBuilder {
         dot.append(" shape=ellipse");
         if (cls.isMarkedForRemoval()) {
             dot.append(" color=red style=filled");
+        }
+        if (includeHyperlinks && cls.getPath() != null && !cls.getPath().isBlank()) {
+            String url = (repoUrl == null ? "" : repoUrl) + cls.getPath();
+            if (isHttpUrl(url)) {
+                dot.append(" URL=\"").append(HtmlReport.escapeDotQuoted(url)).append("\" target=\"_blank\"");
+            }
         }
         dot.append("];\n");
     }

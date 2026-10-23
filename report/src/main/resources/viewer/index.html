@@ -644,8 +644,9 @@
                     if (!el || !hierarchy) return;
                     const parsed = parser.parse(synthesis(hierarchy, synthesisOptions)).to_directed().layout();
                     let svg = parsed.to_svg().to_string();
-                    // vizdom drops the target attribute on hyperlinked nodes; restore new-tab behavior
-                    svg = svg.replace('<a href=', '<a target="_blank" href=');
+                    // vizdom drops the target attribute on hyperlinked nodes; restore new-tab
+                    // behavior on every anchor (a graph hyperlinks many nodes)
+                    svg = svg.replace(/<a href=/g, '<a target="_blank" href=');
                     svg = svg.replace('<svg ', '<svg class="fullscreen-svg" ');
                     el.innerHTML = svg;
                     if (window.svgPanZoom) {

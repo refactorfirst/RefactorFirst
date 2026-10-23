@@ -141,10 +141,14 @@ class ViewerScriptTest {
                 "the viewer must wire project.repoUrl");
         assertTrue(viewer.contains("URL=\""), "the synthesis must emit URL attributes");
         assertTrue(viewer.contains("target=\"_blank\""), "hyperlinks must open a new browser tab");
-        // the inline vizdom render restores the anchor target vizdom drops
+        // the inline vizdom render restores the anchor target vizdom drops on every anchor
+        // (a graph hyperlinks many nodes, so the replacement must be global)
         assertTrue(
-                viewer.contains("svg = svg.replace('<a href=', '<a target=\"_blank\" href=')"),
-                "the viewer's inline render must restore the new-tab anchor target");
+                viewer.contains("svg = svg.replace(/<a href=/g, '<a target=\"_blank\" href=')"),
+                "the viewer's inline render must restore the new-tab anchor target on every anchor");
+        assertFalse(
+                viewer.contains("svg = svg.replace('<a href='"),
+                "a non-global anchor replacement would only restore the first anchor's target");
     }
 
     @DisplayName("viewer keeps exposing synthesized DOT through the window globals")

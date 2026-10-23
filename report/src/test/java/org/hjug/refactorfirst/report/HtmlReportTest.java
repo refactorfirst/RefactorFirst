@@ -77,9 +77,9 @@ class HtmlReportTest {
                 + "subgraph " + HierarchyBuilder.clusterId(HierarchyBuilder.DEFAULT_PACKAGE) + " {\n"
                 + "label=\"(default package)\";\n"
                 + "style=filled fillcolor=white;\n"
-                + "A [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/src/main/java/org/hjug/refactorfirst/A.java\" target=\"_blank\" shape=ellipse];\n"
-                + "B [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/src/main/java/org/hjug/refactorfirst/B.java\" target=\"_blank\" shape=ellipse];\n"
-                + "C [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/src/main/java/org/hjug/refactorfirst/C.java\" target=\"_blank\" shape=ellipse];\n"
+                + "A [ shape=ellipse URL=\"https://github.com/refactorfirst/RefactorFirst/blob/src/main/java/org/hjug/refactorfirst/A.java\" target=\"_blank\"];\n"
+                + "B [ shape=ellipse URL=\"https://github.com/refactorfirst/RefactorFirst/blob/src/main/java/org/hjug/refactorfirst/B.java\" target=\"_blank\"];\n"
+                + "C [ shape=ellipse URL=\"https://github.com/refactorfirst/RefactorFirst/blob/src/main/java/org/hjug/refactorfirst/C.java\" target=\"_blank\"];\n"
                 + "}\n"
                 + "A -\\u003E B [ label = \"2\" weight = \"2\" ];\n"
                 + "B -\\u003E C [ label = \"1\" weight = \"1\" ];\n"
@@ -280,12 +280,59 @@ class HtmlReportTest {
         // no literal < or > in the DOT node id (the label is fine on its own line); verify the
         // node declaration line (not an edge line, which uses "->") carries no raw < or >.
         String anonLine = Arrays.stream(dot.split("\n"))
-                .filter(l -> l.startsWith("DeveloperWASDControl_anonymous [URL"))
+                .filter(l -> l.startsWith("DeveloperWASDControl_anonymous ["))
                 .findFirst()
                 .orElse("");
         assertFalse(anonLine.isEmpty(), "anonymous node declaration line must be present");
         assertFalse(anonLine.contains("<"), "anonymous DOT id line must not contain a raw '<'");
         assertFalse(anonLine.contains(">"), "anonymous DOT id line must not contain a raw '>'");
+    }
+
+    /**
+     * renderSafeNodeId's collision branch emits full-FQN ids with dots replaced by underscores,
+     * so two colliding {@code Helper} classes in packages {@code cluster} and {@code other}
+     * render as the real class nodes {@code cluster_Helper} and {@code other_Helper} — genuine
+     * class nodes whose ids share the {@code cluster_} prefix that the popup scripts' old id
+     * prefix filter would have wrongly dropped together with their incident edges.
+     */
+    @Test
+    void buildClassCycleDot_emitsRealClassNodeIdsWithClusterPrefix() {
+        // Given: two Helper classes in different packages, one in a package literally named
+        // cluster, so their simple-name collision forces the full-FQN id branch
+        Graph<VertexInfo, DefaultWeightedEdge> classGraph =
+                new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        classGraph.addVertex(VertexInfo.forName("cluster.Helper"));
+        classGraph.addVertex(VertexInfo.forName("other.Helper"));
+        classGraph.addEdge(VertexInfo.forName("cluster.Helper"), VertexInfo.forName("other.Helper"));
+        classGraph.addEdge(VertexInfo.forName("other.Helper"), VertexInfo.forName("cluster.Helper"));
+
+        List<CycleNode> cycleNodes = new ArrayList<>();
+        RankedCycle rankedCycle = new RankedCycle(
+                "HelperCycle",
+                classGraph.vertexSet().stream()
+                        .map(VertexInfo::getName)
+                        .collect(java.util.stream.Collectors.toCollection(java.util.LinkedHashSet::new)),
+                classGraph.edgeSet(),
+                cycleNodes);
+
+        HtmlReport htmlReport = new HtmlReport();
+        CodebaseGraphDTO dto = mock(CodebaseGraphDTO.class);
+        HashMap<String, String> map = new HashMap<>();
+        map.put("cluster.Helper", "/src/main/java/cluster/Helper.java");
+        map.put("other.Helper", "/src/main/java/other/Helper.java");
+        when(dto.getClassToSourceFilePathMapping()).thenReturn(map);
+
+        // When: the cycle DOT is built
+        String dot = htmlReport.buildClassCycleDot(classGraph, rankedCycle, "https://github.com/x/y/blob", dto);
+
+        // Then: the colliding Helpers render as the class nodes cluster_Helper and
+        // other_Helper — real class nodes despite the cluster_ prefix
+        assertTrue(
+                dot.contains("cluster_Helper ["),
+                "the cluster.Helper class must render as the class node cluster_Helper: " + dot);
+        assertTrue(
+                dot.contains("other_Helper ["),
+                "the other.Helper class must render as the class node other_Helper: " + dot);
     }
 
     @Test
@@ -546,7 +593,11 @@ class HtmlReportTest {
         assertTrue(result.contains("1.0\"onload=alert(1)"), "Project version should be escaped in title: " + result);
     }
 
-    /** The classic report's inline graphs must restore the new-tab anchor target vizdom drops. */
+    /**
+     * The classic report's inline graphs must restore the new-tab anchor target vizdom drops —
+     * on every hyperlinked anchor, not just the first (a graph can hyperlink many nodes, so the
+     * replacement must be global).
+     */
     @Test
     void generateDotImage_restoresAnchorTarget() {
         // Given: the classic report's inline vizdom render script (via the cycle visuals)
@@ -556,25 +607,41 @@ class HtmlReportTest {
 
         String visuals = htmlReport.renderClassCycleVisuals(cycle, "", null);
 
-        // Then: the inline render restores target="_blank" on the hyperlinked anchors
+        // Then: the inline render restores target="_blank" on every hyperlinked anchor
         // (vizdom drops the target attribute when emitting <a href>)
         assertTrue(
-                visuals.contains("svg = svg.replace('<a href=', '<a target=\\\"_blank\\\" href=')"),
-                "the inline graph scripts must restore the new-tab anchor target");
+                visuals.contains("svg = svg.replace(/<a href=/g, '<a target=\\\"_blank\\\" href=')"),
+                "the inline graph scripts must restore the new-tab anchor target on every anchor");
+        assertFalse(
+                visuals.contains("svg = svg.replace('<a href='"),
+                "a non-global anchor replacement would only restore the first anchor's target");
     }
 
-    /** The classic report's popup scripts must drop package cluster nodes like the viewer's. */
+    /**
+     * The classic report's popup scripts must drop the subgraph nodes graphlib-dot creates per
+     * named subgraph — packages are noise in the popups — but by the parsed graph's parent-child
+     * structure, never by the {@code cluster_} id prefix: renderSafeNodeId's collision branch
+     * emits real class ids like {@code cluster_Helper} (see
+     * {@link #buildClassCycleDot_emitsRealClassNodeIdsWithClusterPrefix()}), which the prefix
+     * filter would wrongly drop together with their incident edges.
+     */
     @Test
-    void popupScripts_dropClusterNodes() {
+    void popupScripts_dropSubgraphsByParsedStructureNotIdPrefix() {
         // Given: the classic report's inline popup scripts
         String scripts = mavenReport.printScripts();
 
-        // Then: both the 2D sugiyama/sigma builder and the 3D force-graph builder
-        // filter the cluster nodes graphlib-dot creates per named subgraph —
-        // packages are noise in the popups — and guard edges against them
-        int nodeFilters = scripts.split("startsWith\\('cluster_'\\)", -1).length - 1;
-        assertEquals(2, nodeFilters, "both popup script builders must filter cluster nodes");
-        int edgeGuards = scripts.split("droppedClusters.has", -1).length - 1;
-        assertEquals(4, edgeGuards, "both popup script builders must guard edges against dropped clusters");
+        // Then: both the 2D sugiyama/sigma builder and the 3D force-graph builder tell
+        // subgraph nodes from class nodes by structure — graphlib-dot parents every node a
+        // subgraph contains to the subgraph's own node and removes empty subgraphs, so a
+        // node is a subgraph iff it has children — and guard edges against the dropped ones
+        int structuralFilters = scripts.split("graphlibGraph\\.children\\(node\\)\\.length > 0", -1).length - 1;
+        assertEquals(2, structuralFilters, "both popup script builders must drop subgraph nodes by parsed structure");
+        int idPrefixFilters = scripts.split("startsWith\\('cluster_'\\)", -1).length - 1;
+        assertEquals(
+                0,
+                idPrefixFilters,
+                "the cluster_ id prefix must not filter nodes: real class ids like cluster_Helper would be dropped with their edges");
+        int edgeGuards = scripts.split("droppedClusters\\.has", -1).length - 1;
+        assertEquals(4, edgeGuards, "both popup script builders must guard edges against dropped subgraph nodes");
     }
 }

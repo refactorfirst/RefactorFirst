@@ -747,14 +747,19 @@ public class JsonGenerator extends HtmlReport {
         return "graph_" + sanitized + "_" + Integer.toUnsignedString(original.hashCode(), 36);
     }
 
-    /** Checks if a class belongs to a given package by checking the fully qualified class name. */
-    private boolean isClassInPackage(String className, String packageName, CodebaseGraphDTO codebaseGraphDTO) {
+    /**
+     * Checks if a class belongs to a given package, deriving the class's package with the same
+     * rule the graphs use ({@link HierarchyBuilder#packageOf}, mirroring
+     * {@code GraphDependencyCollector.getPackageFromFqn}): a Kotlin anonymous class belongs to
+     * its enclosing class's package ({@code dev.Owner.<anonymous> -> dev}), and packageless
+     * classes match no package.
+     */
+    boolean isClassInPackage(String className, String packageName, CodebaseGraphDTO codebaseGraphDTO) {
         if (className == null || packageName == null) {
             return false;
         }
-        // Check if the class name starts with the package name followed by a dot
-        int lastDot = className.lastIndexOf('.');
-        return lastDot > 0 && className.substring(0, lastDot).equals(packageName);
+        String classPackage = HierarchyBuilder.packageOf(className);
+        return classPackage != null && classPackage.equals(packageName);
     }
 
     /**

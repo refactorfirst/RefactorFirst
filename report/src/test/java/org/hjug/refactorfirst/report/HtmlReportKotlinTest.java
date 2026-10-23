@@ -105,9 +105,9 @@ class HtmlReportKotlinTest {
                 subgraph %s {
                 label="com.kotlin.cycles";
                 style=filled fillcolor=white;
-                KotlinCycleA [URL="https://github.com/refactorfirst/RefactorFirst/blob/src/main/kotlin/com/kotlin/cycles/KotlinCycleA.kt" target="_blank" shape=ellipse];
-                KotlinCycleB [URL="https://github.com/refactorfirst/RefactorFirst/blob/src/main/kotlin/com/kotlin/cycles/KotlinCycleB.kt" target="_blank" shape=ellipse];
-                KotlinCycleC [URL="https://github.com/refactorfirst/RefactorFirst/blob/src/main/kotlin/com/kotlin/cycles/KotlinCycleC.kt" target="_blank" shape=ellipse];
+                KotlinCycleA [ shape=ellipse URL="https://github.com/refactorfirst/RefactorFirst/blob/src/main/kotlin/com/kotlin/cycles/KotlinCycleA.kt" target="_blank"];
+                KotlinCycleB [ shape=ellipse URL="https://github.com/refactorfirst/RefactorFirst/blob/src/main/kotlin/com/kotlin/cycles/KotlinCycleB.kt" target="_blank"];
+                KotlinCycleC [ shape=ellipse URL="https://github.com/refactorfirst/RefactorFirst/blob/src/main/kotlin/com/kotlin/cycles/KotlinCycleC.kt" target="_blank"];
                 }
                 KotlinCycleA -\\u003E KotlinCycleB [ label = "2" weight = "2" ];
                 KotlinCycleB -\\u003E KotlinCycleC [ label = "1" weight = "1" ];

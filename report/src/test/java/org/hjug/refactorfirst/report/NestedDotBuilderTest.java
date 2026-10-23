@@ -14,8 +14,9 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Pins the {@link NestedDotBuilder} contract: rendering a {@link HierarchyDTO} as nested DOT
- * where packages become labelled clusters (rectangles), package-map participants become
- * rectangle nodes, and classes become ellipse nodes inside their owning package cluster.
+ * where class/cycle-map packages become labelled clusters containing the classes as ellipse
+ * nodes, and package-map participants render as flat ellipse nodes — never as rectangles
+ * under ancestor clusters.
  *
  * <p>Visual contract under test:
  *
@@ -23,15 +24,19 @@ import org.junit.jupiter.api.Test;
  *   <li>Clusters are declared before edges so every node keeps its cluster scope; edges
  *       reference the pre-resolved node ids and keep the exact attribute format of the
  *       previous emitters.</li>
- *   <li>Classes render as {@code shape=ellipse}; package nodes as {@code shape=rectangle}.</li>
+ *   <li>Classes render as {@code shape=ellipse}; package-map participants as flat
+ *       {@code shape=ellipse} nodes.</li>
  *   <li>Classes marked for removal keep {@code color=red style=filled}; packages that need to
- *       be broken up render pink — clusters via {@code style=filled fillcolor=pink}, package
- *       nodes via {@code color=pink style=filled}.</li>
+ *       be broken up fill pink as clusters ({@code style=filled fillcolor=pink}) in the
+ *       class/cycle maps and red ({@code color=red style=filled}) as nodes in the flat
+ *       package map.</li>
  *   <li>Every cluster declares an explicit fill — pink when flagged, white otherwise — because
  *       vizdom propagates a styled cluster's fill to its nested cluster rects; the explicit
  *       white keeps child packages of a pink cluster on their normal fill.</li>
  *   <li>Labels are omitted when equal to the node id and escaped with the DOT-quoted rules;
- *       hyperlinks are only emitted when requested and only for classes with a source path.</li>
+ *       hyperlinks are only emitted when requested, only for classes with a source path, and
+ *       only when the repository URL resolves the link to http(s) — appended after the label,
+ *       shape, and removal attributes, mirroring the package nodes.</li>
  * </ul>
  */
 class NestedDotBuilderTest {
@@ -300,7 +305,7 @@ class NestedDotBuilderTest {
     // hyperlinks
     // ------------------------------------------------------------------
 
-    @DisplayName("hyperlinks are emitted only when requested and only for classes with a path")
+    @DisplayName("hyperlinks are emitted only when requested, only for classes with a path, and only over http(s)")
     @Test
     void buildNestedDot_emitsHyperlinksOnlyWhenRequestedAndPathPresent() {
         // Given: two classes in the default package, one with a source path and one without
@@ -318,12 +323,13 @@ class NestedDotBuilderTest {
         // When: rendered with hyperlinks enabled
         String withLinks = NestedDotBuilder.buildNestedDot(hierarchy, "https://github.com/x/y/blob", true);
 
-        // Then: only the class with a path carries the URL attribute
+        // Then: only the class with a path carries the URL attribute, appended after the
+        // shape and removal attributes like the package nodes
         String expectedWithLinks = "strict digraph G {\n"
                 + "subgraph " + HierarchyBuilder.clusterId(HierarchyBuilder.DEFAULT_PACKAGE) + " {\n"
                 + "label=\"(default package)\";\n"
                 + "style=filled fillcolor=white;\n"
-                + "A [URL=\"https://github.com/x/y/blob/src/main/java/A.java\" target=\"_blank\" shape=ellipse];\n"
+                + "A [ shape=ellipse URL=\"https://github.com/x/y/blob/src/main/java/A.java\" target=\"_blank\"];\n"
                 + "B [ shape=ellipse];\n"
                 + "}\n"
                 + "}";
@@ -342,6 +348,13 @@ class NestedDotBuilderTest {
                 + "}\n"
                 + "}";
         assertEquals(expectedWithoutLinks, withoutLinks);
+
+        // And When: rendered with a non-http(s) repository URL
+        String javascriptUrl = NestedDotBuilder.buildNestedDot(hierarchy, "javascript:alert(1)/", true);
+
+        // Then: the class carries no hyperlink — only http(s) URLs may become links,
+        // the same gate the package hyperlinks apply
+        assertFalse(javascriptUrl.contains("URL="), "non-http(s) repository URLs must not become class links");
     }
 
     // ------------------------------------------------------------------

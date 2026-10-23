@@ -103,14 +103,18 @@ public class HtmlReport extends SimpleHtmlReport {
 
                 // Convert graphlib graph to graphology graph
                 const graphologyGraph = new graphology.Graph();
-                // graphlib-dot creates a node for every named subgraph: in the
-                // class map that is one cluster node per package, labelled with
-                // the package name. Packages are noise in the popups, so drop
-                // the cluster nodes while keeping every node the clusters
-                // contained and the edges between them.
+                // graphlib-dot creates a node for every named subgraph and
+                // parents the nodes it contains to it (empty subgraphs are
+                // removed): in the class map that is one cluster node per
+                // package, labelled with the package name. Packages are noise
+                // in the popups, so drop the subgraph nodes — identified by
+                // their children, never by the cluster_ id prefix, which real
+                // class ids like cluster_Helper can share — while keeping
+                // every node the clusters contained and the edges between
+                // them.
                 const droppedClusters = new Set();
                 graphlibGraph.nodes().forEach(node => {
-                    if (node.startsWith('cluster_')) {
+                    if (graphlibGraph.children(node).length > 0) {
                         droppedClusters.add(node);
                         return;
                     }
@@ -163,13 +167,15 @@ public class HtmlReport extends SimpleHtmlReport {
                         var nodes = [];
                         var links = [];
 
-                        // Packages are noise in the popups: drop the cluster
-                        // nodes graphlib-dot creates per named subgraph,
-                        // keeping every node they contained and the edges
-                        // between the kept nodes.
+                        // Packages are noise in the popups: drop the subgraph
+                        // nodes graphlib-dot creates per named subgraph —
+                        // identified by their children, never by the cluster_
+                        // id prefix, which real class ids like cluster_Helper
+                        // can share — keeping every node they contained and
+                        // the edges between the kept nodes.
                         var droppedClusters = new Set();
                         graphlibGraph.nodes().forEach(function (node) {
-                            if (node.startsWith('cluster_')) {
+                            if (graphlibGraph.children(node).length > 0) {
                                 droppedClusters.add(node);
                                 return;
                             }
@@ -572,8 +578,9 @@ public class HtmlReport extends SimpleHtmlReport {
                 + graphName + "_dot);\n" + "        const directedGraph = dotGraph.to_directed();\n"
                 + "        const positioned = directedGraph.layout();\n"
                 + "        let svg = positioned.to_svg().to_string();\n"
-                + "        // vizdom drops the target attribute on hyperlinked nodes; restore new-tab behavior\n"
-                + "        svg = svg.replace('<a href=', '<a target=\\\"_blank\\\" href=');\n"
+                + "        // vizdom drops the target attribute on hyperlinked nodes; restore new-tab\n"
+                + "        // behavior on every anchor (a graph hyperlinks many nodes)\n"
+                + "        svg = svg.replace(/<a href=/g, '<a target=\\\"_blank\\\" href=');\n"
                 + "        // Modify the SVG string to include width and height attributes\n"
                 + "        svg = svg.replace('<svg ', `<svg class=\"fullscreen-svg\"`);\n"
                 + "\n"

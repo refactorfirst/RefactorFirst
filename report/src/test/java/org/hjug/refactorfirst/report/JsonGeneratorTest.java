@@ -619,4 +619,68 @@ class JsonGeneratorTest {
                     "Breakdown classNames must not embed a server-built link");
         }
     }
+
+    // ------------------------------------------------------------------
+    // isClassInPackage: class -> package matching for package path resolution
+    // ------------------------------------------------------------------
+
+    /**
+     * Verifies the class-to-package matching rule used for package path resolution: the class's
+     * package must be derived with the same rule the graphs use ({@link HierarchyBuilder#packageOf}),
+     * so a Kotlin anonymous class belongs to its enclosing class's package.
+     *
+     * <p>Given: an anonymous Kotlin FQN whose enclosing class lives in a real package. When:
+     * matched against the enclosing class's package and against the enclosing class's FQN
+     * prefix. Then: it matches the enclosing class's package and never the owner FQN prefix.
+     */
+    @Test
+    void given_anonymousClass_when_isClassInPackage_then_matchesEnclosingClassPackage() {
+        // Given
+        JsonGenerator generator = new JsonGenerator();
+        String anonymousFqn = "dev.Owner.<anonymous>";
+
+        // When
+        boolean inEnclosingPackage = generator.isClassInPackage(anonymousFqn, "dev", null);
+        boolean inOwnerPrefixPackage = generator.isClassInPackage(anonymousFqn, "dev.Owner", null);
+
+        // Then
+        assertTrue(inEnclosingPackage, "an anonymous class belongs to its enclosing class's package");
+        assertFalse(inOwnerPrefixPackage, "the enclosing class's FQN prefix is not a package");
+    }
+
+    /**
+     * Verifies packageless classes never match a package: a packageless class, a packageless
+     * owner's anonymous class, the bare anonymous literal, and null-safe inputs.
+     */
+    @Test
+    void given_packagelessClass_when_isClassInPackage_then_remainsUnmatched() {
+        // Given
+        JsonGenerator generator = new JsonGenerator();
+
+        // When / Then
+        assertFalse(generator.isClassInPackage("Owner", "Owner", null), "packageless classes match no package");
+        assertFalse(
+                generator.isClassInPackage("Owner.<anonymous>", "Owner", null),
+                "a packageless anonymous class must not match its owner as a package");
+        assertFalse(generator.isClassInPackage("<anonymous>", "", null), "the bare anonymous literal matches nothing");
+        assertFalse(generator.isClassInPackage(null, "dev", null), "a null class matches nothing");
+        assertFalse(generator.isClassInPackage("dev.Owner", null, null), "a null package matches nothing");
+    }
+
+    /**
+     * Verifies packaged classes — plain and {@code $}-nested, named or synthetic — keep
+     * matching exactly their own package and no other.
+     */
+    @Test
+    void given_packagedClass_when_isClassInPackage_then_matchesItsPackageOnly() {
+        // Given
+        JsonGenerator generator = new JsonGenerator();
+
+        // When / Then
+        assertTrue(generator.isClassInPackage("com.example.Foo", "com.example", null));
+        assertTrue(generator.isClassInPackage("com.example.Outer$Inner", "com.example", null));
+        assertTrue(generator.isClassInPackage("com.example.Outer$1", "com.example", null));
+        assertFalse(generator.isClassInPackage("com.example.Foo", "com.example.other", null));
+        assertFalse(generator.isClassInPackage("com.example.Foo", "com", null));
+    }
 }

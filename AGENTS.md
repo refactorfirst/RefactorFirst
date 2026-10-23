@@ -35,12 +35,16 @@ package/class hierarchy. The pipeline is single-sourced:
 - **`HierarchyBuilder`** (report module) builds the three hierarchies:
   `buildClassHierarchy` (endpoints of every class edge), `buildCycleHierarchy`
   (a cycle's members, ids still resolved against the FULL class graph), and
-  `buildPackageHierarchy` (edge-endpoint packages as `renderAsNode` rectangle
-  nodes under their ancestor clusters). Nested `$`/Kotlin `<anonymous>`
-  classes resolve to the owning package; packageless classes land in the
-  synthetic `(default package)` bucket. Roots/children/classes/edges are
-  sorted for determinism and single-child ancestor chains collapse into their
-  deepest package (branching ancestors and content keep their boxes).
+  `buildPackageHierarchy` (the package-map hierarchy **data**: relationship
+  participants and break-up packages join the tree with their node ids,
+  source paths, and `renderAsNode` leaf flags — rendering is the DOT
+  builders' job, and `buildPackageDot` draws every participating package as
+  a flat `shape=ellipse` node, never as rectangles under ancestor clusters).
+  Nested `$`/Kotlin `<anonymous>` classes resolve to the owning package;
+  packageless classes land in the synthetic `(default package)` bucket.
+  Roots/children/classes/edges are sorted for determinism and single-child
+  ancestor chains collapse into their deepest package (branching ancestors
+  and content keep their boxes).
 - **Ids/labels are resolved once, into the DTO** (`ClassNodeDTO.id`/`label`,
   `PackageNodeDTO.id`/`nodeId`) and carried unescaped; renderers escape at
   emission. Class ids reuse the `HtmlReport.renderSafeNodeId` rules, package
@@ -68,7 +72,8 @@ package/class hierarchy. The pipeline is single-sourced:
   `URL="<repoUrl><path>" target="_blank"` (http(s)-gated — payloads are
   untrusted on the page/viewer). vizdom honors node `URL` but drops
   `target`, so every render site restores it with a post-render
-  `svg.replace('<a href=', '<a target="_blank" href=')`. The full hierarchy
+  `svg.replace(/<a href=/g, '<a target="_blank" href=')` (global — a graph
+  hyperlinks many nodes). The full hierarchy
   — package tree, break-up flags, source directories (`path`), and edges
   — stays in `refactor-first.json` for LLM consumption; only the
   relationship information renders.
