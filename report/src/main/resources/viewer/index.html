@@ -111,7 +111,16 @@
 
         // Convert graphlib graph to graphology graph
         const graphologyGraph = new graphology.Graph();
+        // graphlib-dot creates a node for every named subgraph: in the class
+        // map that is one cluster node per package, labelled with the package
+        // name. Drop subgraphs by their children, preserving class nodes such
+        // as cluster_Helper and the edges between the kept nodes.
+        const droppedClusters = new Set();
         graphlibGraph.nodes().forEach(node => {
+            if (graphlibGraph.children(node).length > 0) {
+                droppedClusters.add(node);
+                return;
+            }
             const attrs = graphlibGraph.node(node);
             graphologyGraph.addNode(node, {
                 label: attrs.label || node,
@@ -121,6 +130,7 @@
         });
 
         graphlibGraph.edges().forEach(edge => {
+            if (droppedClusters.has(edge.v) || droppedClusters.has(edge.w)) return;
             const attrs = graphlibGraph.edge(edge);
             graphologyGraph.addEdge(edge.v, edge.w, {
                 color: attrs.color,
@@ -158,7 +168,14 @@
             var nodes = [];
             var links = [];
 
+            // Drop subgraphs by their children, preserving class nodes such
+            // as cluster_Helper and the edges between the kept nodes.
+            var droppedClusters = new Set();
             graphlibGraph.nodes().forEach(function (node) {
+                if (graphlibGraph.children(node).length > 0) {
+                    droppedClusters.add(node);
+                    return;
+                }
                 var nodeData = graphlibGraph.node(node);
                 nodes.push({
                     id: node,
@@ -167,6 +184,7 @@
             });
 
             graphlibGraph.edges().forEach(function (edge) {
+                if (droppedClusters.has(edge.v) || droppedClusters.has(edge.w)) return;
                 links.push({
                     source: edge.v,
                     target: edge.w,
@@ -332,6 +350,131 @@
     <script type="module">
         import init, { DotParser } from "https://cdn.jsdelivr.net/npm/@vizdom/vizdom-ts-web@0.1.19/vizdom_ts.min.js";
 
+        // ------------------------------------------------------------------
+        // Nested hierarchy → DOT synthesis. refactor-first.json carries the
+        // hierarchy payloads (classMap/packageMap/largestCycle .hierarchy)
+        // instead of raw DOT; the DOT is synthesized here, mirroring the
+        // Java NestedDotBuilder and the report page's lib/hierarchy-dot.js.
+        // Packages nest as labelled clusters so classes render inside their
+        // owning package; break-up packages fill pink, removals stay red.
+        // ------------------------------------------------------------------
+        function escapeDotQuoted(value) {
+            if (value === null || value === undefined) return '';
+            return String(value)
+                .replace(/\\/g, '\\\\')
+                .replace(/"/g, '\\"')
+                .replace(/\n/g, '\\n')
+                .replace(/\r/g, '\\r')
+                .replace(/\t/g, '\\t');
+        }
+
+        // Only http(s) URLs may become links: report payloads are untrusted.
+        function httpUrl(url) {
+            try {
+                const parsed = new URL(url);
+                return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+            } catch {
+                return false;
+            }
+        }
+
+        function nodeHyperlinkUrl(path, repoUrl) {
+            if (!path || path === '') return null;
+            const url = (repoUrl || '') + path;
+            return httpUrl(url) ? url : null;
+        }
+
+        // Payload identifiers are untrusted. Accept only unquoted ASCII DOT
+        // identifiers, excluding keywords; the end assertion rejects trailing newlines.
+        function isSafeDotId(value) {
+            return typeof value === 'string'
+                && /^[A-Za-z_][A-Za-z0-9_]*(?![\s\S])/.test(value)
+                && !/^(strict|graph|digraph|node|edge|subgraph)$/i.test(value);
+        }
+
+        function hierarchyToDot(hierarchy, options) {
+            const repoUrl = options && options.repoUrl ? options.repoUrl : '';
+            const parts = ['strict digraph G {'];
+            appendPackages((hierarchy && hierarchy.packages) || [], repoUrl, parts);
+            appendEdges((hierarchy && hierarchy.edges) || [], parts);
+            parts.push('}');
+            return parts.join('\n');
+        }
+
+        function appendPackages(packages, repoUrl, parts) {
+            for (const pkg of packages) {
+                if (!isSafeDotId(pkg.id)) continue;
+                parts.push(`subgraph ${pkg.id} {`);
+                parts.push(`label="${escapeDotQuoted(pkg.name)}";`);
+                // Every cluster declares an explicit fill: vizdom propagates a styled
+                // cluster's fill to its nested cluster rects, so unflagged children of a
+                // pink break-up cluster must say white explicitly. White is vizdom's
+                // default cluster fill, so unflagged clusters look unchanged. In the
+                // package map the pink signal belongs to the rectangle node.
+                if (pkg.needsBreakUp && !pkg.renderAsNode) {
+                    parts.push('style=filled fillcolor=pink;');
+                } else {
+                    parts.push('style=filled fillcolor=white;');
+                }
+                if (pkg.renderAsNode && isSafeDotId(pkg.nodeId)) {
+                    let line = `${pkg.nodeId} [label="${escapeDotQuoted(pkg.name)}" shape=rectangle`;
+                    if (pkg.needsBreakUp) line += ' color=pink style=filled';
+                    parts.push(`${line}];`);
+                }
+                for (const cls of pkg.classes || []) {
+                    if (!isSafeDotId(cls.id)) continue;
+                    let line = `${cls.id} [`;
+                    if (cls.label !== cls.id) line += ` label="${escapeDotQuoted(cls.label)}"`;
+                    line += ' shape=ellipse';
+                    if (cls.markedForRemoval) line += ' color=red style=filled';
+                    const url = nodeHyperlinkUrl(cls.path, repoUrl);
+                    if (url) line += ` URL="${escapeDotQuoted(url)}" target="_blank"`;
+                    parts.push(`${line}];`);
+                }
+                appendPackages(pkg.children || [], repoUrl, parts);
+                parts.push('}');
+            }
+        }
+
+        function appendEdges(edges, parts) {
+            for (const edge of edges) {
+                if (!isSafeDotId(edge.source) || !isSafeDotId(edge.target)) continue;
+                let line = `${edge.source} -> ${edge.target} [ label = "${edge.weight}" weight = "${edge.weight}"`;
+                if (edge.markedForRemoval) line += ' color = "red"';
+                parts.push(`${line} ];`);
+            }
+        }
+
+        // ------------------------------------------------------------------
+        // Package-map synthesis: the flat relationship graph — one ellipse per
+        // participating package, edges carrying only the relationship weights.
+        // Break-up packages fill red; removal relationships render red. The
+        // package graph renders through vizdom like the class and cycle maps;
+        // the full hierarchy stays in refactor-first.json for LLM consumption.
+        // ------------------------------------------------------------------
+        function packageHierarchyToDot(hierarchy, options) {
+            const repoUrl = options && options.repoUrl ? options.repoUrl : '';
+            const packages = (hierarchy && hierarchy.packages) || [];
+            const edges = (hierarchy && hierarchy.edges) || [];
+            const parts = ['strict digraph G {'];
+            const appendNodes = pkgs => {
+                for (const pkg of pkgs) {
+                    if (isSafeDotId(pkg.nodeId)) {
+                        let line = `${pkg.nodeId} [label="${escapeDotQuoted(pkg.name)}" shape=ellipse`;
+                        if (pkg.needsBreakUp) line += ' color=red style=filled';
+                        const url = nodeHyperlinkUrl(pkg.path, repoUrl);
+                        if (url) line += ` URL="${escapeDotQuoted(url)}" target="_blank"`;
+                        parts.push(`${line}];`);
+                    }
+                    appendNodes(pkg.children || []);
+                }
+            };
+            appendNodes(packages);
+            appendEdges(edges, parts);
+            parts.push('}');
+            return parts.join('\n');
+        }
+
         async function loadReport() {
             try {
                 const [jsonRes, templateRes] = await Promise.all([
@@ -367,15 +510,20 @@
         function render(template, data) {
             document.getElementById('loader').style.display = 'none';
 
-            // Expose DOT strings globally for Sigma/Force3D popups
-            if (data.classMap && data.classMap.dot) {
-                window.classGraph_dot = data.classMap.dot;
+            // Expose DOT strings globally for Sigma/Force3D popups,
+            // synthesized from the hierarchy payloads
+            const synthesisOptions = {
+                repoUrl: data.project && data.project.repoUrl
+            };
+            if (data.classMap && data.classMap.hierarchy) {
+                window.classGraph_dot = hierarchyToDot(data.classMap.hierarchy, synthesisOptions);
             }
-            if (data.packageMap && data.packageMap.dot) {
-                window.packageGraph_dot = data.packageMap.dot;
+            if (data.packageMap && data.packageMap.hasEdges && data.packageMap.hierarchy) {
+                window.packageGraph_dot = packageHierarchyToDot(data.packageMap.hierarchy, synthesisOptions);
             }
-            if (data.classCycles && data.classCycles.largestCycle && data.classCycles.largestCycle.dot) {
-                window[data.classCycles.largestCycle.cycleIdentifier + '_dot'] = data.classCycles.largestCycle.dot;
+            const largestCycle = data.classCycles && data.classCycles.largestCycle;
+            if (largestCycle && largestCycle.hierarchy) {
+                window[largestCycle.cycleIdentifier + '_dot'] = hierarchyToDot(largestCycle.hierarchy, synthesisOptions);
             }
 
             // 1. Render HTML via Mustache
@@ -494,11 +642,17 @@
                 await init();
                 const parser = new DotParser();
 
-                const renderGraph = (containerId, dotString) => {
+                const synthesisOptions = {
+                    repoUrl: data.project && data.project.repoUrl
+                };
+                const renderGraph = (containerId, hierarchy, synthesis) => {
                     const el = document.getElementById(containerId);
-                    if (!el || !dotString) return;
-                    const parsed = parser.parse(dotString).to_directed().layout();
+                    if (!el || !hierarchy) return;
+                    const parsed = parser.parse(synthesis(hierarchy, synthesisOptions)).to_directed().layout();
                     let svg = parsed.to_svg().to_string();
+                    // vizdom drops the target attribute on hyperlinked nodes; restore new-tab
+                    // behavior on every anchor (a graph hyperlinks many nodes)
+                    svg = svg.replace(/<a href=/g, '<a target="_blank" href=');
                     svg = svg.replace('<svg ', '<svg class="fullscreen-svg" ');
                     el.innerHTML = svg;
                     if (window.svgPanZoom) {
@@ -507,16 +661,17 @@
                 };
 
                 if (data.classMap && !data.classMap.dotThresholdExceeded) {
-                    renderGraph('classGraph', data.classMap.dot);
+                    renderGraph('classGraph', data.classMap.hierarchy, hierarchyToDot);
                 }
-                if (data.packageMap && !data.packageMap.dotThresholdExceeded) {
-                    renderGraph('packageGraph', data.packageMap.dot);
+                if (data.packageMap && !data.packageMap.dotThresholdExceeded && data.packageMap.hasEdges) {
+                    renderGraph('packageGraph', data.packageMap.hierarchy, packageHierarchyToDot);
                 }
-                if (data.classCycles && data.classCycles.largestCycle && !data.classCycles.largestCycle.dotThresholdExceeded) {
-                    renderGraph(data.classCycles.largestCycle.cycleIdentifier, data.classCycles.largestCycle.dot);
+                const cycle = data.classCycles && data.classCycles.largestCycle;
+                if (cycle && !cycle.dotThresholdExceeded) {
+                    renderGraph(cycle.cycleIdentifier, cycle.hierarchy, hierarchyToDot);
                 }
             } catch (wasmErr) {
-                console.warn("WASM layout renderer unavailable:", wasmErr);
+                console.warn("Graph renderer unavailable:", wasmErr);
             }
         }
 

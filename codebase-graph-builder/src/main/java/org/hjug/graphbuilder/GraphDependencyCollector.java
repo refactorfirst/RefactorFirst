@@ -132,11 +132,24 @@ public class GraphDependencyCollector implements DependencyCollector {
     }
 
     protected String getPackageFromFqn(String fqn) {
-        if (!fqn.contains(".")) {
+        String name = fqn;
+        int lastIndex = name.lastIndexOf('.');
+        // A trailing "<anonymous>"-style segment names a Kotlin anonymous class, not a package
+        // member: derive the package from the enclosing class so an anonymous class never
+        // manufactures a package named after its owner (dev.Owner.<anonymous> -> "dev", and
+        // Owner.<anonymous> -> "" like the bare packageless literal). This keeps the package
+        // graph's package names aligned with the class hierarchy's package derivation, so the
+        // break-up packages flagged in the Class and Package graphs match.
+        if (lastIndex >= 0 && name.substring(lastIndex + 1).startsWith("<")) {
+            name = name.substring(0, lastIndex);
+            if (!name.contains(".")) {
+                return "";
+            }
+            lastIndex = name.lastIndexOf('.');
+        } else if (lastIndex < 0) {
             return "";
         }
-        int lastIndex = fqn.lastIndexOf(".");
-        return fqn.substring(0, lastIndex);
+        return name.substring(0, lastIndex);
     }
 
     /**

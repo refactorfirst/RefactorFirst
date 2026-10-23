@@ -1234,7 +1234,7 @@ public class SimpleHtmlReport {
     }
 
     /** Returns the simple class name from a fully qualified class name. */
-    String getClassName(String fqn) {
+    static String getClassName(String fqn) {
         // handle no package
         if (!fqn.contains(".")) {
             return fqn;

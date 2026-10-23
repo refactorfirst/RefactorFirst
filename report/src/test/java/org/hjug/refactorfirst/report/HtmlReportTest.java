@@ -39,7 +39,7 @@ class HtmlReportTest {
                 mavenReport.getDescription(Locale.getDefault()));
     }
 
-    /** Verifies cycle DOT preserves Java source links and edge weights while omitting redundant labels. */
+    /** Verifies cycle DOT nests classes in package clusters, keeping source links and edge weights. */
     @Test
     void buildClassCycleDot() {
         Graph<VertexInfo, DefaultWeightedEdge> classGraph =
@@ -71,13 +71,19 @@ class HtmlReportTest {
         when(dto.getClassToSourceFilePathMapping()).thenReturn(map);
         String repoUrl = "https://github.com/refactorfirst/RefactorFirst/blob";
         String dot = htmlReport.buildClassCycleDot(classGraph, rankedCycle, repoUrl, dto);
+        // The packageless classes nest inside the synthetic default-package cluster; edges are
+        // declared after the clusters so the nodes keep their cluster scope.
         String expectedDot = "`strict digraph G {\n"
+                + "subgraph " + HierarchyBuilder.clusterId(HierarchyBuilder.DEFAULT_PACKAGE) + " {\n"
+                + "label=\"(default package)\";\n"
+                + "style=filled fillcolor=white;\n"
+                + "A [ shape=ellipse URL=\"https://github.com/refactorfirst/RefactorFirst/blob/src/main/java/org/hjug/refactorfirst/A.java\" target=\"_blank\"];\n"
+                + "B [ shape=ellipse URL=\"https://github.com/refactorfirst/RefactorFirst/blob/src/main/java/org/hjug/refactorfirst/B.java\" target=\"_blank\"];\n"
+                + "C [ shape=ellipse URL=\"https://github.com/refactorfirst/RefactorFirst/blob/src/main/java/org/hjug/refactorfirst/C.java\" target=\"_blank\"];\n"
+                + "}\n"
                 + "A -\\u003E B [ label = \"2\" weight = \"2\" ];\n"
                 + "B -\\u003E C [ label = \"1\" weight = \"1\" ];\n"
                 + "C -\\u003E A [ label = \"1\" weight = \"1\" ];\n"
-                + "A [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/src/main/java/org/hjug/refactorfirst/A.java\" target=\"_blank\"];\n"
-                + "B [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/src/main/java/org/hjug/refactorfirst/B.java\" target=\"_blank\"];\n"
-                + "C [URL=\"https://github.com/refactorfirst/RefactorFirst/blob/src/main/java/org/hjug/refactorfirst/C.java\" target=\"_blank\"];\n"
                 + "}`;";
 
         assertEquals(expectedDot, dot);
@@ -274,7 +280,7 @@ class HtmlReportTest {
         // no literal < or > in the DOT node id (the label is fine on its own line); verify the
         // node declaration line (not an edge line, which uses "->") carries no raw < or >.
         String anonLine = Arrays.stream(dot.split("\n"))
-                .filter(l -> l.startsWith("DeveloperWASDControl_anonymous [URL"))
+                .filter(l -> l.startsWith("DeveloperWASDControl_anonymous ["))
                 .findFirst()
                 .orElse("");
         assertFalse(anonLine.isEmpty(), "anonymous node declaration line must be present");
@@ -283,29 +289,50 @@ class HtmlReportTest {
     }
 
     /**
-     * A vertex absent from {@code classToSourceFilePathMapping} must render without any {@code URL=}
-     * attribute (no broken link) and must never contain the literal substring {@code "null"}.
-     * This protects both genuinely external classes (JavaFX, JDK) and any vertex that Step 2
-     * reconciliation could not resolve.
+     * renderSafeNodeId's collision branch emits full-FQN ids with dots replaced by underscores,
+     * so two colliding {@code Helper} classes in packages {@code cluster} and {@code other}
+     * render as the real class nodes {@code cluster_Helper} and {@code other_Helper} — genuine
+     * class nodes whose ids share the {@code cluster_} prefix that the popup scripts' old id
+     * prefix filter would have wrongly dropped together with their incident edges.
      */
     @Test
-    void hyperlinkClassForDot_missingPath_rendersNoUrlAttribute() {
+    void buildClassCycleDot_emitsRealClassNodeIdsWithClusterPrefix() {
+        // Given: two Helper classes in different packages, one in a package literally named
+        // cluster, so their simple-name collision forces the full-FQN id branch
+        Graph<VertexInfo, DefaultWeightedEdge> classGraph =
+                new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        classGraph.addVertex(VertexInfo.forName("cluster.Helper"));
+        classGraph.addVertex(VertexInfo.forName("other.Helper"));
+        classGraph.addEdge(VertexInfo.forName("cluster.Helper"), VertexInfo.forName("other.Helper"));
+        classGraph.addEdge(VertexInfo.forName("other.Helper"), VertexInfo.forName("cluster.Helper"));
+
+        List<CycleNode> cycleNodes = new ArrayList<>();
+        RankedCycle rankedCycle = new RankedCycle(
+                "HelperCycle",
+                classGraph.vertexSet().stream()
+                        .map(VertexInfo::getName)
+                        .collect(java.util.stream.Collectors.toCollection(java.util.LinkedHashSet::new)),
+                classGraph.edgeSet(),
+                cycleNodes);
+
         HtmlReport htmlReport = new HtmlReport();
         CodebaseGraphDTO dto = mock(CodebaseGraphDTO.class);
         HashMap<String, String> map = new HashMap<>();
-        // Mapping exists for some classes but NOT for the one we'll query
-        map.put("com.example.Known", "/src/main/java/com/example/Known.java");
+        map.put("cluster.Helper", "/src/main/java/cluster/Helper.java");
+        map.put("other.Helper", "/src/main/java/other/Helper.java");
         when(dto.getClassToSourceFilePathMapping()).thenReturn(map);
 
-        String repoUrl = "https://github.com/example/repo/blob/";
-        String result = htmlReport.hyperlinkClassForDot("com.example.Unknown", repoUrl, dto);
+        // When: the cycle DOT is built
+        String dot = htmlReport.buildClassCycleDot(classGraph, rankedCycle, "https://github.com/x/y/blob", dto);
 
-        // No URL attribute at all
-        assertFalse(result.contains("URL="), "missing-path vertex must not render URL=");
-        // Never the literal string "null"
-        assertFalse(result.contains("null"), "result must not contain the literal 'null'");
-        // Should return empty string
-        assertEquals("", result);
+        // Then: the colliding Helpers render as the class nodes cluster_Helper and
+        // other_Helper — real class nodes despite the cluster_ prefix
+        assertTrue(
+                dot.contains("cluster_Helper ["),
+                "the cluster.Helper class must render as the class node cluster_Helper: " + dot);
+        assertTrue(
+                dot.contains("other_Helper ["),
+                "the other.Helper class must render as the class node other_Helper: " + dot);
     }
 
     @Test
@@ -526,38 +553,6 @@ class HtmlReportTest {
     }
 
     /**
-     * Test that hyperlinkClassForDot handles null CodebaseGraphDTO gracefully,
-     * returning empty string instead of throwing NullPointerException.
-     * This matches the null-handling behavior of enclosingSourceFileBaseName.
-     */
-    @Test
-    void hyperlinkClassForDot_nullDto_returnsEmptyString() {
-        HtmlReport htmlReport = new HtmlReport();
-        String repoUrl = "https://github.com/example/repo/blob/";
-
-        String result = htmlReport.hyperlinkClassForDot("com.example.Test", repoUrl, null);
-
-        assertEquals("", result, "null DTO must return empty string");
-    }
-
-    /**
-     * Test that hyperlinkClassForDot handles null classToSourceFilePathMapping gracefully,
-     * returning empty string instead of throwing NullPointerException.
-     * This matches the null-handling behavior of enclosingSourceFileBaseName.
-     */
-    @Test
-    void hyperlinkClassForDot_nullMapping_returnsEmptyString() {
-        HtmlReport htmlReport = new HtmlReport();
-        CodebaseGraphDTO dto = mock(CodebaseGraphDTO.class);
-        when(dto.getClassToSourceFilePathMapping()).thenReturn(null);
-        String repoUrl = "https://github.com/example/repo/blob/";
-
-        String result = htmlReport.hyperlinkClassForDot("com.example.Test", repoUrl, dto);
-
-        assertEquals("", result, "null mapping must return empty string");
-    }
-
-    /**
      * Test that renderSafeNodeId still handles Kotlin anonymous classes correctly
      * (source-aware when DTO provided, lt_anonymous_gt fallback when not).
      */
@@ -596,5 +591,57 @@ class HtmlReportTest {
         // The project name and version should be escaped in the title tag
         assertTrue(result.contains("Test<script>Project"), "Project name should be escaped in title: " + result);
         assertTrue(result.contains("1.0\"onload=alert(1)"), "Project version should be escaped in title: " + result);
+    }
+
+    /**
+     * The classic report's inline graphs must restore the new-tab anchor target vizdom drops —
+     * on every hyperlinked anchor, not just the first (a graph can hyperlink many nodes, so the
+     * replacement must be global).
+     */
+    @Test
+    void generateDotImage_restoresAnchorTarget() {
+        // Given: the classic report's inline vizdom render script (via the cycle visuals)
+        HtmlReport htmlReport = new HtmlReport();
+        htmlReport.classGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        RankedCycle cycle = new RankedCycle("C", Set.of(), Set.of(), List.of());
+
+        String visuals = htmlReport.renderClassCycleVisuals(cycle, "", null);
+
+        // Then: the inline render restores target="_blank" on every hyperlinked anchor
+        // (vizdom drops the target attribute when emitting <a href>)
+        assertTrue(
+                visuals.contains("svg = svg.replace(/<a href=/g, '<a target=\\\"_blank\\\" href=')"),
+                "the inline graph scripts must restore the new-tab anchor target on every anchor");
+        assertFalse(
+                visuals.contains("svg = svg.replace('<a href='"),
+                "a non-global anchor replacement would only restore the first anchor's target");
+    }
+
+    /**
+     * The classic report's popup scripts must drop the subgraph nodes graphlib-dot creates per
+     * named subgraph — packages are noise in the popups — but by the parsed graph's parent-child
+     * structure, never by the {@code cluster_} id prefix: renderSafeNodeId's collision branch
+     * emits real class ids like {@code cluster_Helper} (see
+     * {@link #buildClassCycleDot_emitsRealClassNodeIdsWithClusterPrefix()}), which the prefix
+     * filter would wrongly drop together with their incident edges.
+     */
+    @Test
+    void popupScripts_dropSubgraphsByParsedStructureNotIdPrefix() {
+        // Given: the classic report's inline popup scripts
+        String scripts = mavenReport.printScripts();
+
+        // Then: both the 2D sugiyama/sigma builder and the 3D force-graph builder tell
+        // subgraph nodes from class nodes by structure — graphlib-dot parents every node a
+        // subgraph contains to the subgraph's own node and removes empty subgraphs, so a
+        // node is a subgraph iff it has children — and guard edges against the dropped ones
+        int structuralFilters = scripts.split("graphlibGraph\\.children\\(node\\)\\.length > 0", -1).length - 1;
+        assertEquals(2, structuralFilters, "both popup script builders must drop subgraph nodes by parsed structure");
+        int idPrefixFilters = scripts.split("startsWith\\('cluster_'\\)", -1).length - 1;
+        assertEquals(
+                0,
+                idPrefixFilters,
+                "the cluster_ id prefix must not filter nodes: real class ids like cluster_Helper would be dropped with their edges");
+        int edgeGuards = scripts.split("droppedClusters\\.has", -1).length - 1;
+        assertEquals(4, edgeGuards, "both popup script builders must guard edges against dropped subgraph nodes");
     }
 }

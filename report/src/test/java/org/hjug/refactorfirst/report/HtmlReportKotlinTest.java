@@ -97,17 +97,24 @@ class HtmlReportKotlinTest {
         String repoUrl = "https://github.com/refactorfirst/RefactorFirst/blob";
         String dot = htmlReport.buildClassCycleDot(classGraph, rankedCycle, repoUrl, dto);
 
+        // The single-child chain com -> com.kotlin -> com.kotlin.cycles collapses into one
+        // cluster labelled with the deepest package, so the classes nest directly inside it.
         String expectedDot =
                 """
                 `strict digraph G {
+                subgraph %s {
+                label="com.kotlin.cycles";
+                style=filled fillcolor=white;
+                KotlinCycleA [ shape=ellipse URL="https://github.com/refactorfirst/RefactorFirst/blob/src/main/kotlin/com/kotlin/cycles/KotlinCycleA.kt" target="_blank"];
+                KotlinCycleB [ shape=ellipse URL="https://github.com/refactorfirst/RefactorFirst/blob/src/main/kotlin/com/kotlin/cycles/KotlinCycleB.kt" target="_blank"];
+                KotlinCycleC [ shape=ellipse URL="https://github.com/refactorfirst/RefactorFirst/blob/src/main/kotlin/com/kotlin/cycles/KotlinCycleC.kt" target="_blank"];
+                }
                 KotlinCycleA -\\u003E KotlinCycleB [ label = "2" weight = "2" ];
                 KotlinCycleB -\\u003E KotlinCycleC [ label = "1" weight = "1" ];
                 KotlinCycleC -\\u003E KotlinCycleA [ label = "1" weight = "1" ];
-                KotlinCycleA [URL="https://github.com/refactorfirst/RefactorFirst/blob/src/main/kotlin/com/kotlin/cycles/KotlinCycleA.kt" target="_blank"];
-                KotlinCycleB [URL="https://github.com/refactorfirst/RefactorFirst/blob/src/main/kotlin/com/kotlin/cycles/KotlinCycleB.kt" target="_blank"];
-                KotlinCycleC [URL="https://github.com/refactorfirst/RefactorFirst/blob/src/main/kotlin/com/kotlin/cycles/KotlinCycleC.kt" target="_blank"];
                 }`;\
-                """;
+                """
+                        .formatted(HierarchyBuilder.clusterId("com.kotlin.cycles"));
 
         assertEquals(expectedDot, dot);
     }
