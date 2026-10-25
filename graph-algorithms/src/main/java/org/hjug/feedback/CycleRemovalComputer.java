@@ -29,6 +29,7 @@ public class CycleRemovalComputer {
         Map<V, AsSubgraph<V, DefaultWeightedEdge>> cycles =
                 new CircularReferenceChecker<V, DefaultWeightedEdge>().getCycles(graph);
         Map<DefaultWeightedEdge, Integer> edgeCycleCounts = new HashMap<>();
+        Map<V, Integer> vertexCycleCounts = new HashMap<>();
         Set<V> vertexesToRemove = new HashSet<>();
         Set<DefaultWeightedEdge> edgesToRemove = new HashSet<>();
 
@@ -45,6 +46,17 @@ public class CycleRemovalComputer {
                             graph, parameters.getModulator(), null, parameters.getEta(), new SuperTypeToken<>() {});
             DirectedFeedbackVertexSetResult<V> vertexSetResult = vertexSolver.solve(parameters.getK());
             vertexesToRemove.addAll(vertexSetResult.getFeedbackVertices());
+
+            // capture the number of cycles each vertex to remove is in
+            for (V vertexToRemove : vertexesToRemove) {
+                int cycleCount = 0;
+                for (AsSubgraph<V, DefaultWeightedEdge> cycle : cycles.values()) {
+                    if (cycle.containsVertex(vertexToRemove)) {
+                        cycleCount++;
+                    }
+                }
+                vertexCycleCounts.put(vertexToRemove, cycleCount);
+            }
 
             // Identify edges to remove
             log.info("Identifying edges to remove");
@@ -63,6 +75,6 @@ public class CycleRemovalComputer {
             }
         }
 
-        return new CycleRemovalResult(cycles, edgesToRemove, vertexesToRemove, edgeCycleCounts);
+        return new CycleRemovalResult(cycles, edgesToRemove, vertexesToRemove, edgeCycleCounts, vertexCycleCounts);
     }
 }

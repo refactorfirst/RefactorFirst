@@ -176,6 +176,7 @@ public class JsonGenerator extends HtmlReport {
             CycleRemovalResult classCycleRemovalResult =
                     cycleRemovalComputer.computeCycleRemovalInformation(classGraph);
             Map<DefaultWeightedEdge, Integer> classEdgeCycleCounts = classCycleRemovalResult.getEdgeCycleCounts();
+            Map<VertexInfo, Integer> classVertexCycleCounts = classCycleRemovalResult.getVertexCycleCounts();
             classRelationshipsToRemove = classCycleRemovalResult.getEdgesToRemove();
             classesToRemove = classCycleRemovalResult.getVertexesToRemove();
             classCycles = classCycleRemovalResult.getCycles();
@@ -184,6 +185,7 @@ public class JsonGenerator extends HtmlReport {
             CycleRemovalResult packageCycleRemovalResult =
                     cycleRemovalComputer.computeCycleRemovalInformation(packageGraph);
             Map<DefaultWeightedEdge, Integer> packageEdgeCycleCounts = packageCycleRemovalResult.getEdgeCycleCounts();
+            Map<VertexInfo, Integer> packageVertexCycleCounts = packageCycleRemovalResult.getVertexCycleCounts();
             packageRelationshipsToRemove = packageCycleRemovalResult.getEdgesToRemove();
             packagesToRemove = packageCycleRemovalResult.getVertexesToRemove();
             packageCycles = packageCycleRemovalResult.getCycles();
@@ -197,6 +199,7 @@ public class JsonGenerator extends HtmlReport {
                 packageRelationshipDisharmonies = costBenefitCalculator.calculateRelationshipCostBenefitValues(
                         packageGraph,
                         packageEdgeCycleCounts,
+                        packageVertexCycleCounts,
                         codebaseGraphDTO,
                         packagesToRemove,
                         packageCycles,
@@ -204,6 +207,7 @@ public class JsonGenerator extends HtmlReport {
                 classRelationshipDisharmonies = costBenefitCalculator.calculateRelationshipCostBenefitValues(
                         classGraph,
                         classEdgeCycleCounts,
+                        classVertexCycleCounts,
                         codebaseGraphDTO,
                         classesToRemove,
                         packageCycles,

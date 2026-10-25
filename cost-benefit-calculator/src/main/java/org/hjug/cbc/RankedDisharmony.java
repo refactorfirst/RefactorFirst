@@ -41,8 +41,8 @@ public class RankedDisharmony {
 
     private DefaultWeightedEdge edge;
     private Integer cycleCount;
-    private int sourceNodeShouldBeRemoved;
-    private int targetNodeShouldBeRemoved;
+    private int sourceNodeCycleCount;
+    private int targetNodeCycleCount;
     private String edgeTargetClass;
     private Integer packageCycleCount;
     private boolean packageRelationshipShouldBeRemoved;
@@ -107,8 +107,8 @@ public class RankedDisharmony {
             DefaultWeightedEdge edge,
             int cycleCount,
             int weight,
-            boolean sourceNodeShouldBeRemoved,
-            boolean targetNodeShouldBeRemoved,
+            int sourceNodeCycleCount,
+            int targetNodeCycleCount,
             int packageCycleCount,
             boolean packageRelationshipShouldBeRemoved) {
 
@@ -118,7 +118,7 @@ public class RankedDisharmony {
         this.packageCycleCount = packageCycleCount;
         this.packageRelationshipShouldBeRemoved = packageRelationshipShouldBeRemoved;
         effortRank = weight;
-        this.sourceNodeShouldBeRemoved = sourceNodeShouldBeRemoved ? 1 : 0;
-        this.targetNodeShouldBeRemoved = targetNodeShouldBeRemoved ? 1 : 0;
+        this.sourceNodeCycleCount = sourceNodeCycleCount;
+        this.targetNodeCycleCount = targetNodeCycleCount;
     }
 }
