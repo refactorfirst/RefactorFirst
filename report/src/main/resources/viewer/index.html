@@ -439,7 +439,8 @@
         function appendEdges(edges, parts) {
             for (const edge of edges) {
                 if (!isSafeDotId(edge.source) || !isSafeDotId(edge.target)) continue;
-                let line = `${edge.source} -> ${edge.target} [ label = "${edge.weight}" weight = "${edge.weight}"`;
+                const weight = escapeDotQuoted(edge.weight);
+                let line = `${edge.source} -> ${edge.target} [ label = "${weight}" weight = "${weight}"`;
                 if (edge.markedForRemoval) line += ' color = "red"';
                 parts.push(`${line} ];`);
             }

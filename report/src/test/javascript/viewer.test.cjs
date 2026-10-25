@@ -128,3 +128,16 @@ test('valid DOT output keeps labels, styling, hyperlinks and weighted edges byte
         'package_abc123 -> package_abc123 [ label = "2.5" weight = "2.5" color = "red" ];', '}',
     ].join('\n'));
 });
+
+test('edge weights are escaped as DOT quoted strings in both attributes', () => {
+    // Given: a weight containing characters that must be escaped in a DOT string.
+    const hierarchy = {
+        edges: [{ source: 'A', target: 'B', weight: '2"\\\n' }],
+    };
+
+    // When: the hierarchy is synthesized.
+    const dot = builders.hierarchyToDot(hierarchy);
+
+    // Then: the same escaped weight is used for both the label and weight attributes.
+    assert.ok(dot.includes('label = "2\\"\\\\\\n" weight = "2\\"\\\\\\n"'));
+});
