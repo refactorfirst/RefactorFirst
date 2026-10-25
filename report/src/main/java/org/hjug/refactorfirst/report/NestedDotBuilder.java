@@ -184,8 +184,9 @@ public final class NestedDotBuilder {
     /** Only http(s) URLs may become links. */
     private static boolean isHttpUrl(String url) {
         try {
-            String scheme = java.net.URI.create(url).getScheme();
-            return "http".equals(scheme) || "https".equals(scheme);
+            java.net.URI parsed = java.net.URI.create(url.replace(" ", "%20"));
+            String scheme = parsed.getScheme();
+            return parsed.getHost() != null && ("http".equalsIgnoreCase(scheme) || "https".equalsIgnoreCase(scheme));
         } catch (IllegalArgumentException e) {
             return false;
         }

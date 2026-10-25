@@ -612,126 +612,40 @@ public class HtmlReport extends SimpleHtmlReport {
     }
 
     /**
-     * Returns the DOT-safe node id for a class vertex. This is the fully qualified class name
-     * with {@code .} replaced by {@code _} and {@code $} replaced by {@code _} (for inner classes),
-     * extended to also handle the Kotlin literal {@code "<anonymous>"} FQN,
-     * whose {@code <}/{@code >} characters are illegal in Graphviz node ids.
-     * When the source-file mapping is unavailable ({@code codebaseGraphDTO == null} or no path
-     * is mapped for the vertex), {@code <}/{@code >} are reversibly encoded as {@code lt_}/{@code _gt}.
-     * Prefer the {@link #renderSafeNodeId(String, CodebaseGraphDTO)} overload, which is source-aware
-     * for anonymous vertices.
-     *
-     * @param vertex the fully qualified (or literal) class vertex name
-     * @return a deterministic DOT-legal node id derived from the fully qualified class name
+     * Encodes a full class name as an injective ASCII DOT identifier. ASCII letters and digits
+     * pass through; every other UTF-16 code unit (including underscores) becomes an underscore
+     * followed by four hex digits. Escaping the escape marker makes the encoding reversible,
+     * including for supplementary characters. The class_ prefix avoids DOT keywords, leading
+     * digits, and the package_/cluster_ namespaces. Human-readable names remain in DTO labels.
      */
     static String renderSafeNodeId(String vertex) {
-        // Full FQN with dots→underscores for uniqueness across packages (Option A)
-        // $ -> _ (Java inner/anonymous convention)
-        // < -> lt_ and > -> _gt (Kotlin <anonymous> literal)
-        return vertex.replace(".", "_").replace("$", "_").replace("<", "lt_").replace(">", "_gt");
-    }
-
-    /**
-     * Source-aware DOT node id. For an anonymous Kotlin vertex (literal {@code "<anonymous>"} or
-     * any {@code <...>} FQN) the enclosing owner is recovered from the source-file path mapped in
-     * {@code codebaseGraphDTO.classToSourceFilePathMapping}: the source file's base name without
-     * extension (e.g. {@code DeveloperWASDControl.kt} -> {@code DeveloperWASDControl}). The
-     * resulting DOT id is {@code <owner>_anonymous}, which is {@code <}/{@code >}-free and human
-     * recognizable. When no source path is mapped (or {@code codebaseGraphDTO == null}) this
-     * degrades to {@link #renderSafeNodeId(String)} (the {@code lt_anonymous_gt} encoding).
-     *
-     * <p>For non-anonymous vertices this is identical to {@link #renderSafeNodeId(String)}.
-     *
-     * @param vertex the fully qualified (or literal) class vertex name
-     * @param codebaseGraphDTO the DTO carrying the {@code vertex -> source file path} mapping
-     * @return a deterministic DOT-legal node id for the vertex
-     */
-    String renderSafeNodeId(String vertex, CodebaseGraphDTO codebaseGraphDTO) {
-        if (isAnonymousFqn(vertex)) {
-            String owner = enclosingSourceFileBaseName(vertex, codebaseGraphDTO);
-            if (owner != null) {
-                // Append hash of FQN to prevent collisions between anonymous classes
-                // from same-named files in different packages
-                String discriminator = String.valueOf(Math.abs(vertex.hashCode()));
-                return owner.replace("$", "_") + "_anonymous_" + discriminator;
+        StringBuilder id = new StringBuilder("class_");
+        for (int i = 0; i < vertex.length(); i++) {
+            char c = vertex.charAt(i);
+            if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9')) {
+                id.append(c);
+            } else {
+                String hex = Integer.toHexString(c);
+                id.append('_').append("0".repeat(4 - hex.length())).append(hex);
             }
         }
+        return id.toString();
+    }
+
+    /** Source mappings affect labels only; class identity always comes from the full name. */
+    String renderSafeNodeId(String vertex, CodebaseGraphDTO codebaseGraphDTO) {
         return renderSafeNodeId(vertex);
     }
 
-    /**
-     * Graph-aware DOT node id. Uses simple class name when unique across the graph,
-     * falls back to full FQN with dots→underscores when collision exists.
-     * Special handling for anonymous/synthetic vertices (uses lt_anonymous_gt encoding),
-     * inner classes (always uses FQN), and anonymous with enclosing prefix.
-     *
-     * @param vertex the fully qualified (or literal) class vertex name
-     * @param classGraph the class graph for collision detection
-     * @return a deterministic DOT-legal node id for the vertex
-     */
+    /** Class ids remain stable across full-graph and cycle views. */
     String renderSafeNodeId(String vertex, Graph<VertexInfo, DefaultWeightedEdge> classGraph) {
-        return renderSafeNodeId(vertex, classGraph, null);
+        return renderSafeNodeId(vertex);
     }
 
-    /**
-     * Graph-aware DOT node id with DTO support. Uses simple class name when unique across the graph,
-     * falls back to full FQN with dots→underscores when collision exists.
-     * Special handling for anonymous/synthetic vertices (uses lt_anonymous_gt encoding or
-     * source-aware ID from DTO), inner classes (always uses FQN), and anonymous with enclosing prefix.
-     *
-     * @param vertex the fully qualified (or literal) class vertex name
-     * @param classGraph the class graph for collision detection
-     * @param codebaseGraphDTO optional DTO for source-aware anonymous vertex IDs
-     * @return a deterministic DOT-legal node id for the vertex
-     */
+    /** Resolves the same class id regardless of graph membership or source-file mappings. */
     static String renderSafeNodeId(
             String vertex, Graph<VertexInfo, DefaultWeightedEdge> classGraph, CodebaseGraphDTO codebaseGraphDTO) {
-        // Special handling for anonymous/synthetic vertices
-        if (isAnonymousFqn(vertex)) {
-            // If DTO provided, try to get source-aware ID
-            if (codebaseGraphDTO != null) {
-                String owner = enclosingSourceFileBaseName(vertex, codebaseGraphDTO);
-                if (owner != null) {
-                    return owner.replace("$", "_") + "_anonymous";
-                }
-            }
-            // No DTO or no source mapping: use lt_anonymous_gt encoding
-            return vertex.replace(".", "_")
-                    .replace("$", "_")
-                    .replace("<", "lt_")
-                    .replace(">", "_gt");
-        }
-
-        // Check if this is an anonymous class with enclosing class prefix (e.g., dev.Class.<anonymous>)
-        if (vertex.contains(".<anonymous>")) {
-            return vertex.replace(".", "_")
-                    .replace("$", "_")
-                    .replace("<", "lt_")
-                    .replace(">", "_gt");
-        }
-
-        // Check if this is an inner class (contains $)
-        if (vertex.contains("$")) {
-            // Inner classes always use FQN-based ID
-            return vertex.replace(".", "_").replace("$", "_");
-        }
-
-        // For regular classes, check if simple name is unique in the graph
-        String simpleName = getClassName(vertex);
-
-        // Count occurrences of this simple name in the graph
-        long count = classGraph.vertexSet().stream()
-                .map(graphVertex -> getClassName(graphVertex.getName()))
-                .filter(simpleName::equals)
-                .count();
-
-        if (count == 1) {
-            // Unique simple name - use it (with $/< > escaping for safety)
-            return simpleName.replace("$", "_").replace("<", "lt_").replace(">", "_gt");
-        } else {
-            // Collision - use full FQN with dots→underscores
-            return vertex.replace(".", "_").replace("$", "_");
-        }
+        return renderSafeNodeId(vertex);
     }
 
     /**
@@ -786,7 +700,7 @@ public class HtmlReport extends SimpleHtmlReport {
      * trailing simple-name segment, either standalone ({@code "<anonymous>"}) or prefixed by the
      * enclosing class/package (e.g. {@code "dev.DeveloperWASDControl.<anonymous>"}). Such a
      * vertex cannot appear verbatim in a DOT node id (the {@code <}/{@code >} are illegal), so
-     * this predicate decides when the source-aware id/label derivation must kick in.
+     * this predicate decides when the source-aware label derivation must kick in.
      */
     static boolean isAnonymousFqn(String vertex) {
         if (vertex == null) {

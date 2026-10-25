@@ -77,13 +77,13 @@ class HtmlReportTest {
                 + "subgraph " + HierarchyBuilder.clusterId(HierarchyBuilder.DEFAULT_PACKAGE) + " {\n"
                 + "label=\"(default package)\";\n"
                 + "style=filled fillcolor=white;\n"
-                + "A [ shape=ellipse URL=\"https://github.com/refactorfirst/RefactorFirst/blob/src/main/java/org/hjug/refactorfirst/A.java\" target=\"_blank\"];\n"
-                + "B [ shape=ellipse URL=\"https://github.com/refactorfirst/RefactorFirst/blob/src/main/java/org/hjug/refactorfirst/B.java\" target=\"_blank\"];\n"
-                + "C [ shape=ellipse URL=\"https://github.com/refactorfirst/RefactorFirst/blob/src/main/java/org/hjug/refactorfirst/C.java\" target=\"_blank\"];\n"
+                + "class_A [ label=\"A\" shape=ellipse URL=\"https://github.com/refactorfirst/RefactorFirst/blob/src/main/java/org/hjug/refactorfirst/A.java\" target=\"_blank\"];\n"
+                + "class_B [ label=\"B\" shape=ellipse URL=\"https://github.com/refactorfirst/RefactorFirst/blob/src/main/java/org/hjug/refactorfirst/B.java\" target=\"_blank\"];\n"
+                + "class_C [ label=\"C\" shape=ellipse URL=\"https://github.com/refactorfirst/RefactorFirst/blob/src/main/java/org/hjug/refactorfirst/C.java\" target=\"_blank\"];\n"
                 + "}\n"
-                + "A -\\u003E B [ label = \"2\" weight = \"2\" ];\n"
-                + "B -\\u003E C [ label = \"1\" weight = \"1\" ];\n"
-                + "C -\\u003E A [ label = \"1\" weight = \"1\" ];\n"
+                + "class_A -\\u003E class_B [ label = \"2\" weight = \"2\" ];\n"
+                + "class_B -\\u003E class_C [ label = \"1\" weight = \"1\" ];\n"
+                + "class_C -\\u003E class_A [ label = \"1\" weight = \"1\" ];\n"
                 + "}`;";
 
         assertEquals(expectedDot, dot);
@@ -137,9 +137,8 @@ class HtmlReportTest {
     /**
      * Renders a class-cycle DOT graph that contains Java {@code Outer$1}/{@code Outer$2} and
      * Kotlin {@code "<anonymous>"} vertices. Active anonymous/synthetic vertices render (with
-     * {@code $}→{@code _} in the DOT id and {@code $} visible in the label; {@code <anonymous>}
-     * renders with a {@code <}/{@code >}-free DOT id and a human-readable {@code <anonymous>}
-     * label). Sink-only anonymous/synthetic vertices are suppressed. The DOT body must not contain
+     * reversible ASCII DOT ids and the original {@code $} visible in the label; Kotlin
+     * anonymous labels use the enclosing source file's base name). Sink-only anonymous/synthetic vertices are suppressed. The DOT body must not contain
      * a raw {@code <} other than inside HTML-escaped labels.
      */
     @Test
@@ -182,22 +181,24 @@ class HtmlReportTest {
 
         String dot = htmlReport.buildClassCycleDot(classGraph, rankedCycle, repoUrl, dto);
 
-        // active Java anonymous Outer$1 renders with DOT id Outer_1 and a $-visible label
-        assertTrue(dot.contains("Outer_1 ["), "Outer$1 must render with the _$-safe DOT id Outer_1");
+        // active Java anonymous Outer$1 renders with DOT id class_com_002eexample_002eOuter_00241 and a $-visible label
+        assertTrue(
+                dot.contains("class_com_002eexample_002eOuter_00241 ["),
+                "Outer$1 must render with the _$-safe DOT id class_com_002eexample_002eOuter_00241");
         assertTrue(dot.contains("label=\"Outer\\$1\""), "Outer$1 label must keep an escaped $");
 
         // sink Java anonymous Outer$2 is omitted
-        assertFalse(dot.contains("Outer_2 ["), "sink Outer$2 must be suppressed");
+        assertFalse(dot.contains("class_com_002eexample_002eOuter_00242 ["), "sink Outer$2 must be suppressed");
         assertFalse(dot.contains("Outer$2"), "Outer$2 must not appear anywhere in the DOT");
 
         assertTrue(
-                dot.contains("Foo_anonymous ["),
-                "<anonymous> must render with the DOT id Foo_anonymous derived from the enclosing source file");
+                dot.contains("class__003canonymous_003e ["),
+                "<anonymous> must render with the DOT id class__003canonymous_003e encoded from its original class name");
         // ...and the human-readable label uses $ as the enclosing separator
         assertTrue(dot.contains("label=\"Foo\\$anonymous\""), "<anonymous> label must be Foo\\$anonymous");
 
         // sink anonymous is omitted entirely (both as id and label)
-        assertFalse(dot.contains("Bar_anonymous"), "sink <anonSink> DOT id must be suppressed");
+        assertFalse(dot.contains("class__003canonSink_003e"), "sink <anonSink> DOT id must be suppressed");
         assertFalse(dot.contains("label=\"Bar\\$anonymous\""), "sink <anonSink> label must be suppressed");
 
         // DOT body must not contain a raw '<' char from an anonymous vertex. With the
@@ -207,8 +208,9 @@ class HtmlReportTest {
         assertFalse(dot.contains("<anonymous"), "DOT must not contain the literal <anonymous after rendering");
         assertFalse(dot.contains("<anonSink>"), "DOT must not contain the suppressed <anonSink> literal");
         // no edge should reference a suppressed vertex id
-        assertFalse(dot.contains("Outer_2 ->"), "no edge may start from suppressed Outer$2");
-        assertFalse(dot.contains("-> Outer_2"), "no edge may end at suppressed Outer$2");
+        assertFalse(
+                dot.contains("class_com_002eexample_002eOuter_00242 ->"), "no edge may start from suppressed Outer$2");
+        assertFalse(dot.contains("-> class_com_002eexample_002eOuter_00242"), "no edge may end at suppressed Outer$2");
         assertFalse(
                 dot.contains("-> " + htmlReport.renderSafeNodeId("<anonSink>")),
                 "no edge may end at suppressed <anonSink>");
@@ -216,9 +218,8 @@ class HtmlReportTest {
 
     /**
      * Renders an active Kotlin {@code "<anonymous>"} vertex whose source mapping points at a
-     * Kotlin file. The DOT node id must be derived from the enclosing source file's base name
-     * (e.g. {@code DeveloperWASDControl.kt} -> {@code DeveloperWASDControl_anonymous}) and the
-     * label must read {@code DeveloperWASDControl$anonymous} (with {@code $} escaped as
+     * Kotlin file. The DOT node id must encode the original anonymous FQN and the
+     * source-derived label must read {@code DeveloperWASDControl$anonymous} (with {@code $} escaped as
      * {@code \$}). No literal {@code <}/{@code >} may appear in the DOT node id.
      */
     @Test
@@ -267,10 +268,10 @@ class HtmlReportTest {
         // DOT body must not contain the old lt_anonymous_gt encoding for the active anonymous vertex
         assertFalse(dot.contains("lt_anonymous_gt"), "must not use the lt_anonymous_gt encoding");
 
-        // node id derived from the enclosing source file name
+        // node id encodes the anonymous vertex identity
         assertTrue(
-                dot.contains("DeveloperWASDControl_anonymous ["),
-                "anonymous vertex must render with the DOT id DeveloperWASDControl_anonymous");
+                dot.contains("class_dev_002eDeveloperWASDControl_002e_003canonymous_003e ["),
+                "anonymous vertex must render with the DOT id class_dev_002eDeveloperWASDControl_002e_003canonymous_003e");
 
         // human-readable label uses $ as the enclosing-class separator, escaped for DOT
         assertTrue(
@@ -280,7 +281,7 @@ class HtmlReportTest {
         // no literal < or > in the DOT node id (the label is fine on its own line); verify the
         // node declaration line (not an edge line, which uses "->") carries no raw < or >.
         String anonLine = Arrays.stream(dot.split("\n"))
-                .filter(l -> l.startsWith("DeveloperWASDControl_anonymous ["))
+                .filter(l -> l.startsWith("class_dev_002eDeveloperWASDControl_002e_003canonymous_003e ["))
                 .findFirst()
                 .orElse("");
         assertFalse(anonLine.isEmpty(), "anonymous node declaration line must be present");
@@ -288,17 +289,11 @@ class HtmlReportTest {
         assertFalse(anonLine.contains(">"), "anonymous DOT id line must not contain a raw '>'");
     }
 
-    /**
-     * renderSafeNodeId's collision branch emits full-FQN ids with dots replaced by underscores,
-     * so two colliding {@code Helper} classes in packages {@code cluster} and {@code other}
-     * render as the real class nodes {@code cluster_Helper} and {@code other_Helper} — genuine
-     * class nodes whose ids share the {@code cluster_} prefix that the popup scripts' old id
-     * prefix filter would have wrongly dropped together with their incident edges.
-     */
+    /** Classes in a package named cluster keep their distinct ids and incident edges. */
     @Test
-    void buildClassCycleDot_emitsRealClassNodeIdsWithClusterPrefix() {
+    void buildClassCycleDot_keepsClassesInPackageNamedCluster() {
         // Given: two Helper classes in different packages, one in a package literally named
-        // cluster, so their simple-name collision forces the full-FQN id branch
+        // cluster, with distinct full-FQN identities
         Graph<VertexInfo, DefaultWeightedEdge> classGraph =
                 new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
         classGraph.addVertex(VertexInfo.forName("cluster.Helper"));
@@ -325,14 +320,13 @@ class HtmlReportTest {
         // When: the cycle DOT is built
         String dot = htmlReport.buildClassCycleDot(classGraph, rankedCycle, "https://github.com/x/y/blob", dto);
 
-        // Then: the colliding Helpers render as the class nodes cluster_Helper and
-        // other_Helper — real class nodes despite the cluster_ prefix
+        // Then: both colliding Helpers render as distinct class nodes
         assertTrue(
-                dot.contains("cluster_Helper ["),
-                "the cluster.Helper class must render as the class node cluster_Helper: " + dot);
+                dot.contains("class_cluster_002eHelper ["),
+                "the cluster.Helper class must render as the class node class_cluster_002eHelper: " + dot);
         assertTrue(
-                dot.contains("other_Helper ["),
-                "the other.Helper class must render as the class node other_Helper: " + dot);
+                dot.contains("class_other_002eHelper ["),
+                "the other.Helper class must render as the class node class_other_002eHelper: " + dot);
     }
 
     @Test
@@ -387,13 +381,13 @@ class HtmlReportTest {
     }
 
     /**
-     * Test that renderSafeNodeId with graph context uses simple name when unique.
+     * Test that renderSafeNodeId retains the FQN even when the simple name is unique.
      */
     @Test
-    void renderSafeNodeId_withGraphContext_usesSimpleNameWhenUnique() {
+    void renderSafeNodeId_withGraphContext_encodesFqnWhenUnique() {
         HtmlReport htmlReport = new HtmlReport();
 
-        // Single occurrence of "Pixel" - should use simple name
+        // Single occurrence of "Pixel" still retains full identity
         String pixel = "com.almasb.fxgl.texture.Pixel";
 
         // Create a graph with only one Pixel class
@@ -404,7 +398,8 @@ class HtmlReportTest {
 
         String nodeId = htmlReport.renderSafeNodeId(pixel, classGraph);
 
-        assertEquals("Pixel", nodeId, "Should use simple name when unique");
+        assertEquals(
+                "class_com_002ealmasb_002efxgl_002etexture_002ePixel", nodeId, "Ids retain the full class identity");
     }
 
     /**
@@ -428,9 +423,9 @@ class HtmlReportTest {
         String nodeId1 = htmlReport.renderSafeNodeId("com.almasb.fxgl.app.scene.Pixel", classGraph);
         String nodeId2 = htmlReport.renderSafeNodeId("com.almasb.fxgl.texture.Pixel", classGraph);
 
-        // Both should use FQN-based IDs due to collision
-        assertEquals("com_almasb_fxgl_app_scene_Pixel", nodeId1);
-        assertEquals("com_almasb_fxgl_texture_Pixel", nodeId2);
+        // Both retain their full class identities
+        assertEquals("class_com_002ealmasb_002efxgl_002eapp_002escene_002ePixel", nodeId1);
+        assertEquals("class_com_002ealmasb_002efxgl_002etexture_002ePixel", nodeId2);
         assertNotEquals(nodeId1, nodeId2);
     }
 
@@ -450,7 +445,7 @@ class HtmlReportTest {
         String nodeId = htmlReport.renderSafeNodeId("com.example.Outer$Inner", classGraph);
 
         // Inner classes always use FQN-based ID (contains $)
-        assertEquals("com_example_Outer_Inner", nodeId);
+        assertEquals("class_com_002eexample_002eOuter_0024Inner", nodeId);
     }
 
     /**
@@ -467,8 +462,8 @@ class HtmlReportTest {
 
         String nodeId = htmlReport.renderSafeNodeId("<anonymous>", classGraph);
 
-        // Anonymous classes use lt_anonymous_gt encoding
-        assertEquals("lt_anonymous_gt", nodeId);
+        // Anonymous classes use reversible ASCII encoding
+        assertEquals("class__003canonymous_003e", nodeId);
     }
 
     /**
@@ -484,13 +479,13 @@ class HtmlReportTest {
 
         String nodeId = htmlReport.renderSafeNodeId("dev.DeveloperWASDControl.<anonymous>", classGraph);
 
-        // Anonymous with enclosing class prefix uses full FQN with lt_anonymous_gt
-        assertEquals("dev_DeveloperWASDControl_lt_anonymous_gt", nodeId);
+        // Anonymous with enclosing class prefix uses reversible full-FQN encoding
+        assertEquals("class_dev_002eDeveloperWASDControl_002e_003canonymous_003e", nodeId);
     }
 
     /**
      * Test that renderSafeNodeId produces unique node IDs for classes with the same simple name
-     * but in different packages (the FXGL Pixel collision case). Option A: full FQN with dots→underscores.
+     * but in different packages (the FXGL Pixel collision case). Full names use reversible ASCII escaping.
      */
     @Test
     void renderSafeNodeId_uniqueNodeIdsForSameSimpleNameDifferentPackages() {
@@ -503,9 +498,9 @@ class HtmlReportTest {
         String nodeId1 = htmlReport.renderSafeNodeId(pixel1);
         String nodeId2 = htmlReport.renderSafeNodeId(pixel2);
 
-        // Node IDs should be unique (full FQN with dots→underscores)
-        assertEquals("com_almasb_fxgl_app_scene_Pixel", nodeId1);
-        assertEquals("com_almasb_fxgl_texture_Pixel", nodeId2);
+        // Node IDs should be unique (full FQN with reversible ASCII escaping)
+        assertEquals("class_com_002ealmasb_002efxgl_002eapp_002escene_002ePixel", nodeId1);
+        assertEquals("class_com_002ealmasb_002efxgl_002etexture_002ePixel", nodeId2);
         assertNotEquals(nodeId1, nodeId2, "Node IDs must be unique for different packages");
 
         // Labels should still be human-readable (simple name)
@@ -532,14 +527,14 @@ class HtmlReportTest {
         String nodeId1 = htmlReport.renderSafeNodeId(pixel1, dto);
         String nodeId2 = htmlReport.renderSafeNodeId(pixel2, dto);
 
-        // Node IDs should be unique (full FQN with dots→underscores)
-        assertEquals("com_almasb_fxgl_app_scene_Pixel", nodeId1);
-        assertEquals("com_almasb_fxgl_texture_Pixel", nodeId2);
+        // Node IDs should be unique (full FQN with reversible ASCII escaping)
+        assertEquals("class_com_002ealmasb_002efxgl_002eapp_002escene_002ePixel", nodeId1);
+        assertEquals("class_com_002ealmasb_002efxgl_002etexture_002ePixel", nodeId2);
         assertNotEquals(nodeId1, nodeId2, "Node IDs must be unique for different packages");
     }
 
     /**
-     * Test that renderSafeNodeId still handles inner classes correctly (dollar sign → underscore).
+     * Test that renderSafeNodeId still handles inner classes correctly (dollar sign encoded reversibly).
      */
     @Test
     void renderSafeNodeId_innerClassProducesUniqueNodeId() {
@@ -548,36 +543,36 @@ class HtmlReportTest {
         String innerClass = "com.example.Outer$Inner";
         String nodeId = htmlReport.renderSafeNodeId(innerClass);
 
-        // Dollar sign should become underscore
-        assertEquals("com_example_Outer_Inner", nodeId);
+        // Dollar sign is encoded without losing identity
+        assertEquals("class_com_002eexample_002eOuter_0024Inner", nodeId);
     }
 
     /**
      * Test that renderSafeNodeId still handles Kotlin anonymous classes correctly
-     * (source-aware when DTO provided, lt_anonymous_gt fallback when not).
+     * (the same identity with or without a source DTO).
      */
     @Test
     void renderSafeNodeId_kotlinAnonymousProducesValidNodeId() {
         HtmlReport htmlReport = new HtmlReport();
 
-        // Without DTO - fallback to lt_anonymous_gt encoding
+        // Without DTO - encode the full class identity
         String anon1 = "<anonymous>";
         String nodeId1 = htmlReport.renderSafeNodeId(anon1);
-        assertEquals("lt_anonymous_gt", nodeId1);
+        assertEquals("class__003canonymous_003e", nodeId1);
 
         // With enclosing class prefix
         String anon2 = "dev.DeveloperWASDControl.<anonymous>";
         String nodeId2 = htmlReport.renderSafeNodeId(anon2);
-        assertEquals("dev_DeveloperWASDControl_lt_anonymous_gt", nodeId2);
+        assertEquals("class_dev_002eDeveloperWASDControl_002e_003canonymous_003e", nodeId2);
 
-        // With DTO and source mapping - should use enclosing source file name
+        // Source mappings preserve identity and only affect the visible label
         CodebaseGraphDTO dto = mock(CodebaseGraphDTO.class);
         HashMap<String, String> map = new HashMap<>();
         map.put("dev.DeveloperWASDControl.<anonymous>", "/fxgl-samples/src/main/kotlin/dev/DeveloperWASDControl.kt");
         when(dto.getClassToSourceFilePathMapping()).thenReturn(map);
 
         String nodeId3 = htmlReport.renderSafeNodeId(anon2, dto);
-        assertEquals("DeveloperWASDControl_anonymous_302290128", nodeId3);
+        assertEquals("class_dev_002eDeveloperWASDControl_002e_003canonymous_003e", nodeId3);
     }
 
     @Test
@@ -618,12 +613,8 @@ class HtmlReportTest {
     }
 
     /**
-     * The classic report's popup scripts must drop the subgraph nodes graphlib-dot creates per
-     * named subgraph — packages are noise in the popups — but by the parsed graph's parent-child
-     * structure, never by the {@code cluster_} id prefix: renderSafeNodeId's collision branch
-     * emits real class ids like {@code cluster_Helper} (see
-     * {@link #buildClassCycleDot_emitsRealClassNodeIdsWithClusterPrefix()}), which the prefix
-     * filter would wrongly drop together with their incident edges.
+     * The classic report's popup scripts identify subgraphs by their parsed parent-child
+     * structure. Payloads may still contain class ids such as cluster_Helper.
      */
     @Test
     void popupScripts_dropSubgraphsByParsedStructureNotIdPrefix() {
@@ -640,7 +631,7 @@ class HtmlReportTest {
         assertEquals(
                 0,
                 idPrefixFilters,
-                "the cluster_ id prefix must not filter nodes: real class ids like cluster_Helper would be dropped with their edges");
+                "the cluster_ id prefix must not filter nodes: class ids from existing payloads like cluster_Helper would be dropped with their edges");
         int edgeGuards = scripts.split("droppedClusters\\.has", -1).length - 1;
         assertEquals(4, edgeGuards, "both popup script builders must guard edges against dropped subgraph nodes");
     }

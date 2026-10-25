@@ -11,6 +11,8 @@ import org.hjug.refactorfirst.report.model.HierarchyDTO;
 import org.hjug.refactorfirst.report.model.PackageNodeDTO;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 /**
  * Pins the {@link NestedDotBuilder} contract: rendering a {@link HierarchyDTO} as nested DOT
@@ -300,6 +302,43 @@ class NestedDotBuilderTest {
                                 .build(),
                         ""));
         assertEquals(bare, NestedDotBuilder.buildPackageDot(null, ""));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "https://example.com/repo/,src/My Class.java,true",
+        "HTTP://example.com/repo/,src/A.java,true",
+        "hTtPs://example.com/repo/,src/A.java,true",
+        "http:/repo/,src/A.java,false",
+        "https:///repo/,src/A.java,false",
+        "http:repo/,src/A.java,false",
+        "https://bad host/,src/A.java,false",
+        "https://example.com/,src/Bad%zz.java,false",
+        "https://[broken/,src/A.java,false",
+        "javascript:alert(1)/,src/A.java,false",
+        "ftp://example.com/,src/A.java,false"
+    })
+    void hyperlinksRequireHttpHostAndAllowSpacesAndMixedCaseSchemes(String repoUrl, String path, boolean accepted) {
+        // Given: class and package nodes sharing the same source path and repository prefix.
+        PackageNodeDTO pkg = packageNode("p", false);
+        pkg.setNodeId(HtmlReport.renderSafePackageNodeId("p"));
+        pkg.setPath(path);
+        pkg.setClasses(List.of(classNode("p.A", "A", "A", path, false)));
+        HierarchyDTO hierarchy =
+                HierarchyDTO.builder().packages(List.of(pkg)).edges(List.of()).build();
+
+        // When: both DOT modes decide whether to emit a hyperlink.
+        String classDot = NestedDotBuilder.buildNestedDot(hierarchy, repoUrl, true);
+        String packageDot = NestedDotBuilder.buildPackageDot(hierarchy, repoUrl);
+
+        // Then: only HTTP(S) URLs with a parsed host are linked; spaces are preserved for emission.
+        assertEquals(accepted, classDot.contains("URL="), classDot);
+        assertEquals(accepted, packageDot.contains("URL="), packageDot);
+        if (accepted) {
+            String attribute = "URL=\"" + repoUrl + path + "\" target=\"_blank\"";
+            assertTrue(classDot.contains(attribute));
+            assertTrue(packageDot.contains(attribute));
+        }
     }
 
     // hyperlinks

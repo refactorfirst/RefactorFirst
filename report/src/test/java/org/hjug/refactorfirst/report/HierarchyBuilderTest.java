@@ -40,8 +40,8 @@ import org.junit.jupiter.api.Test;
  *   <li>Packageless classes land in the synthetic {@code (default package)} bucket.</li>
  *   <li>Render-time noise filtering matches the current DOT emitters: sink-only anonymous or
  *       synthetic classes and their edges are suppressed while neighbouring classes survive.</li>
- *   <li>Node ids match today's emitters exactly (source-aware anonymous ids, FQN fallback on
- *       simple-name collision), so the DOT builders can consume them verbatim.</li>
+ *   <li>Node ids encode full class names as reversible ASCII identifiers, so the DOT builders
+ *       can consume them verbatim.</li>
  *   <li>Removal flags map to the visual contract: classes/edges marked for removal stay red,
  *       packages that need to be broken up are flagged for pink fill.</li>
  * </ul>
@@ -138,12 +138,16 @@ class HierarchyBuilderTest {
 
         // And: the class carries the resolved id/label/path and the edge carries its weight
         ClassNodeDTO alpha = classByFqn(orgA, "org.a.Alpha");
-        assertEquals("Alpha", alpha.getId());
+        assertEquals("class_org_002ea_002eAlpha", alpha.getId());
         assertEquals("Alpha", alpha.getLabel());
         assertEquals("", alpha.getPath());
         assertFalse(alpha.isMarkedForRemoval());
-        assertEquals(3, edgeBetween(hierarchy, "Alpha", "Beta").getWeight());
-        assertFalse(edgeBetween(hierarchy, "Alpha", "Beta").isMarkedForRemoval());
+        assertEquals(
+                3,
+                edgeBetween(hierarchy, "class_org_002ea_002eAlpha", "class_org_002eb_002eBeta")
+                        .getWeight());
+        assertFalse(edgeBetween(hierarchy, "class_org_002ea_002eAlpha", "class_org_002eb_002eBeta")
+                .isMarkedForRemoval());
     }
 
     @DisplayName("class hierarchy collapses single-child package chains into the deepest package")
@@ -180,7 +184,7 @@ class HierarchyBuilderTest {
                 List.of(DEFAULT_PACKAGE, "org.a"),
                 hierarchy.getPackages().stream().map(PackageNodeDTO::getName).toList());
         PackageNodeDTO defaultPkg = hierarchy.getPackages().get(0);
-        assertEquals("Standalone", classByFqn(defaultPkg, "Standalone").getId());
+        assertEquals("class_Standalone", classByFqn(defaultPkg, "Standalone").getId());
     }
 
     @DisplayName("nested $ classes and Kotlin anonymous classes belong to the owning package")
@@ -198,7 +202,7 @@ class HierarchyBuilderTest {
                 HierarchyBuilder.buildClassHierarchy(classGraph, dto(sourcePaths), Set.of(), Set.of(), Set.of());
 
         // Then: both classes live in org.pkg; the nested class uses its FQN-derived id and the
-        // anonymous class gets the source-aware owner id, owner label, and source path
+        // anonymous class gets the encoded FQN id, source-aware owner label, and source path
         assertEquals(1, hierarchy.getPackages().size());
         PackageNodeDTO org = hierarchy.getPackages().get(0);
         assertEquals("org", org.getName());
@@ -206,11 +210,11 @@ class HierarchyBuilderTest {
         assertEquals(2, orgPkg.getClasses().size());
 
         ClassNodeDTO inner = classByFqn(orgPkg, "org.pkg.Outer$Inner");
-        assertEquals("org_pkg_Outer_Inner", inner.getId());
+        assertEquals("class_org_002epkg_002eOuter_0024Inner", inner.getId());
         assertEquals("Outer$Inner", inner.getLabel());
 
         ClassNodeDTO anon = classByFqn(orgPkg, "org.pkg.Widget.<anonymous>");
-        assertEquals("Widget_anonymous", anon.getId());
+        assertEquals("class_org_002epkg_002eWidget_002e_003canonymous_003e", anon.getId());
         assertEquals("Widget$anonymous", anon.getLabel());
         assertEquals("src/main/kotlin/org/pkg/Widget.kt", anon.getPath());
     }
@@ -259,11 +263,13 @@ class HierarchyBuilderTest {
         assertFalse(childByName(p, "p.b").isNeedsBreakUp());
         assertTrue(classByFqn(childByName(p, "p.a"), "p.a.A").isMarkedForRemoval());
         assertFalse(classByFqn(childByName(p, "p.b"), "p.b.B").isMarkedForRemoval());
-        assertTrue(edgeBetween(hierarchy, "A", "B").isMarkedForRemoval());
-        assertFalse(edgeBetween(hierarchy, "B", "A").isMarkedForRemoval());
+        assertTrue(edgeBetween(hierarchy, "class_p_002ea_002eA", "class_p_002eb_002eB")
+                .isMarkedForRemoval());
+        assertFalse(edgeBetween(hierarchy, "class_p_002eb_002eB", "class_p_002ea_002eA")
+                .isMarkedForRemoval());
     }
 
-    @DisplayName("simple-name collisions resolve to FQN-derived ids; unique names to simple ids")
+    @DisplayName("class ids encode full names, including when simple names collide")
     @Test
     void buildClassHierarchy_resolvesIdCollisions() {
         // Given: two Foo classes in different packages plus a unique Solo class
@@ -275,16 +281,22 @@ class HierarchyBuilderTest {
         HierarchyDTO hierarchy =
                 HierarchyBuilder.buildClassHierarchy(classGraph, dto(new HashMap<>()), Set.of(), Set.of(), Set.of());
 
-        // Then: colliding classes use FQN-derived ids, the unique class uses its simple name,
+        // Then: all classes use distinct encoded FQN ids,
         // and the edges reference those resolved ids
         PackageNodeDTO p = hierarchy.getPackages().get(0);
         assertEquals("p", p.getName());
-        assertEquals("p_a_Foo", classByFqn(childByName(p, "p.a"), "p.a.Foo").getId());
-        assertEquals("p_b_Foo", classByFqn(childByName(p, "p.b"), "p.b.Foo").getId());
-        assertEquals("Solo", classByFqn(childByName(p, "p.c"), "p.c.Solo").getId());
+        assertEquals(
+                "class_p_002ea_002eFoo",
+                classByFqn(childByName(p, "p.a"), "p.a.Foo").getId());
+        assertEquals(
+                "class_p_002eb_002eFoo",
+                classByFqn(childByName(p, "p.b"), "p.b.Foo").getId());
+        assertEquals(
+                "class_p_002ec_002eSolo",
+                classByFqn(childByName(p, "p.c"), "p.c.Solo").getId());
         assertEquals(2, hierarchy.getEdges().size());
-        assertTrue(hasEdge(hierarchy, "p_a_Foo", "p_b_Foo"));
-        assertTrue(hasEdge(hierarchy, "p_b_Foo", "Solo"));
+        assertTrue(hasEdge(hierarchy, "class_p_002ea_002eFoo", "class_p_002eb_002eFoo"));
+        assertTrue(hasEdge(hierarchy, "class_p_002eb_002eFoo", "class_p_002ec_002eSolo"));
     }
 
     @DisplayName("package hierarchy derives each package's source directory from the class source mapping")
@@ -349,9 +361,9 @@ class HierarchyBuilderTest {
         assertNotNull(classByFqn(childByName(p, "p.a"), "p.a.A"));
         assertNotNull(classByFqn(childByName(p, "p.b"), "p.b.B"));
         assertEquals(2, hierarchy.getEdges().size());
-        assertTrue(hasEdge(hierarchy, "A", "B"));
-        assertTrue(hasEdge(hierarchy, "B", "A"));
-        assertFalse(hasEdge(hierarchy, "Solo", "B"));
+        assertTrue(hasEdge(hierarchy, "class_p_002ea_002eA", "class_p_002eb_002eB"));
+        assertTrue(hasEdge(hierarchy, "class_p_002eb_002eB", "class_p_002ea_002eA"));
+        assertFalse(hasEdge(hierarchy, "class_p_002ec_002eSolo", "class_p_002eb_002eB"));
     }
 
     @DisplayName("cycle hierarchy applies graph-wide id collision rules")
@@ -371,11 +383,14 @@ class HierarchyBuilderTest {
         HierarchyDTO hierarchy = HierarchyBuilder.buildCycleHierarchy(
                 classGraph, dto(new HashMap<>()), Set.of(), Set.of(), Set.of(), cycle);
 
-        // Then: cycle members use FQN-derived ids because the full graph was consulted for
-        // collisions, keeping ids identical to the class map's
+        // Then: cycle members retain the same encoded FQN ids as the class map
         PackageNodeDTO p = hierarchy.getPackages().get(0);
-        assertEquals("p_a_Foo", classByFqn(childByName(p, "p.a"), "p.a.Foo").getId());
-        assertEquals("p_b_Foo", classByFqn(childByName(p, "p.b"), "p.b.Foo").getId());
+        assertEquals(
+                "class_p_002ea_002eFoo",
+                classByFqn(childByName(p, "p.a"), "p.a.Foo").getId());
+        assertEquals(
+                "class_p_002eb_002eFoo",
+                classByFqn(childByName(p, "p.b"), "p.b.Foo").getId());
     }
 
     // ------------------------------------------------------------------
@@ -602,8 +617,11 @@ class HierarchyBuilderTest {
                 List.of("alpha", "zeta"),
                 first.getPackages().stream().map(PackageNodeDTO::getName).toList());
         assertEquals(
-                List.of("AClass", "ZClass"),
+                List.of("class_alpha_002eAClass", "class_zeta_002eZClass"),
                 first.getEdges().stream().map(EdgeDTO::getSource).toList());
-        assertEquals(2, edgeBetween(first, "AClass", "ZClass").getWeight());
+        assertEquals(
+                2,
+                edgeBetween(first, "class_alpha_002eAClass", "class_zeta_002eZClass")
+                        .getWeight());
     }
 }
