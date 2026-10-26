@@ -15,6 +15,6 @@ public class GraphVisualDTO {
     private int relationshipCount;
     private int dotThreshold;
     private boolean dotThresholdExceeded;
-    private String dot;
+    private HierarchyDTO hierarchy;
     private boolean hasEdges;
 }

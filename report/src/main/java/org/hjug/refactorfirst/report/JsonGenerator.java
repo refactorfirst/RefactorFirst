@@ -82,17 +82,6 @@ public class JsonGenerator extends HtmlReport {
         // copyViewerResources(dotRefactorFirstDir);
     }
 
-    /**
-     * Intentionally excluding hyperlinks in DOT to reduce JSON file size
-     *
-     * @param fqClassName The fully qualified class name
-     * @param repoUrl The repo URL
-     * @param codebaseGraphDTO The DTO containing the codebase graph
-     */
-    String hyperlinkClassForDot(String fqClassName, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
-        return "";
-    }
-
     /** Copies the Mustache template and browser viewer into the report directory. */
     private void copyViewerResources(Path targetDir) {
         try {
@@ -250,14 +239,15 @@ public class JsonGenerator extends HtmlReport {
             // 1. Class Map
             int classCount = classGraph.vertexSet().size();
             int classRelationshipCount = classGraph.edgeSet().size();
-            String classGraphDot = buildRawClassGraphDot(classGraph, repoUrl, codebaseGraphDTO);
+            HierarchyDTO classGraphHierarchy = HierarchyBuilder.buildClassHierarchy(
+                    classGraph, codebaseGraphDTO, classesToRemove, packagesToRemove, classRelationshipsToRemove);
             GraphVisualDTO classMapDTO = GraphVisualDTO.builder()
                     .graphId("classGraph")
                     .classCount(classCount)
                     .relationshipCount(classRelationshipCount)
                     .dotThreshold(dotGraphThreshold)
                     .dotThresholdExceeded(classCount + classRelationshipCount >= dotGraphThreshold)
-                    .dot(classGraphDot)
+                    .hierarchy(classGraphHierarchy)
                     .build();
 
             // 2. Class Relationships To Remove
@@ -296,8 +286,8 @@ public class JsonGenerator extends HtmlReport {
             int packageCount = packageGraph.vertexSet().size();
             int packageRelationshipCount = packageGraph.edgeSet().size();
             boolean hasPackageEdges = !packageGraph.edgeSet().isEmpty();
-            String packageGraphDot =
-                    hasPackageEdges ? buildRawPackageGraphDot(packageGraph, repoUrl, codebaseGraphDTO) : "";
+            HierarchyDTO packageGraphHierarchy = HierarchyBuilder.buildPackageHierarchy(
+                    packageGraph, codebaseGraphDTO, packagesToRemove, packageRelationshipsToRemove);
             GraphVisualDTO packageMapDTO = GraphVisualDTO.builder()
                     .hasEdges(hasPackageEdges)
                     .graphId("packageGraph")
@@ -305,7 +295,7 @@ public class JsonGenerator extends HtmlReport {
                     .relationshipCount(packageRelationshipCount)
                     .dotThreshold(dotGraphThreshold)
                     .dotThresholdExceeded(packageCount + packageRelationshipCount >= dotGraphThreshold)
-                    .dot(packageGraphDot)
+                    .hierarchy(packageGraphHierarchy)
                     .build();
 
             // 4. Package Relationships To Remove
@@ -429,7 +419,13 @@ public class JsonGenerator extends HtmlReport {
                 String cycleIdentifier = graphIdentifier(cycleName);
                 int cCount = largestCycle.getCycleNodes().size();
                 int rCount = largestCycle.getEdgeSet().size();
-                String cycleDot = buildRawClassCycleDot(classGraph, largestCycle, repoUrl, codebaseGraphDTO);
+                HierarchyDTO cycleHierarchy = HierarchyBuilder.buildCycleHierarchy(
+                        classGraph,
+                        codebaseGraphDTO,
+                        classesToRemove,
+                        packagesToRemove,
+                        classRelationshipsToRemove,
+                        largestCycle);
 
                 List<CycleBreakdownRowDTO> breakdown = new ArrayList<>();
                 for (String vertex : largestCycle.getVertexSet()) {
@@ -466,7 +462,7 @@ public class JsonGenerator extends HtmlReport {
                         .classCount(cCount)
                         .relationshipCount(rCount)
                         .dotThresholdExceeded(cCount + rCount >= dotGraphThreshold)
-                        .dot(cycleDot)
+                        .hierarchy(cycleHierarchy)
                         .breakdown(breakdown)
                         .build();
             }
@@ -751,14 +747,19 @@ public class JsonGenerator extends HtmlReport {
         return "graph_" + sanitized + "_" + Integer.toUnsignedString(original.hashCode(), 36);
     }
 
-    /** Checks if a class belongs to a given package by checking the fully qualified class name. */
-    private boolean isClassInPackage(String className, String packageName, CodebaseGraphDTO codebaseGraphDTO) {
+    /**
+     * Checks if a class belongs to a given package, deriving the class's package with the same
+     * rule the graphs use ({@link HierarchyBuilder#packageOf}, mirroring
+     * {@code GraphDependencyCollector.getPackageFromFqn}): a Kotlin anonymous class belongs to
+     * its enclosing class's package ({@code dev.Owner.<anonymous> -> dev}), and packageless
+     * classes match no package.
+     */
+    boolean isClassInPackage(String className, String packageName, CodebaseGraphDTO codebaseGraphDTO) {
         if (className == null || packageName == null) {
             return false;
         }
-        // Check if the class name starts with the package name followed by a dot
-        int lastDot = className.lastIndexOf('.');
-        return lastDot > 0 && className.substring(0, lastDot).equals(packageName);
+        String classPackage = HierarchyBuilder.packageOf(className);
+        return classPackage != null && classPackage.equals(packageName);
     }
 
     /**

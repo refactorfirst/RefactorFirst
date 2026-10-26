@@ -157,6 +157,66 @@ class GraphDependencyCollectorTest {
         assertTrue(pkgGraph.edgeSet().isEmpty());
     }
 
+    /**
+     * A prefixed Kotlin anonymous FQN (e.g. {@code dev.DeveloperWASDControl.<anonymous>}) must not
+     * manufacture a package named after its enclosing class: the package edge derives from the
+     * enclosing class's package, so the Class and Package graphs agree on what the packages are
+     * and the break-up lists rendered from them match.
+     */
+    @DisplayName("addPackageDependency derives the enclosing class's package for a prefixed Kotlin <anonymous> source")
+    @Test
+    void addPackageDependency_prefixedKotlinAnonymousSource_derivesEnclosingClassPackage() {
+        Graph<VertexInfo, DefaultWeightedEdge> classGraph = newClassGraph();
+        Graph<VertexInfo, DefaultWeightedEdge> pkgGraph = newClassGraph();
+        GraphDependencyCollector collector = new GraphDependencyCollector(classGraph, pkgGraph);
+
+        DefaultWeightedEdge edge = collector.addPackageDependency(
+                "dev.DeveloperWASDControl.<anonymous>", "com.almasb.fxgl.app.GameApplication");
+
+        assertNotNull(edge, "the anonymous class's dependency must create the real package edge");
+        assertEquals("dev", pkgGraph.getEdgeSource(edge).getName());
+        assertEquals("com.almasb.fxgl.app", pkgGraph.getEdgeTarget(edge).getName());
+        Set<String> packageNames =
+                pkgGraph.vertexSet().stream().map(VertexInfo::getName).collect(java.util.stream.Collectors.toSet());
+        assertEquals(
+                Set.of("dev", "com.almasb.fxgl.app"),
+                packageNames,
+                "no pseudo-package named after the enclosing class may exist");
+    }
+
+    /** Same rule for the target side: an anonymous target derives from its enclosing class's package. */
+    @DisplayName("addPackageDependency derives the enclosing class's package for a prefixed Kotlin <anonymous> target")
+    @Test
+    void addPackageDependency_prefixedKotlinAnonymousTarget_derivesEnclosingClassPackage() {
+        Graph<VertexInfo, DefaultWeightedEdge> classGraph = newClassGraph();
+        Graph<VertexInfo, DefaultWeightedEdge> pkgGraph = newClassGraph();
+        GraphDependencyCollector collector = new GraphDependencyCollector(classGraph, pkgGraph);
+
+        DefaultWeightedEdge edge = collector.addPackageDependency(
+                "com.almasb.fxgl.app.GameApplication", "dev.DeveloperWASDControl.<anonymous>");
+
+        assertNotNull(edge);
+        assertEquals("com.almasb.fxgl.app", pkgGraph.getEdgeSource(edge).getName());
+        assertEquals("dev", pkgGraph.getEdgeTarget(edge).getName());
+        assertFalse(
+                pkgGraph.vertexSet().stream().anyMatch(v -> v.getName().equals("dev.DeveloperWASDControl")),
+                "no pseudo-package named after the enclosing class may exist");
+    }
+
+    /** An anonymous class whose enclosing class has no package is a no-op, like the bare literal. */
+    @DisplayName("addPackageDependency with a packageless enclosing class is a no-op")
+    @Test
+    void addPackageDependency_packagelessEnclosingAnonymous_isNoOp() {
+        Graph<VertexInfo, DefaultWeightedEdge> classGraph = newClassGraph();
+        Graph<VertexInfo, DefaultWeightedEdge> pkgGraph = newClassGraph();
+        GraphDependencyCollector collector = new GraphDependencyCollector(classGraph, pkgGraph);
+
+        DefaultWeightedEdge edge = collector.addPackageDependency("DeveloperWASDControl.<anonymous>", "com.bar.Other");
+
+        assertNull(edge, "an anonymous class in a packageless enclosing class has no package edge");
+        assertTrue(pkgGraph.vertexSet().isEmpty(), "no package vertex may be created");
+    }
+
     /** Verifies that explicit registration retains anonymous and synthetic class vertices. */
     @DisplayName("registerClassVertex registers Java anonymous and Kotlin <anonymous> FQNs")
     @Test

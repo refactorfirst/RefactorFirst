@@ -60,9 +60,7 @@ class HtmlReportKotlinTest {
     void buildClassCycleDot_kotlinSourcePaths() {
         Graph<VertexInfo, DefaultWeightedEdge> classGraph =
                 new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-        // The renderer uses simple class names for the edge spec (matches the
-        // existing Java case which expects A -> B, not FQN). The class-graph
-        // vertices are still FQNs; the renderer strips the package prefix.
+        // Ids encode full class names; labels keep their original simple names.
         String a = "com.kotlin.cycles.KotlinCycleA";
         String b = "com.kotlin.cycles.KotlinCycleB";
         String c = "com.kotlin.cycles.KotlinCycleC";
@@ -97,17 +95,24 @@ class HtmlReportKotlinTest {
         String repoUrl = "https://github.com/refactorfirst/RefactorFirst/blob";
         String dot = htmlReport.buildClassCycleDot(classGraph, rankedCycle, repoUrl, dto);
 
+        // The single-child chain com -> com.kotlin -> com.kotlin.cycles collapses into one
+        // cluster labelled with the deepest package, so the classes nest directly inside it.
         String expectedDot =
                 """
                 `strict digraph G {
-                KotlinCycleA -\\u003E KotlinCycleB [ label = "2" weight = "2" ];
-                KotlinCycleB -\\u003E KotlinCycleC [ label = "1" weight = "1" ];
-                KotlinCycleC -\\u003E KotlinCycleA [ label = "1" weight = "1" ];
-                KotlinCycleA [URL="https://github.com/refactorfirst/RefactorFirst/blob/src/main/kotlin/com/kotlin/cycles/KotlinCycleA.kt" target="_blank"];
-                KotlinCycleB [URL="https://github.com/refactorfirst/RefactorFirst/blob/src/main/kotlin/com/kotlin/cycles/KotlinCycleB.kt" target="_blank"];
-                KotlinCycleC [URL="https://github.com/refactorfirst/RefactorFirst/blob/src/main/kotlin/com/kotlin/cycles/KotlinCycleC.kt" target="_blank"];
+                subgraph %s {
+                label="com.kotlin.cycles";
+                style=filled fillcolor=white;
+                class_com_002ekotlin_002ecycles_002eKotlinCycleA [ label="KotlinCycleA" shape=ellipse URL="https://github.com/refactorfirst/RefactorFirst/blob/src/main/kotlin/com/kotlin/cycles/KotlinCycleA.kt" target="_blank"];
+                class_com_002ekotlin_002ecycles_002eKotlinCycleB [ label="KotlinCycleB" shape=ellipse URL="https://github.com/refactorfirst/RefactorFirst/blob/src/main/kotlin/com/kotlin/cycles/KotlinCycleB.kt" target="_blank"];
+                class_com_002ekotlin_002ecycles_002eKotlinCycleC [ label="KotlinCycleC" shape=ellipse URL="https://github.com/refactorfirst/RefactorFirst/blob/src/main/kotlin/com/kotlin/cycles/KotlinCycleC.kt" target="_blank"];
+                }
+                class_com_002ekotlin_002ecycles_002eKotlinCycleA -\\u003E class_com_002ekotlin_002ecycles_002eKotlinCycleB [ label = "2" weight = "2" ];
+                class_com_002ekotlin_002ecycles_002eKotlinCycleB -\\u003E class_com_002ekotlin_002ecycles_002eKotlinCycleC [ label = "1" weight = "1" ];
+                class_com_002ekotlin_002ecycles_002eKotlinCycleC -\\u003E class_com_002ekotlin_002ecycles_002eKotlinCycleA [ label = "1" weight = "1" ];
                 }`;\
-                """;
+                """
+                        .formatted(HierarchyBuilder.clusterId("com.kotlin.cycles"));
 
         assertEquals(expectedDot, dot);
     }
