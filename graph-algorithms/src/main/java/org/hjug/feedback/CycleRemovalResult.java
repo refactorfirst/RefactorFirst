@@ -12,5 +12,5 @@ public class CycleRemovalResult<V> {
     private final Set<DefaultWeightedEdge> edgesToRemove;
     private final Set<V> vertexesToRemove;
     private final Map<DefaultWeightedEdge, Integer> edgeCycleCounts;
-    private final Map<DefaultWeightedEdge, Integer> vertexCycleCounts;
+    private final Map<V, Integer> vertexCycleCounts;
 }

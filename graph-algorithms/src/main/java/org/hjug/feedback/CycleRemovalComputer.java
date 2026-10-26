@@ -75,6 +75,6 @@ public class CycleRemovalComputer {
             }
         }
 
-        return new CycleRemovalResult(cycles, edgesToRemove, vertexesToRemove, edgeCycleCounts, vertexCycleCounts);
+        return new CycleRemovalResult<>(cycles, edgesToRemove, vertexesToRemove, edgeCycleCounts, vertexCycleCounts);
     }
 }
