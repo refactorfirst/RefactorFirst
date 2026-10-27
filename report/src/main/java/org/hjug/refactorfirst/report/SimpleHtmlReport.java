@@ -331,7 +331,13 @@ public class SimpleHtmlReport {
         try (CostBenefitCalculator costBenefitCalculator =
                 new CostBenefitCalculator(projectBaseDir, codebaseGraphDTO.getClassToSourceFilePathMapping())) {
             packageRelationshipDisharmonies = costBenefitCalculator.calculateRelationshipCostBenefitValues(
-                    packageGraph, packageEdgeCycleCounts, classVertexCycleCounts, codebaseGraphDTO, packagesToRemove, packageCycles, List.of());
+                    packageGraph,
+                    packageEdgeCycleCounts,
+                    classVertexCycleCounts,
+                    codebaseGraphDTO,
+                    packagesToRemove,
+                    packageCycles,
+                    List.of());
             classRelationshipDisharmonies = costBenefitCalculator.calculateRelationshipCostBenefitValues(
                     classGraph,
                     classEdgeCycleCounts,
