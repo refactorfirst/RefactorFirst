@@ -333,7 +333,7 @@ public class SimpleHtmlReport {
             packageRelationshipDisharmonies = costBenefitCalculator.calculateRelationshipCostBenefitValues(
                     packageGraph,
                     packageEdgeCycleCounts,
-                    classVertexCycleCounts,
+                    packageVertexCycleCounts,
                     codebaseGraphDTO,
                     packagesToRemove,
                     packageCycles,
@@ -341,7 +341,7 @@ public class SimpleHtmlReport {
             classRelationshipDisharmonies = costBenefitCalculator.calculateRelationshipCostBenefitValues(
                     classGraph,
                     classEdgeCycleCounts,
-                    packageVertexCycleCounts,
+                    classVertexCycleCounts,
                     codebaseGraphDTO,
                     classesToRemove,
                     packageCycles,
