@@ -342,17 +342,19 @@ public class CostBenefitCalculator implements AutoCloseable {
      * Ranks candidate class edges using cycle impact, removal flags, and package relationships.
      * Only edges present in {@code edgeToRemoveCycleCounts} are considered.
      *
-     * @param classGraph the class dependency graph
-     * @param edgeToRemoveCycleCounts the candidate edges and their cycle counts
-     * @param dto the codebase graph containing corresponding package relationships
-     * @param vertexesToRemove the class vertices selected for removal
-     * @param packageCycles the package cycles used to count each relationship's participation
+     * @param classGraph                      the class dependency graph
+     * @param edgeToRemoveCycleCounts         the candidate edges and their cycle counts
+     * @param vertexToRemoveCycleCounts
+     * @param dto                             the codebase graph containing corresponding package relationships
+     * @param vertexesToRemove                the class vertices selected for removal
+     * @param packageCycles                   the package cycles used to count each relationship's participation
      * @param packageRelationshipDisharmonies the package relationships selected for removal
      * @return the ranked class relationships with assigned priorities
      */
     public List<RankedDisharmony> calculateRelationshipCostBenefitValues(
             Graph<VertexInfo, DefaultWeightedEdge> classGraph,
             Map<DefaultWeightedEdge, Integer> edgeToRemoveCycleCounts,
+            Map<VertexInfo, Integer> vertexToRemoveCycleCounts,
             CodebaseGraphDTO dto,
             Set<VertexInfo> vertexesToRemove,
             Map<VertexInfo, AsSubgraph<VertexInfo, DefaultWeightedEdge>> packageCycles,
@@ -372,16 +374,19 @@ public class CostBenefitCalculator implements AutoCloseable {
             VertexInfo edgeSource = classGraph.getEdgeSource(edge);
             VertexInfo edgeTarget = classGraph.getEdgeTarget(edge);
 
-            boolean sourceNodeShouldBeRemoved = vertexesToRemove.contains(edgeSource);
-            boolean targetNodeShouldBeRemoved = vertexesToRemove.contains(edgeTarget);
+            int sourceNodeCycleCount =
+                    vertexesToRemove.contains(edgeSource) ? vertexToRemoveCycleCounts.get(edgeSource) : 0;
+
+            int targetNodeCycleCount =
+                    vertexesToRemove.contains(edgeTarget) ? vertexToRemoveCycleCounts.get(edgeTarget) : 0;
 
             RankedDisharmony edgeThatNeedsToBeRemoved = new RankedDisharmony(
                     edgeSource.getName(),
                     edge,
                     edgeToRemoveCycleCounts.get(edge),
                     (int) classGraph.getEdgeWeight(edge),
-                    sourceNodeShouldBeRemoved,
-                    targetNodeShouldBeRemoved,
+                    sourceNodeCycleCount,
+                    targetNodeCycleCount,
                     getPackageCycleCount(edgeSource, edgeTarget, dto, packageCycles),
                     packageRelationshipShouldBeRemoved(edgeSource, edgeTarget, dto, packageEdgesToRemove));
 
@@ -482,9 +487,9 @@ public class CostBenefitCalculator implements AutoCloseable {
                 // then by package cycle count, with classes in more package cycles bubbling to the top
                 .thenComparingInt(rankedDisharmony -> -1 * rankedDisharmony.getPackageCycleCount())
                 // then if the source node is in the list of nodes to be removed
-                .thenComparingInt(rankedDisharmony -> -1 * rankedDisharmony.getSourceNodeShouldBeRemoved())
+                .thenComparingInt(rankedDisharmony -> -1 * rankedDisharmony.getSourceNodeCycleCount())
                 // then if the target node is in the list of nodes to be removed
-                .thenComparingInt(rankedDisharmony -> -1 * rankedDisharmony.getTargetNodeShouldBeRemoved()));
+                .thenComparingInt(rankedDisharmony -> -1 * rankedDisharmony.getTargetNodeCycleCount()));
     }
 
     private String getFileName(RuleViolation violation) {

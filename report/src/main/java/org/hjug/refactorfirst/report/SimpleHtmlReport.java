@@ -305,6 +305,7 @@ public class SimpleHtmlReport {
 
         CycleRemovalResult classCycleRemovalResult = cycleRemovalComputer.computeCycleRemovalInformation(classGraph);
         Map<DefaultWeightedEdge, Integer> classEdgeCycleCounts = classCycleRemovalResult.getEdgeCycleCounts();
+        Map<VertexInfo, Integer> classVertexCycleCounts = classCycleRemovalResult.getVertexCycleCounts();
         classRelationshipsToRemove = classCycleRemovalResult.getEdgesToRemove();
         classesToRemove = classCycleRemovalResult.getVertexesToRemove();
         classCycles = classCycleRemovalResult.getCycles();
@@ -314,6 +315,7 @@ public class SimpleHtmlReport {
         CycleRemovalResult packageCycleRemovalResult =
                 cycleRemovalComputer.computeCycleRemovalInformation(packageGraph);
         Map<DefaultWeightedEdge, Integer> packageEdgeCycleCounts = packageCycleRemovalResult.getEdgeCycleCounts();
+        Map<VertexInfo, Integer> packageVertexCycleCounts = packageCycleRemovalResult.getVertexCycleCounts();
         packageRelationshipsToRemove = packageCycleRemovalResult.getEdgesToRemove();
         packagesToRemove = packageCycleRemovalResult.getVertexesToRemove();
         packageCycles = packageCycleRemovalResult.getCycles();
@@ -329,10 +331,17 @@ public class SimpleHtmlReport {
         try (CostBenefitCalculator costBenefitCalculator =
                 new CostBenefitCalculator(projectBaseDir, codebaseGraphDTO.getClassToSourceFilePathMapping())) {
             packageRelationshipDisharmonies = costBenefitCalculator.calculateRelationshipCostBenefitValues(
-                    packageGraph, packageEdgeCycleCounts, codebaseGraphDTO, packagesToRemove, packageCycles, List.of());
+                    packageGraph,
+                    packageEdgeCycleCounts,
+                    packageVertexCycleCounts,
+                    codebaseGraphDTO,
+                    packagesToRemove,
+                    packageCycles,
+                    List.of());
             classRelationshipDisharmonies = costBenefitCalculator.calculateRelationshipCostBenefitValues(
                     classGraph,
                     classEdgeCycleCounts,
+                    classVertexCycleCounts,
                     codebaseGraphDTO,
                     classesToRemove,
                     packageCycles,
