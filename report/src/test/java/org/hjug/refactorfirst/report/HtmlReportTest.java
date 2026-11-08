@@ -1,10 +1,17 @@
 package org.hjug.refactorfirst.report;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
 import org.hjug.cbc.CycleNode;
 import org.hjug.cbc.RankedCycle;
 import org.hjug.graphbuilder.CodebaseGraphDTO;
@@ -14,25 +21,30 @@ import org.jgrapht.graph.DefaultDirectedWeightedGraph;
 import org.jgrapht.graph.DefaultWeightedEdge;
 import org.junit.jupiter.api.Test;
 
+/**
+ * Pins the interactive report's DOT/id statics (the parity bridge shared with
+ * {@link HierarchyBuilder}) after the P4 pipeline migration. Deletions vs the
+ * pre-P4 suite are mapped in the migration PR: printTitle/generateDotImage/popup
+ * script tests moved to the template + rf-graphs.js assets (Node tests); the
+ * template-literal DOT wrappers were replaced by the raw DOT builders the rf-data
+ * payload embeds (synthesis goldens stay in {@link NestedDotBuilderTest}).
+ */
 class HtmlReportTest {
 
     private final HtmlReport mavenReport = new HtmlReport();
 
     @Test
     void testGetOutputName() {
-        // This report will generate simple-report.html when invoked in a project with `mvn site`
         assertEquals("refactor-first-report", mavenReport.getOutputName());
     }
 
     @Test
     void getName() {
-        // Name of the report when listed in the project-reports.html page of a project
         assertEquals("Refactor First Report", mavenReport.getName(Locale.getDefault()));
     }
 
     @Test
     void getDescription() {
-        // Description of the report when listed in the project-reports.html page of a project
         assertEquals(
                 "Ranks the disharmonies in a codebase.  The classes that should be refactored first "
                         + " have the highest priority values.",
@@ -70,10 +82,11 @@ class HtmlReportTest {
         map.put("C", "/src/main/java/org/hjug/refactorfirst/C.java");
         when(dto.getClassToSourceFilePathMapping()).thenReturn(map);
         String repoUrl = "https://github.com/refactorfirst/RefactorFirst/blob";
-        String dot = htmlReport.buildClassCycleDot(classGraph, rankedCycle, repoUrl, dto);
+        String dot = htmlReport.buildRawClassCycleDot(classGraph, rankedCycle, repoUrl, dto);
         // The packageless classes nest inside the synthetic default-package cluster; edges are
-        // declared after the clusters so the nodes keep their cluster scope.
-        String expectedDot = "`strict digraph G {\n"
+        // declared after the clusters so the nodes keep their cluster scope. The raw DOT the
+        // rf-data payload embeds carries no template-literal wrapping.
+        String expectedDot = "strict digraph G {\n"
                 + "subgraph " + HierarchyBuilder.clusterId(HierarchyBuilder.DEFAULT_PACKAGE) + " {\n"
                 + "label=\"(default package)\";\n"
                 + "style=filled fillcolor=white;\n"
@@ -81,10 +94,10 @@ class HtmlReportTest {
                 + "class_B [ label=\"B\" shape=ellipse URL=\"https://github.com/refactorfirst/RefactorFirst/blob/src/main/java/org/hjug/refactorfirst/B.java\" target=\"_blank\"];\n"
                 + "class_C [ label=\"C\" shape=ellipse URL=\"https://github.com/refactorfirst/RefactorFirst/blob/src/main/java/org/hjug/refactorfirst/C.java\" target=\"_blank\"];\n"
                 + "}\n"
-                + "class_A -\\u003E class_B [ label = \"2\" weight = \"2\" ];\n"
-                + "class_B -\\u003E class_C [ label = \"1\" weight = \"1\" ];\n"
-                + "class_C -\\u003E class_A [ label = \"1\" weight = \"1\" ];\n"
-                + "}`;";
+                + "class_A -> class_B [ label = \"2\" weight = \"2\" ];\n"
+                + "class_B -> class_C [ label = \"1\" weight = \"1\" ];\n"
+                + "class_C -> class_A [ label = \"1\" weight = \"1\" ];\n"
+                + "}";
 
         assertEquals(expectedDot, dot);
     }
@@ -138,8 +151,8 @@ class HtmlReportTest {
      * Renders a class-cycle DOT graph that contains Java {@code Outer$1}/{@code Outer$2} and
      * Kotlin {@code "<anonymous>"} vertices. Active anonymous/synthetic vertices render (with
      * reversible ASCII DOT ids and the original {@code $} visible in the label; Kotlin
-     * anonymous labels use the enclosing source file's base name). Sink-only anonymous/synthetic vertices are suppressed. The DOT body must not contain
-     * a raw {@code <} other than inside HTML-escaped labels.
+     * anonymous labels use the enclosing source file's base name). Sink-only anonymous/synthetic
+     * vertices are suppressed. The DOT body must not contain a raw {@code <} from an anonymous vertex.
      */
     @Test
     void buildClassCycleDot_rendersAnonymousAndSyntheticVertices() {
@@ -179,13 +192,13 @@ class HtmlReportTest {
         when(dto.getClassToSourceFilePathMapping()).thenReturn(map);
         String repoUrl = "https://example.com/repo/blob";
 
-        String dot = htmlReport.buildClassCycleDot(classGraph, rankedCycle, repoUrl, dto);
+        String dot = htmlReport.buildRawClassCycleDot(classGraph, rankedCycle, repoUrl, dto);
 
         // active Java anonymous Outer$1 renders with DOT id class_com_002eexample_002eOuter_00241 and a $-visible label
         assertTrue(
                 dot.contains("class_com_002eexample_002eOuter_00241 ["),
                 "Outer$1 must render with the _$-safe DOT id class_com_002eexample_002eOuter_00241");
-        assertTrue(dot.contains("label=\"Outer\\$1\""), "Outer$1 label must keep an escaped $");
+        assertTrue(dot.contains("label=\"Outer$1\""), "Outer$1 label keeps its $ in the raw DOT");
 
         // sink Java anonymous Outer$2 is omitted
         assertFalse(dot.contains("class_com_002eexample_002eOuter_00242 ["), "sink Outer$2 must be suppressed");
@@ -195,7 +208,7 @@ class HtmlReportTest {
                 dot.contains("class__003canonymous_003e ["),
                 "<anonymous> must render with the DOT id class__003canonymous_003e encoded from its original class name");
         // ...and the human-readable label uses $ as the enclosing separator
-        assertTrue(dot.contains("label=\"Foo\\$anonymous\""), "<anonymous> label must be Foo\\$anonymous");
+        assertTrue(dot.contains("label=\"Foo$anonymous\""), "<anonymous> label must be Foo$anonymous");
 
         // sink anonymous is omitted entirely (both as id and label)
         assertFalse(dot.contains("class__003canonSink_003e"), "sink <anonSink> DOT id must be suppressed");
@@ -212,15 +225,15 @@ class HtmlReportTest {
                 dot.contains("class_com_002eexample_002eOuter_00242 ->"), "no edge may start from suppressed Outer$2");
         assertFalse(dot.contains("-> class_com_002eexample_002eOuter_00242"), "no edge may end at suppressed Outer$2");
         assertFalse(
-                dot.contains("-> " + htmlReport.renderSafeNodeId("<anonSink>")),
+                dot.contains("-> " + HtmlReport.renderSafeNodeId("<anonSink>")),
                 "no edge may end at suppressed <anonSink>");
     }
 
     /**
      * Renders an active Kotlin {@code "<anonymous>"} vertex whose source mapping points at a
      * Kotlin file. The DOT node id must encode the original anonymous FQN and the
-     * source-derived label must read {@code DeveloperWASDControl$anonymous} (with {@code $} escaped as
-     * {@code \$}). No literal {@code <}/{@code >} may appear in the DOT node id.
+     * source-derived label must read {@code DeveloperWASDControl$anonymous} (with {@code $}
+     * escaped as {@code \$}). No literal {@code <}/{@code >} may appear in the DOT node id.
      */
     @Test
     void buildClassCycleDot_rendersKotlinAnonymousWithEnclosingSourceFileName() {
@@ -263,7 +276,7 @@ class HtmlReportTest {
         when(dto.getClassToSourceFilePathMapping()).thenReturn(map);
         String repoUrl = "https://github.com/AlmasB/FXGL/blob/ca465c07fd109b9b59b9f7226478676ac068a0ba";
 
-        String dot = htmlReport.buildClassCycleDot(classGraph, rankedCycle, repoUrl, dto);
+        String dot = htmlReport.buildRawClassCycleDot(classGraph, rankedCycle, repoUrl, dto);
 
         // DOT body must not contain the old lt_anonymous_gt encoding for the active anonymous vertex
         assertFalse(dot.contains("lt_anonymous_gt"), "must not use the lt_anonymous_gt encoding");
@@ -273,10 +286,10 @@ class HtmlReportTest {
                 dot.contains("class_dev_002eDeveloperWASDControl_002e_003canonymous_003e ["),
                 "anonymous vertex must render with the DOT id class_dev_002eDeveloperWASDControl_002e_003canonymous_003e");
 
-        // human-readable label uses $ as the enclosing-class separator, escaped for DOT
+        // human-readable label uses $ as the enclosing-class separator
         assertTrue(
-                dot.contains("label=\"DeveloperWASDControl\\$anonymous\""),
-                "label must be DeveloperWASDControl\\$anonymous, was: " + dot);
+                dot.contains("label=\"DeveloperWASDControl$anonymous\""),
+                "label must be DeveloperWASDControl$anonymous, was: " + dot);
 
         // no literal < or > in the DOT node id (the label is fine on its own line); verify the
         // node declaration line (not an edge line, which uses "->") carries no raw < or >.
@@ -318,7 +331,7 @@ class HtmlReportTest {
         when(dto.getClassToSourceFilePathMapping()).thenReturn(map);
 
         // When: the cycle DOT is built
-        String dot = htmlReport.buildClassCycleDot(classGraph, rankedCycle, "https://github.com/x/y/blob", dto);
+        String dot = htmlReport.buildRawClassCycleDot(classGraph, rankedCycle, "https://github.com/x/y/blob", dto);
 
         // Then: both colliding Helpers render as distinct class nodes
         assertTrue(
@@ -329,35 +342,22 @@ class HtmlReportTest {
                 "the other.Helper class must render as the class node class_other_002eHelper: " + dot);
     }
 
+    /** Cycle names slugify into safe graph identifiers (rf-data keys / popup button data). */
     @Test
-    void renderClassCycleVisuals_usesSafeIdentifierAndEscapedDisplayName() {
-        HtmlReport htmlReport = new HtmlReport();
-        htmlReport.classGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-        RankedCycle leadingDigit = new RankedCycle("1<cycle>", Set.of(), Set.of(), List.of());
+    void graphIdentifier_slugifiesUnsafeCycleNames() {
+        // A leading digit or markup in the cycle name must never yield an identifier that
+        // starts with a digit or carries the raw markup.
+        String identifier = HtmlReport.graphIdentifier("1<cycle>");
+        assertTrue(identifier.startsWith("graph_1_cycle_"), identifier);
+        assertFalse(identifier.contains("<"), "markup must not survive the slug: " + identifier);
 
-        String result = htmlReport.renderClassCycleVisuals(leadingDigit, "", null);
-
-        assertTrue(result.contains("const graph_1_cycle_"));
-        assertFalse(result.contains("const 1"));
-        assertTrue(result.contains("Show 1&lt;cycle&gt; 2D Popup"));
-        assertFalse(result.contains("Show 1<cycle>"));
+        // Empty names fall back to a non-empty, valid identifier
+        assertEquals("graph_cycle_0", HtmlReport.graphIdentifier(""));
     }
 
+    /** Verifies distinct package node IDs in the raw package-map DOT the rf-data payload embeds. */
     @Test
-    void renderClassCycleVisuals_usesNonEmptyIdentifierForEmptyName() {
-        HtmlReport htmlReport = new HtmlReport();
-        htmlReport.classGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-        RankedCycle emptyName = new RankedCycle("", Set.of(), Set.of(), List.of());
-
-        String result = htmlReport.renderClassCycleVisuals(emptyName, "", null);
-
-        assertTrue(result.contains("const graph_cycle_0_dot"));
-        assertFalse(result.contains("const _dot"));
-    }
-
-    /** Verifies distinct package node IDs and escaping of script terminators and backslashes in embedded DOT. */
-    @Test
-    void buildPackageGraphDot_usesDistinctIdsAndEscapesRawScriptContext() {
+    void buildPackageGraphDot_usesDistinctIdsAndKeepsScriptContextForTheJsonLayer() {
         Graph<VertexInfo, DefaultWeightedEdge> graph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
         String dotted = "1.a.b";
         String underscored = "1.a_b\\name</script>";
@@ -365,14 +365,15 @@ class HtmlReportTest {
         graph.addVertex(VertexInfo.forName(underscored));
         graph.addEdge(VertexInfo.forName(dotted), VertexInfo.forName(underscored));
 
-        String dot = new HtmlReport().buildPackageGraphDot(graph, "", null);
+        String dot = new HtmlReport().buildRawPackageGraphDot(graph, "", null);
 
         assertNotEquals(HtmlReport.renderSafePackageNodeId(dotted), HtmlReport.renderSafePackageNodeId(underscored));
         assertTrue(dot.contains(HtmlReport.renderSafePackageNodeId(dotted)));
         assertTrue(dot.contains(HtmlReport.renderSafePackageNodeId(underscored)));
-        assertFalse(dot.contains("</script>"));
-        assertTrue(dot.contains("\\u003C/script\\u003E"));
-        assertTrue(dot.contains("\\\\\\\\name"), "DOT and template-literal escaping must both preserve backslashes");
+        // The raw DOT keeps the label text; the rf-data JSON block escapes the script
+        // terminator for the HTML context (pinned by DataEmbedderTest).
+        assertTrue(dot.contains("</script>"));
+        assertFalse(dot.contains("`"), "raw DOT carries no template-literal wrapping");
     }
 
     @Test
@@ -573,66 +574,5 @@ class HtmlReportTest {
 
         String nodeId3 = htmlReport.renderSafeNodeId(anon2, dto);
         assertEquals("class_dev_002eDeveloperWASDControl_002e_003canonymous_003e", nodeId3);
-    }
-
-    @Test
-    void printTitle_escapesProjectNameAndVersionInTitleTag() {
-        HtmlReport htmlReport = new HtmlReport();
-        String projectName = "Test<script>Project";
-        String projectVersion = "1.0\"onload=alert(1)";
-
-        String result = htmlReport.printTitle(projectName, projectVersion);
-
-        // The project name and version should be escaped in the title tag
-        assertTrue(result.contains("Test<script>Project"), "Project name should be escaped in title: " + result);
-        assertTrue(result.contains("1.0\"onload=alert(1)"), "Project version should be escaped in title: " + result);
-    }
-
-    /**
-     * The classic report's inline graphs must restore the new-tab anchor target vizdom drops —
-     * on every hyperlinked anchor, not just the first (a graph can hyperlink many nodes, so the
-     * replacement must be global).
-     */
-    @Test
-    void generateDotImage_restoresAnchorTarget() {
-        // Given: the classic report's inline vizdom render script (via the cycle visuals)
-        HtmlReport htmlReport = new HtmlReport();
-        htmlReport.classGraph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
-        RankedCycle cycle = new RankedCycle("C", Set.of(), Set.of(), List.of());
-
-        String visuals = htmlReport.renderClassCycleVisuals(cycle, "", null);
-
-        // Then: the inline render restores target="_blank" on every hyperlinked anchor
-        // (vizdom drops the target attribute when emitting <a href>)
-        assertTrue(
-                visuals.contains("svg = svg.replace(/<a href=/g, '<a target=\\\"_blank\\\" href=')"),
-                "the inline graph scripts must restore the new-tab anchor target on every anchor");
-        assertFalse(
-                visuals.contains("svg = svg.replace('<a href='"),
-                "a non-global anchor replacement would only restore the first anchor's target");
-    }
-
-    /**
-     * The classic report's popup scripts identify subgraphs by their parsed parent-child
-     * structure. Payloads may still contain class ids such as cluster_Helper.
-     */
-    @Test
-    void popupScripts_dropSubgraphsByParsedStructureNotIdPrefix() {
-        // Given: the classic report's inline popup scripts
-        String scripts = mavenReport.printScripts();
-
-        // Then: both the 2D sugiyama/sigma builder and the 3D force-graph builder tell
-        // subgraph nodes from class nodes by structure — graphlib-dot parents every node a
-        // subgraph contains to the subgraph's own node and removes empty subgraphs, so a
-        // node is a subgraph iff it has children — and guard edges against the dropped ones
-        int structuralFilters = scripts.split("graphlibGraph\\.children\\(node\\)\\.length > 0", -1).length - 1;
-        assertEquals(2, structuralFilters, "both popup script builders must drop subgraph nodes by parsed structure");
-        int idPrefixFilters = scripts.split("startsWith\\('cluster_'\\)", -1).length - 1;
-        assertEquals(
-                0,
-                idPrefixFilters,
-                "the cluster_ id prefix must not filter nodes: class ids from existing payloads like cluster_Helper would be dropped with their edges");
-        int edgeGuards = scripts.split("droppedClusters\\.has", -1).length - 1;
-        assertEquals(4, edgeGuards, "both popup script builders must guard edges against dropped subgraph nodes");
     }
 }

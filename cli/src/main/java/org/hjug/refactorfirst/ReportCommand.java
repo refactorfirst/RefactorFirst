@@ -54,7 +54,7 @@ public class ReportCommand implements Callable<Integer> {
      * The test source directory containing test class sources.
      */
     @Option(
-            names = {"-tsd", "--output"},
+            names = {"-tsd", "--test-source-directory"},
             description =
                     "Test source directory.  Defaults to test/src or test\\src based on your OS.  Default is intentionally generic.")
     private String testSourceDirectory;

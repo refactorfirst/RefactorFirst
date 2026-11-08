@@ -1,444 +1,542 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<html lang="en">
 <head>
     <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <title>Refactor First Report for {{project.name}} {{project.version}}</title>
-    <!-- CDN Dependencies -->
+    <!-- Pinned CDN dependencies (T4.5): bump in lockstep with PinnedCdnTest -->
+    <link rel="stylesheet" href="https://unpkg.com/mvp.css@1.15">
     <script async defer src="https://buttons.github.io/buttons.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sigma.js/2.4.0/sigma.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/graphology/0.25.4/graphology.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/graphlib-dot@0.6.4/dist/graphlib-dot.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/3d-force-graph"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
     <script type="module" src="https://cdn.jsdelivr.net/npm/@vizdom/vizdom-ts-web@0.1.19/vizdom_ts.min.js"></script>
-    <link rel="stylesheet" href="https://unpkg.com/mvp.css">
-
-    <style>
-        main {
-            max-width: 100vw;
-            width: 100vw;
-            padding: 0px 0px;
+    <script type="module">
+        // vizdom WASM bridge: the module exports init + DotParser; window.Vizdom is
+        // assigned once the WASM finishes initializing so the report scripts can
+        // render the inline graphs and re-render them on theme changes.
+        import init, { DotParser } from "https://cdn.jsdelivr.net/npm/@vizdom/vizdom-ts-web@0.1.19/vizdom_ts.min.js";
+        try {
+            await init();
+            window.Vizdom = { DotParser: DotParser };
+        } catch (error) {
+            console.warn('vizdom unavailable:', error);
         }
+    </script>
+    <script type="module">
+        // Bridge: loads the 3D force graph and its sprite-label helper from esm.sh
+        // as native ES modules and exposes them as window.ForceGraph3D /
+        // window.SpriteText for the report's 3D popup. Both imports pin the SAME
+        // three build via ?deps=three@0.186.1 so the browser evaluates Three.js
+        // exactly once; keep both packages' three version in lockstep when bumping.
+        import('https://esm.sh/3d-force-graph@1.80.1?deps=three@0.186.1')
+            .then(module => {
+                window.ForceGraph3D = module.default;
+            })
+            .catch(error => {
+                console.warn('3d-force-graph unavailable:', error);
+                window.RF?.announceWidgetFailure?.('3d-force-graph');
+            });
 
-        nav {
-            justify-content: center;
-            padding: 0px 40px;
-            margin: 0px auto;
-        }
-
-        header {
-            padding: 0px 40px;
-        }
-
-        .fullscreen-svg {
-            width: 100%;
-            height: 100%;
-        }
-
-        .popup {
-            position: fixed;
-            display: none;
-            width: 95%;
-            height: 95%;
-            background-color: white;
-            border: 1px solid #ccc;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 1000;
-            padding: 20px;
-            box-sizing: border-box;
-        }
-
-        .overlay {
-            position: fixed;
-            display: none;
-            width: 100%;
-            height: 100%;
-            top: 0;
-            left: 0;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 999;
-        }
-
-        .close-btn {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            cursor: pointer;
-            font-size: 20px;
-            font-weight: bold;
-        }
-
-        .chart-container {
-            max-width: 1100px;
-            margin: 20px auto;
-        }
-    </style>
+        import('https://esm.sh/three-spritetext@1.10.0?deps=three@0.186.1')
+            .then(module => {
+                window.SpriteText = module.default;
+            })
+            .catch(error => {
+                console.warn('three-spritetext unavailable:', error);
+                window.RF?.announceWidgetFailure?.('three-spritetext');
+            });
+    </script>
+    <!-- rf:inlined-css -->
 </head>
-<body class="composite">
-<div class="overlay" id="overlay" onclick="hidePopup()"></div>
+<body>
+<a class="rf-skip-link" href="#app">Skip to report content</a>
+<main id="app" tabindex="-1">
+    <div class="rf-report" lang="en">
+        <div class="overlay" id="overlay" data-popup-close="true"></div>
 
-<!-- Header & Navigation -->
-<header>
-    <h1 align="center">
-        <a href="https://github.com/refactorfirst/refactorfirst" target="_blank">RefactorFirst</a> Report for
-        <a href="{{project.repoUrl}}" target="_blank">{{project.name}} {{project.version}}</a>
-    </h1>
+        <!-- Header & Navigation -->
+        <div class="rf-header">
+            <h1 class="rf-text-center">
+                <a href="https://github.com/refactorfirst/refactorfirst" target="_blank">RefactorFirst</a> Report for
+                <a href="{{project.repoUrl}}" target="_blank">{{project.name}} {{project.version}}</a>
+            </h1>
 
-    <!-- GitHub Support Badges -->
-    <div align="center">
-        <h2>Show RefactorFirst some &#10084;&#65039;</h2>
-        <a class="github-button" href="https://github.com/refactorfirst/refactorfirst" data-icon="octicon-star"
-           data-size="large" data-show-count="true" aria-label="Star refactorfirst/refactorfirst on GitHub">Star</a>
-        <a class="github-button" href="https://github.com/refactorfirst/refactorfirst/fork"
-           data-icon="octicon-repo-forked" data-size="large" data-show-count="true" aria-label="Fork refactorfirst/refactorfirst on GitHub">Fork</a>
-        <a class="github-button" href="https://github.com/refactorfirst/refactorfirst/subscription"
-           data-icon="octicon-eye" data-size="large" data-show-count="true" aria-label="Watch refactorfirst/refactorfirst on GitHub">Watch</a>
-        <a class="github-button" href="https://github.com/refactorfirst/refactorfirst/issues"
-           data-icon="octicon-issue-opened" data-size="large" data-show-count="false" aria-label="Issue refactorfirst/refactorfirst on GitHub">Issue</a>
-        <a class="github-button" href="https://github.com/sponsors/jimbethancourt" data-icon="octicon-heart"
-           data-size="large" aria-label="Sponsor @jimbethancourt on GitHub">Sponsor</a>
-    </div>
+            <!-- Color theme: three radio pills; the palette itself is selected purely
+                 in CSS (rf-palette.css), rf-theme.js only persists and republishes. -->
+            <div class="rf-text-center">
+                <span class="theme-toggle" role="radiogroup" aria-label="Color theme">
+                    <label class="theme-option">
+                        <input type="radio" name="rf-theme" id="rf-theme-light" value="light"
+                               aria-label="Light theme" class="theme-option-input"/>
+                        <svg class="theme-option-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                             stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+                    </label>
+                    <label class="theme-option">
+                        <input type="radio" name="rf-theme" id="rf-theme-dark" value="dark"
+                               aria-label="Dark theme" class="theme-option-input"/>
+                        <svg class="theme-option-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                             stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+                    </label>
+                    <label class="theme-option">
+                        <input type="radio" name="rf-theme" id="rf-theme-system" value="system"
+                               aria-label="System preference" checked="checked" class="theme-option-input"/>
+                        <svg class="theme-option-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                             stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8m-4-4v4"/></svg>
+                    </label>
+                </span>
+            </div>
 
-    <nav>
-        <ul>
-            <li><a href="#">Classes</a>
+            <!-- GitHub Support Badges -->
+            <div class="rf-text-center">
+                <h2>Show RefactorFirst some &#10084;&#65039;</h2>
+                <a class="github-button" href="https://github.com/refactorfirst/refactorfirst" data-icon="octicon-star"
+                   data-size="large" data-show-count="true" aria-label="Star refactorfirst/refactorfirst on GitHub">Star</a>
+                <a class="github-button" href="https://github.com/refactorfirst/refactorfirst/fork"
+                   data-icon="octicon-repo-forked" data-size="large" data-show-count="true"
+                   aria-label="Fork refactorfirst/refactorfirst on GitHub">Fork</a>
+                <a class="github-button" href="https://github.com/refactorfirst/refactorfirst/subscription"
+                   data-icon="octicon-eye" data-size="large" data-show-count="true"
+                   aria-label="Watch refactorfirst/refactorfirst on GitHub">Watch</a>
+                <a class="github-button" href="https://github.com/refactorfirst/refactorfirst/issues"
+                   data-icon="octicon-issue-opened" data-size="large" data-show-count="false"
+                   aria-label="Issue refactorfirst/refactorfirst on GitHub">Issue</a>
+                <a class="github-button" href="https://github.com/sponsors/jimbethancourt" data-icon="octicon-heart"
+                   data-size="large" aria-label="Sponsor @jimbethancourt on GitHub">Sponsor</a>
+            </div>
+
+            <nav aria-label="Report sections">
                 <ul>
-                    <li><a href="#CLASSMAP">Class Map</a></li>
-                    {{#classRelationshipsToRemove.hasRelationships}}
-                        <li><a href="#CLASSEDGES">Class Relationships To Remove</a></li>
-                    {{/classRelationshipsToRemove.hasRelationships}}
+                    <li><a href="#CLASSMAP">Classes</a>
+                        <ul>
+                            <li><a href="#CLASSMAP">Class Map</a></li>
+                            {{#classRelationshipsToRemove.hasRelationships}}
+                                <li><a href="#CLASSEDGES">Class Relationships To Remove</a></li>
+                            {{/classRelationshipsToRemove.hasRelationships}}
+                        </ul>
+                    </li>
+                    {{#packageMap.hasEdges}}
+                        <li><a href="#PACKAGEMAP">Packages</a>
+                            <ul>
+                                <li><a href="#PACKAGEMAP">Package Map</a></li>
+                                {{#packageRelationshipsToRemove.hasRelationships}}
+                                    <li><a href="#PACKAGEEDGES">Package Relationships To Remove</a></li>
+                                {{/packageRelationshipsToRemove.hasRelationships}}
+                            </ul>
+                        </li>
+                    {{/packageMap.hasEdges}}
+                    {{#hasDisharmonies}}
+                        <li><a href="#DISHARMONIES">Disharmonies</a>
+                            <ul>
+                                {{#disharmonies}}
+                                    <li><a href="#{{anchorId}}">{{title}}</a></li>
+                                {{/disharmonies}}
+                            </ul>
+                        </li>
+                    {{/hasDisharmonies}}
+                    {{#classCycles.hasCycles}}
+                        <li><a href="#CYCLES">Cycles</a>
+                            <ul>
+                                <li><a href="#CYCLES">Class Cycles</a></li>
+                                {{#classCycles.largestCycle.hasCycleMap}}
+                                    <li><a href="#CYCLEMAP">Cycle Map</a></li>
+                                {{/classCycles.largestCycle.hasCycleMap}}
+                            </ul>
+                        </li>
+                    {{/classCycles.hasCycles}}
                 </ul>
-            </li>
-            {{#packageMap.hasEdges}}
-                <li><a href="#">Packages</a>
-                    <ul>
-                        <li><a href="#PACKAGEMAP">Package Map</a></li>
-                        {{#packageRelationshipsToRemove.hasRelationships}}
-                            <li><a href="#PACKAGEEDGES">Package Relationships To Remove</a></li>
-                        {{/packageRelationshipsToRemove.hasRelationships}}
-                    </ul>
-                </li>
-            {{/packageMap.hasEdges}}
-            {{#hasDisharmonies}}
-                <li><a href="#">Disharmonies</a>
-                    <ul>
-                        {{#disharmonies}}
-                            <li><a href="#{{anchorId}}">{{title}}</a></li>
-                        {{/disharmonies}}
-                    </ul>
-                </li>
-            {{/hasDisharmonies}}
-            {{#classCycles.hasCycles}}
-                <li><a href="#">Cycles</a>
-                    <ul>
-                        <li><a href="#CYCLES">Class Cycles</a></li>
-                        <li><a href="#CYCLEMAP">Cycle Map</a></li>
-                    </ul>
-                </li>
-            {{/classCycles.hasCycles}}
-        </ul>
-    </nav>
-</header>
-
-{{#project.analysisFailed}}
-    <div role="alert" align="center">
-        <strong>Analysis incomplete:</strong> RefactorFirst could not finish scanning this project.
-        The absence of findings below does not mean the project is clean.
-    </div>
-{{/project.analysisFailed}}
-
-<!-- Class Map Section -->
-<h1 align="center"><a id="CLASSMAP">Class Map</a></h1>
-<button style="display: block; margin: 0 auto;"
-        onclick="createForceGraph('popup-classGraph', 'graph-container-classGraph', classGraph_dot)">Show classGraph
-    3D Popup
-</button>
-<button style="display: block; margin: 0 auto;"
-        onclick="showPopup('popup-classGraph', 'graph-container-classGraph', classGraph_dot)">Show classGraph 2D
-    Popup
-</button>
-
-<div class="popup" id="popup-classGraph">
-    <span class="close-btn" onclick="hidePopup()">&times;</span>
-    <div id="graph-container-classGraph" style="width: 100%; height: 100%;"></div>
-</div>
-
-<div align="center">
-    Red lines represent relationships to remove.<br>
-    Red nodes represent classes to remove.<br>
-    Zoom in / out with your mouse wheel and click/move to drag the image.<br>
-    Number of classes: {{classMap.classCount}} Number of relationships: {{classMap.relationshipCount}}<br>
-</div>
-
-{{#classMap.dotThresholdExceeded}}
-    <div align="center">SVG is too big to render quickly</div>
-{{/classMap.dotThresholdExceeded}}
-{{^classMap.dotThresholdExceeded}}
-    <div id="classGraph" style="width: 95%; height: 70vh; margin: auto; border: thin solid black"></div>
-{{/classMap.dotThresholdExceeded}}
-
-<br/>
-<hr/>
-<br/>
-<br/>
-
-<!-- Class Relationships To Remove Table -->
-{{#classRelationshipsToRemove.hasRelationships}}
-    <div style="text-align: center;"><a id="CLASSEDGES"><h1>Class Relationship Removal Priority</h1></a></div>
-    <h2 align="center">Refactor Starting with Priority 1</h2>
-    <div style="text-align: center;">
-        Current Class Cycle Count: {{classRelationshipsToRemove.cycleCount}}<br>
-        Number of Class Relationships to Remove: {{classRelationshipsToRemove.relationshipsToRemoveCount}}<br>
-        Classes with <strong>*</strong> should be broken apart<br>
-        Removing class relationships below will eliminate class cycles
-    </div>
-    <div align="center">
-        <table align="center" border="5px">
-            <thead>
-            <tr>
-                <th>Class Relationship</th>
-                <th>Priority</th>
-                <th>In Class<br>Cycles</th>
-                <th>Relationship<br>Strength</th>
-                <th>Also Removes Pkg<br>Cycle Relationship</th>
-                <th>In Package<br>Cycles</th>
-            </tr>
-            </thead>
-            <tbody>
-            {{#classRelationshipsToRemove.relationships}}
-                <tr>
-                    <td align="left">{{#sourceClassPath}}<a href="{{project.repoUrl}}{{sourceClassPath}}" target="_blank">{{/sourceClassPath}}{{simpleSourceClassName}}{{#sourceClassPath}}</a>{{/sourceClassPath}}{{#sourceMarked}}*{{/sourceMarked}} &#8594; {{#targetClassPath}}<a href="{{project.repoUrl}}{{targetClassPath}}" target="_blank">{{/targetClassPath}}{{simpleTargetClassName}}{{#targetClassPath}}</a>{{/targetClassPath}}{{#targetMarked}}*{{/targetMarked}}</td>
-                    <td align="right">{{priority}}</td>
-                    <td align="right">{{cycleCount}}</td>
-                    <td align="right">{{effortRank}}</td>
-                    <td align="left">{{#alsoRemovesPackageRelationship}}
-                        <strong>true</strong>{{/alsoRemovesPackageRelationship}}{{^alsoRemovesPackageRelationship}}
-                        false{{/alsoRemovesPackageRelationship}}</td>
-                    <td align="right">{{packageCycleCount}}</td>
-                </tr>
-            {{/classRelationshipsToRemove.relationships}}
-            </tbody>
-        </table>
-    </div>
-{{/classRelationshipsToRemove.hasRelationships}}
-
-<br/>
-<hr/>
-<br/>
-<br/>
-
-<!-- Package Map Section -->
-{{#packageMap.hasEdges}}
-    <h1 align="center"><a id="PACKAGEMAP">Package Map</a></h1>
-    <button style="display: block; margin: 0 auto;"
-            onclick="createForceGraph('popup-packageGraph', 'graph-container-packageGraph', packageGraph_dot)">Show
-        packageGraph
-        3D Popup
-    </button>
-    <button style="display: block; margin: 0 auto;"
-            onclick="showPopup('popup-packageGraph', 'graph-container-packageGraph', packageGraph_dot)">Show
-        packageGraph 2D
-        Popup
-    </button>
-
-    <div class="popup" id="popup-packageGraph">
-        <span class="close-btn" onclick="hidePopup()">&times;</span>
-        <div id="graph-container-packageGraph" style="width: 100%; height: 100%;"></div>
-    </div>
-
-    <div align="center">
-        Red lines represent relationships to remove.<br>
-        Red nodes represent packages to remove.<br>
-        Zoom in / out with your mouse wheel and click/move to drag the image.<br>
-        Number of packages: {{packageMap.classCount}} Number of relationships: {{packageMap.relationshipCount}}<br>
-    </div>
-
-    {{#packageMap.dotThresholdExceeded}}
-        <div align="center">SVG is too big to render quickly</div>
-    {{/packageMap.dotThresholdExceeded}}
-    {{^packageMap.dotThresholdExceeded}}
-        <div id="packageGraph" style="width: 95%; height: 70vh; margin: auto; border: thin solid black"></div>
-    {{/packageMap.dotThresholdExceeded}}
-{{/packageMap.hasEdges}}
-
-<br/>
-<hr/>
-<br/>
-<br/>
-
-<!-- Package Relationships To Remove Table -->
-{{#packageRelationshipsToRemove.hasRelationships}}
-    <div style="text-align: center;"><a id="PACKAGEEDGES"><h1>Package Relationship Removal Priority</h1></a></div>
-    <h2 align="center">Refactor Starting with Priority 1</h2>
-    <div style="text-align: center;">
-        Current Package Cycle Count: {{packageRelationshipsToRemove.cycleCount}}<br>
-        Number of Package Relationships to Remove: {{packageRelationshipsToRemove.relationshipsToRemoveCount}}<br>
-        Packages and classes with <strong>*</strong> should be broken apart<br>
-        Removing package relationships below will eliminate package cycles
-    </div>
-    <div align="center">
-        <table align="center" border="5px">
-            <thead>
-            <tr>
-                <th>Package Relationship</th>
-                <th>Priority</th>
-                <th>In Pkg<br>Cycles</th>
-                <th>Relationship<br>Strength</th>
-                <th>Class Relationships to Remove<br>To Break Package Relationship</th>
-            </tr>
-            </thead>
-            <tbody>
-            {{#packageRelationshipsToRemove.relationships}}
-                <tr>
-                    <td align="left">{{#sourcePackagePath}}<a href="{{project.repoUrl}}{{sourcePackagePath}}" target="_blank">{{/sourcePackagePath}}{{sourcePackage}}{{#sourcePackagePath}}</a>{{/sourcePackagePath}}{{#sourceMarked}}*{{/sourceMarked}} &#8594; {{#targetPackagePath}}<a href="{{project.repoUrl}}{{targetPackagePath}}" target="_blank">{{/targetPackagePath}}{{targetPackage}}{{#targetPackagePath}}</a>{{/targetPackagePath}}{{#targetMarked}}*{{/targetMarked}}</td>
-                    <td align="right">{{priority}}</td>
-                    <td align="right">{{cycleCount}}</td>
-                    <td align="right">{{effortRank}}</td>
-                    <td align="left">{{#classRelationshipsToBreakPackage}}
-                        {{#sourceClassPath}}<a href="{{project.repoUrl}}{{sourceClassPath}}" target="_blank">{{/sourceClassPath}}{{simpleSourceClassName}}{{#sourceClassPath}}</a>{{/sourceClassPath}}{{#sourceMarked}}*{{/sourceMarked}} &#8594; {{#targetClassPath}}<a href="{{project.repoUrl}}{{targetClassPath}}" target="_blank">{{/targetClassPath}}{{simpleTargetClassName}}{{#targetClassPath}}</a>{{/targetClassPath}}{{#targetMarked}}*{{/targetMarked}} : {{weight}}<br/>{{/classRelationshipsToBreakPackage}}</td>
-                </tr>
-            {{/packageRelationshipsToRemove.relationships}}
-            </tbody>
-        </table>
-    </div>
-{{/packageRelationshipsToRemove.hasRelationships}}
-
-<!-- Disharmonies Sections with Chart.js Canvas -->
-{{#disharmonies}}
-    <br/>
-    <hr/>
-    <br/>
-    <br/>
-    <div style="text-align: center;"><a id="{{anchorId}}"><h1>{{title}}</h1></a></div>
-    <div align="center">
-        <table border="5px">
-            <tr>
-                <td><strong>Problem:</strong></td>
-                <td>{{problem}}</td>
-            </tr>
-            <tr>
-                <td><strong>Solution:</strong></td>
-                <td>{{{solution}}}</td>
-            </tr>
-        </table>
-    </div>
-
-    <!-- Chart.js Canvas -->
-    <div class="chart-container" align="center">
-        <div style="position: relative; height: 500px; width: 1100px; margin: 0 auto;">
-            <canvas id="chart_{{anchorId}}"></canvas>
-        </div>
-    </div>
-
-    <br/>
-
-    <h2 align="center">{{title}} by the numbers: (Refactor Starting with Priority 1)</h2>
-    <div align="center">
-        <table align="center" border="5px">
-            <thead>
-            <tr>
-                {{#table.headers}}
-                    <th>{{.}}</th>
-                {{/table.headers}}
-            </tr>
-            </thead>
-            <tbody>
-            {{#table.rows}}
-                <tr>
-                    {{#cells}}
-                        <td align="{{align}}">{{#path}}<a href="{{project.repoUrl}}{{path}}" target="_blank">{{/path}}{{{content}}}{{#path}}</a>{{/path}}</td>
-                    {{/cells}}
-                </tr>
-            {{/table.rows}}
-            </tbody>
-        </table>
-    </div>
-{{/disharmonies}}
-
-<br/>
-<hr/>
-<br/>
-<br/>
-
-<!-- Cycles Summary Table & Cycle Map -->
-{{#classCycles.hasCycles}}
-    <div style="text-align: center;"><a id="CYCLES"><h1>Class Cycles</h1></a></div>
-    <h2 align="center">Class Cycles by the numbers:</h2>
-    <div align="center">
-        <table align="center" border="5px">
-            <thead>
-            <tr>
-                <th>Cycle Name</th>
-                <th>Priority</th>
-                <th>Class Count</th>
-                <th>Relationship Count</th>
-            </tr>
-            </thead>
-            <tbody>
-            {{#classCycles.summary}}
-                <tr>
-                    <td align="left">{{cycleName}}</td>
-                    <td align="right">{{priority}}</td>
-                    <td align="right">{{classCount}}</td>
-                    <td align="right">{{relationshipCount}}</td>
-                </tr>
-            {{/classCycles.summary}}
-            </tbody>
-        </table>
-    </div>
-
-    {{#classCycles.largestCycle.hasCycleMap}}
-        <h2 align="center"><a id="CYCLEMAP">Largest Class Cycle : {{classCycles.largestCycle.cycleName}}</a></h2>
-        <h3 align="center">Limiting number of cycles displayed to 1 to keep page load time fast</h3>
-
-        <button style="display: block; margin: 0 auto;"
-                onclick="createForceGraph('popup-{{classCycles.largestCycle.cycleIdentifier}}', 'graph-container-{{classCycles.largestCycle.cycleIdentifier}}', {{classCycles.largestCycle.cycleIdentifier}}_dot)">
-            Show {{classCycles.largestCycle.cycleName}} 3D Popup
-        </button>
-        <button style="display: block; margin: 0 auto;"
-                onclick="showPopup('popup-{{classCycles.largestCycle.cycleIdentifier}}', 'graph-container-{{classCycles.largestCycle.cycleIdentifier}}', {{classCycles.largestCycle.cycleIdentifier}}_dot)">
-            Show {{classCycles.largestCycle.cycleName}} 2D Popup
-        </button>
-
-        <div class="popup" id="popup-{{classCycles.largestCycle.cycleIdentifier}}">
-            <span class="close-btn" onclick="hidePopup()">&times;</span>
-            <div id="graph-container-{{classCycles.largestCycle.cycleIdentifier}}"
-                 style="width: 100%; height: 100%;"></div>
+            </nav>
         </div>
 
-        <div id="{{classCycles.largestCycle.cycleIdentifier}}"
-             style="width: 95%; height: 70vh; margin: auto; border: thin solid black"></div>
+        {{#project.analysisFailed}}
+            <div role="alert" class="rf-text-center">
+                <strong>Analysis incomplete:</strong> RefactorFirst could not finish scanning this project.
+                The absence of findings below does not mean the project is clean.
+            </div>
+        {{/project.analysisFailed}}
 
-        <!-- Cycle Breakdown Table -->
-        <div align="center">
-            <table align="center" border="5px">
-                <thead>
-                <tr>
-                    <th>Classes</th>
-                    <th>Relationships</th>
-                </tr>
-                </thead>
-                <tbody>
-                {{#classCycles.largestCycle.breakdown}}
+        <!-- Class Map Section -->
+        <h2 id="CLASSMAP" class="rf-text-center">Class Map</h2>
+        <button style="display: block; margin: 0 auto;" type="button"
+                data-popup-3d data-popup="popup-classGraph" data-container="graph-container-classGraph"
+                data-dot-var="classGraph_dot" aria-label="Show classGraph 3D Popup (3D class map)">Show classGraph 3D Popup
+        </button>
+        <button style="display: block; margin: 0 auto;" type="button"
+                data-popup-2d data-popup="popup-classGraph" data-container="graph-container-classGraph"
+                data-dot-var="classGraph_dot" aria-label="Show classGraph 2D Popup (2D class map)">Show classGraph 2D Popup
+        </button>
+
+        <div class="popup" id="popup-classGraph">
+            <button type="button" class="close-btn" data-popup-close="true" aria-label="Close graph popup">&times;</button>
+            <div id="graph-container-classGraph" style="width: 100%; height: 100%;"></div>
+        </div>
+
+        <div class="rf-text-center">
+            Clicking on a node in the DOT graph (if present below) will open its source file in the repo.  Right/Alt click to open in a new browser tab.<br>
+            Excludes classes that have no incoming and outgoing edges<br>
+            Red lines represent relationships to remove. Red nodes represent classes to remove.<br>
+            Zoom in / out with your mouse wheel and click/move to drag the image.<br>
+            Number of classes: {{classMap.classCount}} Number of relationships: {{classMap.relationshipCount}}<br>
+        </div>
+
+        {{#classMap.dotThresholdExceeded}}
+            <div class="rf-text-center">SVG is too big to render quickly</div>
+        {{/classMap.dotThresholdExceeded}}
+        {{^classMap.dotThresholdExceeded}}
+            <div id="classGraph" style="width: 95%; height: 70vh; margin: auto; border: thin solid black"></div>
+        {{/classMap.dotThresholdExceeded}}
+
+        <br>
+        <hr>
+        <br>
+        <br>
+
+        <!-- Class Relationships To Remove Table -->
+        {{#classRelationshipsToRemove.hasRelationships}}
+            <h2 id="CLASSEDGES" class="rf-text-center">Class Relationship Removal Priority</h2>
+            <h3 class="rf-text-center">Refactor Starting with Priority 1</h3>
+            <div class="rf-text-center">
+                Current Class Cycle Count: {{classRelationshipsToRemove.cycleCount}}<br>
+                Number of Class Relationships to Remove: {{classRelationshipsToRemove.relationshipsToRemoveCount}}<br>
+                Classes with <strong>*</strong> should be broken apart<br>
+                Removing class relationships below will eliminate class cycles
+            </div>
+            <div class="rf-text-center rf-table-block">
+                <div class="rf-table-toolbar" data-rf-toolbar="class-relationships">
+                <span class="rf-table-match" role="status" data-rf-match="class-relationships"></span>
+                <span class="rf-copy-hint">Click a cell (or press Enter on it) to copy its text.</span>
+                <div class="rf-table-actions">
+                <div class="rf-table-search" data-rf-search-slot="class-relationships"></div>
+                <button type="button" class="rf-export-btn" data-rf-export="class-relationships"
+                        aria-label="Export CSV: the class relationships table as CSV">Export CSV</button>
+                </div>
+            </div>
+                <div class="rf-table-scroll" data-rf-scroll="class-relationships">
+                <table class="rf-data-table" data-rf-table="class-relationships">
+                    <caption>Class relationships to remove, in priority order</caption>
+                    <thead>
                     <tr>
-                        <td align="left">{{#classPath}}<a href="{{project.repoUrl}}{{classPath}}" target="_blank">{{/classPath}}{{className}}{{#classPath}}</a>{{/classPath}}{{#marked}}*{{/marked}}</td>
-                        <td align="left">{{{edgesHtml}}}</td>
+                        <th scope="col" aria-sort="none"><button type="button" class="rf-sort-btn" data-rf-sort="class-relationships" data-sort-key="classRelationship">Class Relationship <span class="rf-sort-indicator" aria-hidden="true"></span></button></th>
+                        <th scope="col" aria-sort="none"><button type="button" class="rf-sort-btn" data-rf-sort="class-relationships" data-sort-key="priority">Priority <span class="rf-sort-indicator" aria-hidden="true"></span></button></th>
+                        <th scope="col" aria-sort="none"><button type="button" class="rf-sort-btn" data-rf-sort="class-relationships" data-sort-key="cycleCount">In Class<br>Cycles <span class="rf-sort-indicator" aria-hidden="true"></span></button></th>
+                        <th scope="col" aria-sort="none"><button type="button" class="rf-sort-btn" data-rf-sort="class-relationships" data-sort-key="effortRank">Relationship<br>Strength <span class="rf-sort-indicator" aria-hidden="true"></span></button></th>
+                        <th scope="col" aria-sort="none"><button type="button" class="rf-sort-btn" data-rf-sort="class-relationships" data-sort-key="alsoRemovesPackageRelationship">Also Removes Pkg<br>Cycle Relationship <span class="rf-sort-indicator" aria-hidden="true"></span></button></th>
+                        <th scope="col" aria-sort="none"><button type="button" class="rf-sort-btn" data-rf-sort="class-relationships" data-sort-key="packageCycleCount">In Package<br>Cycles <span class="rf-sort-indicator" aria-hidden="true"></span></button></th>
                     </tr>
-                {{/classCycles.largestCycle.breakdown}}
-                </tbody>
-            </table>
-        </div>
-    {{/classCycles.largestCycle.hasCycleMap}}
-{{/classCycles.hasCycles}}
+                    </thead>
+                    <tbody>
+                    {{#classRelationshipsToRemove.relationships}}
+                        <tr>
+                            <td class="rf-text-left">{{#sourceClassPath}}<a href="{{project.repoUrl}}{{sourceClassPath}}" target="_blank" rel="noopener">{{/sourceClassPath}}{{simpleSourceClassName}}{{#sourceClassPath}}</a>{{/sourceClassPath}}{{#sourceMarked}}<strong>*</strong>{{/sourceMarked}} &#8594; {{#targetClassPath}}<a href="{{project.repoUrl}}{{targetClassPath}}" target="_blank" rel="noopener">{{/targetClassPath}}{{simpleTargetClassName}}{{#targetClassPath}}</a>{{/targetClassPath}}{{#targetMarked}}<strong>*</strong>{{/targetMarked}} : {{weight}}</td>
+                            <td class="rf-text-right">{{priority}}</td>
+                            <td class="rf-text-right">{{cycleCount}}</td>
+                            <td class="rf-text-right">{{effortRank}}</td>
+                            <td class="rf-text-left">{{#alsoRemovesPackageRelationship}}<strong>true</strong>{{/alsoRemovesPackageRelationship}}{{^alsoRemovesPackageRelationship}}false{{/alsoRemovesPackageRelationship}}</td>
+                            <td class="rf-text-right">{{packageCycleCount}}</td>
+                        </tr>
+                    {{/classRelationshipsToRemove.relationships}}
+                    </tbody>
+                </table>
+                </div>
+                <nav class="rf-table-pagination" data-rf-pagination="class-relationships" aria-label="Pages of the class relationships table" hidden>
+                <button type="button" class="rf-page-btn" data-rf-page="class-relationships" data-page-dir="prev">Previous</button>
+                <span class="rf-page-status" data-rf-page-status="class-relationships"></span>
+                <button type="button" class="rf-page-btn" data-rf-page="class-relationships" data-page-dir="next">Next</button>
+            </nav>
+            </div>
+        {{/classRelationshipsToRemove.hasRelationships}}
 
-<footer>
-    <div class="clear">
-        <hr/>
+        <br>
+        <hr>
+        <br>
+        <br>
+
+        <!-- Package Map Section -->
+        {{#packageMap.hasEdges}}
+            <h2 id="PACKAGEMAP" class="rf-text-center">Package Map</h2>
+            <button style="display: block; margin: 0 auto;" type="button"
+                    data-popup-3d data-popup="popup-packageGraph" data-container="graph-container-packageGraph"
+                    data-dot-var="packageGraph_dot" aria-label="Show packageGraph 3D Popup (3D package map)">Show packageGraph 3D Popup
+            </button>
+            <button style="display: block; margin: 0 auto;" type="button"
+                    data-popup-2d data-popup="popup-packageGraph" data-container="graph-container-packageGraph"
+                    data-dot-var="packageGraph_dot" aria-label="Show packageGraph 2D Popup (2D package map)">Show packageGraph 2D Popup
+            </button>
+
+            <div class="popup" id="popup-packageGraph">
+                <button type="button" class="close-btn" data-popup-close="true" aria-label="Close graph popup">&times;</button>
+                <div id="graph-container-packageGraph" style="width: 100%; height: 100%;"></div>
+            </div>
+
+            <div class="rf-text-center">
+                Red lines represent relationships to remove.<br>
+                Red nodes represent packages to remove.<br>
+                Zoom in / out with your mouse wheel and click/move to drag the image.<br>
+                Number of packages: {{packageMap.classCount}} Number of relationships: {{packageMap.relationshipCount}}<br>
+            </div>
+
+            {{#packageMap.dotThresholdExceeded}}
+                <div class="rf-text-center">SVG is too big to render quickly</div>
+            {{/packageMap.dotThresholdExceeded}}
+            {{^packageMap.dotThresholdExceeded}}
+                <div id="packageGraph" style="width: 95%; height: 70vh; margin: auto; border: thin solid black"></div>
+            {{/packageMap.dotThresholdExceeded}}
+        {{/packageMap.hasEdges}}
+
+        <br>
+        <hr>
+        <br>
+        <br>
+
+        <!-- Package Relationships To Remove Table -->
+        {{#packageRelationshipsToRemove.hasRelationships}}
+            <h2 id="PACKAGEEDGES" class="rf-text-center">Package Relationship Removal Priority</h2>
+            <h3 class="rf-text-center">Refactor Starting with Priority 1</h3>
+            <div class="rf-text-center">
+                Current Package Cycle Count: {{packageRelationshipsToRemove.cycleCount}}<br>
+                Number of Package Relationships to Remove: {{packageRelationshipsToRemove.relationshipsToRemoveCount}}<br>
+                Packages and classes with <strong>*</strong> should be broken apart<br>
+                Removing package relationships below will eliminate package cycles
+            </div>
+            <div class="rf-text-center rf-table-block">
+                <div class="rf-table-toolbar" data-rf-toolbar="package-relationships">
+                <span class="rf-table-match" role="status" data-rf-match="package-relationships"></span>
+                <span class="rf-copy-hint">Click a cell (or press Enter on it) to copy its text.</span>
+                <div class="rf-table-actions">
+                <div class="rf-table-search" data-rf-search-slot="package-relationships"></div>
+                <button type="button" class="rf-export-btn" data-rf-export="package-relationships"
+                        aria-label="Export CSV: the package relationships table as CSV">Export CSV</button>
+                </div>
+            </div>
+                <div class="rf-table-scroll" data-rf-scroll="package-relationships">
+                <table class="rf-data-table" data-rf-table="package-relationships">
+                    <caption>Package relationships to remove, in priority order</caption>
+                    <thead>
+                    <tr>
+                        <th scope="col" aria-sort="none"><button type="button" class="rf-sort-btn" data-rf-sort="package-relationships" data-sort-key="packageRelationship">Package Relationship <span class="rf-sort-indicator" aria-hidden="true"></span></button></th>
+                        <th scope="col" aria-sort="none"><button type="button" class="rf-sort-btn" data-rf-sort="package-relationships" data-sort-key="priority">Priority <span class="rf-sort-indicator" aria-hidden="true"></span></button></th>
+                        <th scope="col" aria-sort="none"><button type="button" class="rf-sort-btn" data-rf-sort="package-relationships" data-sort-key="cycleCount">In Pkg<br>Cycles <span class="rf-sort-indicator" aria-hidden="true"></span></button></th>
+                        <th scope="col" aria-sort="none"><button type="button" class="rf-sort-btn" data-rf-sort="package-relationships" data-sort-key="effortRank">Relationship<br>Strength <span class="rf-sort-indicator" aria-hidden="true"></span></button></th>
+                        <th scope="col" aria-sort="none"><button type="button" class="rf-sort-btn" data-rf-sort="package-relationships" data-sort-key="classRelationshipsToBreakPackage">Class Relationships to Remove<br>To Break Package Relationship <span class="rf-sort-indicator" aria-hidden="true"></span></button></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {{#packageRelationshipsToRemove.relationships}}
+                        <tr>
+                            <td class="rf-text-left">{{#sourcePackagePath}}<a href="{{project.repoUrl}}{{sourcePackagePath}}" target="_blank" rel="noopener">{{/sourcePackagePath}}{{sourcePackage}}{{#sourcePackagePath}}</a>{{/sourcePackagePath}}{{#sourceMarked}}<strong>*</strong>{{/sourceMarked}} &#8594; {{#targetPackagePath}}<a href="{{project.repoUrl}}{{targetPackagePath}}" target="_blank" rel="noopener">{{/targetPackagePath}}{{targetPackage}}{{#targetPackagePath}}</a>{{/targetPackagePath}}{{#targetMarked}}<strong>*</strong>{{/targetMarked}} : {{weight}}</td>
+                            <td class="rf-text-right">{{priority}}</td>
+                            <td class="rf-text-right">{{cycleCount}}</td>
+                            <td class="rf-text-right">{{effortRank}}</td>
+                            <td class="rf-text-left">{{#classRelationshipsToBreakPackage}}<span class="rf-break-relationship">{{#sourceClassPath}}<a href="{{project.repoUrl}}{{sourceClassPath}}" target="_blank" rel="noopener">{{/sourceClassPath}}{{simpleSourceClassName}}{{#sourceClassPath}}</a>{{/sourceClassPath}}{{#sourceMarked}}<strong>*</strong>{{/sourceMarked}} &#8594; {{#targetClassPath}}<a href="{{project.repoUrl}}{{targetClassPath}}" target="_blank" rel="noopener">{{/targetClassPath}}{{simpleTargetClassName}}{{#targetClassPath}}</a>{{/targetClassPath}}{{#targetMarked}}<strong>*</strong>{{/targetMarked}} : {{weight}}</span>{{/classRelationshipsToBreakPackage}}</td>
+                        </tr>
+                    {{/packageRelationshipsToRemove.relationships}}
+                    </tbody>
+                </table>
+                </div>
+                <nav class="rf-table-pagination" data-rf-pagination="package-relationships" aria-label="Pages of the package relationships table" hidden>
+                <button type="button" class="rf-page-btn" data-rf-page="package-relationships" data-page-dir="prev">Previous</button>
+                <span class="rf-page-status" data-rf-page-status="package-relationships"></span>
+                <button type="button" class="rf-page-btn" data-rf-page="package-relationships" data-page-dir="next">Next</button>
+            </nav>
+            </div>
+        {{/packageRelationshipsToRemove.hasRelationships}}
+
+        <!-- Disharmonies Sections with Chart.js Canvas -->
+        {{#hasDisharmonies}}
+            <br>
+            <hr>
+            <h2 id="DISHARMONIES" class="rf-text-center">Code Disharmonies</h2>
+        {{/hasDisharmonies}}
+        {{#disharmonies}}
+            <br>
+            <hr>
+            <br>
+            <br>
+            <h3 id="{{anchorId}}" class="rf-text-center">{{title}}</h3>
+            <div class="rf-text-center">
+                <table class="rf-data-table">
+                    <caption>Problem and recommended solution for {{title}}</caption>
+                    <tbody>
+                    <tr>
+                        <th scope="row">Problem:</th>
+                        <td>{{problem}}</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Solution:</th>
+                        <td>{{{solution}}}</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Chart.js Canvas -->
+            <div class="chart-container rf-text-center">
+                <div style="position: relative; height: 500px; width: 100%; margin: 0 auto;">
+                    <canvas id="chart_{{anchorId}}" role="img"
+                            aria-label="Bubble chart ranking {{title}} findings by priority and effort">Bubble chart visualizing the {{title}} findings: one bubble per class, ranked by priority and estimated effort.</canvas>
+                </div>
+            </div>
+
+            <br>
+
+            <h4 class="rf-text-center">{{title}} by the numbers: (Refactor Starting with Priority 1)</h4>
+            <div class="rf-text-center rf-table-block">
+                <div class="rf-table-toolbar" data-rf-toolbar="disharmony-{{anchorId}}">
+                    <span class="rf-table-match" role="status" data-rf-match="disharmony-{{anchorId}}"></span>
+                    <span class="rf-copy-hint">Click a cell (or press Enter on it) to copy its text.</span>
+                    <div class="rf-table-actions">
+                    <div class="rf-table-search" data-rf-search-slot="disharmony-{{anchorId}}"></div>
+                    <button type="button" class="rf-export-btn" data-rf-export="disharmony-{{anchorId}}"
+                            aria-label="Export CSV: the {{title}} findings table as CSV">Export CSV</button>
+                    </div>
+                </div>
+                <div class="rf-table-scroll" data-rf-scroll="disharmony-{{anchorId}}">
+                <table class="rf-data-table" data-rf-table="disharmony-{{anchorId}}">
+                    <caption>{{title}} findings, in priority order</caption>
+                    <thead>
+                    <tr>
+                        {{#table.headers}}
+                            <th scope="col" aria-sort="none"><button type="button" class="rf-sort-btn" data-rf-sort="disharmony-{{anchorId}}" data-sort-key="{{.}}">{{.}} <span class="rf-sort-indicator" aria-hidden="true"></span></button></th>
+                        {{/table.headers}}
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {{#table.rows}}
+                        <tr>
+                            {{#cells}}
+                                <td class="rf-text-{{align}}">{{#path}}<a href="{{project.repoUrl}}{{path}}" target="_blank" rel="noopener">{{/path}}{{{content}}}{{#path}}</a>{{/path}}</td>
+                            {{/cells}}
+                        </tr>
+                    {{/table.rows}}
+                    </tbody>
+                </table>
+                </div>
+                <nav class="rf-table-pagination" data-rf-pagination="disharmony-{{anchorId}}" aria-label="Pages of the {{title}} findings table" hidden>
+                    <button type="button" class="rf-page-btn" data-rf-page="disharmony-{{anchorId}}" data-page-dir="prev">Previous</button>
+                    <span class="rf-page-status" data-rf-page-status="disharmony-{{anchorId}}"></span>
+                    <button type="button" class="rf-page-btn" data-rf-page="disharmony-{{anchorId}}" data-page-dir="next">Next</button>
+                </nav>
+            </div>
+        {{/disharmonies}}
+
+        <br>
+        <hr>
+        <br>
+        <br>
+
+        <!-- Cycles Summary Table & Cycle Map -->
+        {{#classCycles.hasCycles}}
+            <h2 id="CYCLES" class="rf-text-center">Class Cycles</h2>
+            <h3 class="rf-text-center">Class Cycles by the numbers:</h3>
+            <div class="rf-text-center rf-table-block">
+                <div class="rf-table-toolbar" data-rf-toolbar="class-cycles-summary">
+                <span class="rf-table-match" role="status" data-rf-match="class-cycles-summary"></span>
+                <span class="rf-copy-hint">Click a cell (or press Enter on it) to copy its text.</span>
+                <div class="rf-table-actions">
+                <div class="rf-table-search" data-rf-search-slot="class-cycles-summary"></div>
+                <button type="button" class="rf-export-btn" data-rf-export="class-cycles-summary"
+                        aria-label="Export CSV: the class cycles summary table as CSV">Export CSV</button>
+                </div>
+            </div>
+                <div class="rf-table-scroll" data-rf-scroll="class-cycles-summary">
+                <table class="rf-data-table" data-rf-table="class-cycles-summary">
+                    <caption>Class cycles summary</caption>
+                    <thead>
+                    <tr>
+                        <th scope="col" aria-sort="none"><button type="button" class="rf-sort-btn" data-rf-sort="class-cycles-summary" data-sort-key="cycleName">Cycle Name <span class="rf-sort-indicator" aria-hidden="true"></span></button></th>
+                        <th scope="col" aria-sort="none"><button type="button" class="rf-sort-btn" data-rf-sort="class-cycles-summary" data-sort-key="priority">Priority <span class="rf-sort-indicator" aria-hidden="true"></span></button></th>
+                        <th scope="col" aria-sort="none"><button type="button" class="rf-sort-btn" data-rf-sort="class-cycles-summary" data-sort-key="classCount">Class Count <span class="rf-sort-indicator" aria-hidden="true"></span></button></th>
+                        <th scope="col" aria-sort="none"><button type="button" class="rf-sort-btn" data-rf-sort="class-cycles-summary" data-sort-key="relationshipCount">Relationship Count <span class="rf-sort-indicator" aria-hidden="true"></span></button></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {{#classCycles.summary}}
+                        <tr>
+                            <td class="rf-text-left">{{cycleName}}</td>
+                            <td class="rf-text-right">{{priority}}</td>
+                            <td class="rf-text-right">{{classCount}}</td>
+                            <td class="rf-text-right">{{relationshipCount}}</td>
+                        </tr>
+                    {{/classCycles.summary}}
+                    </tbody>
+                </table>
+                </div>
+            </div>
+
+            {{#classCycles.largestCycle.hasCycleMap}}
+                <h3 id="CYCLEMAP" class="rf-text-center">Largest Class Cycle : {{classCycles.largestCycle.cycleName}}</h3>
+                <h4 class="rf-text-center">Limiting number of cycles displayed to 1 to keep page load time fast</h4>
+
+                <button style="display: block; margin: 0 auto;" type="button"
+                        data-popup-3d data-popup="popup-{{classCycles.largestCycle.cycleIdentifier}}" data-container="graph-container-{{classCycles.largestCycle.cycleIdentifier}}" data-dot-var="{{classCycles.largestCycle.cycleIdentifier}}_dot"
+                    aria-label="Show {{classCycles.largestCycle.cycleName}} 3D Popup (3D cycle map for {{classCycles.largestCycle.cycleName}})">
+                    Show {{classCycles.largestCycle.cycleName}} 3D Popup
+                </button>
+                <button style="display: block; margin: 0 auto;" type="button"
+                        data-popup-2d data-popup="popup-{{classCycles.largestCycle.cycleIdentifier}}" data-container="graph-container-{{classCycles.largestCycle.cycleIdentifier}}" data-dot-var="{{classCycles.largestCycle.cycleIdentifier}}_dot"
+                    aria-label="Show {{classCycles.largestCycle.cycleName}} 2D Popup (2D cycle map for {{classCycles.largestCycle.cycleName}})">
+                    Show {{classCycles.largestCycle.cycleName}} 2D Popup
+                </button>
+
+                <div class="popup" id="popup-{{classCycles.largestCycle.cycleIdentifier}}">
+                    <button type="button" class="close-btn" data-popup-close="true" aria-label="Close graph popup">&times;</button>
+                    <div id="graph-container-{{classCycles.largestCycle.cycleIdentifier}}"
+                         style="width: 100%; height: 100%;"></div>
+                </div>
+
+                <div id="{{classCycles.largestCycle.cycleIdentifier}}"
+                     style="width: 95%; height: 70vh; margin: auto; border: thin solid black"></div>
+
+                <!-- Cycle Breakdown Table -->
+                <div class="rf-text-center rf-table-block">
+                    <div class="rf-table-toolbar" data-rf-toolbar="largest-cycle-breakdown">
+                <span class="rf-table-match" role="status" data-rf-match="largest-cycle-breakdown"></span>
+                <span class="rf-copy-hint">Click a cell (or press Enter on it) to copy its text.</span>
+                <div class="rf-table-actions">
+                <div class="rf-table-search" data-rf-search-slot="largest-cycle-breakdown"></div>
+                <button type="button" class="rf-export-btn" data-rf-export="largest-cycle-breakdown"
+                        aria-label="Export CSV: the largest cycle breakdown table as CSV">Export CSV</button>
+                </div>
+            </div>
+                    <div class="rf-table-scroll" data-rf-scroll="largest-cycle-breakdown">
+                    <table class="rf-data-table" data-rf-table="largest-cycle-breakdown">
+                        <caption>Classes and relationships in the largest cycle</caption>
+                        <thead>
+                        <tr>
+                            <th scope="col" aria-sort="none"><button type="button" class="rf-sort-btn" data-rf-sort="largest-cycle-breakdown" data-sort-key="className">Classes <span class="rf-sort-indicator" aria-hidden="true"></span></button></th>
+                            <th scope="col" aria-sort="none"><button type="button" class="rf-sort-btn" data-rf-sort="largest-cycle-breakdown" data-sort-key="edgesHtml">Relationships <span class="rf-sort-indicator" aria-hidden="true"></span></button></th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {{#classCycles.largestCycle.breakdown}}
+                            <tr>
+                                <td class="rf-text-left">{{#classPath}}<a href="{{project.repoUrl}}{{classPath}}" target="_blank" rel="noopener">{{/classPath}}{{className}}{{#classPath}}</a>{{/classPath}}{{#marked}}<strong>*</strong>{{/marked}}</td>
+                                <td class="rf-text-left">{{{edgesHtml}}}</td>
+                            </tr>
+                        {{/classCycles.largestCycle.breakdown}}
+                        </tbody>
+                    </table>
+                    </div>
+                    <nav class="rf-table-pagination" data-rf-pagination="largest-cycle-breakdown" aria-label="Pages of the largest cycle breakdown table" hidden>
+                <button type="button" class="rf-page-btn" data-rf-page="largest-cycle-breakdown" data-page-dir="prev">Previous</button>
+                <span class="rf-page-status" data-rf-page-status="largest-cycle-breakdown"></span>
+                <button type="button" class="rf-page-btn" data-rf-page="largest-cycle-breakdown" data-page-dir="next">Next</button>
+            </nav>
+                </div>
+            {{/classCycles.largestCycle.hasCycleMap}}
+        {{/classCycles.hasCycles}}
+
+        <footer>
+            <div class="clear">
+                <hr>
+            </div>
+            <span id="publishDate">Last Published: {{project.scanTimestamp}}</span>
+        </footer>
     </div>
-    <span id="publishDate">Last Published: {{project.scanTimestamp}}</span>
-</footer>
+</main>
+<script type="application/json" id="rf-data">{{{rfDataBlock}}}</script>
+<!-- rf:inlined-js -->
 </body>
 </html>

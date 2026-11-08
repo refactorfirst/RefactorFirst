@@ -1,0 +1,8 @@
+strict digraph G {
+package_018bb207e5cea3036e36872e [label="junit" shape=ellipse URL="https://github.com/junit-team/junit4/blob/300468b1efd48d76fac2f7bd6d576846dcbbf5ed/src/main/java/junit/" target="_blank"];
+package_08fe06d73182d2aba49f0a3b [label="junit.framework" shape=ellipse URL="https://github.com/junit-team/junit4/blob/300468b1efd48d76fac2f7bd6d576846dcbbf5ed/src/main/java/junit/framework/" target="_blank"];
+package_e98a44e5d67bad99f479d7c6 [label="junit.runner" shape=ellipse color=red style=filled URL="https://github.com/junit-team/junit4/blob/300468b1efd48d76fac2f7bd6d576846dcbbf5ed/src/main/java/junit/runner/" target="_blank"];
+package_018bb207e5cea3036e36872e -> package_08fe06d73182d2aba49f0a3b [ label = "2" weight = "2" ];
+package_08fe06d73182d2aba49f0a3b -> package_e98a44e5d67bad99f479d7c6 [ label = "9" weight = "9" ];
+package_e98a44e5d67bad99f479d7c6 -> package_08fe06d73182d2aba49f0a3b [ label = "4" weight = "4" color = "red" ];
+}

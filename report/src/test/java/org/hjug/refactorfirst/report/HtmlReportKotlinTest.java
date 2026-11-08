@@ -93,26 +93,23 @@ class HtmlReportKotlinTest {
         when(dto.getClassToSourceFilePathMapping()).thenReturn(map);
 
         String repoUrl = "https://github.com/refactorfirst/RefactorFirst/blob";
-        String dot = htmlReport.buildClassCycleDot(classGraph, rankedCycle, repoUrl, dto);
+        String dot = htmlReport.buildRawClassCycleDot(classGraph, rankedCycle, repoUrl, dto);
 
         // The single-child chain com -> com.kotlin -> com.kotlin.cycles collapses into one
         // cluster labelled with the deepest package, so the classes nest directly inside it.
-        String expectedDot =
-                """
-                `strict digraph G {
-                subgraph %s {
-                label="com.kotlin.cycles";
-                style=filled fillcolor=white;
-                class_com_002ekotlin_002ecycles_002eKotlinCycleA [ label="KotlinCycleA" shape=ellipse URL="https://github.com/refactorfirst/RefactorFirst/blob/src/main/kotlin/com/kotlin/cycles/KotlinCycleA.kt" target="_blank"];
-                class_com_002ekotlin_002ecycles_002eKotlinCycleB [ label="KotlinCycleB" shape=ellipse URL="https://github.com/refactorfirst/RefactorFirst/blob/src/main/kotlin/com/kotlin/cycles/KotlinCycleB.kt" target="_blank"];
-                class_com_002ekotlin_002ecycles_002eKotlinCycleC [ label="KotlinCycleC" shape=ellipse URL="https://github.com/refactorfirst/RefactorFirst/blob/src/main/kotlin/com/kotlin/cycles/KotlinCycleC.kt" target="_blank"];
-                }
-                class_com_002ekotlin_002ecycles_002eKotlinCycleA -\\u003E class_com_002ekotlin_002ecycles_002eKotlinCycleB [ label = "2" weight = "2" ];
-                class_com_002ekotlin_002ecycles_002eKotlinCycleB -\\u003E class_com_002ekotlin_002ecycles_002eKotlinCycleC [ label = "1" weight = "1" ];
-                class_com_002ekotlin_002ecycles_002eKotlinCycleC -\\u003E class_com_002ekotlin_002ecycles_002eKotlinCycleA [ label = "1" weight = "1" ];
-                }`;\
-                """
-                        .formatted(HierarchyBuilder.clusterId("com.kotlin.cycles"));
+        String expectedDot = ("strict digraph G {\n"
+                        + "subgraph %s {\n"
+                        + "label=\"com.kotlin.cycles\";\n"
+                        + "style=filled fillcolor=white;\n"
+                        + "class_com_002ekotlin_002ecycles_002eKotlinCycleA [ label=\"KotlinCycleA\" shape=ellipse URL=\"https://github.com/refactorfirst/RefactorFirst/blob/src/main/kotlin/com/kotlin/cycles/KotlinCycleA.kt\" target=\"_blank\"];\n"
+                        + "class_com_002ekotlin_002ecycles_002eKotlinCycleB [ label=\"KotlinCycleB\" shape=ellipse URL=\"https://github.com/refactorfirst/RefactorFirst/blob/src/main/kotlin/com/kotlin/cycles/KotlinCycleB.kt\" target=\"_blank\"];\n"
+                        + "class_com_002ekotlin_002ecycles_002eKotlinCycleC [ label=\"KotlinCycleC\" shape=ellipse URL=\"https://github.com/refactorfirst/RefactorFirst/blob/src/main/kotlin/com/kotlin/cycles/KotlinCycleC.kt\" target=\"_blank\"];\n"
+                        + "}\n"
+                        + "class_com_002ekotlin_002ecycles_002eKotlinCycleA -> class_com_002ekotlin_002ecycles_002eKotlinCycleB [ label = \"2\" weight = \"2\" ];\n"
+                        + "class_com_002ekotlin_002ecycles_002eKotlinCycleB -> class_com_002ekotlin_002ecycles_002eKotlinCycleC [ label = \"1\" weight = \"1\" ];\n"
+                        + "class_com_002ekotlin_002ecycles_002eKotlinCycleC -> class_com_002ekotlin_002ecycles_002eKotlinCycleA [ label = \"1\" weight = \"1\" ];\n"
+                        + "}")
+                .formatted(HierarchyBuilder.clusterId("com.kotlin.cycles"));
 
         assertEquals(expectedDot, dot);
     }

@@ -1,0 +1,14 @@
+{
+  "name": "refactorfirst-e2e",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Playwright E2E suite for the generated RefactorFirst HTML reports (Phase P0/T0.3).",
+  "scripts": {
+    "test": "playwright test",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.50.0",
+    "axe-core": "^4.10.0"
+  }
+}

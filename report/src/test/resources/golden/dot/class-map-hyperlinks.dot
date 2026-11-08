@@ -1,0 +1,8 @@
+strict digraph G {
+subgraph cluster_849eae952a92388c3b3b4fa4 {
+label="(default package)";
+style=filled fillcolor=white;
+A [ shape=ellipse URL="https://github.com/x/y/blob/src/main/java/A.java" target="_blank"];
+B [ shape=ellipse];
+}
+}

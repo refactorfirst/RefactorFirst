@@ -1,0 +1,10 @@
+strict digraph G {
+subgraph cluster_849eae952a92388c3b3b4fa4 {
+label="(default package)";
+style=filled fillcolor=white;
+A [ shape=ellipse];
+B [ shape=ellipse];
+}
+A -> B [ label = "2" weight = "2" color = "red" ];
+B -> A [ label = "1" weight = "1" ];
+}

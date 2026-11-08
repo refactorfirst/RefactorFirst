@@ -62,7 +62,7 @@ coverage (JaCoCo aggregation)
 
 **cost-benefit-calculator** — Orchestrates the full pipeline: runs effort-ranker and change-proneness-ranker, combines scores into `RankedDisharmony` objects. Main orchestration class: `CostBenefitCalculator`.
 
-**report** — Generates HTML (with embedded bubble charts), CSV, and JSON output. Reports with >4000 classes switch to a simplified 3D viewer.
+**report** — Generates the interactive HTML report, the strictly-HTML simple report, CSV, and JSON output. Both HTML reports render from Mustache templates (`templates/`) with all assets inlined from classpath files (`assets/`) by `AssetInliner`; the interactive report embeds the report DTO as the `rf-data` JSON payload and synthesizes its graphs client-side (Chart.js bubble charts, vizdom class/package/cycle maps, Sigma 2D and 3D force-graph popups with a colored hover model, light/dark/system theming, table filtering/sorting/pagination/CSV/copy). Reports with >4000 classes switch to a simplified 3D viewer. See AGENTS.md for the template/asset architecture and test map.
 
 **cli** — PicoCLI-based executable. Entry: `org.hjug.refactorfirst.Main` → `ReportCommand`.
 

@@ -1,0 +1,138 @@
+/* RefactorFirst interactive report core stylesheet — port of the page repo's
+   assets/refactor-first-report.mustache <style> block, adapted for the standalone
+   generated report (skip link added; inlined by AssetInliner, never loaded via src=). */
+
+main {
+    max-width: 100vw;
+    width: 100%;
+}
+
+.rf-report {
+    max-width: 100vw;
+    width: 100%;
+}
+
+.rf-report nav {
+    justify-content: center;
+    padding: 0 40px;
+    margin: 0 auto;
+}
+
+.rf-report .rf-header {
+    padding: 0 40px;
+}
+
+.fullscreen-svg {
+    width: 100%;
+    height: 100%;
+}
+
+.popup {
+    position: fixed;
+    display: none;
+    width: 95%;
+    height: 95%;
+    background-color: var(--card-bg, #fff);
+    border: 1px solid var(--popup-border, #ccc);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.overlay {
+    position: fixed;
+    display: none;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+}
+
+.close-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    cursor: pointer;
+    font-size: 20px;
+    font-weight: bold;
+    /* Red square around the bare × glyph; 2rem clears the 24px
+       pointer-target minimum (SC 2.5.8). */
+    width: 2rem;
+    height: 2rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: none;
+    border-radius: 4px;
+    background: var(--popup-close-bg, #c0392b);
+    color: var(--popup-close-fg, #ffffff);
+    line-height: 1;
+    /* Keep the close control clickable above graph canvases injected
+       into the popup by sigma/3d-force-graph. */
+    z-index: 10;
+}
+
+.close-btn:focus-visible {
+    /* The ring floats off the red fill (blue on red is ~1:1) so it
+       contrasts with the popup surface behind it instead. */
+    outline-color: var(--brand-accent, #1f5273);
+    outline-offset: 2px;
+}
+
+.chart-container {
+    width: 95%;
+    margin: 20px auto;
+}
+
+/* Skip link: hidden until focused (WCAG 2.4.1 bypass blocks). */
+.rf-skip-link {
+    position: absolute;
+    left: -9999px;
+    top: 0;
+    background: var(--brand-color, #2a6f97);
+    color: var(--on-accent-color, #fff);
+    padding: 0.5rem 1rem;
+    z-index: 1001;
+}
+
+.rf-skip-link:focus {
+    left: 0;
+}
+
+/* HTML5 replacements for the obsolete presentational attributes the
+   upstream template used (align/border): text alignment, centered
+   blocks and the data-table chrome now come from these classes. */
+.rf-text-center {
+    text-align: center;
+}
+
+.rf-text-left {
+    text-align: left;
+}
+
+.rf-text-right {
+    text-align: right;
+}
+
+/* Widget-failure notice (T7.5): a visible, polite live region telling the
+   reader which interactive view is unavailable when a CDN widget fails. */
+.rf-widget-notice {
+    margin: 1rem auto;
+    max-width: 60rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--popup-border, #cccccc);
+    border-left: 4px solid var(--error-color, #c0392b);
+    background: var(--surface-color, #f5f8fa);
+    color: var(--text-color, #1f2d3d);
+}
+
+.rf-widget-notice p {
+    margin: 0.25rem 0;
+}

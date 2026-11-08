@@ -1,0 +1,8 @@
+strict digraph G {
+subgraph cluster_5f412c46f5ba75677bf666aa {
+label="com.\"weird\"\\name";
+style=filled fillcolor=white;
+Widget_anonymous [ label="Widget$anonymous" shape=ellipse];
+Anon [ label="line1\nline2" shape=ellipse];
+}
+}

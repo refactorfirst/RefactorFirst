@@ -1,12 +1,8 @@
 package org.hjug.mavenreport;
 
-import java.util.*;
+import java.util.Locale;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.maven.doxia.markup.HtmlMarkup;
-import org.apache.maven.doxia.sink.Sink;
-import org.apache.maven.doxia.sink.SinkEventAttributes;
-import org.apache.maven.doxia.sink.impl.SinkEventAttributeSet;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
@@ -14,6 +10,12 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.reporting.AbstractMavenReport;
 import org.hjug.refactorfirst.report.HtmlReport;
 
+/**
+ * Phase P4/T4.6: the Doxia site report renders through the same pipeline as the
+ * {@code htmlReport} goal — the template pipeline with the rf-data payload and inlined
+ * assets. The site page's duplicated CDN head imports and the dead {@code renderStyle}
+ * call are gone; the rendered document carries everything it needs.
+ */
 @Slf4j
 @Mojo(
         name = "report",
@@ -49,7 +51,7 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
     private String projectVersion;
 
     public String getOutputName() {
-        // This report will generate simple-report.html when invoked in a project with `mvn site`
+        // This report will generate refactor-first-report.html when invoked in a project with `mvn site`
         return "refactor-first-report";
     }
 
@@ -69,69 +71,16 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
     public void executeReport(Locale locale) {
         HtmlReport htmlReport = new HtmlReport();
 
-        Sink mainSink = getSink();
-        printHead(mainSink);
-        String report = htmlReport
-                .generateReport(
-                        showDetails,
-                        backEdgeAnalysisCount,
-                        analyzeCycles,
-                        excludeTests,
-                        testSourceDirectory,
-                        projectName,
-                        projectVersion,
-                        project.getBasedir())
-                .toString();
+        String report = htmlReport.renderInteractivePage(
+                showDetails,
+                backEdgeAnalysisCount,
+                analyzeCycles,
+                excludeTests,
+                testSourceDirectory,
+                projectName,
+                projectVersion,
+                project.getBasedir());
 
-        mainSink.rawText(report);
-    }
-
-    private void printHead(Sink mainSink) {
-        mainSink.head();
-        mainSink.title();
-        mainSink.text("Refactor First Report for " + projectName + " " + projectVersion);
-        mainSink.title_();
-
-        // GH Buttons import
-        renderJsDeclaration(mainSink, "https://buttons.github.io/buttons.js");
-        // google chart import
-        renderJsDeclaration(mainSink, "https://www.gstatic.com/charts/loader.js");
-        // for DOT graph zooming
-        renderJsDeclaration(mainSink, "https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js");
-
-        // sigma graph imports - sigma, graphology, graphlib, and graphlib-dot
-        renderJsDeclaration(mainSink, "https://cdnjs.cloudflare.com/ajax/libs/sigma.js/2.4.0/sigma.min.js");
-        renderJsDeclaration(mainSink, "https://cdnjs.cloudflare.com/ajax/libs/graphology/0.25.4/graphology.umd.min.js");
-
-        renderJsDeclaration(mainSink, "https://cdn.jsdelivr.net/npm/3d-force-graph");
-        renderModuleDeclaration(mainSink, "https://cdn.jsdelivr.net/npm/@vizdom/vizdom-ts-web@0.1.19/vizdom_ts.min.js");
-
-        mainSink.head_();
-    }
-
-    /**
-     * @See https://maven.apache.org/doxia/developers/sink.html#How_to_inject_javascript_code_into_HTML
-     */
-    private void renderJsDeclaration(Sink mainSink, String scriptUrl) {
-        SinkEventAttributeSet githubButtonJS = new SinkEventAttributeSet();
-        githubButtonJS.addAttribute(SinkEventAttributes.TYPE, "text/javascript");
-        githubButtonJS.addAttribute(SinkEventAttributes.SRC, scriptUrl);
-        mainSink.unknown("script", new Object[] {HtmlMarkup.TAG_TYPE_START}, githubButtonJS);
-        mainSink.unknown("script", new Object[] {HtmlMarkup.TAG_TYPE_END}, null);
-    }
-
-    private void renderModuleDeclaration(Sink mainSink, String scriptUrl) {
-        SinkEventAttributeSet githubButtonJS = new SinkEventAttributeSet();
-        githubButtonJS.addAttribute(SinkEventAttributes.TYPE, "module");
-        githubButtonJS.addAttribute(SinkEventAttributes.SRC, scriptUrl);
-        mainSink.unknown("script", new Object[] {HtmlMarkup.TAG_TYPE_START}, githubButtonJS);
-        mainSink.unknown("script", new Object[] {HtmlMarkup.TAG_TYPE_END}, null);
-    }
-
-    private void renderStyle(Sink mainSink) {
-        SinkEventAttributeSet githubButtonJS = new SinkEventAttributeSet();
-        githubButtonJS.addAttribute(SinkEventAttributes.SRC, HtmlReport.POPUP_STYLE);
-        mainSink.unknown("script", new Object[] {HtmlMarkup.TAG_TYPE_START}, githubButtonJS);
-        mainSink.unknown("script", new Object[] {HtmlMarkup.TAG_TYPE_END}, null);
+        getSink().rawText(report);
     }
 }

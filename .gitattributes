@@ -1,3 +1,8 @@
+# Windows-style line endings: every text file uses CRLF in the working tree.
+# Git normalizes to LF inside the repository; `eol=crlf` re-applys CRLF on checkout.
+# The shell scripts below are the only LF exceptions (Unix exec requires LF).
+*               text=auto eol=crlf
+
 # From https://github.com/gitattributes/gitattributes/blob/master/Java.gitattributes
 # Java sources
 *.java          text diff=java

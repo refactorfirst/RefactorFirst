@@ -1,0 +1,7 @@
+strict digraph G {
+package_8470465d943ffd5150e2d522 [label="org.hjug" shape=ellipse];
+package_bfb0d6f0cb59390b479b08a1 [label="org.hjug.cbc" shape=ellipse color=red style=filled];
+package_6da3c08ea2d561edab77673f [label="org.hjug.dsm" shape=ellipse];
+package_8470465d943ffd5150e2d522 -> package_bfb0d6f0cb59390b479b08a1 [ label = "1" weight = "1" ];
+package_bfb0d6f0cb59390b479b08a1 -> package_6da3c08ea2d561edab77673f [ label = "2" weight = "2" color = "red" ];
+}

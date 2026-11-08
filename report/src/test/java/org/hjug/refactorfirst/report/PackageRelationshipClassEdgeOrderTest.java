@@ -1,15 +1,16 @@
 package org.hjug.refactorfirst.report;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.util.*;
 import org.hjug.cbc.RankedDisharmony;
 import org.hjug.graphbuilder.CodebaseGraphDTO;
 import org.hjug.graphbuilder.VertexInfo;
 import org.hjug.refactorfirst.report.model.ClassRelationshipDTO;
+import org.hjug.refactorfirst.report.model.PackageRelationshipDTO;
+import org.hjug.refactorfirst.report.model.PackageRelationshipsToRemoveDTO;
+import org.hjug.refactorfirst.report.model.RefactorFirstReportDTO;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultDirectedWeightedGraph;
 import org.jgrapht.graph.DefaultWeightedEdge;
@@ -22,14 +23,15 @@ import org.mockito.Mockito;
  * break a package relationship. Those class edges are stored in a
  * {@code HashSet<DefaultWeightedEdge>} whose iteration order is identity-hash based, so the two
  * report types (and repeated runs of the same report) could list the same relationships in
- * different orders. These tests pin a deterministic, source-ordered rendering shared by both
- * reports.
+ * different orders. These tests pin a deterministic, source-ordered list shared by both reports:
+ * the JSON generator and the report templates both render the DTO's
+ * {@code classRelationshipsToBreakPackage} in list order. (The pre-P4 suite asserted the deleted
+ * string-building HTML cell; the template now renders the same ordered DTO list — §10.3 mapping.)
  */
 class PackageRelationshipClassEdgeOrderTest {
 
     private static final String PKG_A = "org.example.pkgA";
     private static final String PKG_B = "org.example.pkgB";
-    private static final String REPO_URL = "https://github.com/example/repo/blob/";
 
     /** Number of class edges crossing the package boundary. */
     private static final int EDGE_COUNT = 12;
@@ -86,11 +88,19 @@ class PackageRelationshipClassEdgeOrderTest {
         return new HashSet<>(rotated);
     }
 
-    /** Injects a graph fixture into a field declared by the shared HTML report base class. */
+    /** Injects a graph fixture into a field declared anywhere in the target's class hierarchy. */
     private void setField(Object target, String fieldName, Object value) throws Exception {
-        Field field = SimpleHtmlReport.class.getDeclaredField(fieldName);
-        field.setAccessible(true);
-        field.set(target, value);
+        for (Class<?> type = target.getClass(); type != null; type = type.getSuperclass()) {
+            try {
+                Field field = type.getDeclaredField(fieldName);
+                field.setAccessible(true);
+                field.set(target, value);
+                return;
+            } catch (NoSuchFieldException e) {
+                // keep walking up the hierarchy
+            }
+        }
+        throw new NoSuchFieldException(fieldName);
     }
 
     /** Maps the package edge to its class edges in a DTO mock with no source file paths. */
@@ -113,16 +123,6 @@ class PackageRelationshipClassEdgeOrderTest {
         return edgeInfo;
     }
 
-    /** Renders the class-relationship cell of the package-relationship table for the given DTO. */
-    private String renderHtmlCell(SimpleHtmlReport report, RankedDisharmony edgeInfo, CodebaseGraphDTO dto)
-            throws Exception {
-        Method method = SimpleHtmlReport.class.getDeclaredMethod(
-                "getPackageRelationshipDisharmony", RankedDisharmony.class, String.class, CodebaseGraphDTO.class);
-        method.setAccessible(true);
-        String[] cells = (String[]) method.invoke(report, edgeInfo, REPO_URL, dto);
-        return cells[4];
-    }
-
     /** Builds the JSON DTO list of class relationships behind the package edge for the given DTO. */
     private List<ClassRelationshipDTO> buildJsonList(JsonGenerator generator, CodebaseGraphDTO dto) {
         DefaultWeightedEdge packageEdge = dto.getClassRelationshipsInPackageRelationship()
@@ -133,7 +133,8 @@ class PackageRelationshipClassEdgeOrderTest {
                 dto.getClassRelationshipsInPackageRelationship().get(packageEdge), dto);
     }
 
-    /** Verifies HTML and JSON use the same source/target order across class-edge set insertions. */
+    /** Verifies the JSON order is stable across class-edge set insertions, and the view model
+     * (which both the HTML and JSON templates render in list order) preserves it exactly. */
     @DisplayName(
             "class relationships behind a package edge render in the same deterministic order regardless of set insertion order")
     @Test
@@ -144,47 +145,34 @@ class PackageRelationshipClassEdgeOrderTest {
         Graph<VertexInfo, DefaultWeightedEdge> packageGraph = createPackageGraph();
         DefaultWeightedEdge packageEdge = packageGraph.edgeSet().iterator().next();
         List<DefaultWeightedEdge> edges = new ArrayList<>(classGraph.edgeSet());
-        RankedDisharmony edgeInfo = mockRankedDisharmony(packageEdge);
 
-        String firstHtmlCell = null;
         List<ClassRelationshipDTO> firstJsonList = null;
         for (int rotation = 0; rotation < 24; rotation++) {
             Set<DefaultWeightedEdge> classEdges = newSetInOrder(edges, rotation);
             CodebaseGraphDTO dto = mockDto(packageEdge, classEdges);
 
-            SimpleHtmlReport htmlReport = new SimpleHtmlReport();
-            setField(htmlReport, "classGraph", classGraph);
-            setField(htmlReport, "packageGraph", packageGraph);
-            String htmlCell = renderHtmlCell(htmlReport, edgeInfo, dto);
-
             JsonGenerator jsonGenerator = new JsonGenerator();
             setField(jsonGenerator, "classGraph", classGraph);
             setField(jsonGenerator, "packageGraph", packageGraph);
             List<ClassRelationshipDTO> jsonList = buildJsonList(jsonGenerator, dto);
-            List<String> jsonSources =
-                    jsonList.stream().map(ClassRelationshipDTO::getSourceClass).toList();
 
             // When: comparing each rotated insertion order against the first one
-            if (firstHtmlCell == null) {
-                firstHtmlCell = htmlCell;
+            if (firstJsonList == null) {
                 firstJsonList = jsonList;
             } else {
-                assertEquals(
-                        firstHtmlCell,
-                        htmlCell,
-                        "HTML class-relationship cell must not depend on set insertion order (rotation " + rotation
-                                + ")");
                 assertEquals(
                         firstJsonList.stream()
                                 .map(ClassRelationshipDTO::getSourceClass)
                                 .toList(),
-                        jsonSources,
+                        jsonList.stream()
+                                .map(ClassRelationshipDTO::getSourceClass)
+                                .toList(),
                         "JSON class-relationship order must not depend on set insertion order (rotation " + rotation
                                 + ")");
             }
         }
 
-        // Then: the order is the deterministic source-class order, identical in both reports
+        // Then: the order is the deterministic source-class order
         List<DefaultWeightedEdge> expectedOrder = edges.stream()
                 .sorted(Comparator.comparing((DefaultWeightedEdge e) ->
                                 classGraph.getEdgeSource(e).getName())
@@ -196,20 +184,9 @@ class PackageRelationshipClassEdgeOrderTest {
                         .toList(),
                 firstJsonList.stream().map(ClassRelationshipDTO::getSourceClass).toList(),
                 "JSON class relationships must be ordered by source class FQN");
-        String expectedHtmlCell = String.join(
-                "<br>",
-                expectedOrder.stream()
-                        .map(edge -> simpleName(classGraph.getEdgeSource(edge).getName()) + " &#8594; "
-                                + simpleName(classGraph.getEdgeTarget(edge).getName()) + " : "
-                                + (int) classGraph.getEdgeWeight(edge))
-                        .toList());
-        assertEquals(
-                expectedHtmlCell,
-                firstHtmlCell,
-                "HTML class-relationship cell must list the same edges in the same order as the JSON report");
 
-        // And: edges sharing a source render their targets in natural order — not insertion
-        // order — in both reports (TargetZ was inserted first, but TargetB sorts first)
+        // And: edges sharing a source order their targets naturally — not by insertion
+        // order (TargetZ was inserted first, but TargetB sorts first)
         List<String> multiSourceTargets = firstJsonList.stream()
                 .filter(r -> r.getSourceClass().equals(PKG_A + ".Multi"))
                 .map(ClassRelationshipDTO::getTargetClass)
@@ -218,13 +195,57 @@ class PackageRelationshipClassEdgeOrderTest {
                 List.of(PKG_B + ".TargetB", PKG_B + ".TargetZ"),
                 multiSourceTargets,
                 "JSON must order same-source class relationships by target class FQN, not insertion order");
-        assertTrue(
-                firstHtmlCell.indexOf("Multi &#8594; TargetB") < firstHtmlCell.indexOf("Multi &#8594; TargetZ"),
-                "HTML must render same-source targets in the same order as the JSON report");
     }
 
-    /** Extracts the final name segment from a fully qualified class name for expected HTML labels. */
-    private static String simpleName(String fqn) {
-        return fqn.substring(fqn.lastIndexOf('.') + 1);
+    /** The template view model carries the ordered class-relationship list unchanged, so the
+     * HTML table renders the same deterministic order the JSON report renders. */
+    @DisplayName("the view model preserves the ordered classRelationshipsToBreakPackage list")
+    @Test
+    void viewModelPreservesTheOrderedClassRelationshipList() {
+        // Given: a package relationship whose break-up list is ordered source-class first,
+        // with same-source targets in natural order (TargetB before TargetZ)
+        ClassRelationshipDTO first = ClassRelationshipDTO.builder()
+                .sourceClass(PKG_A + ".Multi")
+                .targetClass(PKG_B + ".TargetB")
+                .simpleSourceClassName("Multi")
+                .simpleTargetClassName("TargetB")
+                .weight(13)
+                .build();
+        ClassRelationshipDTO second = ClassRelationshipDTO.builder()
+                .sourceClass(PKG_A + ".Multi")
+                .targetClass(PKG_B + ".TargetZ")
+                .simpleSourceClassName("Multi")
+                .simpleTargetClassName("TargetZ")
+                .weight(13)
+                .build();
+        PackageRelationshipDTO relationship = PackageRelationshipDTO.builder()
+                .sourcePackage(PKG_A)
+                .targetPackage(PKG_B)
+                .priority(1)
+                .cycleCount(1)
+                .effortRank(1)
+                .classRelationshipsToBreakPackage(List.of(first, second))
+                .build();
+        RefactorFirstReportDTO report = RefactorFirstReportDTO.builder()
+                .packageRelationshipsToRemove(PackageRelationshipsToRemoveDTO.builder()
+                        .hasRelationships(true)
+                        .relationships(List.of(relationship))
+                        .build())
+                .build();
+
+        // When: the view model is built
+        Map<String, Object> viewModel = new ViewModelFactory().createViewModel(report);
+        @SuppressWarnings("unchecked")
+        Map<String, Object> packageRelationships = (Map<String, Object>) viewModel.get("packageRelationshipsToRemove");
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> packageRows = (List<Map<String, Object>>) packageRelationships.get("relationships");
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> brokenRelationships =
+                (List<Map<String, Object>>) packageRows.get(0).get("classRelationshipsToBreakPackage");
+
+        // Then: the order survives into the view model the template renders
+        assertEquals(2, brokenRelationships.size());
+        assertEquals(PKG_B + ".TargetB", brokenRelationships.get(0).get("targetClass"));
+        assertEquals(PKG_B + ".TargetZ", brokenRelationships.get(1).get("targetClass"));
     }
 }

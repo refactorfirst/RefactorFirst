@@ -1,0 +1,128 @@
+/* RefactorFirst interactive report graphs (Phase P7): vizdom SVG palette
+   recoloring and the rf-hover-* highlight model. Ported from the page repo's
+   app/globals.css vizdom section — same selectors (main#app .fullscreen-svg)
+   and palette tokens, so the two renderers stay pixel-identical. */
+
+/* vizdom WASM graphs (Class/Package/cycle maps): the layout bakes black
+   stroke/fill presentation attributes onto the edge curves and arrowhead
+   polygons, which vanish on the dark page. Only non-red elements re-drive
+   from the palette --graph-line — red stays red (cycle edges) and the
+   fill-only paths (text glyphs) are left alone: node labels stay black on
+   their white ellipses. */
+main#app .fullscreen-svg path[stroke]:not([stroke="red"]) {
+  stroke: var(--graph-line);
+}
+
+main#app .fullscreen-svg polygon:not([fill="red"]) {
+  stroke: var(--graph-line);
+  fill: var(--graph-line);
+}
+
+/* Package clusters: vizdom bakes the DOT's fillcolor onto each cluster rect
+   (g.cluster > a > rect fill="white" stroke="black", with the cluster label
+   as a black glyph path following the rect as a sibling). appendPackage only
+   ever emits fillcolor=white (regular packages) or fillcolor=pink (break-up
+   candidates), so the white boxes are the packages that do not need to be
+   broken up: their fill re-drives from the palette so it matches the page —
+   vizdom's default white on the light page, the dark --bg-color in dark mode.
+   The cluster label glyphs ride on the re-driven fill. The DOT (and its
+   byte-identical lockstep with the Java NestedDotBuilder) keeps
+   fillcolor=white/fillcolor=pink. */
+main#app .fullscreen-svg g.cluster rect[fill="white"] {
+  fill: var(--bg-color);
+  stroke: var(--graph-line);
+}
+
+main#app .fullscreen-svg g.cluster rect[fill="white"] ~ path[fill="black"] {
+  fill: var(--graph-line);
+}
+
+/* Break-up packages (the pink rects) invert that treatment: their problem
+   signal survives the dark page best as a deep rose box with a light pink
+   boundary and label. The light palette values equal vizdom's baked
+   pink/black, so this never changes light mode. */
+main#app .fullscreen-svg g.cluster rect[fill="pink"] {
+  fill: var(--graph-breakup-fill);
+  stroke: var(--graph-breakup-line);
+}
+
+main#app .fullscreen-svg g.cluster rect[fill="pink"] ~ path[fill="black"] {
+  fill: var(--graph-breakup-line);
+}
+
+/* Hover highlights on the DOT graphs: rf-graphs-vizdom.js derives the
+   node/edge neighborhood from the vizdom titles and toggles rf-hover-*
+   state classes. Hovering an edge flags the edge plus both endpoint nodes
+   with the amber attention accent; hovering a node flags it with the same
+   accent while its incoming edges + source nodes go green and its outgoing
+   edges + sink nodes go blue, so dependency direction reads at a glance.
+   Highlighted nodes FILL with their accent, and the node labels — glyph
+   paths with a baked black fill riding on the shape — re-ink to
+   --graph-hover-on. A node flagged both in and out is a bidirectional
+   partner of the hovered node and takes the attention accent over either
+   directional state. */
+main#app .fullscreen-svg g.edge.rf-hover-edge path[stroke] {
+  stroke: var(--graph-hover-edge);
+  stroke-width: 2.5px;
+}
+
+main#app .fullscreen-svg g.edge.rf-hover-edge polygon {
+  stroke: var(--graph-hover-edge);
+  fill: var(--graph-hover-edge);
+}
+
+main#app .fullscreen-svg g.node.rf-hover-edge ellipse,
+main#app .fullscreen-svg g.node.rf-hover-edge rect,
+main#app .fullscreen-svg g.node.rf-hover-focus ellipse,
+main#app .fullscreen-svg g.node.rf-hover-focus rect {
+  stroke: var(--graph-hover-edge);
+  fill: var(--graph-hover-edge);
+  stroke-width: 2px;
+}
+
+main#app .fullscreen-svg g.edge.rf-hover-in path[stroke] {
+  stroke: var(--graph-hover-in);
+  stroke-width: 2.5px;
+}
+
+main#app .fullscreen-svg g.edge.rf-hover-in polygon {
+  stroke: var(--graph-hover-in);
+  fill: var(--graph-hover-in);
+}
+
+main#app .fullscreen-svg g.node.rf-hover-in ellipse,
+main#app .fullscreen-svg g.node.rf-hover-in rect {
+  stroke: var(--graph-hover-in);
+  fill: var(--graph-hover-in);
+  stroke-width: 2px;
+}
+
+main#app .fullscreen-svg g.edge.rf-hover-out path[stroke] {
+  stroke: var(--graph-hover-out);
+  stroke-width: 2.5px;
+}
+
+main#app .fullscreen-svg g.edge.rf-hover-out polygon {
+  stroke: var(--graph-hover-out);
+  fill: var(--graph-hover-out);
+}
+
+main#app .fullscreen-svg g.node.rf-hover-out ellipse,
+main#app .fullscreen-svg g.node.rf-hover-out rect {
+  stroke: var(--graph-hover-out);
+  fill: var(--graph-hover-out);
+  stroke-width: 2px;
+}
+
+main#app .fullscreen-svg g.node.rf-hover-in.rf-hover-out ellipse,
+main#app .fullscreen-svg g.node.rf-hover-in.rf-hover-out rect {
+  stroke: var(--graph-hover-edge);
+  fill: var(--graph-hover-edge);
+}
+
+main#app .fullscreen-svg g.node.rf-hover-edge path[fill="black"],
+main#app .fullscreen-svg g.node.rf-hover-focus path[fill="black"],
+main#app .fullscreen-svg g.node.rf-hover-in path[fill="black"],
+main#app .fullscreen-svg g.node.rf-hover-out path[fill="black"] {
+  fill: var(--graph-hover-on);
+}
