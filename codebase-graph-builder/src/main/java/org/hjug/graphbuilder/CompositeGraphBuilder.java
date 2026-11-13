@@ -3,6 +3,7 @@ package org.hjug.graphbuilder;
 import java.io.IOException;
 import java.util.*;
 import lombok.extern.slf4j.Slf4j;
+import org.hjug.graphbuilder.graphbuilder.CSharpSourceFileGraphBuilder;
 import org.hjug.graphbuilder.graphbuilder.JavaSourceFileGraphBuilder;
 import org.hjug.graphbuilder.graphbuilder.KotlinSourceFileGraphBuilder;
 import org.hjug.graphbuilder.metrics.DisharmonyDetector.ClassDisharmony;
@@ -24,6 +25,17 @@ import org.jgrapht.graph.DefaultWeightedEdge;
  */
 @Slf4j
 public class CompositeGraphBuilder {
+
+    private final CSharpSourceFileGraphBuilder csharpBuilder;
+
+    public CompositeGraphBuilder() {
+        this(new CSharpSourceFileGraphBuilder());
+    }
+
+    /** For tests: lets the C# reader be replaced so no .NET process is needed. */
+    CompositeGraphBuilder(CSharpSourceFileGraphBuilder csharpBuilder) {
+        this.csharpBuilder = csharpBuilder;
+    }
 
     /**
      * Builds a unified graph for Java and Kotlin source files in a repository.
@@ -85,14 +97,26 @@ public class CompositeGraphBuilder {
         // compile dependency of this module, so the Kotlin parser is always
         // on the classpath; a failure here (parse error, IO, etc.) falls back
         // to the Java-only graph.
+        CodebaseGraphDTO merged = javaDto;
         try {
             KotlinSourceFileGraphBuilder kotlinBuilder = new KotlinSourceFileGraphBuilder();
             CodebaseGraphDTO kotlinDto = kotlinBuilder.buildGraph(repositoryPath, repositoryRoot, config);
-            return merge(javaDto, kotlinDto);
+            merged = merge(javaDto, kotlinDto);
         } catch (Exception e) {
             log.warn("Kotlin analysis failed; falling back to Java-only graph", e);
-            return javaDto;
         }
+
+        // C# needs .NET and a separate extractor program, so it is only attempted when the
+        // folder holds a solution or project. A failure here never costs the Java/Kotlin result.
+        try {
+            if (csharpBuilder.hasCSharpSources(repositoryPath)) {
+                CodebaseGraphDTO csharpDto = csharpBuilder.buildGraph(repositoryPath, repositoryRoot, config);
+                merged = merge(merged, csharpDto);
+            }
+        } catch (Exception e) {
+            log.warn("C# analysis failed; continuing without C#: {}", e.getMessage());
+        }
+        return merged;
     }
 
     /**

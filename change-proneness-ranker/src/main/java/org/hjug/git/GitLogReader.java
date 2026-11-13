@@ -24,6 +24,12 @@ public class GitLogReader implements AutoCloseable {
 
     static final String JAVA_FILE_TYPE = ".java";
     static final String KOTLIN_FILE_TYPE = ".kt";
+    static final String CSHARP_FILE_TYPE = ".cs";
+
+    /** True for the source files whose change history feeds change proneness. */
+    static boolean isAnalyzedSourceFile(String path) {
+        return path.endsWith(JAVA_FILE_TYPE) || path.endsWith(KOTLIN_FILE_TYPE) || path.endsWith(CSHARP_FILE_TYPE);
+    }
 
     private Repository gitRepository;
 
@@ -222,10 +228,7 @@ public class GitLogReader implements AutoCloseable {
             try {
                 int count = 0;
                 for (DiffEntry entry : getDiffEntries(newer, older)) {
-                    if (entry.getNewPath().endsWith(JAVA_FILE_TYPE)
-                            || entry.getOldPath().endsWith(JAVA_FILE_TYPE)
-                            || entry.getNewPath().endsWith(KOTLIN_FILE_TYPE)
-                            || entry.getOldPath().endsWith(KOTLIN_FILE_TYPE)) {
+                    if (isAnalyzedSourceFile(entry.getNewPath()) || isAnalyzedSourceFile(entry.getOldPath())) {
                         count++;
                     }
                 }
@@ -264,8 +267,7 @@ public class GitLogReader implements AutoCloseable {
                 if (treeWalk.isSubtree()) {
                     treeWalk.enterSubtree();
                 } else {
-                    if (treeWalk.getPathString().endsWith(JAVA_FILE_TYPE)
-                            || treeWalk.getPathString().endsWith(KOTLIN_FILE_TYPE)) {
+                    if (isAnalyzedSourceFile(treeWalk.getPathString())) {
                         firstCommitCount++;
                     }
                 }
