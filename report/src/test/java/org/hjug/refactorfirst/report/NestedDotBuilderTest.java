@@ -84,7 +84,11 @@ class NestedDotBuilderTest {
         try (InputStream in = getClass().getResourceAsStream("/golden/dot/" + fileName)) {
             assertNotNull(in, "Missing DOT golden resource: /golden/dot/" + fileName);
             String content = new String(in.readAllBytes(), StandardCharsets.UTF_8);
-            return content.endsWith("\n") ? content.substring(0, content.length() - 1) : content;
+            // The working tree uses CRLF line endings (see .gitattributes eol=crlf); the emitted
+            // DOT uses LF, and a single trailing line terminator is tolerated so goldens may end
+            // with one.
+            String normalized = content.replace("\r\n", "\n");
+            return normalized.endsWith("\n") ? normalized.substring(0, normalized.length() - 1) : normalized;
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
