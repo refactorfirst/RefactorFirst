@@ -88,7 +88,9 @@ public static class MemberWalker
         foreach (SyntaxReference reference in TypeNames.SourceReferences(method))
         {
             SyntaxNode node = reference.GetSyntax();
-            var span = node.SyntaxTree.GetLineSpan(node.Span);
+            // A primary constructor is declared by the type itself; its length is its parameter list, not the whole type.
+            SyntaxNode measured = node is TypeDeclarationSyntax { ParameterList: { } parameters } ? parameters : node;
+            var span = measured.SyntaxTree.GetLineSpan(measured.Span);
             loc += span.EndLinePosition.Line - span.StartLinePosition.Line + 1;
 
             // The part that runs: a block or an expression body. An auto-accessor (`get;`) has neither.

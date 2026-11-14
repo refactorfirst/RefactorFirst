@@ -1,7 +1,8 @@
 ﻿using System.Text.Json;
 using CSharpFactExtractor;
 
-if (args.Length < 1)
+// At least one solution or project must come before the first flag.
+if (args.Length < 1 || args[0].StartsWith("--"))
 {
     Console.Error.WriteLine("usage: CSharpFactExtractor <solution-or-project> [<project> ...] --root <repo-root> --out <facts.json> [--include-tests]");
     return 2;

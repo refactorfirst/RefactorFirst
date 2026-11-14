@@ -48,21 +48,33 @@ public static class Extractor
         }
 
         var types = new Dictionary<string, TypeFacts>();
+        var duplicates = new SortedSet<string>(StringComparer.Ordinal);
         foreach (Project project in solution.Projects)
         {
-            if (excludeTests && (project.Name.EndsWith("Tests") || project.Name.EndsWith(".Test"))) continue;
+            if (excludeTests && TestProjects.IsTestProject(project.Name, project.MetadataReferences.Select(r => r.Display ?? ""))) continue;
             Compilation? compilation = await project.GetCompilationAsync();
             if (compilation is null) continue;
             foreach (INamedTypeSymbol type in AllTypes(compilation.Assembly.GlobalNamespace))
             {
                 if (type.TypeKind == TypeKind.Delegate || TypeNames.Namespace(type).Length == 0) continue;
                 string fqn = TypeNames.Fqn(type);
+                // The same full name in two projects: the first one is kept, and the run says so below.
+                if (types.ContainsKey(fqn))
+                {
+                    duplicates.Add(fqn);
+                    continue;
+                }
                 MemberFacts members = MemberWalker.Collect(type, compilation);
                 types[fqn] = new TypeFacts(
                     fqn, TypeNames.Namespace(type), type.Name, LargestFile(type, root), Loc(type),
                     Parent(type), members.Attributes, DependencyWalker.Collect(type, compilation), members.Methods,
                     members.ProtectedMembers, members.OverriddenMethods, members.UsedParentMembers);
             }
+        }
+        if (duplicates.Count > 0)
+        {
+            Console.Error.WriteLine($"warning: {duplicates.Count} type name(s) are declared in more than one project; only the first of each was analysed.");
+            foreach (string duplicate in duplicates.Take(3)) Console.Error.WriteLine("  " + duplicate);
         }
         var list = types.Values.OrderBy(t => t.Fqn, StringComparer.Ordinal).ToList();
         return new Facts(1, root, list.Select(t => t.Namespace).Distinct().OrderBy(n => n, StringComparer.Ordinal).ToList(), list);

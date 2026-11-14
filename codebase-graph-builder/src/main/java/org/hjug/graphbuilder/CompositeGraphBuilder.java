@@ -113,8 +113,11 @@ public class CompositeGraphBuilder {
                 CodebaseGraphDTO csharpDto = csharpBuilder.buildGraph(repositoryPath, repositoryRoot, config);
                 merged = merge(merged, csharpDto);
             }
-        } catch (Exception e) {
+        } catch (IOException e) {
+            // Expected failures (no extractor configured, .NET missing, bad facts file) explain themselves.
             log.warn("C# analysis failed; continuing without C#: {}", e.getMessage());
+        } catch (Exception e) {
+            log.warn("C# analysis failed; continuing without C#", e);
         }
         return merged;
     }

@@ -48,7 +48,9 @@ checked-in file `codebase-graph-builder/src/test/resources/csharp/tiny-greeter-f
 which is the extractor's real output for `fixtures/TinyGreeter`.
 
 Rules
-- `fqn` = namespace + "." + name. Nested types: `Outer$Inner`. Generic arity is dropped.
+- `fqn` = namespace + "." + name. Nested types: `Outer$Inner`. Generic arity is dropped (`Box<T>` is `Box`), unless a type with the same name is declared beside it in the same project: then the generic one is named the .NET way, so `Result` and `Result<T>` are `Result` and ``Result`1``.
+- A full name declared in more than one project appears once (the first project wins) and the extractor prints a warning.
+- Types outside any namespace are left out, and so are delegates.
 - `dependencies` lists only types declared in the analysed source, never framework or package types, never the type itself.
 - `count` = how many names in the type's code resolve to the other type or to one of its members.
 - `parent` = fqn of the base class if it is in the analysed source, else null.
@@ -61,5 +63,7 @@ Rules
 - `protectedMembers` = how many of the type's own fields, properties and methods are protected. `overriddenMethods` = signatures of its methods marked `override`. `usedParentMembers` = names of its base class's members that it uses. "Base class" means one declared in the analysed source. These feed Refused Parent Bequest and Tradition Breaker.
 - Types declared only in generated files are left out: anything under `obj` or `bin`, and files ending `.g.cs`, `.g.i.cs`, `.Designer.cs` or `.generated.cs`.
 - The extractor takes one solution, or several project files when the repository has no solution at its root.
+- Test projects are left out unless `--include-tests` is given. A test project is one whose name ends in `Test`, `Tests`, `Spec` or `Specs` (a trailing target framework such as `(net8.0)` is ignored), or that references xUnit, NUnit, MSTest or the .NET test platform.
+- A primary constructor's `loc` is the length of its parameter list, not of the type that declares it.
 - Raw facts only. ATFD, TCC and WMC are computed on the Java side.
 - A reader must ignore fields it does not know and reject a `schemaVersion` it does not know.

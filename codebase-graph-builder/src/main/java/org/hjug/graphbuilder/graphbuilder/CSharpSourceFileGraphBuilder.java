@@ -27,6 +27,11 @@ public class CSharpSourceFileGraphBuilder implements SourceFileGraphBuilder {
 
     private final CSharpExtractorRunner runner;
 
+    /** What the last search found, so asking "is there C#?" and then building does not search twice. */
+    private Path searchedDirectory;
+
+    private List<Path> foundTargets = List.of();
+
     public CSharpSourceFileGraphBuilder() {
         this(new CSharpExtractorRunner());
     }
@@ -37,21 +42,33 @@ public class CSharpSourceFileGraphBuilder implements SourceFileGraphBuilder {
 
     /** True when the folder holds a C# solution or project worth launching .NET for. */
     public boolean hasCSharpSources(String repositoryPath) throws IOException {
-        return !CSharpExtractorRunner.findTargets(Path.of(repositoryPath)).isEmpty();
+        return !targetsIn(absolute(repositoryPath)).isEmpty();
+    }
+
+    private List<Path> targetsIn(Path directory) throws IOException {
+        if (!directory.equals(searchedDirectory)) {
+            foundTargets = CSharpExtractorRunner.findTargets(directory);
+            searchedDirectory = directory;
+        }
+        return foundTargets;
+    }
+
+    private static Path absolute(String path) {
+        return Path.of(path).toAbsolutePath().normalize();
     }
 
     @Override
     public CodebaseGraphDTO buildGraph(String repositoryPath, String repositoryRoot, GraphBuilderConfig config)
             throws IOException {
-        Path directory = Path.of(repositoryPath).toAbsolutePath().normalize();
-        List<Path> targets = CSharpExtractorRunner.findTargets(directory);
+        Path directory = absolute(repositoryPath);
+        List<Path> targets = targetsIn(directory);
         if (targets.isEmpty()) {
             throw new IOException("No .sln, .slnx or .csproj found under " + repositoryPath);
         }
-        Path root = repositoryRoot == null || repositoryRoot.isEmpty()
-                ? directory
-                : Path.of(repositoryRoot).toAbsolutePath().normalize();
-        Path facts = runner.run(targets, root);
+        Path root = repositoryRoot == null || repositoryRoot.isEmpty() ? directory : absolute(repositoryRoot);
+        // Test projects are left out unless the caller asked for tests to be analysed.
+        boolean includeTests = config != null && !config.isExcludeTests();
+        Path facts = runner.run(targets, root, directory, includeTests);
         try {
             return buildGraphFromFacts(facts);
         } finally {

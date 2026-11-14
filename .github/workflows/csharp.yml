@@ -1,0 +1,57 @@
+# Optional: exercises the C# fact extractor and the tests that need it.
+# The main Maven workflows need no .NET; the tests they cannot run are run here.
+
+name: C# analysis
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'csharp-fact-extractor/**'
+      - 'codebase-graph-builder/**'
+      - '.github/workflows/csharp.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'csharp-fact-extractor/**'
+      - 'codebase-graph-builder/**'
+      - '.github/workflows/csharp.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  csharp:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          java-version: 25
+          distribution: 'zulu'
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore the fixtures the tests analyse
+        run: |
+          dotnet restore csharp-fact-extractor/fixtures/TinyGreeter/TinyGreeter.sln
+          dotnet restore csharp-fact-extractor/fixtures/TwoProjects/Alpha/Alpha.csproj
+          dotnet restore csharp-fact-extractor/fixtures/Shapes/Shapes.csproj
+
+      - name: Test the extractor
+        run: dotnet test csharp-fact-extractor/tests/CSharpFactExtractor.Tests.csproj
+
+      - name: Publish the extractor
+        run: dotnet publish csharp-fact-extractor/src -c Release -o csharp-fact-extractor/publish
+
+      - name: Run the Java tests that need the extractor
+        env:
+          REFACTORFIRST_CSHARP_EXTRACTOR: ${{ github.workspace }}/csharp-fact-extractor/publish/CSharpFactExtractor.dll
+        run: mvn -B package -Dtest='CSharp*,CompositeGraphBuilderCSharp*,GitLogReaderCSharp*' -Dsurefire.failIfNoSpecifiedTests=false

@@ -5,12 +5,22 @@ namespace CSharpFactExtractor;
 public static class TypeNames
 {
     /// Namespace + name; nested types joined with '$' so the namespace stays the package.
+    /// A generic type keeps its plain name unless a type with the same name sits beside it
+    /// (Result and Result<T>); then the generic one is named the .NET way, "Result`1".
     public static string Fqn(INamedTypeSymbol type)
     {
         var names = new Stack<string>();
-        for (INamedTypeSymbol? t = type.OriginalDefinition; t != null; t = t.ContainingType) names.Push(t.Name);
+        for (INamedTypeSymbol? t = type.OriginalDefinition; t != null; t = t.ContainingType)
+            names.Push(t.Arity > 0 && HasNamesake(t) ? t.Name + "`" + t.Arity : t.Name);
         var ns = Namespace(type);
         return (ns.Length == 0 ? "" : ns + ".") + string.Join("$", names);
+    }
+
+    /// True when another type with the same name is declared in the same namespace or outer type of the same project.
+    private static bool HasNamesake(INamedTypeSymbol type)
+    {
+        INamespaceOrTypeSymbol? container = (INamespaceOrTypeSymbol?)type.ContainingType ?? type.ContainingNamespace;
+        return container is not null && container.GetTypeMembers(type.Name).Count(IsInSource) > 1;
     }
 
     public static string Namespace(INamedTypeSymbol type) =>
