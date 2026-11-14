@@ -213,7 +213,7 @@ span.theme-toggle {
   top: 1rem;
   right: 1rem;
   width: fit-content;
-  z-index: 9999;
+  z-index: 999;
   /* Optional: background and padding to ensure visibility */
   background: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(4px);
