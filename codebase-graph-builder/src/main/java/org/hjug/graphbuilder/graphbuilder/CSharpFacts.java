@@ -18,8 +18,8 @@ public record CSharpFacts(int schemaVersion, String root, List<String> namespace
     static final int SUPPORTED_SCHEMA_VERSION = 1;
 
     public CSharpFacts {
-        namespaces = orEmpty(namespaces);
-        types = orEmpty(types);
+        namespaces = CSharpFactLists.orEmpty(namespaces);
+        types = CSharpFactLists.orEmpty(types);
     }
 
     static CSharpFacts read(InputStream in) throws IOException {
@@ -29,10 +29,6 @@ public record CSharpFacts(int schemaVersion, String root, List<String> namespace
                     + SUPPORTED_SCHEMA_VERSION + ")");
         }
         return facts;
-    }
-
-    private static <T> List<T> orEmpty(List<T> list) {
-        return list == null ? List.of() : list;
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -51,11 +47,11 @@ public record CSharpFacts(int schemaVersion, String root, List<String> namespace
             List<String> usedParentMembers) {
 
         public TypeFacts {
-            attributes = orEmpty(attributes);
-            dependencies = orEmpty(dependencies);
-            methods = orEmpty(methods);
-            overriddenMethods = orEmpty(overriddenMethods);
-            usedParentMembers = orEmpty(usedParentMembers);
+            attributes = CSharpFactLists.orEmpty(attributes);
+            dependencies = CSharpFactLists.orEmpty(dependencies);
+            methods = CSharpFactLists.orEmpty(methods);
+            overriddenMethods = CSharpFactLists.orEmpty(overriddenMethods);
+            usedParentMembers = CSharpFactLists.orEmpty(usedParentMembers);
         }
     }
 
@@ -83,12 +79,12 @@ public record CSharpFacts(int schemaVersion, String root, List<String> namespace
             List<String> calledForeignMethodClasses) {
 
         public MethodFacts {
-            accessedVariables = orEmpty(accessedVariables);
-            accessedOwnAttributes = orEmpty(accessedOwnAttributes);
-            accessedForeignAttributes = orEmpty(accessedForeignAttributes);
-            accessedForeignClasses = orEmpty(accessedForeignClasses);
-            calledForeignMethods = orEmpty(calledForeignMethods);
-            calledForeignMethodClasses = orEmpty(calledForeignMethodClasses);
+            accessedVariables = CSharpFactLists.orEmpty(accessedVariables);
+            accessedOwnAttributes = CSharpFactLists.orEmpty(accessedOwnAttributes);
+            accessedForeignAttributes = CSharpFactLists.orEmpty(accessedForeignAttributes);
+            accessedForeignClasses = CSharpFactLists.orEmpty(accessedForeignClasses);
+            calledForeignMethods = CSharpFactLists.orEmpty(calledForeignMethods);
+            calledForeignMethodClasses = CSharpFactLists.orEmpty(calledForeignMethodClasses);
         }
     }
 }
