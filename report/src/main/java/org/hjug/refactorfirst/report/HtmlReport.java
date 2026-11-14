@@ -85,6 +85,10 @@ public class HtmlReport extends SimpleHtmlReport {
      * view model factory translates the DTO, the Java-built graph DOT strings join the rf-data
      * JSON payload (the P4 parity bridge), the template engine renders the page and the asset
      * inliner embeds the classpath CSS/JS. Used by {@link #execute} and the Doxia site report.
+     *
+     * <p>A missing Git repository renders the strictly-HTML message page instead of surfacing the
+     * analysis-failed state: the no-Git result must reach this renderer as the message page rather
+     * than tripping the analysis-failed guard below.
      */
     public String renderInteractivePage(
             boolean showDetails,
@@ -96,6 +100,18 @@ public class HtmlReport extends SimpleHtmlReport {
             String projectVersion,
             File baseDir)
             throws Exception {
+
+        File effectiveBaseDir = baseDir != null
+                ? baseDir
+                : new File(Path.of("").toAbsolutePath().toString());
+        if (GitLogReader.getGitDir(effectiveBaseDir) == null) {
+            log.info(
+                    "Done! No Git repository found!  Please initialize a Git repository and perform an initial commit.");
+            return new TemplateEngine()
+                    .render(
+                            "templates/refactor-first-simple-report.mustache",
+                            noGitViewModel(projectName, projectVersion, effectiveBaseDir));
+        }
 
         ReportModelBuilder modelBuilder = new ReportModelBuilder();
         RefactorFirstReportDTO reportDTO = modelBuilder.build(

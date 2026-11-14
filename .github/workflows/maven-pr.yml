@@ -34,7 +34,8 @@ jobs:
         run: mvn -B verify
 
       - name: Run Report JavaScript Tests
-        run: mvn -B -pl report -P js-tests verify
+
+        run: mvn -B -pl report -am -P js-tests verify
 
 
 #      Comment "Build With Maven" and uncomment the below when you want a snapshot build to be deployed

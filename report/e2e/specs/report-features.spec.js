@@ -64,9 +64,13 @@ test.describe('report table features', () => {
 
         await search.fill('junit');
         await page.waitForTimeout(500); // search debounce
-        const filteredRows = await rows.count();
-        expect(filteredRows).toBeLessThan(total);
-        const match = await page.locator('[data-rf-match="class-relationships"]').textContent();
+        // The match status is the source of truth for the complete filtered count (rf-tables.js);
+        // the rendered row count is only the current page size while pagination is engaged, so the
+        // filtered count and the displayed page size are checked separately.
+        const match = (await page.locator('[data-rf-match="class-relationships"]').textContent()) ?? '';
+        const filteredRows = Number.parseInt(String(match).split(' of ')[0], 10);
+        expect(filteredRows).toBeGreaterThan(20); // the filtered set exceeds the 20-row page size
+        expect(await rows.count()).toBe(20); // displayed page size, checked separately from filtered
         expect(match).toBe(`${filteredRows} of ${total} rows match`);
 
         // Escape clears the filter (and re-engages pagination).

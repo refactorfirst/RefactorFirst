@@ -3,6 +3,7 @@ package org.hjug.refactorfirst.report;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -13,6 +14,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.Comparator;
+import java.util.stream.Stream;
 import org.hjug.refactorfirst.report.model.RefactorFirstReportDTO;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -126,6 +128,45 @@ class ReportModelBuilderTest {
     }
 
     /**
+     * A reused {@link ReportModelBuilder} must start every build from a clean slate: findings
+     * (and their source paths) from a prior analysis must not leak into the next report build.
+     */
+    @Test
+    void reusedBuilderDoesNotCarryFindingsFromPriorBuildIntoNextBuild() throws Exception {
+        // Given: a builder reused across two builds — the first over a repo that yields
+        // disharmony findings, the second over a clean repo
+        File dirtyDir = gitRepoWithKotlinDisharmonies(tempDir);
+        File cleanDir = gitRepoWithSimpleSource(tempDir);
+
+        ReportModelBuilder builder = new ReportModelBuilder();
+        RefactorFirstReportDTO first = builder.build(
+                false, // showDetails
+                50, // edgeAnalysisCount
+                true, // analyzeCycles
+                true, // excludeTests
+                "src/test",
+                "DirtyProject",
+                "1.0.0",
+                dirtyDir);
+        assertTrue(first.getProject().isHasAnyDisharmony());
+        assertFalse(builder.getRankedDisharmoniesByAnchor().isEmpty());
+
+        RefactorFirstReportDTO second = builder.build(
+                false, // showDetails
+                50, // edgeAnalysisCount
+                true, // analyzeCycles
+                true, // excludeTests
+                "src/test",
+                "CleanProject",
+                "1.0.0",
+                cleanDir);
+
+        // Then: the second build does not carry the first build's findings into its result
+        assertTrue(builder.getRankedDisharmoniesByAnchor().isEmpty());
+        assertFalse(second.getProject().isHasAnyDisharmony());
+    }
+
+    /**
      * A multi-module layout (module directory != Git repo root) must build a full report —
      * the model builder passes both paths to CycleRanker for URL canonicalization instead of
      * returning early. Migrated from SimpleHtmlReportTest.generateReport_multiModuleProject_
@@ -178,6 +219,66 @@ class ReportModelBuilderTest {
         assertFalse(reportDTO.getProject().isAnalysisFailed(), "must not return early for multi-module projects");
 
         deleteDir(tempDir);
+    }
+
+    private File gitRepoWithKotlinDisharmonies(Path parent) throws Exception {
+        File projectDir = new File(parent.toFile(), "kotlin-disharmony-project");
+        File sourceDir = new File(projectDir, "src/main/kotlin");
+        Files.createDirectories(sourceDir.toPath());
+        copyFixtureSources(
+                new File("../codebase-graph-builder/src/test/resources/kotlinDisharmonySrcDirectory"), sourceDir);
+        return gitInit(projectDir);
+    }
+
+    private File gitRepoWithSimpleSource(Path parent) throws Exception {
+        File projectDir = new File(parent.toFile(), "clean-project");
+        File sourceDir = new File(projectDir, "src/main/java/com/example");
+        Files.createDirectories(sourceDir.toPath());
+        Files.writeString(
+                new File(sourceDir, "SimpleService.java").toPath(),
+                """
+                package com.example;
+
+                public class SimpleService {
+                    public String greet(String name) {
+                        return "Hello " + name;
+                    }
+                }
+                """);
+        return gitInit(projectDir);
+    }
+
+    private File gitInit(File dir) throws Exception {
+        new ProcessBuilder("git", "init").directory(dir).start().waitFor();
+        new ProcessBuilder("git", "config", "user.email", "test@test.com")
+                .directory(dir)
+                .start()
+                .waitFor();
+        new ProcessBuilder("git", "config", "user.name", "Test")
+                .directory(dir)
+                .start()
+                .waitFor();
+        new ProcessBuilder("git", "add", ".").directory(dir).start().waitFor();
+        new ProcessBuilder("git", "commit", "-m", "initial")
+                .directory(dir)
+                .start()
+                .waitFor();
+        return dir;
+    }
+
+    private void copyFixtureSources(File source, File target) throws Exception {
+        try (Stream<Path> stream = Files.walk(source.toPath())) {
+            stream.filter(Files::isRegularFile).forEach(sourcePath -> {
+                try {
+                    Path relative = source.toPath().relativize(sourcePath);
+                    Path targetPath = target.toPath().resolve(relative);
+                    Files.createDirectories(targetPath.getParent());
+                    Files.copy(sourcePath, targetPath);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            });
+        }
     }
 
     private void deleteDir(File dir) {

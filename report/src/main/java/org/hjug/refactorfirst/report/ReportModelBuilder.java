@@ -215,6 +215,10 @@ public class ReportModelBuilder {
             Clock clock)
             throws Exception {
 
+        // A reused builder must not carry findings (or their source paths) from a prior
+        // analysis into the next report build.
+        rankedDisharmoniesByAnchor = new LinkedHashMap<>();
+
         if (testSourceDirectory == null || testSourceDirectory.isEmpty()) {
             testSourceDirectory = "src" + File.separator + "test";
         }

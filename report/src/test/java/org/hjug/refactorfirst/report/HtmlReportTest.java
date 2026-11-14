@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -353,6 +354,30 @@ class HtmlReportTest {
 
         // Empty names fall back to a non-empty, valid identifier
         assertEquals("graph_cycle_0", HtmlReport.graphIdentifier(""));
+    }
+
+    @Test
+    void renderInteractivePage_rendersNoGitMessageInsteadOfAnalysisFailed() throws Exception {
+        // Given: a base directory with no Git repository
+        File baseDir = File.createTempFile("rf-no-git", "");
+        baseDir.delete();
+        baseDir.mkdirs();
+
+        // When: the interactive page renders for a missing Git repository
+        String html = new HtmlReport()
+                .renderInteractivePage(
+                        false, // showDetails
+                        50, // edgeAnalysisCount
+                        true, // analyzeCycles
+                        true, // excludeTests
+                        "src/test",
+                        "NoGitProject",
+                        "1.0.0",
+                        baseDir);
+
+        // Then: the no-Git message page reaches the caller instead of the analysis-failed throw
+        assertTrue(html.contains("No Git repository found in project"), html);
+        assertTrue(html.contains("NoGitProject"), html);
     }
 
     /** Verifies distinct package node IDs in the raw package-map DOT the rf-data payload embeds. */

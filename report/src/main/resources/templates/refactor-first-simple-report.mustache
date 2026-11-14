@@ -25,7 +25,7 @@
 <body>
 <header class="rf-header">
     <h1><a href="https://github.com/refactorfirst/refactorfirst" title="Learn about RefactorFirst">RefactorFirst</a> Report for <a href="{{project.repoUrl}}">{{project.name}} {{project.version}}</a></h1>
-    {{#hasDisharmonies}}
+    {{#project.hasAnyDisharmony}}
     <nav aria-label="Report sections">
         <ul>
             {{#classRelationshipsToRemove.hasRelationships}}<li><a href="#">Classes</a><ul><li><a href="#CLASSEDGES">Class Relationships To Remove</a></li></ul></li>{{/classRelationshipsToRemove.hasRelationships}}
@@ -36,14 +36,14 @@
             {{#classCycles.hasCycles}}<li><a href="#">Cycles</a><ul><li><a href="#CYCLES">Class Cycles</a></li><li><a href="#CYCLEMAP">Cycle Map</a></li></ul></li>{{/classCycles.hasCycles}}
         </ul>
     </nav>
-    {{/hasDisharmonies}}
+    {{/project.hasAnyDisharmony}}
 </header>
 <main>
-{{^hasDisharmonies}}
-    {{^noGitRepository}}<p class="rf-congratulations">Congratulations!  {{project.name}} {{project.version}} has no Cycles or Disharmonies!</p>{{/noGitRepository}}
+{{^project.hasAnyDisharmony}}
+    {{^noGitRepository}}{{#project.analysisFailed}}<p class="rf-congratulations">Analysis incomplete: RefactorFirst could not finish scanning this project. The absence of findings below does not mean the project is clean.</p>{{/project.analysisFailed}}{{^project.analysisFailed}}<p class="rf-congratulations">Congratulations!  {{project.name}} {{project.version}} has no Cycles or Disharmonies!</p>{{/project.analysisFailed}}{{/noGitRepository}}
     {{#noGitRepository}}<p class="rf-congratulations">No Git repository found in project {{project.name}} {{project.version}}.  Please initialize a Git repository and perform an initial commit.</p>{{/noGitRepository}}
-{{/hasDisharmonies}}
-{{#hasDisharmonies}}
+{{/project.hasAnyDisharmony}}
+{{#project.hasAnyDisharmony}}
     <div align="center">
     <h2>Show RefactorFirst some &#10084;&#65039;</h2>
     <a href="https://github.com/refactorfirst/refactorfirst" aria-label="Star refactorfirst/refactorfirst on GitHub">Star</a>
@@ -187,7 +187,7 @@
     </section>
     {{/classCycles.largestCycle.hasCycleMap}}
     {{/classCycles.hasCycles}}
-{{/hasDisharmonies}}
+{{/project.hasAnyDisharmony}}
 </main>
 <footer>
     <div class="clear"><hr/></div>
