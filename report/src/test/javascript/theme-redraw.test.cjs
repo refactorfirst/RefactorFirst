@@ -247,3 +247,27 @@ test('the 3D popup always uses the dark accent set; the 2D popup follows the pal
         graphsSource.includes("const accents = {edge: '#f0b95a', in: '#7ee2a8', out: '#8ed0fa'};"),
         'createForceGraph must use the always-dark accents');
 });
+
+test('theme redraw destroys pan zoom before replacing SVG and prunes detached instances', () => {
+    // Given: a rendered graph with a pan zoom instance.
+    const h = harness();
+    const RF = loadReportModules(h);
+    const events = [];
+    const el = h.makeContainer();
+    Object.defineProperty(el, 'innerHTML', {set() { events.push('replace'); }});
+    h.containers.classGraph = el;
+    h.window.svgPanZoom = () => {
+        events.push('create');
+        return {destroy() { events.push('destroy'); }};
+    };
+    RF.initWasmGraphs({classMap: {hierarchy: HIERARCHY}});
+    // When: multiple palette changes replace the SVG.
+    RF.redrawGraphs();
+    RF.redrawGraphs();
+    // Then: each old instance is destroyed before replacement.
+    assert.deepEqual(events, ['replace', 'create', 'destroy', 'replace', 'create', 'destroy', 'replace', 'create']);
+    el.isConnected = false;
+    RF.redrawGraphs();
+    RF.redrawGraphs();
+    assert.equal(events.filter(e => e === 'destroy').length, 3);
+});

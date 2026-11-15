@@ -160,7 +160,7 @@ test('node/link arrays derive from the DOT with subgraph nodes dropped and endpo
         'link endpoints are resolved node references (sourceNode/targetNode), not ids');
     assert.equal(graphData.links[0].color, 'red', 'the DOT edge color rides along');
     assert.equal(graphData.nodes.find(node => node.id === 'A').color, 'red', 'the DOT node color rides along');
-    assert.equal(h.calls.find(call => call[0] === 'nodeLabel')[1], 'label');
+    assert.equal(typeof h.calls.find(call => call[0] === 'nodeLabel')[1], 'function');
     assert.equal(h.calls.find(call => call[0] === 'particleWidth')[1], 4);
 });
 
@@ -241,4 +241,18 @@ test('3D setup waits for the shared sprite import before configuring labels', as
     await creation;
     assert.equal(typeof h.nodeThreeObjectAccessor, 'function');
     assert.equal(typeof h.hoverHandlers.node, 'function');
+});
+
+test('node tooltip treats scanned labels as text', async () => {
+    // Given: the real label accessor and an HTML-looking scanned name.
+    const h = harness();
+    await loadAndCreate(h, DOT);
+    global.document.createElement = tag => ({tagName: tag.toUpperCase(), textContent: ''});
+    const label = '<img src=x onerror=alert(1)>';
+    // When: force-graph asks for the tooltip.
+    const accessor = h.calls.find(call => call[0] === 'nodeLabel')[1];
+    const tooltip = accessor({label});
+    // Then: it receives a DOM element containing only text.
+    assert.equal(tooltip.tagName, 'SPAN');
+    assert.equal(tooltip.textContent, label);
 });

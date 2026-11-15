@@ -20,14 +20,39 @@ import org.junit.jupiter.api.Test;
 class AssetInlinerTest {
 
     private final TemplateEngine templateEngine = new TemplateEngine();
-    private final AssetInliner assetInliner = new AssetInliner();
 
     private static final String TEMPLATE_RESOURCE = "templates/refactor-first-report.mustache";
     private static final Pattern ASSET_COMMENT = Pattern.compile("<!-- rf:asset:([^ ]+) -->");
 
     private String renderedAndInlined() throws Exception {
-        String rendered = templateEngine.render(TEMPLATE_RESOURCE, InteractiveTemplateFixture.viewModel());
-        return assetInliner.inline(rendered);
+        return templateEngine.renderWithAssets(TEMPLATE_RESOURCE, InteractiveTemplateFixture.viewModel());
+    }
+
+    @Test
+    void markerContainingProjectNamePreservesJson() throws Exception {
+        // Given: marker text followed by markup that must remain report data.
+        String name = "<!-- rf:inlined-js --><img src=x onerror=alert(1)>";
+        var dto = InteractiveTemplateFixture.reportDto();
+        dto.getProject().setName(name);
+        String expected = new RfDataBlock().build(dto);
+
+        // When: the complete production report is rendered.
+        String html = new HtmlReport().renderInteractiveReport(dto, null);
+
+        // Then: the JSON bytes and decoded name survive, with no injected markup.
+        var matcher = Pattern.compile("<script type=\"application/json\" id=\"rf-data\">(.*?)</script>", Pattern.DOTALL)
+                .matcher(html);
+        assertTrue(matcher.find());
+        assertEquals(expected, matcher.group(1));
+        assertEquals(
+                name,
+                new com.fasterxml.jackson.databind.ObjectMapper()
+                        .readTree(matcher.group(1))
+                        .path("project")
+                        .path("name")
+                        .asText());
+        assertFalse(html.replace(matcher.group(0), "").contains("<img src=x"));
+        assertFalse(matcher.group(1).contains("<script>"));
     }
 
     @DisplayName("Assets inline in the deterministic order with idempotent id comments")

@@ -16,6 +16,13 @@
     // so the report renders consistently on both palettes. Entries whose
     // container left the DOM are pruned instead of redrawn.
     const wasmGraphHierarchies = new Map();
+    const panZoomInstances = new Map();
+
+    function destroyPanZoom(containerId) {
+        const instance = panZoomInstances.get(containerId);
+        panZoomInstances.delete(containerId);
+        if (instance) instance.destroy();
+    }
 
     /**
      * Synthesis options for the active palette: the dark palette bakes the muted
@@ -60,10 +67,11 @@
         // new-tab behavior on every encoded anchor, not just the first
         svg = svg.replaceAll('<a href=', '<a target="_blank" href=');
         svg = svg.replace('<svg ', '<svg class="fullscreen-svg" ');
+        destroyPanZoom(containerId);
         el.innerHTML = svg;
         bindGraphHoverHighlights(el);
         if (window.svgPanZoom) {
-            window.svgPanZoom('#' + containerId + ' svg', {zoomEnabled: true, controlIconsEnabled: true});
+            panZoomInstances.set(containerId, window.svgPanZoom('#' + containerId + ' svg', {zoomEnabled: true, controlIconsEnabled: true}));
         }
     }
 
@@ -173,6 +181,7 @@
         for (const [containerId, entry] of wasmGraphHierarchies) {
             const el = typeof document !== 'undefined' ? document.getElementById(containerId) : null;
             if (!el || !el.isConnected) {
+                destroyPanZoom(containerId);
                 wasmGraphHierarchies.delete(containerId);
                 continue;
             }

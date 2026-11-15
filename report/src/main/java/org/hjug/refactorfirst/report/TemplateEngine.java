@@ -52,6 +52,11 @@ public class TemplateEngine {
         return writer.toString();
     }
 
+    /** Inserts assets into trusted template slots before interpolating report data. */
+    public String renderWithAssets(String templateName, Object view) throws Exception {
+        return renderInline(new AssetInliner().inline(readTemplate(templateName)), templateName, view);
+    }
+
     /** Renders an inline template source against the view model (used by tests and the simple report). */
     public String renderInline(String templateSource, Object view) throws Exception {
         MustacheFactory factory = new DefaultMustacheFactory();

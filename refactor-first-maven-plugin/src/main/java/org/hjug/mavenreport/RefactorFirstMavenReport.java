@@ -9,12 +9,14 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.reporting.AbstractMavenReport;
 import org.hjug.refactorfirst.report.HtmlReport;
+import org.hjug.refactorfirst.report.ReportWriter;
 
 /**
  * Phase P4/T4.6: the Doxia site report renders through the same pipeline as the
  * {@code htmlReport} goal — the template pipeline with the rf-data payload and inlined
  * assets. The site page's duplicated CDN head imports and the dead {@code renderStyle}
- * call are gone; the rendered document carries everything it needs.
+ * call are gone; the rendered document carries everything it needs. Maven treats it as an
+ * external report so the complete document is written without a second site wrapper.
  */
 @Slf4j
 @Mojo(
@@ -66,6 +68,11 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
                 + " have the highest priority values.";
     }
 
+    @Override
+    public boolean isExternalReport() {
+        return true;
+    }
+
     @SneakyThrows
     @Override
     public void executeReport(Locale locale) {
@@ -81,6 +88,6 @@ public class RefactorFirstMavenReport extends AbstractMavenReport {
                 projectVersion,
                 project.getBasedir());
 
-        getSink().rawText(report);
+        ReportWriter.writeReportToDisk(getReportOutputDirectory().getAbsolutePath(), getOutputName() + ".html", report);
     }
 }

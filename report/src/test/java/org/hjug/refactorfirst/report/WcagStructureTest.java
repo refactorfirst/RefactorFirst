@@ -33,6 +33,26 @@ class WcagStructureTest {
         return new TemplateEngine().render(template, SimpleReportWcagView.view());
     }
 
+    @Test
+    void skipTargetFollowsNavigationAndLayoutRespectsHiddenControls() throws Exception {
+        // Given / When: the rendered report and its styles.
+        String html = templateEngine.render(INTERACTIVE, InteractiveTemplateFixture.viewModel());
+        String core = new String(
+                getClass().getResourceAsStream("/assets/rf-core.css").readAllBytes(),
+                java.nio.charset.StandardCharsets.UTF_8);
+        String tables = new String(
+                getClass().getResourceAsStream("/assets/rf-tables.css").readAllBytes(),
+                java.nio.charset.StandardCharsets.UTF_8);
+        // Then: skip focus bypasses navigation, keyboard focus reveals submenus,
+        // and full-width padding and hidden pagination retain their contracts.
+        assertTrue(html.indexOf("id=\"report-content\"") > html.indexOf("</nav>"));
+        assertTrue(html.contains("href=\"#report-content\""));
+        assertTrue(html.contains("id=\"report-content\" tabindex=\"-1\""));
+        assertTrue(core.contains("box-sizing: border-box"));
+        assertTrue(core.contains("nav ul li:focus-within ul"));
+        assertTrue(tables.contains(".rf-table-pagination:not([hidden])"));
+    }
+
     @DisplayName("Both templates: single h1, no skipped heading levels")
     @Test
     void headingStructureHolds() throws Exception {

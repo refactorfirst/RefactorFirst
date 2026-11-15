@@ -148,8 +148,7 @@ public class HtmlReport extends SimpleHtmlReport {
 
         Map<String, Object> view = new ViewModelFactory().createViewModel(reportDTO);
         view.put("rfDataBlock", new RfDataBlock().build(reportDTO));
-        String html = new TemplateEngine().render("templates/refactor-first-report.mustache", view);
-        return new AssetInliner().inline(html);
+        return new TemplateEngine().renderWithAssets("templates/refactor-first-report.mustache", view);
     }
 
     public String getName(Locale locale) {

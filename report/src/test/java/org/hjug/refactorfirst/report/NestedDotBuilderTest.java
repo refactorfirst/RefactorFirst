@@ -48,6 +48,33 @@ import org.junit.jupiter.params.provider.CsvSource;
  */
 class NestedDotBuilderTest {
 
+    @ParameterizedTest
+    @CsvSource({
+        "classMap,classMap/hierarchy",
+        "packageMap,packageMap/hierarchy",
+        "cycleMap,classCycles/largestCycle/hierarchy"
+    })
+    void parityFixtureMatchesSharedGoldens(String name, String pointer) throws Exception {
+        // Given: the same hierarchy and repository URL used by the JavaScript parity checks.
+        var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        var fixture = mapper.readTree(getClass().getResourceAsStream("/parity/junit4-report.json"));
+        var hierarchy = mapper.treeToValue(fixture.at("/" + pointer), HierarchyDTO.class);
+        String repoUrl = fixture.path("project").path("repoUrl").asText();
+        // When: Java renders the corresponding class/cycle or package variant with hyperlinks.
+        String dot = name.equals("packageMap")
+                ? NestedDotBuilder.buildPackageDot(hierarchy, repoUrl)
+                : NestedDotBuilder.buildNestedDot(hierarchy, repoUrl, true);
+        // Then: its bytes match the shared golden exactly.
+        try (var in = getClass().getResourceAsStream("/golden/hierarchy-dot/" + name + ".dot")) {
+            assertNotNull(in);
+            org.junit.jupiter.api.Assertions.assertArrayEquals(
+                    new String(in.readAllBytes(), StandardCharsets.UTF_8)
+                            .replace("\r\n", "\n")
+                            .getBytes(StandardCharsets.UTF_8),
+                    dot.getBytes(StandardCharsets.UTF_8));
+        }
+    }
+
     // ------------------------------------------------------------------
     // fixtures
     // ------------------------------------------------------------------

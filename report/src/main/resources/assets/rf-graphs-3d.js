@@ -67,7 +67,11 @@
         window.RF.disposePopupRenderer(container);
         const graph = new window.ForceGraph3D(container)
             .graphData(gData)
-            .nodeLabel('label')
+            .nodeLabel(node => {
+                const label = document.createElement('span');
+                label.textContent = node.label;
+                return label;
+            })
             .width(container.clientWidth)
             .height(container.clientHeight);
 

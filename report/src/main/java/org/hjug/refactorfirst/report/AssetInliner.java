@@ -41,7 +41,7 @@ public class AssetInliner {
     private static final String CSS_MARKER = "<!-- rf:inlined-css -->";
     private static final String JS_MARKER = "<!-- rf:inlined-js -->";
 
-    /** Inlines every asset at its marker, replacing the marker comment. */
+    /** Inlines assets into a trusted template source, before report data is interpolated. */
     public String inline(String html) {
         String withCss = html.replace(CSS_MARKER, renderCssBlocks());
         String withJs = withCss.replace(JS_MARKER, renderJsBlocks());

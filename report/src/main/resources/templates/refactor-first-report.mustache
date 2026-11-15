@@ -54,7 +54,7 @@
     <!-- rf:inlined-css -->
 </head>
 <body>
-<a class="rf-skip-link" href="#app">Skip to report content</a>
+<a class="rf-skip-link" href="#report-content">Skip to report content</a>
 <main id="app" tabindex="-1">
     <div class="rf-report" lang="en">
         <div class="overlay" id="overlay" data-popup-close="true"></div>
@@ -151,6 +151,8 @@
                 </ul>
             </nav>
         </div>
+
+        <div id="report-content" tabindex="-1"></div>
 
         {{#project.analysisFailed}}
             <div role="alert" class="rf-text-center">

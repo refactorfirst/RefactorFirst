@@ -3,6 +3,7 @@
    generated report (skip link added; inlined by AssetInliner, never loaded via src=). */
 
 main {
+    box-sizing: border-box;
     max-width: 100vw;
     width: 100%;
 }
@@ -135,4 +136,9 @@ main {
 
 .rf-widget-notice p {
     margin: 0.25rem 0;
+}
+
+/* Match mvp.css hover disclosure for keyboard navigation. */
+.rf-report nav ul li:focus-within ul {
+    display: block;
 }
