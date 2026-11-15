@@ -207,18 +207,21 @@ body {
   background: var(--surface-color);
 }
 
-/* push the theme toggle to the top right */
+/* The report page has no .theme-bar row (the page repo's theme-bar toggle), so
+   the toggle is pinned to the report's top-right. The chip stays palette-driven
+   from the same --surface-color / --input-border / 6px / 0.15rem tokens as the
+   page repo's .theme-toggle, so dark mode renders the identical dark chip — the
+   earlier hardcoded white cover (8px radius, 0.25rem padding) turned it into a
+   light chip that washed the light icons out on the dark page. */
 span.theme-toggle {
   position: fixed;
   top: 1rem;
   right: 1rem;
   width: fit-content;
   z-index: 999;
-  /* Optional: background and padding to ensure visibility */
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(4px);
-  padding: 0.25rem;
-  border-radius: 8px;
+  background: var(--surface-color);
+  border-radius: 6px;
+  padding: 0.15rem;
 }
 
 .theme-option {
@@ -245,7 +248,12 @@ span.theme-toggle {
 }
 
 .theme-option-input:checked {
-  background: var(--brand-color);
+  /* The selected pill is a visible selected-state indicator, so it uses the
+     --brand-accent "visible" accent (>= 3:1 against the dark --surface-color and
+     --bg-color, SC 1.4.11 / 2.4.11), not --brand-color (the accent background
+     that only carries its >= 3:1 requirement via the white --on-accent-color
+     text/icon on top of it — ~2.9:1 against the dark --surface-color). */
+  background: var(--brand-accent);
 }
 
 .theme-option-icon {

@@ -70,6 +70,24 @@ class ThemeWcagTest {
                 "theme pill must be >= 24px tall (SC 2.5.8)");
     }
 
+    @DisplayName("Selected theme pill uses the visible accent and keeps >= 3:1 in dark")
+    @Test
+    void selectedThemePillUsesVisibleAccentWithContrast() throws Exception {
+        // Given: the report's stylesheets declare the selected pill's fill
+        String paletteCss = readAsset("assets/rf-palette.css");
+
+        // Then: the selected pill is a visible selected-state indicator, so it
+        // must use the --brand-accent visible accent (>= 3:1 against the dark page
+        // and surface backgrounds, SC 1.4.11 / 2.4.11) — not --brand-color, whose
+        // white icon passes AA text contrast but whose fill sits below 3:1 against
+        // the dark --surface-color.
+        assertTrue(
+                Pattern.compile("\\.theme-option-input:checked\\s*\\{[^{}]*background\\s*:\\s*var\\(--brand-accent\\)")
+                        .matcher(paletteCss)
+                        .find(),
+                "the selected theme pill must use the --brand-accent visible accent: " + paletteCss);
+    }
+
     private String readAsset(String asset) throws Exception {
         try (var in = getClass().getClassLoader().getResourceAsStream(asset)) {
             if (in == null) {
