@@ -57,7 +57,7 @@ public class HtmlReport extends SimpleHtmlReport {
                 ? baseDir
                 : new File(Path.of("").toAbsolutePath().toString());
         String reportHtml;
-        if (GitLogReader.getGitDir(effectiveBaseDir) == null) {
+        if (!hasGitHistory(effectiveBaseDir)) {
             log.info(
                     "Done! No Git repository found!  Please initialize a Git repository and perform an initial commit.");
             reportHtml = new TemplateEngine()
@@ -104,7 +104,7 @@ public class HtmlReport extends SimpleHtmlReport {
         File effectiveBaseDir = baseDir != null
                 ? baseDir
                 : new File(Path.of("").toAbsolutePath().toString());
-        if (GitLogReader.getGitDir(effectiveBaseDir) == null) {
+        if (!hasGitHistory(effectiveBaseDir)) {
             log.info(
                     "Done! No Git repository found!  Please initialize a Git repository and perform an initial commit.");
             return new TemplateEngine()
@@ -129,6 +129,15 @@ public class HtmlReport extends SimpleHtmlReport {
         }
 
         return renderInteractiveReport(reportDTO, modelBuilder);
+    }
+
+    private static boolean hasGitHistory(File baseDir) throws Exception {
+        if (GitLogReader.getGitDir(baseDir) == null) {
+            return false;
+        }
+        try (GitLogReader gitLogReader = new GitLogReader(baseDir)) {
+            return gitLogReader.getCurrentCommitHash() != null;
+        }
     }
 
     /**
