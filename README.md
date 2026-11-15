@@ -128,7 +128,14 @@ To read a solution, the extractor asks MSBuild to load its project files.  Loadi
    dotnet publish csharp-fact-extractor/src -c Release -o csharp-fact-extractor/publish
    ```
 3. Run `dotnet restore` on the solution you want to analyse.  Without restored packages many types do not resolve and results are incomplete.
-4. Tell RefactorFirst where the extractor is, then run it as usual:
+4. Tell RefactorFirst where the extractor is (settings below).
+5. Run the usual command from the root of the C# repository.  No `pom.xml` is needed there, only Maven and Java 17 or newer:
+   ```bash
+   mvn org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.11.0:htmlReport
+   ```
+   Use a RefactorFirst version that includes C# support.  To try it before that version is released, run `mvn install -DskipTests` in this repository first and use the version it prints (for example `0.11.0-SNAPSHOT`).
+
+   In a folder with no `pom.xml` the report is currently written to a folder literally named `${project.basedir}/target/site`.  The last line of the run prints the full path.
 
 |Setting|Environment variable|System property|
 |------|------|------|
