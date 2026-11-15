@@ -46,6 +46,23 @@ class PinnedCdnTest {
         }
     }
 
+    @DisplayName("Sigma and Graphology CDN scripts use Subresource Integrity")
+    @Test
+    void graphLibrariesUseSubresourceIntegrity() throws Exception {
+        // Given: the rendered interactive report
+        String html = rendered();
+
+        // Then: both graph libraries are pinned to verified content and use anonymous CORS
+        assertTrue(
+                html.contains(
+                        "sigma.min.js\" integrity=\"sha384-kqmavTGLPiJqDsleN0oa6ZH0tdnnPojYsHWMzc3M5hrlYyTcVdzwdHe10AVzSRhQ\" crossorigin=\"anonymous\""),
+                "Sigma.js must have SRI and anonymous CORS");
+        assertTrue(
+                html.contains(
+                        "graphology.umd.min.js\" integrity=\"sha384-643a1dipBp0OHFnm3WeZmMnuJ+ZY/MEll1vTGCjeFzkB/RySh+Almy3Ffn+sxO7y\" crossorigin=\"anonymous\""),
+                "Graphology must have SRI and anonymous CORS");
+    }
+
     @DisplayName("No unpinned CDN specifier survives")
     @Test
     void carriesNoUnpinnedSpecifier() throws Exception {
