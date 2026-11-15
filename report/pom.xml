@@ -34,6 +34,19 @@
         </dependency>
     </dependencies>
 
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <!-- Keep fixture generation mandatory in the module that owns the test. -->
+                    <failIfNoSpecifiedTests>true</failIfNoSpecifiedTests>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
     <profiles>
         <!-- Phase P0/T0.2: runs the Node built-in test suite for the report
              JavaScript feature files (rf-*.js unit tests) via vm sandboxing.
