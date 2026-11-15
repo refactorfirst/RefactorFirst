@@ -17,7 +17,7 @@ test('node:test harness executes assertions in a vm context', () => {
 
 test('node:test harness can extract and run the DOT synthesis from a script', () => {
     const viewer = readFileSync(`${__dirname}/../../main/resources/viewer/index.html`, 'utf8');
-    const scripts = [...viewer.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)]
+    const scripts = [...viewer.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)]
         .map(match => match[1].replace(/^\s*import .*;$/gm, ''));
     const synthesis = scripts.find(script => script.includes('function hierarchyToDot'))
         .split('        async function loadReport()')[0];
