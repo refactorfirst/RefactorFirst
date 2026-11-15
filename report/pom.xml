@@ -34,20 +34,28 @@
         </dependency>
     </dependencies>
 
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <configuration>
-                    <!-- Keep fixture generation mandatory in the module that owns the test. -->
-                    <failIfNoSpecifiedTests>true</failIfNoSpecifiedTests>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
-
     <profiles>
+        <profile>
+            <id>e2e-fixture-selection</id>
+            <activation>
+                <property>
+                    <name>test</name>
+                    <value>SampleReportGenerationTest</value>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <!-- Keep fixture generation mandatory in the module that owns the test. -->
+                            <failIfNoSpecifiedTests>true</failIfNoSpecifiedTests>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
         <!-- Phase P0/T0.2: runs the Node built-in test suite for the report
              JavaScript feature files (rf-*.js unit tests) via vm sandboxing.
              Inactive by default so contributors without Node can still run
