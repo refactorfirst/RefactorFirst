@@ -117,6 +117,42 @@ class SimpleHtmlReportTemplateTest {
         assertTrue(html.contains("com.example.A"), html);
     }
 
+    @DisplayName("Simple report package relationships link their packages and classes")
+    @Test
+    void rendersPackageRelationshipLinksFromViewModel() throws Exception {
+        // Given: a view model with package and class source paths
+        Map<String, Object> view = new LinkedHashMap<>();
+        view.put("project", project());
+        view.put("classMap", classMap());
+        view.put("classRelationshipsToRemove", classRelationshipsToRemove());
+        view.put("packageMap", packageMap());
+        view.put("packageRelationshipsToRemove", packageRelationshipsToRemoveWithLinks());
+        view.put("hasDisharmonies", true);
+        view.put("disharmonies", List.<Map<String, Object>>of());
+        view.put("classCycles", classCycles());
+
+        // When: the simple-report template renders package relationship remediation
+        String html = templateEngine.render(TEMPLATE_RESOURCE, view);
+
+        // Then: both package and nested class names link to their repository paths
+        assertTrue(
+                html.contains(
+                        "<a href=\"https://github.com/test/test/blob/src/main/java/com/example\" target=\"_blank\" rel=\"noopener\">com.example</a>"),
+                html);
+        assertTrue(
+                html.contains(
+                        "<a href=\"https://github.com/test/test/blob/src/main/java/com/other\" target=\"_blank\" rel=\"noopener\">com.other</a>"),
+                html);
+        assertTrue(
+                html.contains(
+                        "<a href=\"https://github.com/test/test/blob/src/main/java/com/example/A.java\" target=\"_blank\" rel=\"noopener\">A</a>"),
+                html);
+        assertTrue(
+                html.contains(
+                        "<a href=\"https://github.com/test/test/blob/src/main/java/com/example/B.java\" target=\"_blank\" rel=\"noopener\">B</a>"),
+                html);
+    }
+
     @DisplayName("Simple report template renders the footer publication timestamp")
     @Test
     void rendersFooterTimestampFromViewModel() throws Exception {
@@ -210,6 +246,35 @@ class SimpleHtmlReportTemplateTest {
         value.put("relationshipsToRemoveCount", 0);
         value.put("hasRelationships", false);
         value.put("relationships", new ArrayList<Map<String, Object>>());
+        return value;
+    }
+
+    private Map<String, Object> packageRelationshipsToRemoveWithLinks() {
+        Map<String, Object> classRelationship = new LinkedHashMap<>();
+        classRelationship.put("sourceClassPath", "src/main/java/com/example/A.java");
+        classRelationship.put("targetClassPath", "src/main/java/com/example/B.java");
+        classRelationship.put("simpleSourceClassName", "A");
+        classRelationship.put("simpleTargetClassName", "B");
+        classRelationship.put("weight", 5);
+
+        Map<String, Object> packageRelationship = new LinkedHashMap<>();
+        packageRelationship.put("sourcePackage", "com.example");
+        packageRelationship.put("targetPackage", "com.other");
+        packageRelationship.put("sourcePackagePath", "src/main/java/com/example");
+        packageRelationship.put("targetPackagePath", "src/main/java/com/other");
+        packageRelationship.put("sourceMarked", true);
+        packageRelationship.put("targetMarked", false);
+        packageRelationship.put("weight", 7);
+        packageRelationship.put("priority", 1);
+        packageRelationship.put("cycleCount", 2);
+        packageRelationship.put("effortRank", 1);
+        packageRelationship.put("classRelationshipsToBreakPackage", List.of(classRelationship));
+
+        Map<String, Object> value = new LinkedHashMap<>();
+        value.put("cycleCount", 1);
+        value.put("relationshipsToRemoveCount", 1);
+        value.put("hasRelationships", true);
+        value.put("relationships", List.of(packageRelationship));
         return value;
     }
 

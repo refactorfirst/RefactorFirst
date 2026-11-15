@@ -20,6 +20,10 @@
     padding: 2px 6px;
 }
 
+.rf-break-relationship {
+    display: block;
+}
+
 /* Sticky headers pinned to the viewport while their table scrolls, plus
    sortable-header, toolbar, pagination and copy affordances. */
 .rf-data-table thead th {

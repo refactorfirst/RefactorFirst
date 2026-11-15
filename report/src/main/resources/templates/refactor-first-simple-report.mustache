@@ -114,11 +114,11 @@
             </tr></thead>
             <tbody>
             {{#packageRelationshipsToRemove.relationships}}<tr>
-                <td align="left">{{sourcePackage}}{{#sourceMarked}}<strong>*</strong>{{/sourceMarked}} &#8594; {{targetPackage}}{{#targetMarked}}<strong>*</strong>{{/targetMarked}} : {{weight}}</td>
+                <td align="left">{{#sourcePackagePath}}<a href="{{project.repoUrl}}{{sourcePackagePath}}" target="_blank" rel="noopener">{{/sourcePackagePath}}{{sourcePackage}}{{#sourcePackagePath}}</a>{{/sourcePackagePath}}{{#sourceMarked}}<strong>*</strong>{{/sourceMarked}} &#8594; {{#targetPackagePath}}<a href="{{project.repoUrl}}{{targetPackagePath}}" target="_blank" rel="noopener">{{/targetPackagePath}}{{targetPackage}}{{#targetPackagePath}}</a>{{/targetPackagePath}}{{#targetMarked}}<strong>*</strong>{{/targetMarked}} : {{weight}}</td>
                 <td align="right">{{priority}}</td>
                 <td align="right">{{cycleCount}}</td>
                 <td align="right">{{effortRank}}</td>
-                <td align="left">{{#classRelationshipsToBreakPackage}}<span class="rf-break-relationship">{{simpleSourceClassName}} &#8594; {{simpleTargetClassName}} : {{weight}}</span>{{/classRelationshipsToBreakPackage}}</td>
+                <td align="left">{{#classRelationshipsToBreakPackage}}<span class="rf-break-relationship">{{#sourceClassPath}}<a href="{{project.repoUrl}}{{sourceClassPath}}" target="_blank" rel="noopener">{{/sourceClassPath}}{{simpleSourceClassName}}{{#sourceClassPath}}</a>{{/sourceClassPath}}{{#sourceMarked}}<strong>*</strong>{{/sourceMarked}} &#8594; {{#targetClassPath}}<a href="{{project.repoUrl}}{{targetClassPath}}" target="_blank" rel="noopener">{{/targetClassPath}}{{simpleTargetClassName}}{{#targetClassPath}}</a>{{/targetClassPath}}{{#targetMarked}}<strong>*</strong>{{/targetMarked}} : {{weight}}</span>{{/classRelationshipsToBreakPackage}}</td>
             </tr>{{/packageRelationshipsToRemove.relationships}}
             </tbody>
         </table>

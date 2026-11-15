@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -80,6 +82,69 @@ class InteractiveTemplateTest {
         }
         assertEquals("", found.toString(), "Google Charts references must be gone");
         assertFalse(html.contains("loader.js"), "the Google Charts loader must be gone");
+    }
+
+    @DisplayName("Package class relationships render on separate lines and retain hyperlinks")
+    @Test
+    void rendersPackageClassRelationshipsOnSeparateLinesWithHyperlinks() throws Exception {
+        // Given: a package relationship with four class relationships to break it
+        Map<String, Object> view = InteractiveTemplateFixture.viewModel();
+        List<Map<String, Object>> classRelationships = List.of(
+                classRelationship("CycleRemovalComputer", "DirectedFeedbackVertexSetResult", 2),
+                classRelationship("CycleRemovalComputer", "DirectedFeedbackVertexSetSolver", 2),
+                classRelationship("CycleRemovalComputer", "EnhancedParameterComputer", 2),
+                classRelationship("CycleRemovalComputer", "EnhancedParameterComputer$EnhancedParameters", 4));
+        Map<String, Object> packageRelationship = new LinkedHashMap<>();
+        packageRelationship.put("sourcePackage", "com.example.source");
+        packageRelationship.put("targetPackage", "com.example.target");
+        packageRelationship.put("sourceMarked", false);
+        packageRelationship.put("targetMarked", false);
+        packageRelationship.put("weight", 10);
+        packageRelationship.put("priority", 1);
+        packageRelationship.put("cycleCount", 1);
+        packageRelationship.put("effortRank", 1);
+        packageRelationship.put("classRelationshipsToBreakPackage", classRelationships);
+
+        Map<String, Object> packageRelationshipsToRemove = new LinkedHashMap<>();
+        packageRelationshipsToRemove.put("cycleCount", 1);
+        packageRelationshipsToRemove.put("relationshipsToRemoveCount", 1);
+        packageRelationshipsToRemove.put("hasRelationships", true);
+        packageRelationshipsToRemove.put("relationships", List.of(packageRelationship));
+        view.put("packageRelationshipsToRemove", packageRelationshipsToRemove);
+
+        // When: the interactive report and its styles render
+        String html = templateEngine.renderWithAssets(TEMPLATE_RESOURCE, view);
+
+        // Then: each relationship has its own block and its source/target links survive
+        assertTrue(
+                Pattern.compile("\\.rf-break-relationship\\s*\\{\\s*display:\\s*block;")
+                        .matcher(html)
+                        .find(),
+                "relationships are block-level");
+        assertEquals(4, count(Pattern.compile("<span class=\"rf-break-relationship\">"), html));
+        assertEquals(
+                4,
+                count(
+                        Pattern.compile(
+                                "<a href=\"https://github.com/test/test/blob/src/main/java/com/example/CycleRemovalComputer\\.java\""),
+                        html));
+        assertTrue(
+                html.contains(
+                        "href=\"https://github.com/test/test/blob/src/main/java/com/example/EnhancedParameterComputer$EnhancedParameters.java\""),
+                html);
+        assertTrue(html.contains("EnhancedParameterComputer$EnhancedParameters"), html);
+    }
+
+    private Map<String, Object> classRelationship(String source, String target, int weight) {
+        Map<String, Object> relationship = new LinkedHashMap<>();
+        relationship.put("sourceClassPath", "src/main/java/com/example/" + source + ".java");
+        relationship.put("targetClassPath", "src/main/java/com/example/" + target + ".java");
+        relationship.put("simpleSourceClassName", source);
+        relationship.put("simpleTargetClassName", target);
+        relationship.put("weight", weight);
+        relationship.put("sourceMarked", false);
+        relationship.put("targetMarked", false);
+        return relationship;
     }
 
     private int count(Pattern pattern, String html) {
