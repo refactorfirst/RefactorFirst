@@ -193,6 +193,7 @@
                             text: axisTitle(chartData.xaxisLabel || 'Effort to refactor'),
                             color: () => resolveLegendTextColor()
                         },
+                        ticks: {color: () => resolveLegendTextColor()},
                         grid: {color: '#e0e0e0'}
                     },
                     y: {
@@ -201,6 +202,7 @@
                             text: axisTitle(chartData.yaxisLabel || 'Relative churn (impact)'),
                             color: () => resolveLegendTextColor()
                         },
+                        ticks: {color: () => resolveLegendTextColor()},
                         grid: {color: '#e0e0e0'}
                     }
                 }

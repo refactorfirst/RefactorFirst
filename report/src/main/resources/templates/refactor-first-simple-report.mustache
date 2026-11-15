@@ -10,10 +10,15 @@
         .rf-header h1 { margin: 0 0 0.25rem 0; font-size: 1.25rem; text-align: center; }
         nav ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 0.25rem 1rem; }
         nav li { display: inline-block; }
+        section[id], h2[id], h3[id] { scroll-margin-top: 16rem; }
         main { padding: 1rem; }
         table { border-collapse: collapse; margin: 0.75rem auto; }
         th, td { border: 2px solid #555555; padding: 0.3rem 0.6rem; }
-        thead th { top: 4rem; position: sticky; background: #f2f2f2; }
+        thead th { top: 16rem; position: sticky; background: #f2f2f2; }
+        @media (max-width: 40rem) {
+            thead th { top: 32rem; }
+            section[id], h2[id], h3[id] { scroll-margin-top: 32rem; }
+        }
         .rf-visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; border: 0; }
         a:focus-visible { outline: 3px solid #b34700; outline-offset: 2px; }
         .rf-congratulations { text-align: center; font-size: 1.15rem; }

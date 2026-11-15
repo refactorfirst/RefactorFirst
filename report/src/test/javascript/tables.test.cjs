@@ -119,3 +119,9 @@ test('resolveSortKey matches exact keys then falls back to case-insensitive labe
     assert.equal(RF.resolveSortKey(columns, 'priority'), 'col1', 'label fallback');
     assert.equal(RF.resolveSortKey(columns, 'nope'), null);
 });
+
+test('localized date cells sort chronologically across years', () => {
+    const RF = loadRfTables();
+    const rows = [{date: '1/1/26, 1:00 PM'}, {date: '12/31/25, 1:00 PM'}];
+    assert.equal(RF.sortTableData(rows, 'date', 'asc')[0], rows[1]);
+});

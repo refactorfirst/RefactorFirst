@@ -103,6 +103,10 @@
         if (text !== '' && !Number.isNaN(Number(text))) {
             return {numeric: true, value: Number(text)};
         }
+        if (text.includes(', ')) {
+            const timestamp = Date.parse(text.replace(/[\u202f\u00a0]/g, ' '));
+            if (Number.isFinite(timestamp)) return {numeric: true, value: timestamp};
+        }
         return {numeric: false, value: text};
     }
 
@@ -414,7 +418,7 @@
             cell.setAttribute('data-rf-copy', '');
             cell.setAttribute('title', 'Click to copy this cell');
             const copy = () => {
-                const text = cell.textContent.trim();
+                const text = stripHtml(cell.innerHTML);
                 window.RF.copyCellContent(text).then(ok => onCopy(ok, text));
             };
             cell.addEventListener('click', copy);
@@ -480,6 +484,9 @@
         } else {
             builder.forEach(node => tbody.appendChild(node));
         }
+
+        measureHorizontalScroll(root);
+        refreshStickyHeaders(root);
 
         // Sortable header state: the sorted column carries aria-sort + indicator.
         captured.headers.forEach((header, index) => {

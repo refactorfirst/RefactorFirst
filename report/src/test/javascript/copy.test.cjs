@@ -131,3 +131,16 @@ test('the toast region is a polite status live region', () => {
     assert.equal(h.toast.attributes.role, 'status');
     assert.equal(h.toast.attributes['aria-live'], 'polite');
 });
+
+test('fallback removes its textarea and restores focus when copying throws', () => {
+    // Given a focused trigger and a failing legacy clipboard
+    const h = harness();
+    let focused = false;
+    h.document.activeElement = {focus: () => { focused = true; }};
+    h.document.execCommand = () => { throw new Error('denied'); };
+    const RF = loadRfCopy(h);
+    // When copying fails, then cleanup and focus restoration still run
+    assert.equal(RF.fallbackCopy('text'), false);
+    assert.equal(h.removed.length, 1);
+    assert.equal(focused, true);
+});

@@ -40,13 +40,15 @@
                 window.RF?.announceWidgetFailure?.('3d-force-graph');
             });
 
-        import('https://esm.sh/three-spritetext@1.10.0?deps=three@0.186.1')
+        window.rfSpriteTextReady = import('https://esm.sh/three-spritetext@1.10.0?deps=three@0.186.1')
             .then(module => {
                 window.SpriteText = module.default;
+                return module.default;
             })
             .catch(error => {
                 console.warn('three-spritetext unavailable:', error);
                 window.RF?.announceWidgetFailure?.('three-spritetext');
+                return null;
             });
     </script>
     <!-- rf:inlined-css -->

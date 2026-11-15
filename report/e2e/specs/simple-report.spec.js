@@ -78,6 +78,36 @@ test.describe('simple report', () => {
         expect(box.y).toBeLessThanOrEqual(1);
     });
 
+    test('narrow populated header clears sticky cells and section anchors', async ({ page }) => {
+        // Given a narrow report with several disharmonies in its navigation
+        await page.setViewportSize({width: 320, height: 900});
+        await openReport(page, KOTLIN_REPORT_PATH);
+        // Include all supported disharmonies, even when the fixture only finds a few.
+        await page.evaluate(() => {
+            const list = document.querySelector('nav ul');
+            const group = document.createElement('li');
+            const children = document.createElement('ul');
+            for (const title of ['God Classes', 'Data Classes', 'Brain Methods', 'Brain Classes',
+                'Feature Envy', 'Intensive Coupling', 'Dispersed Coupling', 'Shotgun Surgery',
+                'Refused Parent Bequest', 'Tradition Breaker', 'Significant Duplication',
+                'Excessive Extensions', 'Large Sealed Hierarchy', 'Data Class with Logic']) {
+                const item = document.createElement('li');
+                item.textContent = title;
+                children.appendChild(item);
+            }
+            group.appendChild(children);
+            list.appendChild(group);
+        });
+        // Then both offsets reserve the full header height
+        const offsets = await page.evaluate(() => ({
+            header: document.querySelector('.rf-header').getBoundingClientRect().height,
+            cell: parseFloat(getComputedStyle(document.querySelector('thead th')).top),
+            anchor: parseFloat(getComputedStyle(document.querySelector('section[id]')).scrollMarginTop),
+        }));
+        expect(offsets.cell).toBeGreaterThanOrEqual(offsets.header);
+        expect(offsets.anchor).toBeGreaterThanOrEqual(offsets.header);
+    });
+
     test('populated report passes an axe-core scan with zero violations', async ({ page }) => {
         await openReport(page, KOTLIN_REPORT_PATH);
 

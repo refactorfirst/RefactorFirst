@@ -243,6 +243,27 @@ class SampleReportGenerationTest {
         assertTrue(html.contains("data-rf-export=\"class-relationships\""), "the export control must render");
     }
 
+    @Test
+    @DisplayName("regenerates the JUnit sample from the complete analysis payload")
+    void generatesCompleteJunit4Sample() throws Exception {
+        // Given the complete analysis of JUnit revision 300468b1efd48d76fac2f7bd6d576846dcbbf5ed
+        ObjectMapper mapper = new ObjectMapper();
+        try (java.io.InputStream in = getClass().getResourceAsStream("/samples/junit4-analysis.json")) {
+            assertNotNull(in);
+            RefactorFirstReportDTO dto = mapper.readValue(in, RefactorFirstReportDTO.class);
+            assertTrue(dto.getClassMap().getHierarchy().getEdges().size() > 800);
+            assertTrue(dto.getPackageMap().getHierarchy().getEdges().size() > 100);
+            assertTrue(dto.getClassCycles().getLargestCycle().getBreakdown().size() == 9);
+            // When rendering the public sample, then keep the full hierarchy and cycle breakdown
+            String html = new HtmlReport().renderInteractiveReport(dto, new ReportModelBuilder());
+            Path output = Path.of(E2E_OUTPUT_DIR, "refactor-first-report.junit4-sample.html");
+            Files.createDirectories(output.getParent());
+            Files.writeString(output, html);
+            assertTrue(html.contains("ComparisonCompactor"));
+            assertTrue(html.contains("JUnitCore"));
+        }
+    }
+
     private void copyDirectory(File source, File target) throws IOException {
         try (Stream<Path> stream = Files.walk(source.toPath())) {
             stream.filter(Files::isRegularFile).forEach(sourcePath -> {

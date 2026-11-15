@@ -131,10 +131,11 @@ function harness() {
 
 async function loadAndCreate(h, dot) {
     global.window = h.window;
+    global.HTMLElement = class {};
     global.document = {
         getElementById: (id) =>
             id === 'overlay' || id === 'popup-x'
-                ? {style: {}}
+                ? {style: {}, addEventListener() {}, querySelector: () => null}
                 : {clientWidth: 800, clientHeight: 600},
     };
     for (const asset of ['rf-core.js', 'rf-theme.js', 'rf-charts.js', 'rf-graphs-3d.js']) {
@@ -223,4 +224,21 @@ test('below the 4000-element threshold the sprite labels load and render', async
     assert.equal(sprite.label, 'A', 'the sprite label carries the node label');
     assert.equal(sprite.textHeight, 4);
     assert.equal(sprite.material.depthWrite, false);
+});
+
+test('3D setup waits for the shared sprite import before configuring labels', async () => {
+    // Given a pending sprite module import
+    const h = harness();
+    const SpriteText = h.window.SpriteText;
+    delete h.window.SpriteText;
+    let ready;
+    h.window.rfSpriteTextReady = new Promise(resolve => { ready = resolve; });
+    // When a graph opens before that import completes
+    const creation = loadAndCreate(h, DOT);
+    assert.equal(h.nodeThreeObjectAccessor, null);
+    // Then completing the import enables labels and hover
+    ready(SpriteText);
+    await creation;
+    assert.equal(typeof h.nodeThreeObjectAccessor, 'function');
+    assert.equal(typeof h.hoverHandlers.node, 'function');
 });

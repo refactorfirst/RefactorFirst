@@ -62,7 +62,7 @@ test.describe('report table features', () => {
         expect(await rows.count()).toBe(20);
         await expect(page.locator('[data-rf-page-status="class-relationships"]')).toHaveText('Page 1 of 3');
 
-        await search.fill('junit');
+        await search.fill('a'); // 35 of 47 visible class-name rows match.
         await page.waitForTimeout(500); // search debounce
         // The match status is the source of truth for the complete filtered count (rf-tables.js);
         // the rendered row count is only the current page size while pagination is engaged, so the
@@ -86,7 +86,7 @@ test.describe('report table features', () => {
         await page.locator('[data-rf-search-slot="class-relationships"] .rf-search-clear').click();
         await page.waitForTimeout(400);
         expect(await rows.count()).toBe(20);
-        expect(await page.locator('[data-rf-search-slot="class-relationships"] .rf-search-clear')).toBeHidden();
+        await expect(page.locator('[data-rf-search-slot="class-relationships"] .rf-search-clear')).toBeHidden();
         expect(consoleErrors).toEqual([]);
     });
 
@@ -156,7 +156,7 @@ test.describe('report table features', () => {
     });
 
     test('charts and graphs survive tbody rebuilds', async ({ page }) => {
-        page.emulateMedia({colorScheme: 'light'});
+        await page.emulateMedia({colorScheme: 'light'});
         const consoleErrors = await openReport(page);
 
         await page.waitForFunction(

@@ -10,19 +10,32 @@
         if (typeof document === 'undefined' || typeof document.execCommand !== 'function') {
             return false;
         }
+        const previousFocus = document.activeElement;
+        let textarea;
+        let appended = false;
         try {
-            const textarea = document.createElement('textarea');
+            textarea = document.createElement('textarea');
             textarea.value = text;
             textarea.setAttribute('readonly', '');
             textarea.style.position = 'absolute';
             textarea.style.left = '-9999px';
             document.body.appendChild(textarea);
+            appended = true;
             textarea.select();
             const ok = document.execCommand('copy');
-            document.body.removeChild(textarea);
             return ok === true;
         } catch (error) {
             return false;
+        } finally {
+            try {
+                if (appended) document.body.removeChild(textarea);
+            } catch (error) {
+                return false;
+            } finally {
+                if (previousFocus && typeof previousFocus.focus === 'function') {
+                    try { previousFocus.focus({preventScroll: true}); } catch (error) { /* Focus is best effort. */ }
+                }
+            }
         }
     }
 

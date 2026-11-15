@@ -52,8 +52,7 @@ test.describe('page-repo parity', () => {
 
         // Toast: the copy feedback message family ("Copied …").
         await page.locator('table[data-rf-table="class-cycles-summary"] tbody td').first().click();
-        const toast = await page.locator('#rf-copy-toast').textContent();
-        expect(toast).toMatch(/^Copied/);
+        await expect(page.locator('#rf-copy-toast')).toHaveText(/^Copied/);
 
         // CSV: refactorfirst-<slugified-table-id>-<ISO-timestamp>.csv
         const downloadPromise = page.waitForEvent('download');

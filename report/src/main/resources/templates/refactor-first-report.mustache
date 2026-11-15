@@ -40,13 +40,15 @@
                 window.RF?.announceWidgetFailure?.('3d-force-graph');
             });
 
-        import('https://esm.sh/three-spritetext@1.10.0?deps=three@0.186.1')
+        window.rfSpriteTextReady = import('https://esm.sh/three-spritetext@1.10.0?deps=three@0.186.1')
             .then(module => {
                 window.SpriteText = module.default;
+                return module.default;
             })
             .catch(error => {
                 console.warn('three-spritetext unavailable:', error);
                 window.RF?.announceWidgetFailure?.('three-spritetext');
+                return null;
             });
     </script>
     <!-- rf:inlined-css -->
@@ -474,6 +476,10 @@
                 <h3 id="CYCLEMAP" class="rf-text-center">Largest Class Cycle : {{classCycles.largestCycle.cycleName}}</h3>
                 <h4 class="rf-text-center">Limiting number of cycles displayed to 1 to keep page load time fast</h4>
 
+                {{#classCycles.largestCycle.dotThresholdExceeded}}
+                    <div class="rf-text-center">SVG is too big to render quickly</div>
+                {{/classCycles.largestCycle.dotThresholdExceeded}}
+                {{^classCycles.largestCycle.dotThresholdExceeded}}
                 <button style="display: block; margin: 0 auto;" type="button"
                         data-popup-3d data-popup="popup-{{classCycles.largestCycle.cycleIdentifier}}" data-container="graph-container-{{classCycles.largestCycle.cycleIdentifier}}" data-dot-var="{{classCycles.largestCycle.cycleIdentifier}}_dot"
                     aria-label="Show {{classCycles.largestCycle.cycleName}} 3D Popup (3D cycle map for {{classCycles.largestCycle.cycleName}})">
@@ -494,6 +500,7 @@
                 <div id="{{classCycles.largestCycle.cycleIdentifier}}"
                      style="width: 95%; height: 70vh; margin: auto; border: thin solid black"></div>
 
+                {{/classCycles.largestCycle.dotThresholdExceeded}}
                 <!-- Cycle Breakdown Table -->
                 <div class="rf-text-center rf-table-block">
                     <div class="rf-table-toolbar" data-rf-toolbar="largest-cycle-breakdown">

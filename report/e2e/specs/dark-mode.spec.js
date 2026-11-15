@@ -27,7 +27,7 @@ const bodyPalette = () =>
 
 test.describe('dark mode', () => {
     test('defaults to system (light under a light OS preference)', async ({page}) => {
-        page.emulateMedia({colorScheme: 'light'});
+        await page.emulateMedia({colorScheme: 'light'});
         const consoleErrors = await openReport(page);
 
         await expect(page.getByRole('radiogroup', {name: 'Color theme'})).toBeVisible();
@@ -43,7 +43,7 @@ test.describe('dark mode', () => {
     });
 
     test('switching the dark radio flips the computed palette on body', async ({page}) => {
-        page.emulateMedia({colorScheme: 'light'});
+        await page.emulateMedia({colorScheme: 'light'});
         await openReport(page);
 
         await page.locator('#rf-theme-dark').check();
@@ -65,20 +65,20 @@ test.describe('dark mode', () => {
     test('the system radio follows colorScheme emulation', async ({page}) => {
         await openReport(page);
 
-        page.emulateMedia({colorScheme: 'dark'});
+        await page.emulateMedia({colorScheme: 'dark'});
         // The system radio is already the default; a toggle re-emits so live
         // widgets redraw, and CSS applies the dark palette.
         await page.locator('#rf-theme-system').check();
         const dark = await page.evaluate(() => getComputedStyle(document.body).getPropertyValue('--bg-color').trim());
         expect(dark).toBe('#10161d');
 
-        page.emulateMedia({colorScheme: 'light'});
+        await page.emulateMedia({colorScheme: 'light'});
         const light = await page.evaluate(() => getComputedStyle(document.body).getPropertyValue('--bg-color').trim());
         expect(light).toBe('#ffffff');
     });
 
     test('the preference persists across reload', async ({page}) => {
-        page.emulateMedia({colorScheme: 'light'});
+        await page.emulateMedia({colorScheme: 'light'});
         await openReport(page);
 
         await page.locator('#rf-theme-dark').check();
@@ -89,7 +89,7 @@ test.describe('dark mode', () => {
     });
 
     test('chart legend text re-resolves and the vizdom SVG re-renders with dark edge labels', async ({page}) => {
-        page.emulateMedia({colorScheme: 'light'});
+        await page.emulateMedia({colorScheme: 'light'});
         await openReport(page);
 
         const lightLegend = await page.evaluate(() => window.RF.resolveLegendTextColor());
@@ -114,7 +114,7 @@ test.describe('dark mode', () => {
     });
 
     test('zero console errors after repeated toggles', async ({page}) => {
-        page.emulateMedia({colorScheme: 'light'});
+        await page.emulateMedia({colorScheme: 'light'});
         const consoleErrors = await openReport(page);
 
         for (const mode of ['dark', 'light', 'dark', 'system', 'dark', 'light']) {

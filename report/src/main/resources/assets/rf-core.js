@@ -79,10 +79,10 @@
         });
     }
 
-    function showPopup(popupId, containerName, dot) {
+    function openPopup(popupId) {
         const overlay = document.getElementById('overlay');
         const popup = document.getElementById(popupId);
-        if (!overlay || !popup) return; // report was torn down / template lacks overlays
+        if (!overlay || !popup) return false;
         popupTriggerElement = document.activeElement instanceof HTMLElement ? document.activeElement : null;
         overlay.style.display = 'block';
         popup.style.display = 'block';
@@ -90,9 +90,30 @@
         // Move focus into the popup: the close control is the safest first stop.
         const close = popup.querySelector('.close-btn');
         if (close) close.focus();
+        return true;
+    }
+
+    const popupRenderers = new Map();
+    function disposePopupRenderer(container) {
+        const teardown = popupRenderers.get(container);
+        popupRenderers.delete(container);
+        if (teardown) teardown();
+        while (container.firstChild) container.removeChild(container.firstChild);
+    }
+
+    function retainPopupRenderer(container, teardown) {
+        popupRenderers.set(container, teardown);
+    }
+
+    function showPopup(popupId, containerName, dot) {
+        if (!openPopup(popupId)) return;
+        const container = document.getElementById(containerName);
+        if (!container) return;
+        disposePopupRenderer(container);
         if (window.graphlibDot && window.graphology && window.Sigma) {
             const graph = window.RF.buildGraphologyGraph(dot);
             const instance = new window.Sigma(graph, document.getElementById(containerName), window.RF.sigmaPopupSettings());
+            retainPopupRenderer(container, () => instance.kill());
             window.RF.bindSigmaHoverHighlight(instance, graph);
         }
     }
@@ -106,7 +127,7 @@
         }
         // Clear graph containers to free the previous renderings
         document.querySelectorAll('[id^="graph-container"]').forEach(container => {
-            while (container.firstChild) container.removeChild(container.firstChild);
+            disposePopupRenderer(container);
         });
         // Restore focus to the trigger (WCAG 2.4.3: focus order).
         if (popupTriggerElement && document.contains(popupTriggerElement)) {
@@ -177,6 +198,13 @@
                 history.pushState(null, '', href);
             }
             target.scrollIntoView();
+            if (typeof target.focus === 'function') {
+                if (!target.hasAttribute('tabindex') && target.tabIndex < 0) {
+                    target.setAttribute('tabindex', '-1');
+                    target.addEventListener('blur', () => target.removeAttribute('tabindex'), {once: true});
+                }
+                target.focus({preventScroll: true});
+            }
         });
     }
 
@@ -207,6 +235,9 @@
         isHttpUrl: isHttpUrl,
         sourceUrl: sourceUrl,
         readRfData: readRfData,
+        openPopup: openPopup,
+        disposePopupRenderer: disposePopupRenderer,
+        retainPopupRenderer: retainPopupRenderer,
         showPopup: showPopup,
         hidePopup: hidePopup,
         bindPopupHandlers: bindPopupHandlers,

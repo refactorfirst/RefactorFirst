@@ -13,15 +13,11 @@
 
     function loadSpriteText() {
         if (window.SpriteText) return Promise.resolve(window.SpriteText);
-        return Promise.reject(new Error('three-spritetext widget is not loaded'));
+        return window.rfSpriteTextReady || Promise.resolve(null);
     }
 
     async function createForceGraph(popupId, containerName, dot) {
-        const overlay = document.getElementById('overlay');
-        const popup = document.getElementById(popupId);
-        if (!overlay || !popup) return;
-        overlay.style.display = 'block';
-        popup.style.display = 'block';
+        if (!window.RF.openPopup(popupId)) return;
         const container = document.getElementById(containerName);
         if (!container || !window.graphlibDot || !window.ForceGraph3D || typeof dot !== 'string') return;
 
@@ -68,14 +64,25 @@
             b.links.push(link);
         });
 
+        window.RF.disposePopupRenderer(container);
         const graph = new window.ForceGraph3D(container)
             .graphData(gData)
             .nodeLabel('label')
             .width(container.clientWidth)
             .height(container.clientHeight);
 
+        // 3d-force-graph 1.80.1 exposes _destructor: stops animation and disposes its scene.
+        const teardown = () => graph._destructor();
+        let disposed = false;
+        window.RF.retainPopupRenderer(container, () => { disposed = true; teardown(); });
+
         if (gData.links.length + gData.nodes.length < 4000) {
             const SpriteText = await loadSpriteText();
+            if (disposed) return;
+            if (!SpriteText) {
+                window.RF.announceWidgetFailure('three-spritetext');
+                return;
+            }
             // The directional hover model, always on: hovering a node fills it
             // amber while its incoming links and sources go green and its
             // outgoing links and sinks go blue; hovering a link fills it and

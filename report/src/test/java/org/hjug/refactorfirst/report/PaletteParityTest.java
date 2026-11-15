@@ -32,7 +32,7 @@ class PaletteParityTest {
 
     /** camelCase palette.json key → kebab-case CSS custom property. */
     private static String cssVarOf(String paletteKey) {
-        return "--" + paletteKey.replaceAll("([a-z])([A-Z])", "$1-$2").toLowerCase();
+        return "--" + paletteKey.replaceAll("([a-z])([A-Z])", "$1-$2").toLowerCase(java.util.Locale.ROOT);
     }
 
     @BeforeAll

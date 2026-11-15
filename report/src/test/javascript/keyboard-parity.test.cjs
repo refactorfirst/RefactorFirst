@@ -52,8 +52,6 @@ test('search clears on Escape; the popup closes on Escape and traps Tab', () => 
     const core = readAsset('rf-core.js');
     const main = readAsset('rf-main.js');
     assert.ok(main.includes("if (event.key === 'Escape') RF.hidePopup();"), 'Escape closes the popup');
-    assert.ok(core.includes('function bindFocusTrap(popup)'), 'the popup traps Tab (2.4.3)');
-    assert.ok(core.includes('popupTriggerElement.focus()'), 'close restores focus to the trigger');
 });
 
 test('no keyboard trap outside the intentional popup trap', () => {
@@ -66,3 +64,46 @@ test('no keyboard trap outside the intentional popup trap', () => {
     const theme = readAsset('rf-theme.js');
     assert.ok(!theme.includes("'Tab'"), 'the theme module must not intercept Tab');
 });
+
+for (const dimension of ['2d', '3d']) {
+    test(`${dimension} popup moves focus, traps Tab, restores trigger and disposes on close`, async () => {
+        // Given real popup handlers with deterministic DOM and renderer stand-ins
+        const handlers = {};
+        const focus = node => { document.activeElement = node; };
+        const trigger = {getAttribute: key => ({'data-popup': 'popup', 'data-container': 'graph-container-x', 'data-dot-var': 'graph'}[key]),
+            hasAttribute: key => key === `data-popup-${dimension}`, addEventListener: (key, fn) => { handlers[key] = fn; }, focus() { focus(this); }};
+        const close = {focus() { focus(this); }};
+        const last = {focus() { focus(this); }};
+        const popup = {style: {}, querySelector: () => close, querySelectorAll: () => [close, last],
+            addEventListener: (key, fn) => { handlers.popupKey = fn; }};
+        const container = {clientWidth: 800, clientHeight: 600};
+        const overlay = {style: {}};
+        const document = {activeElement: trigger, contains: () => true,
+            getElementById: id => ({overlay, popup, 'graph-container-x': container}[id]),
+            getElementsByClassName: () => [popup],
+            querySelectorAll: selector => selector.startsWith('[id^=') ? [container] : selector.includes('data-popup-2d') ? [trigger] : []};
+        let disposed = 0;
+        const graph = new Proxy({}, {get: (_, key) => key === '_destructor' ? () => { disposed++; } : () => graph});
+        const window = {graphlibDot: {read: () => ({nodes: () => [], edges: () => []})},
+            ForceGraph3D: function () { return graph; }, SpriteText: function () {}, graphology: {},
+            Sigma: function () { this.kill = () => { disposed++; }; }};
+        const vm = require('node:vm');
+        const context = vm.createContext({window, document, HTMLElement: Object, URL, console});
+        for (const name of ['rf-core.js', 'rf-graphs-3d.js']) vm.runInContext(readAsset(name), context);
+        Object.assign(window.RF, {graphDot: () => 'dot', buildGraphologyGraph: () => ({}), sigmaPopupSettings: () => ({}), bindSigmaHoverHighlight() {}});
+        window.RF.bindPopupHandlers();
+        // When either entrypoint opens, then focus enters and wraps in both directions
+        handlers.click();
+        await Promise.resolve();
+        assert.equal(document.activeElement, close);
+        let prevented = 0;
+        handlers.popupKey({key: 'Tab', shiftKey: true, preventDefault() { prevented++; }});
+        assert.equal(document.activeElement, last);
+        handlers.popupKey({key: 'Tab', shiftKey: false, preventDefault() { prevented++; }});
+        assert.equal(document.activeElement, close);
+        assert.equal(prevented, 2);
+        window.RF.hidePopup();
+        assert.equal(document.activeElement, trigger);
+        assert.equal(disposed, 1);
+    });
+}
