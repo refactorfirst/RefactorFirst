@@ -1,5 +1,8 @@
 name: Report E2E
 
+permissions:
+  contents: read
+
 on:
   push:
     branches: [ main ]
