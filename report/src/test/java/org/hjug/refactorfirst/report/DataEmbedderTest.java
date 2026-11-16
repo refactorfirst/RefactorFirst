@@ -22,9 +22,9 @@ class DataEmbedderTest {
     private final DataEmbedder dataEmbedder = new DataEmbedder();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    @DisplayName("Embedded report JSON escapes </ sequences so the payload cannot close a script block")
+    @DisplayName("Embedded report JSON escapes every less-than sign")
     @Test
-    void embedsJsonWithClosingTagSafeEscaping() throws Exception {
+    void embedsJsonWithLessThanSafeEscaping() throws Exception {
         // Given: a serialized report whose class name carries a script-closing sequence
         RefactorFirstReportDTO report = fixtureReport();
         String json = objectMapper.writeValueAsString(report);
@@ -32,11 +32,11 @@ class DataEmbedderTest {
         // When: the payload is embedded for inline HTML script use
         String embedded = dataEmbedder.embed(report);
 
-        // Then: `</` is escaped as `<\/` and the raw closing tag cannot appear
-        assertTrue(
-                embedded.contains("<\\/script>"), "embedded payload should carry the <\\/script> escape: " + embedded);
+        // Then: every less-than sign uses a JSON escape and no raw HTML tag can be formed
+        assertTrue(embedded.contains("\\u003c/script>"), "embedded payload should escape less-than: " + embedded);
+        assertFalse(embedded.contains("<"), "embedded payload must not carry a raw less-than sign");
         assertFalse(embedded.contains("</script>"), "embedded payload must not carry a raw closing tag");
-        assertFalse(embedded.contains("</"), "embedded payload must not carry a raw </ sequence");
+        assertFalse(embedded.contains("</"), "embedded payload must not carry a raw closing-tag prefix");
     }
 
     @DisplayName("Embedded report JSON escapes Unicode line separators U+2028 and U+2029")

@@ -29,15 +29,14 @@ public class DataEmbedder {
 
     /**
      * Returns the JSON document escaped so it can be interpolated into an HTML {@code <script>}
-     * block: {@code </} becomes the JSON escape {@code <\/} (so a payload cannot close the script
-     * block) and Unicode line separators U+2028/U+2029 become their JSON {@code \u2028}/\u2029}
-     * escape sequences.
+     * block: less-than signs and Unicode line separators U+2028/U+2029 become their JSON escape
+     * sequences.
      */
     public String escapeForHtmlScript(String json) {
         if (json == null) {
             return null;
         }
-        String escaped = json.replace("</", "<\\/");
+        String escaped = json.replace("<", "\\u003c");
         escaped = escaped.replace("\u2028", "\\u2028").replace("\u2029", "\\u2029");
         return escaped;
     }

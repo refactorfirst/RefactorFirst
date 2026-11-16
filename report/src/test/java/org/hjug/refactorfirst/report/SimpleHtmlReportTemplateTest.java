@@ -1,5 +1,6 @@
 package org.hjug.refactorfirst.report;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
@@ -115,6 +116,64 @@ class SimpleHtmlReportTemplateTest {
         // Then: the remediation table names source and target classes
         assertTrue(html.contains("Class Relationship Removal Priority"), html);
         assertTrue(html.contains("com.example.A"), html);
+    }
+
+    @DisplayName("Simple report omits class links when source paths are empty")
+    @Test
+    void omitsClassLinksWhenSourcePathsAreEmpty() throws Exception {
+        // Given: class relationships and a cycle-break class with names but no source paths
+        Map<String, Object> classRow = new LinkedHashMap<>();
+        classRow.put("sourceClass", "com.example.A");
+        classRow.put("targetClass", "com.example.B");
+        classRow.put("sourceClassPath", "");
+        classRow.put("targetClassPath", null);
+        classRow.put("weight", 1);
+        classRow.put("priority", 1);
+        classRow.put("cycleCount", 1);
+        classRow.put("effortRank", 1);
+        classRow.put("sourceMarked", false);
+        classRow.put("targetMarked", false);
+
+        Map<String, Object> classRelationships = new LinkedHashMap<>();
+        classRelationships.put("cycleCount", 1);
+        classRelationships.put("relationshipsToRemoveCount", 1);
+        classRelationships.put("hasRelationships", true);
+        classRelationships.put("relationships", List.of(classRow));
+
+        Map<String, Object> breakdownRow = new LinkedHashMap<>();
+        breakdownRow.put("className", "NoPathClass");
+        breakdownRow.put("classPath", "");
+        breakdownRow.put("marked", false);
+        breakdownRow.put("edgesHtml", "");
+        Map<String, Object> largestCycle = new LinkedHashMap<>();
+        largestCycle.put("hasCycleMap", true);
+        largestCycle.put("cycleName", "A -> B -> A");
+        largestCycle.put("classCount", 1);
+        largestCycle.put("relationshipCount", 0);
+        largestCycle.put("breakdown", List.of(breakdownRow));
+        Map<String, Object> classCycles = new LinkedHashMap<>();
+        classCycles.put("hasCycles", true);
+        classCycles.put("summary", List.of());
+        classCycles.put("largestCycle", largestCycle);
+
+        Map<String, Object> view = new LinkedHashMap<>();
+        view.put("project", project());
+        view.put("classMap", classMap());
+        view.put("classRelationshipsToRemove", classRelationships);
+        view.put("packageMap", packageMap());
+        view.put("packageRelationshipsToRemove", packageRelationshipsToRemove());
+        view.put("hasDisharmonies", true);
+        view.put("disharmonies", List.<Map<String, Object>>of());
+        view.put("classCycles", classCycles);
+
+        // When: the simple-report template renders the relationships
+        String html = templateEngine.render(TEMPLATE_RESOURCE, view);
+
+        // Then: class names remain visible without linking to the repository root
+        assertTrue(html.contains("<td align=\"left\">com.example.A &#8594; com.example.B : 1</td>"), html);
+        assertTrue(html.contains("<td align=\"left\">NoPathClass</td>"), html);
+        assertFalse(html.contains("href=\"https://github.com/test/test/blob/\">com.example.A"), html);
+        assertFalse(html.contains("href=\"https://github.com/test/test/blob/\">NoPathClass"), html);
     }
 
     @DisplayName("Simple report package relationships link their packages and classes")

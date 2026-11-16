@@ -244,6 +244,21 @@ class SampleReportGenerationTest {
     }
 
     @Test
+    @DisplayName("generates a script-safe data payload fixture for the browser")
+    void generatesDataEmbedFixtureForE2e() throws Exception {
+        String json =
+                "{\"lessThan\":\"<unknown>\",\"closingTag\":\"</script><script>window.__payloadInjected=true</script>\"}";
+        String embedded = new DataEmbedder().embed(json);
+        String html = "<!doctype html><html><body><script type=\"application/json\" id=\"rf-data\">"
+                + embedded
+                + "</script><p id=\"after-payload\">Report markup after the payload</p></body></html>";
+        Path output = Path.of(E2E_OUTPUT_DIR, "data-embed.html");
+        Files.createDirectories(output.getParent());
+        Files.writeString(output, html);
+        assertTrue(embedded.contains("\\u003c"));
+    }
+
+    @Test
     @DisplayName("regenerates the JUnit sample from the complete analysis payload")
     void generatesCompleteJunit4Sample() throws Exception {
         // Given the complete analysis of JUnit revision 300468b1efd48d76fac2f7bd6d576846dcbbf5ed
