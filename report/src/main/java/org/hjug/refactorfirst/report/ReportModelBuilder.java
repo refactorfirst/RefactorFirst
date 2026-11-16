@@ -220,6 +220,20 @@ public class ReportModelBuilder {
         // A reused builder must not carry findings (or their source paths) from a prior
         // analysis into the next report build.
         rankedDisharmoniesByAnchor = new LinkedHashMap<>();
+        rankedClassCycles = List.of();
+        classEdgeCycleCounts = Map.of();
+        packageEdgeCycleCounts = Map.of();
+        classRelationshipsToRemove = Set.of();
+        packageRelationshipsToRemove = Set.of();
+        classesToRemove = Set.of();
+        packagesToRemove = Set.of();
+        classGraph = null;
+        packageGraph = null;
+        classCycles = Map.of();
+        packageCycles = Map.of();
+        classRelationshipDisharmonies = List.of();
+        packageRelationshipDisharmonies = List.of();
+        codebaseGraphDTO = null;
 
         if (testSourceDirectory == null || testSourceDirectory.isEmpty()) {
             testSourceDirectory = "src" + File.separator + "test";
@@ -271,35 +285,36 @@ public class ReportModelBuilder {
 
             CycleRemovalResult classCycleRemovalResult =
                     cycleRemovalComputer.computeCycleRemovalInformation(classGraph);
-            Map<DefaultWeightedEdge, Integer> classEdgeCycleCounts = classCycleRemovalResult.getEdgeCycleCounts();
-            classRelationshipsToRemove = classCycleRemovalResult.getEdgesToRemove();
-            classesToRemove = classCycleRemovalResult.getVertexesToRemove();
-            classCycles = classCycleRemovalResult.getCycles();
+            this.classEdgeCycleCounts = classCycleRemovalResult.getEdgeCycleCounts();
+            this.classRelationshipsToRemove = classCycleRemovalResult.getEdgesToRemove();
+            this.classesToRemove = classCycleRemovalResult.getVertexesToRemove();
+            this.classCycles = classCycleRemovalResult.getCycles();
 
             packageGraph = codebaseGraphDTO.getPackageReferencesGraph();
             CycleRemovalResult packageCycleRemovalResult =
                     cycleRemovalComputer.computeCycleRemovalInformation(packageGraph);
-            Map<DefaultWeightedEdge, Integer> packageEdgeCycleCounts = packageCycleRemovalResult.getEdgeCycleCounts();
-            packageRelationshipsToRemove = packageCycleRemovalResult.getEdgesToRemove();
-            packagesToRemove = packageCycleRemovalResult.getVertexesToRemove();
-            packageCycles = packageCycleRemovalResult.getCycles();
+            this.packageEdgeCycleCounts = packageCycleRemovalResult.getEdgeCycleCounts();
+            this.packageRelationshipsToRemove = packageCycleRemovalResult.getEdgesToRemove();
+            this.packagesToRemove = packageCycleRemovalResult.getVertexesToRemove();
+            this.packageCycles = packageCycleRemovalResult.getCycles();
+            this.codebaseGraphDTO = codebaseGraphDTO;
 
             try (CostBenefitCalculator costBenefitCalculator =
                     new CostBenefitCalculator(projectBaseDir, codebaseGraphDTO.getClassToSourceFilePathMapping())) {
-                packageRelationshipDisharmonies = costBenefitCalculator.calculateRelationshipCostBenefitValues(
+                this.packageRelationshipDisharmonies = costBenefitCalculator.calculateRelationshipCostBenefitValues(
                         packageGraph,
-                        packageEdgeCycleCounts,
+                        this.packageEdgeCycleCounts,
                         codebaseGraphDTO,
-                        packagesToRemove,
-                        packageCycles,
+                        this.packagesToRemove,
+                        this.packageCycles,
                         List.of());
-                classRelationshipDisharmonies = costBenefitCalculator.calculateRelationshipCostBenefitValues(
+                this.classRelationshipDisharmonies = costBenefitCalculator.calculateRelationshipCostBenefitValues(
                         classGraph,
-                        classEdgeCycleCounts,
+                        this.classEdgeCycleCounts,
                         codebaseGraphDTO,
-                        classesToRemove,
-                        packageCycles,
-                        packageRelationshipDisharmonies);
+                        this.classesToRemove,
+                        this.packageCycles,
+                        this.packageRelationshipDisharmonies);
 
                 for (SimpleHtmlReport.DisharmonySpec spec : SimpleHtmlReport.DISHARMONY_SPECS) {
                     List<DisharmonyInstance> instances = spec.methodLevel()

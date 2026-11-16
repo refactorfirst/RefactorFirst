@@ -126,6 +126,7 @@ class TableControlsWcagTest {
         assertTrue(tables.contains("cell.setAttribute('data-rf-copy', '')"), tables);
         assertTrue(tables.contains("cell.setAttribute('title', 'Click to copy this cell')"), tables);
         assertTrue(tables.contains("event.key === 'Enter' || event.key === ' '"), "Enter/Space copy");
+        assertTrue(tables.contains("event.target === cell &&"), "descendant links retain keyboard activation");
 
         // And: the copy cell focus ring stays inside the table frame
         assertTrue(

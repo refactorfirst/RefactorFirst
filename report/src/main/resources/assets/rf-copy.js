@@ -83,9 +83,12 @@
     function showToast(message, durationMs) {
         const region = ensureToastRegion();
         const delay = durationMs ?? (window.RF.TABLE_CONFIG ? window.RF.TABLE_CONFIG.copy.toastDuration : 3000);
-        if (activeToastMessage === message && activeToastTimer !== null) {
+        const isDuplicateMessage = activeToastMessage === message;
+        if (activeToastTimer !== null) {
             window.clearTimeout(activeToastTimer);
-        } else {
+            activeToastTimer = null;
+        }
+        if (!isDuplicateMessage) {
             region.textContent = message;
         }
         activeToastMessage = message;

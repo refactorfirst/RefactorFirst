@@ -645,17 +645,21 @@
                 : null;
             // The default sort resolves by key first, then by label — the
             // disharmony tables emit their header text as the sort key.
-            state.sortKey = state.sortKey !== undefined
-                ? state.sortKey
-                : defaultSortKey ??
-                    (capturedTables[tableId].headers.find(header => header.key === config.sorting.defaultSortColumn)
-                        ? config.sorting.defaultSortColumn
-                        : capturedTables[tableId].headers.find(header =>
-                            header.label.toLowerCase() === config.sorting.defaultSortColumn)?.key ?? null);
+            state.sortKey = config.sorting.enabled
+                ? (state.sortKey !== undefined
+                    ? state.sortKey
+                    : defaultSortKey ??
+                        (capturedTables[tableId].headers.find(header => header.key === config.sorting.defaultSortColumn)
+                            ? config.sorting.defaultSortColumn
+                            : capturedTables[tableId].headers.find(header =>
+                                header.label.toLowerCase() === config.sorting.defaultSortColumn)?.key ?? null))
+                : null;
             if (state.sortKey === undefined || state.sortKey === '') {
                 state.sortKey = null;
             }
-            state.sortDir = state.sortDir ?? config.sorting.defaultSortDirection;
+            state.sortDir = config.sorting.enabled
+                ? (state.sortDir ?? config.sorting.defaultSortDirection)
+                : null;
             tableStates[tableId] = state;
 
             if (config.search.enabled) {
@@ -669,6 +673,9 @@
 
             // Sort buttons: the three-state cycle starting from the effective
             // direction, so clicking the default-sorted column flips it first.
+            if (!config.sorting.enabled) {
+                return;
+            }
             const buttons = Array.from(root.querySelectorAll('[data-rf-sort="' + tableId + '"]'));
             buttons.forEach(button => {
                 button.addEventListener('click', () => {

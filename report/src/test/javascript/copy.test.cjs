@@ -54,6 +54,11 @@ function harness({clipboard} = {}) {
     };
     return {
         document, window, appended, removed, written, timeCalls, cleared,
+        fireTimeout: (id) => {
+            if (cleared.includes(id)) return false;
+            timeCalls.find(call => call.id === id).handler();
+            return true;
+        },
         get toast() {
             return appended.find(node => node.id === 'rf-copy-toast');
         },
@@ -112,16 +117,23 @@ test('showToast dedupes a repeated message and auto-dismisses after 3s', async (
     assert.deepEqual(h.cleared, [1], 'the first timer is cancelled (no double dismiss)');
     assert.equal(h.timeCalls[1].delay, 3000, 'auto-dismiss is 3s');
 
-    h.timeCalls[0].handler();
+    assert.equal(h.fireTimeout(1), false, 'a canceled callback cannot clear the toast');
+    assert.equal(h.toast.texts.at(-1), 'Copied cell');
+    assert.equal(h.fireTimeout(2), true);
     assert.equal(h.toast.texts.at(-1), '', 'the toast clears after the timeout');
 });
 
-test('a different message replaces the visible one immediately', () => {
+test('showToast cancels the previous timer before replacing the visible message', () => {
     const h = harness();
     const RF = loadRfCopy(h);
     RF.showToast('Copied A');
     RF.showToast('Copied B');
     assert.deepEqual(h.toast.texts, ['Copied A', 'Copied B']);
+    assert.deepEqual(h.cleared, [1], 'the previous timer is canceled before the replacement toast schedules');
+    assert.equal(h.fireTimeout(1), false, 'the previous timer cannot clear the replacement toast');
+    assert.equal(h.toast.texts.at(-1), 'Copied B');
+    assert.equal(h.fireTimeout(2), true);
+    assert.equal(h.toast.texts.at(-1), '');
 });
 
 test('the toast region is a polite status live region', () => {

@@ -16,10 +16,20 @@
         return window.rfSpriteTextReady || Promise.resolve(null);
     }
 
+    function loadForceGraph3D() {
+        if (window.ForceGraph3D) return Promise.resolve(window.ForceGraph3D);
+        return window.rfForceGraphReady || Promise.resolve(null);
+    }
+
     async function createForceGraph(popupId, containerName, dot) {
+        const ForceGraph3D = await loadForceGraph3D();
+        if (!ForceGraph3D) {
+            window.RF?.announceWidgetFailure?.('3d-force-graph');
+            return;
+        }
         if (!window.RF.openPopup(popupId)) return;
         const container = document.getElementById(containerName);
-        if (!container || !window.graphlibDot || !window.ForceGraph3D || typeof dot !== 'string') return;
+        if (!container || !window.graphlibDot || typeof dot !== 'string') return;
 
         const graphlibGraph = window.graphlibDot.read(dot);
         const nodes = [];
@@ -179,5 +189,6 @@
     }
 
     window.RF.createForceGraph = createForceGraph;
+    window.RF.loadForceGraph3D = loadForceGraph3D;
     window.RF.loadSpriteText = loadSpriteText;
 })();

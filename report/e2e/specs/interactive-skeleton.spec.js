@@ -40,7 +40,7 @@ test.describe('interactive skeleton', () => {
             // The report shell renders (single h1 + nav landmark) before widget scripts.
             const heading = page.getByRole('heading', {level: 1});
             await expect(heading).toContainText('RefactorFirst');
-            await expect(page.getByRole('navigation')).toBeVisible();
+            await expect(page.getByRole('navigation', {name: 'Report sections'})).toBeVisible();
 
             // The rf-data payload is embedded and parsed into the RF namespace.
             const rfData = await page.evaluate(() => ({

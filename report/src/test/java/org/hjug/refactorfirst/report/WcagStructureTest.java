@@ -51,6 +51,11 @@ class WcagStructureTest {
         assertTrue(core.contains("box-sizing: border-box"));
         assertTrue(core.contains("nav ul li:focus-within ul"));
         assertTrue(tables.contains(".rf-table-pagination:not([hidden])"));
+        assertTrue(
+                Pattern.compile("\\.rf-table-pagination\\[hidden\\]\\s*\\{[^}]*display:\\s*none")
+                        .matcher(tables)
+                        .find(),
+                "hidden pagination must override the base nav display rule");
     }
 
     @DisplayName("Both templates: single h1, no skipped heading levels")

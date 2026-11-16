@@ -31,13 +31,15 @@
         // window.SpriteText for the report's 3D popup. Both imports pin the SAME
         // three build via ?deps=three@0.186.1 so the browser evaluates Three.js
         // exactly once; keep both packages' three version in lockstep when bumping.
-        import('https://esm.sh/3d-force-graph@1.80.1?deps=three@0.186.1')
+        window.rfForceGraphReady = import('https://esm.sh/3d-force-graph@1.80.1?deps=three@0.186.1')
             .then(module => {
                 window.ForceGraph3D = module.default;
+                return module.default;
             })
             .catch(error => {
                 console.warn('3d-force-graph unavailable:', error);
                 window.RF?.announceWidgetFailure?.('3d-force-graph');
+                return null;
             });
 
         window.rfSpriteTextReady = import('https://esm.sh/three-spritetext@1.10.0?deps=three@0.186.1')

@@ -46,6 +46,39 @@
      * repository URL (http(s)-gated) — or the report's own raw DOT from legacy
      * payloads without a hierarchy, which is parsed verbatim.
      */
+    function sanitizeSvgMarkup(svgMarkup) {
+        if (typeof svgMarkup !== 'string' || !svgMarkup.trim()) return svgMarkup;
+        if (typeof DOMParser === 'undefined' || typeof XMLSerializer === 'undefined') return svgMarkup;
+        try {
+            const svgDoc = new DOMParser().parseFromString(svgMarkup, 'image/svg+xml');
+            const svgRoot = svgDoc.documentElement;
+            if (!svgRoot || svgRoot.nodeName.toLowerCase() !== 'svg') return svgMarkup;
+            svgRoot.querySelectorAll('*').forEach(node => {
+                Array.from(node.attributes || []).forEach(attr => {
+                    const name = attr.name.toLowerCase();
+                    if (/^on/i.test(name)) {
+                        node.removeAttribute(attr.name);
+                    } else if ((name === 'href' || name === 'xlink:href') && /^javascript:/i.test(attr.value || '')) {
+                        node.removeAttribute(attr.name);
+                    }
+                });
+                if (node.tagName && /^script$/i.test(node.tagName)) {
+                    node.remove();
+                }
+            });
+            svgRoot.querySelectorAll('a[href], a[xlink\\:href]').forEach(anchor => {
+                anchor.setAttribute('target', '_blank');
+                if (!anchor.hasAttribute('rel')) {
+                    anchor.setAttribute('rel', 'noopener noreferrer');
+                }
+            });
+            return new XMLSerializer().serializeToString(svgRoot);
+        } catch (error) {
+            console.warn('SVG sanitization failed:', error);
+            return svgMarkup;
+        }
+    }
+
     function renderGraphInto(parser, el, containerId, entry) {
         let dotString;
         if (entry.hierarchy) {
@@ -63,9 +96,7 @@
         }
         const parsed = parser.parse(dotString).to_directed().layout();
         let svg = parsed.to_svg().to_string();
-        // vizdom drops the target attribute on hyperlinked nodes; restore
-        // new-tab behavior on every encoded anchor, not just the first
-        svg = svg.replaceAll('<a href=', '<a target="_blank" href=');
+        svg = sanitizeSvgMarkup(svg);
         svg = svg.replace('<svg ', '<svg class="fullscreen-svg" ');
         destroyPanZoom(containerId);
         el.innerHTML = svg;
@@ -204,8 +235,13 @@
                 const el = document.getElementById(containerId);
                 if (!el || !(hierarchy || typeof dot === 'string')) return;
                 const entry = {hierarchy: hierarchy || null, dot: dot || null, repoUrl: repoUrl};
-                renderGraphInto(parser, el, containerId, entry);
-                wasmGraphHierarchies.set(containerId, entry);
+                try {
+                    renderGraphInto(parser, el, containerId, entry);
+                    wasmGraphHierarchies.set(containerId, entry);
+                } catch (error) {
+                    console.warn('WASM graph render failed for ' + containerId + ':', error);
+                    window.RF.announceWidgetFailure(containerId);
+                }
             };
 
             if (data.classMap && !data.classMap.dotThresholdExceeded && data.classMap.hierarchy) {

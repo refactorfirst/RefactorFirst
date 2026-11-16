@@ -59,6 +59,7 @@ function harness() {
             return this;
         }
         scheduleRefresh() {}
+        kill() {}
     }
     const window = {
         graphlibDot: {read: () => graphlibGraph},

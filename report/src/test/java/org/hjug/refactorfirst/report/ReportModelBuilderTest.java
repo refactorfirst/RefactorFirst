@@ -166,6 +166,48 @@ class ReportModelBuilderTest {
         assertFalse(second.getProject().isHasAnyDisharmony());
     }
 
+    @Test
+    void reusedBuilderDoesNotCarryRankedCyclesWhenNextBuildDisablesCycleAnalysis() throws Exception {
+        // Given: a builder that first analyzes a cross-package cycle
+        File cyclicDir = gitRepoWithTwoPackageCycle(tempDir);
+        File cleanDir = gitRepoWithSimpleSource(tempDir);
+        ReportModelBuilder builder = new ReportModelBuilder();
+
+        RefactorFirstReportDTO first = builder.build(
+                false, // showDetails
+                50, // edgeAnalysisCount
+                true, // analyzeCycles
+                true, // excludeTests
+                "src/test",
+                "CyclicProject",
+                "1.0.0",
+                cyclicDir);
+
+        assertTrue(first.getClassCycles().isHasCycles());
+        assertFalse(builder.getClassEdgeCycleCounts().isEmpty());
+        assertFalse(builder.getPackageEdgeCycleCounts().isEmpty());
+        assertNotNull(builder.getCodebaseGraphDTO());
+
+        // When: the same builder analyzes an acyclic project with cycle ranking disabled
+        RefactorFirstReportDTO second = builder.build(
+                false, // showDetails
+                50, // edgeAnalysisCount
+                false, // analyzeCycles
+                true, // excludeTests
+                "src/test",
+                "CleanProject",
+                "1.0.0",
+                cleanDir);
+
+        // Then: the report and getters reflect only the current graph
+        assertFalse(second.getClassCycles().isHasCycles());
+        assertFalse(second.getProject().isHasAnyDisharmony());
+        assertTrue(builder.getRankedClassCycles().isEmpty());
+        assertNotNull(builder.getCodebaseGraphDTO());
+        assertTrue(builder.getClassEdgeCycleCounts().isEmpty());
+        assertTrue(builder.getPackageEdgeCycleCounts().isEmpty());
+    }
+
     /**
      * A multi-module layout (module directory != Git repo root) must build a full report —
      * the model builder passes both paths to CycleRanker for URL canonicalization instead of
@@ -243,6 +285,37 @@ class ReportModelBuilderTest {
                     public String greet(String name) {
                         return "Hello " + name;
                     }
+                }
+                """);
+        return gitInit(projectDir);
+    }
+
+    private File gitRepoWithTwoPackageCycle(Path parent) throws Exception {
+        File projectDir = new File(parent.toFile(), "cross-package-cycle-project");
+        File firstPackage = new File(projectDir, "src/main/java/com/example/first");
+        File secondPackage = new File(projectDir, "src/main/java/com/example/second");
+        Files.createDirectories(firstPackage.toPath());
+        Files.createDirectories(secondPackage.toPath());
+        Files.writeString(
+                new File(firstPackage, "ClassA.java").toPath(),
+                """
+                package com.example.first;
+
+                import com.example.second.ClassB;
+
+                public class ClassA {
+                    private ClassB classB;
+                }
+                """);
+        Files.writeString(
+                new File(secondPackage, "ClassB.java").toPath(),
+                """
+                package com.example.second;
+
+                import com.example.first.ClassA;
+
+                public class ClassB {
+                    private ClassA classA;
                 }
                 """);
         return gitInit(projectDir);

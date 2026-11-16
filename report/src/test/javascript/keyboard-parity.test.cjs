@@ -20,7 +20,9 @@ test('graph hover keyboard parity: focusin/focusout bind the hover model', () =>
     assert.ok(vizdom.includes("svg.addEventListener('focusin'"), 'focusin re-uses the hover model');
     assert.ok(vizdom.includes("svg.addEventListener('focusout'"), 'focusout clears like mouseleave');
     // The hyperlinked node anchors are real tab stops (vizdom emits <a href>).
-    assert.ok(vizdom.includes('target="_blank"'), 'node anchors stay hyperlinks (tab stops)');
+    assert.ok(
+        vizdom.includes("anchor.setAttribute('target', '_blank')"),
+        'node anchors stay hyperlinks (tab stops)');
 });
 
 test('copy cells handle Enter and Space alongside click', () => {

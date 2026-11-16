@@ -201,6 +201,10 @@
     contain: inline-size;
 }
 
+.rf-table-pagination[hidden] {
+    display: none;
+}
+
 .rf-page-btn {
     padding: 0.35rem 0.75rem;
     /* Explicit colours on both states: the base stylesheet gives plain

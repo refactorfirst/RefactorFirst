@@ -37,12 +37,17 @@ test('rf-core exposes the boot contract the other assets rely on', () => {
     assert.ok(core.includes('graphDot'), 'rf-core must resolve template dot-var buttons');
 });
 
-test('rf-graphs-vizdom restores the new-tab anchor target on every hyperlinked anchor', () => {
+test('rf-graphs-vizdom sanitizes SVG markup and preserves safe new-tab links', () => {
     const vizdom = readFileSync(resolve(ASSETS_DIR, 'rf-graphs-vizdom.js'), 'utf8');
     assert.ok(
-        vizdom.includes("svg.replaceAll('<a href=', '<a target=\"_blank\" href=')"),
-        'vizdom drops the target attribute; the render must restore it globally');
-    assert.ok(!/svg\.replace\('<a href='/m.test(vizdom), 'a non-global replacement would miss later anchors');
+        vizdom.includes('svg = sanitizeSvgMarkup(svg)'),
+        'rendered SVG markup must pass through the sanitizer');
+    assert.ok(vizdom.includes("node.removeAttribute(attr.name)"), 'event attributes are removed');
+    assert.ok(vizdom.includes("/^javascript:/i.test(attr.value || '')"), 'javascript links are removed');
+    assert.ok(vizdom.includes("anchor.setAttribute('target', '_blank')"), 'safe links open in a new tab');
+    assert.ok(
+        vizdom.includes("anchor.setAttribute('rel', 'noopener noreferrer')"),
+        'new-tab links receive a safe rel attribute');
 });
 
 test('rf-graphs drop subgraphs by parsed structure, not id prefix', () => {

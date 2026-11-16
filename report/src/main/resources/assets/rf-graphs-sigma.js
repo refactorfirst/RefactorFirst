@@ -213,8 +213,14 @@
      * 2D popup binds node hover only; the 3D popup carries the edge-hover half.
      */
     function bindSigmaHoverHighlight(sigma, graph) {
-        if (!sigma || typeof sigma.on !== 'function' || typeof sigma.setSetting !== 'function' || !graph) return;
-        const accents = GRAPH_HOVER_ACCENTS[window.RF.activeChartTheme()] || GRAPH_HOVER_ACCENTS.light;
+        if (!sigma || typeof sigma.on !== 'function' || typeof sigma.setSetting !== 'function' || !graph) return undefined;
+
+        const accentForTheme = () => {
+            const theme = window.RF && typeof window.RF.activeChartTheme === 'function'
+                ? window.RF.activeChartTheme()
+                : 'light';
+            return GRAPH_HOVER_ACCENTS[theme] || GRAPH_HOVER_ACCENTS.light;
+        };
         const nodeStates = new Map();
         const edgeStates = new Map();
 
@@ -225,6 +231,32 @@
         const refresh = () => {
             if (typeof sigma.scheduleRefresh === 'function') sigma.scheduleRefresh();
         };
+        const applyThemeSettings = () => {
+            const settings = sigmaPopupSettings();
+            if (settings) {
+                sigma.setSetting('labelColor', settings.labelColor);
+                sigma.setSetting('hoverRenderer', settings.hoverRenderer);
+            } else {
+                sigma.setSetting('labelColor', undefined);
+                sigma.setSetting('hoverRenderer', undefined);
+            }
+            refresh();
+        };
+
+        let themeCleanup = null;
+        if (window.RF && window.RF.theme && typeof window.RF.theme.onChange === 'function') {
+            themeCleanup = window.RF.theme.onChange(() => {
+                applyThemeSettings();
+            });
+            const originalKill = sigma.kill.bind(sigma);
+            sigma.kill = function () {
+                if (themeCleanup) {
+                    themeCleanup();
+                    themeCleanup = null;
+                }
+                return originalKill();
+            };
+        }
 
         sigma.on('enterNode', payload => {
             const node = payload && payload.node;
@@ -263,14 +295,22 @@
         sigma.setSetting('nodeReducer', (node, data) => {
             const state = nodeStates.get(node);
             if (!state) return data;
+            const accents = accentForTheme();
             const accent = state === 'in' ? accents.in : state === 'out' ? accents.out : accents.edge;
             return Object.assign({}, data, {color: accent, highlighted: true});
         });
         sigma.setSetting('edgeReducer', (edge, data) => {
             const state = edgeStates.get(edge);
             if (!state) return data;
-            return Object.assign({}, data, {color: accents[state], size: 3});
+            return Object.assign({}, data, {color: accentForTheme()[state], size: 3});
         });
+        applyThemeSettings();
+        return () => {
+            if (themeCleanup) {
+                themeCleanup();
+                themeCleanup = null;
+            }
+        };
     }
 
 

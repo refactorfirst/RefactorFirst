@@ -113,8 +113,11 @@
         if (window.graphlibDot && window.graphology && window.Sigma) {
             const graph = window.RF.buildGraphologyGraph(dot);
             const instance = new window.Sigma(graph, document.getElementById(containerName), window.RF.sigmaPopupSettings());
-            retainPopupRenderer(container, () => instance.kill());
-            window.RF.bindSigmaHoverHighlight(instance, graph);
+            const themeCleanup = window.RF.bindSigmaHoverHighlight ? window.RF.bindSigmaHoverHighlight(instance, graph) : null;
+            retainPopupRenderer(container, () => {
+                if (typeof themeCleanup === 'function') themeCleanup();
+                instance.kill();
+            });
         }
     }
 
@@ -145,6 +148,10 @@
                 const dotVar = button.getAttribute('data-dot-var');
                 if (!popup || !container || !document.getElementById(popup)) return;
                 const dot = window.RF.graphDot(dotVar);
+                if (typeof dot !== 'string') {
+                    window.RF.announceWidgetFailure('graph');
+                    return;
+                }
                 if (button.hasAttribute('data-popup-3d')) {
                     window.RF.createForceGraph(popup, container, dot);
                 } else {

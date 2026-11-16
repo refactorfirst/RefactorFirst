@@ -27,6 +27,15 @@ async function openReport(page) {
 }
 
 test.describe('report table features', () => {
+    test('pagination stays hidden for tables below the page-size threshold', async ({page}) => {
+        const consoleErrors = await openReport(page);
+
+        const pagination = page.locator('[data-rf-pagination="package-relationships"]');
+        await expect(pagination).toBeHidden();
+        await expect(pagination).toHaveCSS('display', 'none');
+        expect(consoleErrors).toEqual([]);
+    });
+
     test('sticky headers stay pinned while scrolling a tall table', async ({page}) => {
         const consoleErrors = await openReport(page);
 

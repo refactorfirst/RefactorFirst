@@ -14,7 +14,7 @@ const { test } = require('node:test');
 const ASSETS_DIR = resolve(__dirname, '../../main/resources/assets');
 
 function loadRfTables() {
-    const window = { RF: {} };
+    const window = { RF: {}, addEventListener: () => {} };
     global.window = window;
     new Function(readFileSync(resolve(ASSETS_DIR, 'rf-tables.js'), 'utf8'))();
     return window.RF;
@@ -118,6 +118,51 @@ test('resolveSortKey matches exact keys then falls back to case-insensitive labe
     assert.equal(RF.resolveSortKey(columns, 'col1'), 'col1');
     assert.equal(RF.resolveSortKey(columns, 'priority'), 'col1', 'label fallback');
     assert.equal(RF.resolveSortKey(columns, 'nope'), null);
+});
+
+test('sorting disabled keeps sort buttons inert and keeps the default sort unset', () => {
+    const RF = loadRfTables();
+    const table = {
+        getAttribute: () => 'class-relationships',
+        querySelectorAll: selector => {
+            if (selector === 'thead th') return [{
+                querySelector: () => null,
+                innerHTML: 'Priority',
+                getAttribute: () => null,
+                setAttribute: () => {},
+                querySelectorAll: () => [],
+            }];
+            if (selector === 'tbody tr') return [{
+                querySelectorAll: () => [{innerHTML: '1'}],
+                cloneNode: () => ({querySelectorAll: () => []}),
+            }];
+            return [];
+        },
+    };
+    const button = {
+        listeners: {},
+        addEventListener: (type, handler) => { button.listeners[type] = handler; },
+        getAttribute: () => 'priority',
+        setAttribute: () => {},
+    };
+    const root = {
+        querySelectorAll: selector => {
+            if (selector === 'table[data-rf-table]') return [table];
+            if (selector === '[data-rf-sort="class-relationships"]') return [button];
+            return [];
+        },
+        querySelector: () => null,
+    };
+    const config = {
+        pagination: {threshold: 20, pageSize: 20},
+        sorting: {enabled: false, defaultSortColumn: 'priority', defaultSortDirection: 'asc'},
+        search: {enabled: false, debounceMs: 300},
+        export: {enabled: false},
+        copy: {enabled: false, toastDuration: 3000},
+        stickyHeaders: false,
+    };
+    RF.enhanceTables(root, {data: {classRelationshipsToRemove: {relationships: [{priority: '1'}]}}, config});
+    assert.equal(button.listeners.click, undefined, 'click handlers stay disabled while sorting is off');
 });
 
 test('localized date cells sort chronologically across years', () => {

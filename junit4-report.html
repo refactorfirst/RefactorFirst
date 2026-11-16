@@ -324,7 +324,6 @@ span.theme-toggle {
 .theme-option-input:checked + .theme-option-icon {
   color: var(--on-accent-color);
 }
-
 </style>
 <!-- rf:asset:assets/rf-tables.css -->
 <style>
@@ -348,6 +347,14 @@ span.theme-toggle {
 .rf-data-table td {
     border: 1px solid;
     padding: 2px 6px;
+}
+
+.rf-duplicate-partner {
+    white-space: nowrap;
+}
+
+.rf-break-relationship {
+    display: block;
 }
 
 /* Sticky headers pinned to the viewport while their table scrolls, plus
@@ -513,7 +520,7 @@ span.theme-toggle {
     outline-offset: 2px;
 }
 
-.rf-table-pagination {
+.rf-table-pagination:not([hidden]) {
     display: flex;
     flex-wrap: wrap;
     gap: 1rem;
@@ -521,6 +528,10 @@ span.theme-toggle {
     justify-content: center;
     margin: 0.75rem 0;
     contain: inline-size;
+}
+
+.rf-table-pagination[hidden] {
+    display: none;
 }
 
 .rf-page-btn {
@@ -588,7 +599,6 @@ span.theme-toggle {
         box-sizing: border-box;
     }
 }
-
 </style>
 <!-- rf:asset:assets/rf-graphs.css -->
 <style>
@@ -720,7 +730,6 @@ main#app .fullscreen-svg g.node.rf-hover-in path[fill="black"],
 main#app .fullscreen-svg g.node.rf-hover-out path[fill="black"] {
   fill: var(--graph-hover-on);
 }
-
 </style>
 <!-- rf:asset:assets/rf-core.css -->
 <style>
@@ -729,6 +738,7 @@ main#app .fullscreen-svg g.node.rf-hover-out path[fill="black"] {
    generated report (skip link added; inlined by AssetInliner, never loaded via src=). */
 
 main {
+    box-sizing: border-box;
     max-width: 100vw;
     width: 100%;
 }
@@ -863,6 +873,10 @@ main {
     margin: 0.25rem 0;
 }
 
+/* Match mvp.css hover disclosure for keyboard navigation. */
+.rf-report nav ul li:focus-within ul {
+    display: block;
+}
 </style>
 
 </head>
@@ -16591,8 +16605,11 @@ OrderingRequest &#8594; MemoizingRequest : 1<br/>
         if (window.graphlibDot && window.graphology && window.Sigma) {
             const graph = window.RF.buildGraphologyGraph(dot);
             const instance = new window.Sigma(graph, document.getElementById(containerName), window.RF.sigmaPopupSettings());
-            retainPopupRenderer(container, () => instance.kill());
-            window.RF.bindSigmaHoverHighlight(instance, graph);
+            const themeCleanup = window.RF.bindSigmaHoverHighlight ? window.RF.bindSigmaHoverHighlight(instance, graph) : null;
+            retainPopupRenderer(container, () => {
+                if (typeof themeCleanup === 'function') themeCleanup();
+                instance.kill();
+            });
         }
     }
 
@@ -16623,6 +16640,10 @@ OrderingRequest &#8594; MemoizingRequest : 1<br/>
                 const dotVar = button.getAttribute('data-dot-var');
                 if (!popup || !container || !document.getElementById(popup)) return;
                 const dot = window.RF.graphDot(dotVar);
+                if (typeof dot !== 'string') {
+                    window.RF.announceWidgetFailure('graph');
+                    return;
+                }
                 if (button.hasAttribute('data-popup-3d')) {
                     window.RF.createForceGraph(popup, container, dot);
                 } else {
@@ -16759,7 +16780,6 @@ OrderingRequest &#8594; MemoizingRequest : 1<br/>
 
     window.RF = RF;
 })();
-
 </script>
 <!-- rf:asset:assets/rf-theme.js -->
 <script>
@@ -16874,7 +16894,6 @@ OrderingRequest &#8594; MemoizingRequest : 1<br/>
         restore: restore
     };
 })();
-
 </script>
 <!-- rf:asset:assets/rf-hierarchy-dot.js -->
 <script>
@@ -17070,7 +17089,6 @@ OrderingRequest &#8594; MemoizingRequest : 1<br/>
     window.RF.packageHierarchyToDot = packageHierarchyToDot;
     window.RF.escapeDotQuoted = escapeDotQuoted;
 })();
-
 </script>
 <!-- rf:asset:assets/rf-tables.js -->
 <script>
@@ -17497,9 +17515,11 @@ OrderingRequest &#8594; MemoizingRequest : 1<br/>
                 const text = stripHtml(cell.innerHTML);
                 window.RF.copyCellContent(text).then(ok => onCopy(ok, text));
             };
-            cell.addEventListener('click', copy);
+            cell.addEventListener('click', event => {
+                if (!event.target.closest('a')) copy();
+            });
             cell.addEventListener('keydown', event => {
-                if (event.key === 'Enter' || event.key === ' ') {
+                if (event.target === cell && (event.key === 'Enter' || event.key === ' ')) {
                     event.preventDefault();
                     copy();
                 }
@@ -17719,17 +17739,21 @@ OrderingRequest &#8594; MemoizingRequest : 1<br/>
                 : null;
             // The default sort resolves by key first, then by label — the
             // disharmony tables emit their header text as the sort key.
-            state.sortKey = state.sortKey !== undefined
-                ? state.sortKey
-                : defaultSortKey ??
-                    (capturedTables[tableId].headers.find(header => header.key === config.sorting.defaultSortColumn)
-                        ? config.sorting.defaultSortColumn
-                        : capturedTables[tableId].headers.find(header =>
-                            header.label.toLowerCase() === config.sorting.defaultSortColumn)?.key ?? null);
+            state.sortKey = config.sorting.enabled
+                ? (state.sortKey !== undefined
+                    ? state.sortKey
+                    : defaultSortKey ??
+                        (capturedTables[tableId].headers.find(header => header.key === config.sorting.defaultSortColumn)
+                            ? config.sorting.defaultSortColumn
+                            : capturedTables[tableId].headers.find(header =>
+                                header.label.toLowerCase() === config.sorting.defaultSortColumn)?.key ?? null))
+                : null;
             if (state.sortKey === undefined || state.sortKey === '') {
                 state.sortKey = null;
             }
-            state.sortDir = state.sortDir ?? config.sorting.defaultSortDirection;
+            state.sortDir = config.sorting.enabled
+                ? (state.sortDir ?? config.sorting.defaultSortDirection)
+                : null;
             tableStates[tableId] = state;
 
             if (config.search.enabled) {
@@ -17743,6 +17767,9 @@ OrderingRequest &#8594; MemoizingRequest : 1<br/>
 
             // Sort buttons: the three-state cycle starting from the effective
             // direction, so clicking the default-sorted column flips it first.
+            if (!config.sorting.enabled) {
+                return;
+            }
             const buttons = Array.from(root.querySelectorAll('[data-rf-sort="' + tableId + '"]'));
             buttons.forEach(button => {
                 button.addEventListener('click', () => {
@@ -17821,7 +17848,6 @@ OrderingRequest &#8594; MemoizingRequest : 1<br/>
     window.RF.getTableDescriptor = getTableDescriptor;
     window.RF.enhanceTables = enhanceTables;
 })();
-
 </script>
 <!-- rf:asset:assets/rf-csv.js -->
 <script>
@@ -17918,7 +17944,6 @@ OrderingRequest &#8594; MemoizingRequest : 1<br/>
     window.RF.triggerDownload = triggerDownload;
     window.RF.exportTableToCsv = exportTableToCsv;
 })();
-
 </script>
 <!-- rf:asset:assets/rf-copy.js -->
 <script>
@@ -18007,9 +18032,12 @@ OrderingRequest &#8594; MemoizingRequest : 1<br/>
     function showToast(message, durationMs) {
         const region = ensureToastRegion();
         const delay = durationMs ?? (window.RF.TABLE_CONFIG ? window.RF.TABLE_CONFIG.copy.toastDuration : 3000);
-        if (activeToastMessage === message && activeToastTimer !== null) {
+        const isDuplicateMessage = activeToastMessage === message;
+        if (activeToastTimer !== null) {
             window.clearTimeout(activeToastTimer);
-        } else {
+            activeToastTimer = null;
+        }
+        if (!isDuplicateMessage) {
             region.textContent = message;
         }
         activeToastMessage = message;
@@ -18025,7 +18053,6 @@ OrderingRequest &#8594; MemoizingRequest : 1<br/>
     window.RF.showToast = showToast;
     window.RF.ensureToastRegion = ensureToastRegion;
 })();
-
 </script>
 <!-- rf:asset:assets/rf-charts.js -->
 <script>
@@ -18259,7 +18286,6 @@ OrderingRequest &#8594; MemoizingRequest : 1<br/>
     window.RF.redrawCharts = redrawChartsForTheme;
     window.RF.bindThemeChartRedraw = bindThemeChartRedraw;
 })();
-
 </script>
 <!-- rf:asset:assets/rf-graphs-sigma.js -->
 <script>
@@ -18478,8 +18504,14 @@ OrderingRequest &#8594; MemoizingRequest : 1<br/>
      * 2D popup binds node hover only; the 3D popup carries the edge-hover half.
      */
     function bindSigmaHoverHighlight(sigma, graph) {
-        if (!sigma || typeof sigma.on !== 'function' || typeof sigma.setSetting !== 'function' || !graph) return;
-        const accents = GRAPH_HOVER_ACCENTS[window.RF.activeChartTheme()] || GRAPH_HOVER_ACCENTS.light;
+        if (!sigma || typeof sigma.on !== 'function' || typeof sigma.setSetting !== 'function' || !graph) return undefined;
+
+        const accentForTheme = () => {
+            const theme = window.RF && typeof window.RF.activeChartTheme === 'function'
+                ? window.RF.activeChartTheme()
+                : 'light';
+            return GRAPH_HOVER_ACCENTS[theme] || GRAPH_HOVER_ACCENTS.light;
+        };
         const nodeStates = new Map();
         const edgeStates = new Map();
 
@@ -18490,6 +18522,32 @@ OrderingRequest &#8594; MemoizingRequest : 1<br/>
         const refresh = () => {
             if (typeof sigma.scheduleRefresh === 'function') sigma.scheduleRefresh();
         };
+        const applyThemeSettings = () => {
+            const settings = sigmaPopupSettings();
+            if (settings) {
+                sigma.setSetting('labelColor', settings.labelColor);
+                sigma.setSetting('hoverRenderer', settings.hoverRenderer);
+            } else {
+                sigma.setSetting('labelColor', undefined);
+                sigma.setSetting('hoverRenderer', undefined);
+            }
+            refresh();
+        };
+
+        let themeCleanup = null;
+        if (window.RF && window.RF.theme && typeof window.RF.theme.onChange === 'function') {
+            themeCleanup = window.RF.theme.onChange(() => {
+                applyThemeSettings();
+            });
+            const originalKill = sigma.kill.bind(sigma);
+            sigma.kill = function () {
+                if (themeCleanup) {
+                    themeCleanup();
+                    themeCleanup = null;
+                }
+                return originalKill();
+            };
+        }
 
         sigma.on('enterNode', payload => {
             const node = payload && payload.node;
@@ -18528,14 +18586,22 @@ OrderingRequest &#8594; MemoizingRequest : 1<br/>
         sigma.setSetting('nodeReducer', (node, data) => {
             const state = nodeStates.get(node);
             if (!state) return data;
+            const accents = accentForTheme();
             const accent = state === 'in' ? accents.in : state === 'out' ? accents.out : accents.edge;
             return Object.assign({}, data, {color: accent, highlighted: true});
         });
         sigma.setSetting('edgeReducer', (edge, data) => {
             const state = edgeStates.get(edge);
             if (!state) return data;
-            return Object.assign({}, data, {color: accents[state], size: 3});
+            return Object.assign({}, data, {color: accentForTheme()[state], size: 3});
         });
+        applyThemeSettings();
+        return () => {
+            if (themeCleanup) {
+                themeCleanup();
+                themeCleanup = null;
+            }
+        };
     }
 
 
@@ -18546,7 +18612,6 @@ OrderingRequest &#8594; MemoizingRequest : 1<br/>
     window.RF.drawDarkHover = drawDarkHover;
     window.RF.GRAPH_HOVER_ACCENTS = GRAPH_HOVER_ACCENTS;
 })();
-
 </script>
 <!-- rf:asset:assets/rf-graphs-3d.js -->
 <script>
@@ -18568,10 +18633,20 @@ OrderingRequest &#8594; MemoizingRequest : 1<br/>
         return window.rfSpriteTextReady || Promise.resolve(null);
     }
 
+    function loadForceGraph3D() {
+        if (window.ForceGraph3D) return Promise.resolve(window.ForceGraph3D);
+        return window.rfForceGraphReady || Promise.resolve(null);
+    }
+
     async function createForceGraph(popupId, containerName, dot) {
+        const ForceGraph3D = await loadForceGraph3D();
+        if (!ForceGraph3D) {
+            window.RF?.announceWidgetFailure?.('3d-force-graph');
+            return;
+        }
         if (!window.RF.openPopup(popupId)) return;
         const container = document.getElementById(containerName);
-        if (!container || !window.graphlibDot || !window.ForceGraph3D || typeof dot !== 'string') return;
+        if (!container || !window.graphlibDot || typeof dot !== 'string') return;
 
         const graphlibGraph = window.graphlibDot.read(dot);
         const nodes = [];
@@ -18619,7 +18694,11 @@ OrderingRequest &#8594; MemoizingRequest : 1<br/>
         window.RF.disposePopupRenderer(container);
         const graph = new window.ForceGraph3D(container)
             .graphData(gData)
-            .nodeLabel('label')
+            .nodeLabel(node => {
+                const label = document.createElement('span');
+                label.textContent = node.label;
+                return label;
+            })
             .width(container.clientWidth)
             .height(container.clientHeight);
 
@@ -18727,9 +18806,9 @@ OrderingRequest &#8594; MemoizingRequest : 1<br/>
     }
 
     window.RF.createForceGraph = createForceGraph;
+    window.RF.loadForceGraph3D = loadForceGraph3D;
     window.RF.loadSpriteText = loadSpriteText;
 })();
-
 </script>
 <!-- rf:asset:assets/rf-graphs-vizdom.js -->
 <script>
@@ -18751,6 +18830,13 @@ OrderingRequest &#8594; MemoizingRequest : 1<br/>
     // so the report renders consistently on both palettes. Entries whose
     // container left the DOM are pruned instead of redrawn.
     const wasmGraphHierarchies = new Map();
+    const panZoomInstances = new Map();
+
+    function destroyPanZoom(containerId) {
+        const instance = panZoomInstances.get(containerId);
+        panZoomInstances.delete(containerId);
+        if (instance) instance.destroy();
+    }
 
     /**
      * Synthesis options for the active palette: the dark palette bakes the muted
@@ -18774,6 +18860,39 @@ OrderingRequest &#8594; MemoizingRequest : 1<br/>
      * repository URL (http(s)-gated) — or the report's own raw DOT from legacy
      * payloads without a hierarchy, which is parsed verbatim.
      */
+    function sanitizeSvgMarkup(svgMarkup) {
+        if (typeof svgMarkup !== 'string' || !svgMarkup.trim()) return svgMarkup;
+        if (typeof DOMParser === 'undefined' || typeof XMLSerializer === 'undefined') return svgMarkup;
+        try {
+            const svgDoc = new DOMParser().parseFromString(svgMarkup, 'image/svg+xml');
+            const svgRoot = svgDoc.documentElement;
+            if (!svgRoot || svgRoot.nodeName.toLowerCase() !== 'svg') return svgMarkup;
+            svgRoot.querySelectorAll('*').forEach(node => {
+                Array.from(node.attributes || []).forEach(attr => {
+                    const name = attr.name.toLowerCase();
+                    if (/^on/i.test(name)) {
+                        node.removeAttribute(attr.name);
+                    } else if ((name === 'href' || name === 'xlink:href') && /^javascript:/i.test(attr.value || '')) {
+                        node.removeAttribute(attr.name);
+                    }
+                });
+                if (node.tagName && /^script$/i.test(node.tagName)) {
+                    node.remove();
+                }
+            });
+            svgRoot.querySelectorAll('a[href], a[xlink\\:href]').forEach(anchor => {
+                anchor.setAttribute('target', '_blank');
+                if (!anchor.hasAttribute('rel')) {
+                    anchor.setAttribute('rel', 'noopener noreferrer');
+                }
+            });
+            return new XMLSerializer().serializeToString(svgRoot);
+        } catch (error) {
+            console.warn('SVG sanitization failed:', error);
+            return svgMarkup;
+        }
+    }
+
     function renderGraphInto(parser, el, containerId, entry) {
         let dotString;
         if (entry.hierarchy) {
@@ -18791,14 +18910,13 @@ OrderingRequest &#8594; MemoizingRequest : 1<br/>
         }
         const parsed = parser.parse(dotString).to_directed().layout();
         let svg = parsed.to_svg().to_string();
-        // vizdom drops the target attribute on hyperlinked nodes; restore
-        // new-tab behavior on every encoded anchor, not just the first
-        svg = svg.replaceAll('<a href=', '<a target="_blank" href=');
+        svg = sanitizeSvgMarkup(svg);
         svg = svg.replace('<svg ', '<svg class="fullscreen-svg" ');
+        destroyPanZoom(containerId);
         el.innerHTML = svg;
         bindGraphHoverHighlights(el);
         if (window.svgPanZoom) {
-            window.svgPanZoom('#' + containerId + ' svg', {zoomEnabled: true, controlIconsEnabled: true});
+            panZoomInstances.set(containerId, window.svgPanZoom('#' + containerId + ' svg', {zoomEnabled: true, controlIconsEnabled: true}));
         }
     }
 
@@ -18908,6 +19026,7 @@ OrderingRequest &#8594; MemoizingRequest : 1<br/>
         for (const [containerId, entry] of wasmGraphHierarchies) {
             const el = typeof document !== 'undefined' ? document.getElementById(containerId) : null;
             if (!el || !el.isConnected) {
+                destroyPanZoom(containerId);
                 wasmGraphHierarchies.delete(containerId);
                 continue;
             }
@@ -18930,8 +19049,13 @@ OrderingRequest &#8594; MemoizingRequest : 1<br/>
                 const el = document.getElementById(containerId);
                 if (!el || !(hierarchy || typeof dot === 'string')) return;
                 const entry = {hierarchy: hierarchy || null, dot: dot || null, repoUrl: repoUrl};
-                renderGraphInto(parser, el, containerId, entry);
-                wasmGraphHierarchies.set(containerId, entry);
+                try {
+                    renderGraphInto(parser, el, containerId, entry);
+                    wasmGraphHierarchies.set(containerId, entry);
+                } catch (error) {
+                    console.warn('WASM graph render failed for ' + containerId + ':', error);
+                    window.RF.announceWidgetFailure(containerId);
+                }
             };
 
             if (data.classMap && !data.classMap.dotThresholdExceeded && data.classMap.hierarchy) {
@@ -18960,7 +19084,6 @@ OrderingRequest &#8594; MemoizingRequest : 1<br/>
     window.RF.graphDotOptions = graphDotOptions;
     window.RF.bindGraphHoverHighlights = bindGraphHoverHighlights;
 })();
-
 </script>
 <!-- rf:asset:assets/rf-main.js -->
 <script>
@@ -19074,7 +19197,6 @@ OrderingRequest &#8594; MemoizingRequest : 1<br/>
         boot();
     }
 })();
-
 </script>
 
 </body>
