@@ -268,7 +268,9 @@ class SimpleHtmlReportTemplateTest {
         row.put("sourceClass", "com.example.A");
         row.put("targetClass", "com.example.B");
         row.put("sourceClassPath", "src/main/java/com/example/A.java");
+        row.put("sourceClassUrl", "https://github.com/test/test/blob/src/main/java/com/example/A.java");
         row.put("targetClassPath", "src/main/java/com/example/B.java");
+        row.put("targetClassUrl", "https://github.com/test/test/blob/src/main/java/com/example/B.java");
         row.put("simpleSourceClassName", "A");
         row.put("simpleTargetClassName", "B");
         row.put("sourceMarked", true);
@@ -311,7 +313,9 @@ class SimpleHtmlReportTemplateTest {
     private Map<String, Object> packageRelationshipsToRemoveWithLinks() {
         Map<String, Object> classRelationship = new LinkedHashMap<>();
         classRelationship.put("sourceClassPath", "src/main/java/com/example/A.java");
+        classRelationship.put("sourceClassUrl", "https://github.com/test/test/blob/src/main/java/com/example/A.java");
         classRelationship.put("targetClassPath", "src/main/java/com/example/B.java");
+        classRelationship.put("targetClassUrl", "https://github.com/test/test/blob/src/main/java/com/example/B.java");
         classRelationship.put("simpleSourceClassName", "A");
         classRelationship.put("simpleTargetClassName", "B");
         classRelationship.put("weight", 5);
@@ -320,7 +324,9 @@ class SimpleHtmlReportTemplateTest {
         packageRelationship.put("sourcePackage", "com.example");
         packageRelationship.put("targetPackage", "com.other");
         packageRelationship.put("sourcePackagePath", "src/main/java/com/example");
+        packageRelationship.put("sourcePackageUrl", "https://github.com/test/test/blob/src/main/java/com/example");
         packageRelationship.put("targetPackagePath", "src/main/java/com/other");
+        packageRelationship.put("targetPackageUrl", "https://github.com/test/test/blob/src/main/java/com/other");
         packageRelationship.put("sourceMarked", true);
         packageRelationship.put("targetMarked", false);
         packageRelationship.put("weight", 7);

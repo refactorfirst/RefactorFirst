@@ -130,7 +130,7 @@ class InteractiveTemplateTest {
                         html));
         assertTrue(
                 html.contains(
-                        "href=\"https://github.com/test/test/blob/src/main/java/com/example/EnhancedParameterComputer$EnhancedParameters.java\""),
+                        "href=\"https://github.com/test/test/blob/src/main/java/com/example/EnhancedParameterComputer%24EnhancedParameters.java\""),
                 html);
         assertTrue(html.contains("EnhancedParameterComputer$EnhancedParameters"), html);
     }
@@ -139,6 +139,11 @@ class InteractiveTemplateTest {
         Map<String, Object> relationship = new LinkedHashMap<>();
         relationship.put("sourceClassPath", "src/main/java/com/example/" + source + ".java");
         relationship.put("targetClassPath", "src/main/java/com/example/" + target + ".java");
+        relationship.put(
+                "sourceClassUrl", "https://github.com/test/test/blob/src/main/java/com/example/" + source + ".java");
+        relationship.put(
+                "targetClassUrl",
+                "https://github.com/test/test/blob/src/main/java/com/example/" + target.replace("$", "%24") + ".java");
         relationship.put("simpleSourceClassName", source);
         relationship.put("simpleTargetClassName", target);
         relationship.put("weight", weight);
