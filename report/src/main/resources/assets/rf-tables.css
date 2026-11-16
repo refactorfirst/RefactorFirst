@@ -20,6 +20,10 @@
     padding: 2px 6px;
 }
 
+.rf-duplicate-partner {
+    white-space: nowrap;
+}
+
 .rf-break-relationship {
     display: block;
 }

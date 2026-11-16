@@ -6,11 +6,13 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.hjug.cbc.CostBenefitCalculator;
 import org.hjug.cbc.CycleRanker;
@@ -726,8 +728,12 @@ public class ReportModelBuilder {
                 cells.add(DisharmonyTableCellDTO.builder()
                         .content(
                                 duplicationPartners != null
-                                        ? SimpleHtmlReport.escapeHtmlLabel(duplicationPartners)
-                                                .replace(";", "<br>")
+                                        ? "<span class=\"rf-duplicate-partner\">"
+                                                + Arrays.stream(duplicationPartners.split(";", -1))
+                                                        .map(String::trim)
+                                                        .map(SimpleHtmlReport::escapeHtmlLabel)
+                                                        .collect(Collectors.joining("<br>"))
+                                                + "</span>"
                                         : "")
                         .align("left")
                         .build());
