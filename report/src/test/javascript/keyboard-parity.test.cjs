@@ -107,3 +107,32 @@ for (const dimension of ['2d', '3d']) {
         assert.equal(disposed, 1);
     });
 }
+test('cell copy preserves nested link activation and only handles keys on the cell', async () => {
+    // Given the real binding function and a cell containing a linked child
+    const source = readAsset('rf-tables.js');
+    const bind = new Function('window', 'stripHtml',
+        source.slice(source.indexOf('    function bindCopyableCells('),
+            source.indexOf('    /** Applies the filter')) + '; return bindCopyableCells;');
+    const handlers = {};
+    const cell = {innerHTML: 'Cell text', setAttribute() {},
+        addEventListener: (name, handler) => { handlers[name] = handler; },
+        closest: () => null};
+    const linkChild = {closest: selector => selector === 'a' ? {} : null};
+    let copies = 0;
+    let prevented = 0;
+    bind({RF: {copyCellContent: async () => { copies++; return true; }}}, text => text)(
+        {querySelectorAll: () => [cell]}, () => {});
+    // When a linked descendant is clicked or receives Enter/Space
+    handlers.click({target: linkChild});
+    for (const key of ['Enter', ' ']) handlers.keydown({target: linkChild, key,
+        preventDefault() { prevented++; }});
+    // Then link activation is left to the browser
+    assert.equal(copies, 0);
+    assert.equal(prevented, 0);
+    // When the cell itself is clicked or receives Enter/Space, then it still copies
+    handlers.click({target: cell});
+    for (const key of ['Enter', ' ']) handlers.keydown({target: cell, key,
+        preventDefault() { prevented++; }});
+    assert.equal(copies, 3);
+    assert.equal(prevented, 2);
+});

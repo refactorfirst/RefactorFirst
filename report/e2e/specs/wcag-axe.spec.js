@@ -95,11 +95,14 @@ test.describe('wcag axe', () => {
             ];
             const undersized = [];
             for (const selector of selectors) {
-                const element = document.querySelector(selector);
-                if (!element) continue;
-                const box = element.getBoundingClientRect();
-                if (box.width < 24 || box.height < 24) {
-                    undersized.push(`${selector}: ${box.width}x${box.height}`);
+                const elements = Array.from(document.querySelectorAll(selector))
+                    .filter(element => element.checkVisibility());
+                if (elements.length === 0) undersized.push(`${selector}: no visible controls`);
+                for (const [index, element] of elements.entries()) {
+                    const box = element.getBoundingClientRect();
+                    if (box.width < 24 || box.height < 24) {
+                        undersized.push(`${selector}[${index}]: ${box.width}x${box.height}`);
+                    }
                 }
             }
             // The close button lives inside a hidden popup; measure it while open.

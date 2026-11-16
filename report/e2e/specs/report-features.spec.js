@@ -69,6 +69,10 @@ test.describe('report table features', () => {
         // filtered count and the displayed page size are checked separately.
         const match = (await page.locator('[data-rf-match="class-relationships"]').textContent()) ?? '';
         const filteredRows = Number.parseInt(String(match).split(' of ')[0], 10);
+        expect(filteredRows).toBeLessThan(total);
+        for (const text of await rows.allTextContents()) {
+            expect(text.toLowerCase()).toContain(await search.inputValue());
+        }
         expect(filteredRows).toBeGreaterThan(20); // the filtered set exceeds the 20-row page size
         expect(await rows.count()).toBe(20); // displayed page size, checked separately from filtered
         expect(match).toBe(`${filteredRows} of ${total} rows match`);

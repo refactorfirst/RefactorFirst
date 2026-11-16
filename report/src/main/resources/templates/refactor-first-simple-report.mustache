@@ -5,19 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <title>Refactor First Report for {{project.name}} {{project.version}}</title>
     <style>
+        :root { --rf-header-height: 10rem; }
         body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; margin: 0; }
-        .rf-header { position: sticky; top: 0; z-index: 10; background: #ffffff; border-bottom: 1px solid #cccccc; padding: 0.5rem 1rem; }
+        .rf-header { box-sizing: border-box; max-height: var(--rf-header-height); overflow: auto; position: sticky; top: 0; z-index: 10; background: #ffffff; border-bottom: 1px solid #cccccc; padding: 0.5rem 1rem; }
         .rf-header h1 { margin: 0 0 0.25rem 0; font-size: 1.25rem; text-align: center; }
         nav ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 0.25rem 1rem; }
         nav li { display: inline-block; }
-        section[id], h2[id], h3[id] { scroll-margin-top: 16rem; }
+        section[id], h2[id], h3[id] { scroll-margin-top: var(--rf-header-height); }
         main { padding: 1rem; }
         table { border-collapse: collapse; margin: 0.75rem auto; }
         th, td { border: 2px solid #555555; padding: 0.3rem 0.6rem; }
-        thead th { top: 16rem; position: sticky; background: #f2f2f2; }
+        thead th { top: var(--rf-header-height); position: sticky; background: #f2f2f2; }
         @media (max-width: 40rem) {
-            thead th { top: 32rem; }
-            section[id], h2[id], h3[id] { scroll-margin-top: 32rem; }
+            .rf-header { position: static; max-height: none; overflow: visible; }
+            thead th { top: 0; }
+            section[id], h2[id], h3[id] { scroll-margin-top: 0; }
         }
         .rf-visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; border: 0; }
         a:focus-visible { outline: 3px solid #b34700; outline-offset: 2px; }
@@ -39,7 +41,7 @@
             <li><a href="#">Disharmonies</a><ul>
             {{#disharmonies}}<li><a href="#{{anchorId}}">{{title}}</a></li>{{/disharmonies}}
             </ul></li>
-            {{#classCycles.hasCycles}}<li><a href="#">Cycles</a><ul><li><a href="#CYCLES">Class Cycles</a></li><li><a href="#CYCLEMAP">Cycle Map</a></li></ul></li>{{/classCycles.hasCycles}}
+            {{#classCycles.hasCycles}}<li><a href="#">Cycles</a><ul><li><a href="#CYCLES">Class Cycles</a></li>{{#classCycles.largestCycle.hasCycleMap}}<li><a href="#CYCLEMAP">Cycle Map</a></li>{{/classCycles.largestCycle.hasCycleMap}}</ul></li>{{/classCycles.hasCycles}}
         </ul>
     </nav>
     {{/project.hasAnyDisharmony}}

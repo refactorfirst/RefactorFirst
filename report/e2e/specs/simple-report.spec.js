@@ -71,6 +71,15 @@ test.describe('simple report', () => {
         await expect(firstColumnHeader).toBeVisible();
         expect(await firstColumnHeader.evaluate((el) => getComputedStyle(el).position)).toBe('sticky');
 
+        // The bounded header cannot overlap the sticky cells or section anchors.
+        const offsets = await page.evaluate(() => ({
+            header: document.querySelector('.rf-header').getBoundingClientRect().height,
+            cell: parseFloat(getComputedStyle(document.querySelector('thead th')).top),
+            anchor: parseFloat(getComputedStyle(document.querySelector('section[id]')).scrollMarginTop),
+        }));
+        expect(offsets.cell).toBeGreaterThanOrEqual(offsets.header);
+        expect(offsets.anchor).toBeGreaterThanOrEqual(offsets.header);
+
         // Scrolling leaves the header pinned to the viewport top
         await page.evaluate(() => window.scrollBy(0, 800));
         await page.waitForTimeout(100);
@@ -98,14 +107,15 @@ test.describe('simple report', () => {
             group.appendChild(children);
             list.appendChild(group);
         });
-        // Then both offsets reserve the full header height
+        // Then the header scrolls normally and sticky cells and anchors need no offset
         const offsets = await page.evaluate(() => ({
-            header: document.querySelector('.rf-header').getBoundingClientRect().height,
+            position: getComputedStyle(document.querySelector('.rf-header')).position,
             cell: parseFloat(getComputedStyle(document.querySelector('thead th')).top),
             anchor: parseFloat(getComputedStyle(document.querySelector('section[id]')).scrollMarginTop),
         }));
-        expect(offsets.cell).toBeGreaterThanOrEqual(offsets.header);
-        expect(offsets.anchor).toBeGreaterThanOrEqual(offsets.header);
+        expect(offsets.position).toBe('static');
+        expect(offsets.cell).toBe(0);
+        expect(offsets.anchor).toBe(0);
     });
 
     test('populated report passes an axe-core scan with zero violations', async ({ page }) => {

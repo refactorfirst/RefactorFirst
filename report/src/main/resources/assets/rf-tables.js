@@ -421,9 +421,11 @@
                 const text = stripHtml(cell.innerHTML);
                 window.RF.copyCellContent(text).then(ok => onCopy(ok, text));
             };
-            cell.addEventListener('click', copy);
+            cell.addEventListener('click', event => {
+                if (!event.target.closest('a')) copy();
+            });
             cell.addEventListener('keydown', event => {
-                if (event.key === 'Enter' || event.key === ' ') {
+                if (event.target === cell && (event.key === 'Enter' || event.key === ' ')) {
                     event.preventDefault();
                     copy();
                 }

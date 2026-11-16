@@ -172,3 +172,19 @@ test('mustache.js renders the implicit-iterator subset like the Java engine', ()
         '<th scope="col">Class</th><th scope="col">Priority</th>' +
             '<a href="https://github.com/test/test/blob/src/main/java/TestClass.java">x</a>');
 });
+
+test('simple cycle navigation follows the availability of its section targets', () => {
+    // Given cycles with and without a renderable map
+    const template = readFileSync(resolve(__dirname,
+        '../../main/resources/templates/refactor-first-simple-report.mustache'), 'utf8');
+    for (const hasCycles of [false, true]) {
+        for (const hasCycleMap of [false, true]) {
+            // When rendering the simple report
+            const html = Mustache.render(template, {project: {hasAnyDisharmony: true},
+                classCycles: {hasCycles, largestCycle: {hasCycleMap}}});
+            // Then each link exists exactly when its target section exists
+            assert.equal(html.includes('href="#CYCLES"'), hasCycles);
+            assert.equal(html.includes('href="#CYCLEMAP"'), hasCycles && hasCycleMap);
+        }
+    }
+});
