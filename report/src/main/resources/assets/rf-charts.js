@@ -148,6 +148,7 @@
                     legend: {
                         display: true,
                         position: 'bottom',
+                        onClick: () => {},
                         labels: {
                             font: {size: 12},
                             padding: 15,

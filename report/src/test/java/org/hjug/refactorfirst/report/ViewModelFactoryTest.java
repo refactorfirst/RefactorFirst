@@ -34,6 +34,38 @@ class ViewModelFactoryTest {
 
     private final ViewModelFactory viewModelFactory = new ViewModelFactory();
 
+    @Test
+    @SuppressWarnings("unchecked")
+    void nestedClassFlagsOverridePackageFlags() {
+        RefactorFirstReportDTO report = fixtureReport();
+        report.setPackageRelationshipsToRemove(PackageRelationshipsToRemoveDTO.builder()
+                .relationships(List.of(org.hjug.refactorfirst.report.model.PackageRelationshipDTO.builder()
+                        .sourceMarked(true)
+                        .targetMarked(false)
+                        .classRelationshipsToBreakPackage(List.of(ClassRelationshipDTO.builder()
+                                .sourceMarked(false)
+                                .targetMarked(true)
+                                .build()))
+                        .build()))
+                .build());
+        Map<String, Object> section =
+                (Map<String, Object>) viewModelFactory.createViewModel(report).get("packageRelationshipsToRemove");
+        Map<String, Object> parent = ((List<Map<String, Object>>) section.get("relationships")).get(0);
+        Map<String, Object> child = ((List<Map<String, Object>>) parent.get("classRelationshipsToBreakPackage")).get(0);
+        assertEquals(false, child.get("sourceMarked"));
+        assertEquals(true, child.get("targetMarked"));
+    }
+
+    @Test
+    void sourceUrlsMatchBrowserEncoding() {
+        assertEquals(
+                "https://example.org/src/A%20%23%25%C3%A9.java",
+                ReportModelBuilder.sourceUrl("https://example.org", "/src/A #%é.java"));
+        assertEquals(
+                "https://example.org/src/A.java", ReportModelBuilder.sourceUrl("https://example.org/", "src/A.java"));
+        assertEquals("https://example.org/!'()*~", ReportModelBuilder.sourceUrl("https://example.org", "!'()*~"));
+    }
+
     /** Exposes project metadata, disharmony flags and graph thresholds through the view model. */
     @Test
     void givenReportDto_whenCreateViewModel_thenProjectFlagsAndGraphMetadataAreExposed() {

@@ -19,6 +19,8 @@ public class ViewModelFactory {
 
     /** Builds the view model for the given report DTO. */
     public Map<String, Object> createViewModel(RefactorFirstReportDTO report) {
+        String repoUrl =
+                report.getProject() == null ? null : report.getProject().getRepoUrl();
         Map<String, Object> project = new LinkedHashMap<>();
         if (report.getProject() != null) {
             project.put("name", report.getProject().getName());
@@ -57,7 +59,9 @@ public class ViewModelFactory {
                     row.put("sourceClass", relationship.getSourceClass());
                     row.put("targetClass", relationship.getTargetClass());
                     row.put("sourceClassPath", relationship.getSourceClassPath());
+                    row.put("sourceClassUrl", ReportModelBuilder.sourceUrl(repoUrl, relationship.getSourceClassPath()));
                     row.put("targetClassPath", relationship.getTargetClassPath());
+                    row.put("targetClassUrl", ReportModelBuilder.sourceUrl(repoUrl, relationship.getTargetClassPath()));
                     row.put("simpleSourceClassName", relationship.getSimpleSourceClassName());
                     row.put("simpleTargetClassName", relationship.getSimpleTargetClassName());
                     row.put("sourceMarked", relationship.isSourceMarked());
@@ -101,7 +105,13 @@ public class ViewModelFactory {
                     row.put("sourcePackage", relationship.getSourcePackage());
                     row.put("targetPackage", relationship.getTargetPackage());
                     row.put("sourcePackagePath", relationship.getSourcePackagePath());
+                    row.put(
+                            "sourcePackageUrl",
+                            ReportModelBuilder.sourceUrl(repoUrl, relationship.getSourcePackagePath()));
                     row.put("targetPackagePath", relationship.getTargetPackagePath());
+                    row.put(
+                            "targetPackageUrl",
+                            ReportModelBuilder.sourceUrl(repoUrl, relationship.getTargetPackagePath()));
                     row.put("sourceMarked", relationship.isSourceMarked());
                     row.put("targetMarked", relationship.isTargetMarked());
                     row.put("weight", relationship.getWeight());
@@ -116,11 +126,19 @@ public class ViewModelFactory {
                             brokenClassRelationship.put("sourceClass", classRelationship.getSourceClass());
                             brokenClassRelationship.put("targetClass", classRelationship.getTargetClass());
                             brokenClassRelationship.put("sourceClassPath", classRelationship.getSourceClassPath());
+                            brokenClassRelationship.put(
+                                    "sourceClassUrl",
+                                    ReportModelBuilder.sourceUrl(repoUrl, classRelationship.getSourceClassPath()));
                             brokenClassRelationship.put("targetClassPath", classRelationship.getTargetClassPath());
+                            brokenClassRelationship.put(
+                                    "targetClassUrl",
+                                    ReportModelBuilder.sourceUrl(repoUrl, classRelationship.getTargetClassPath()));
                             brokenClassRelationship.put(
                                     "simpleSourceClassName", classRelationship.getSimpleSourceClassName());
                             brokenClassRelationship.put(
                                     "simpleTargetClassName", classRelationship.getSimpleTargetClassName());
+                            brokenClassRelationship.put("sourceMarked", classRelationship.isSourceMarked());
+                            brokenClassRelationship.put("targetMarked", classRelationship.isTargetMarked());
                             brokenClassRelationship.put("weight", classRelationship.getWeight());
                             brokenClassRelationships.add(brokenClassRelationship);
                         }
@@ -164,6 +182,7 @@ public class ViewModelFactory {
                         bubbleView.put("color", bubble.getColor());
                         bubbleView.put("borderColor", bubble.getBorderColor());
                         bubbleView.put("path", bubble.getPath());
+                        bubbleView.put("sourceUrl", ReportModelBuilder.sourceUrl(repoUrl, bubble.getPath()));
                         bubbles.add(bubbleView);
                     }
                 }
@@ -186,6 +205,7 @@ public class ViewModelFactory {
                                 cellView.put("content", cell.getContent());
                                 cellView.put("align", cell.getAlign());
                                 cellView.put("path", cell.getPath());
+                                cellView.put("sourceUrl", ReportModelBuilder.sourceUrl(repoUrl, cell.getPath()));
                                 cells.add(cellView);
                             }
                         }
@@ -234,6 +254,7 @@ public class ViewModelFactory {
                         Map<String, Object> rowView = new LinkedHashMap<>();
                         rowView.put("className", row.getClassName());
                         rowView.put("classPath", row.getClassPath());
+                        rowView.put("classUrl", ReportModelBuilder.sourceUrl(repoUrl, row.getClassPath()));
                         rowView.put("marked", row.isMarked());
                         rowView.put("edgesHtml", row.getEdgesHtml());
                         breakdown.add(rowView);

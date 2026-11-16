@@ -47,12 +47,12 @@
      * payloads without a hierarchy, which is parsed verbatim.
      */
     function sanitizeSvgMarkup(svgMarkup) {
-        if (typeof svgMarkup !== 'string' || !svgMarkup.trim()) return svgMarkup;
-        if (typeof DOMParser === 'undefined' || typeof XMLSerializer === 'undefined') return svgMarkup;
+        if (typeof svgMarkup !== 'string' || !svgMarkup.trim()) throw new Error('Missing SVG');
+        if (typeof DOMParser === 'undefined' || typeof XMLSerializer === 'undefined') throw new Error('SVG parser unavailable');
         try {
             const svgDoc = new DOMParser().parseFromString(svgMarkup, 'image/svg+xml');
             const svgRoot = svgDoc.documentElement;
-            if (!svgRoot || svgRoot.nodeName.toLowerCase() !== 'svg') return svgMarkup;
+            if (!svgRoot || svgRoot.localName !== 'svg' || svgRoot.namespaceURI !== 'http://www.w3.org/2000/svg' || svgDoc.querySelector('parsererror')) throw new Error('Invalid SVG');
             svgRoot.querySelectorAll('*').forEach(node => {
                 Array.from(node.attributes || []).forEach(attr => {
                     const name = attr.name.toLowerCase();
@@ -75,7 +75,7 @@
             return new XMLSerializer().serializeToString(svgRoot);
         } catch (error) {
             console.warn('SVG sanitization failed:', error);
-            return svgMarkup;
+            throw error;
         }
     }
 

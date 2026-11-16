@@ -92,6 +92,13 @@ function harness() {
 }
 
 function loadReportModules(h) {
+    global.DOMParser = class {
+        parseFromString(markup) {
+            return {documentElement: {localName: 'svg', namespaceURI: 'http://www.w3.org/2000/svg',
+                querySelectorAll: () => [], markup}, querySelector: () => null};
+        }
+    };
+    global.XMLSerializer = class { serializeToString(root) { return root.markup; } };
     global.window = h.window;
     global.document = h.document;
     h.window.RF = {};
@@ -271,3 +278,27 @@ test('theme redraw destroys pan zoom before replacing SVG and prunes detached in
     RF.redrawGraphs();
     assert.equal(events.filter(e => e === 'destroy').length, 3);
 });
+
+for (const failure of ['missing root', 'non-SVG root', 'parse error', 'sanitizer exception']) {
+    test(`SVG rendering fails closed for ${failure}`, () => {
+        const h = harness();
+        const RF = loadReportModules(h);
+        const container = h.makeContainer();
+        container.innerHTML = 'static fallback';
+        h.containers.classGraph = container;
+        const failures = [];
+        RF.announceWidgetFailure = widget => failures.push(widget);
+        global.DOMParser = class {
+            parseFromString() {
+                const root = {localName: failure === 'non-SVG root' ? 'html' : 'svg',
+                    namespaceURI: 'http://www.w3.org/2000/svg',
+                    querySelectorAll() { throw new Error('sanitizer failure'); }};
+                return {documentElement: failure === 'missing root' ? null : root,
+                    querySelector: () => failure === 'parse error' ? {} : null};
+            }
+        };
+        RF.initWasmGraphs({project: {}, classMap: {hierarchy: HIERARCHY}});
+        assert.equal(container.innerHTML, 'static fallback');
+        assert.deepEqual(failures, ['classGraph']);
+    });
+}

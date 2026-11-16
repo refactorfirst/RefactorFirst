@@ -48,12 +48,8 @@ test.describe('report table features', () => {
 
         const box = await header.boundingBox();
         expect(box.y).toBeLessThanOrEqual(1);
-        // The pinned header belongs to a table still on screen.
-        const rowsVisible = await page
-            .locator('table[data-rf-table="class-relationships"] tbody tr')
-            .first()
-            .isVisible();
-        expect(rowsVisible).toBe(true);
+        expect(box.y).toBeGreaterThanOrEqual(-1);
+        await expect(header).toBeInViewport();
         expect(consoleErrors).toEqual([]);
     });
 
@@ -132,7 +128,7 @@ test.describe('report table features', () => {
         const consoleErrors = await openReport(page);
 
         const search = page.locator('#rf-search-class-relationships');
-        await search.fill('junit');
+        await search.fill('JUnitCore');
         await page.waitForTimeout(500);
 
         const downloadPromise = page.waitForEvent('download');
@@ -144,9 +140,22 @@ test.describe('report table features', () => {
         const csv = require('node:fs').readFileSync(await download.path(), 'utf8');
         const lines = csv.trim().split('\n');
         expect(lines[0]).toBe('Class Relationship,Priority,In Class Cycles,Relationship Strength,Also Removes Pkg Cycle Relationship,In Package Cycles');
-        for (const line of lines.slice(1)) {
-            expect(line.toLowerCase()).toContain('junit');
-        }
+        const fixture = require('../../src/test/resources/samples/junit4-analysis.json');
+        const expected = fixture.classRelationshipsToRemove.relationships
+            .filter(row => [row.simpleSourceClassName, row.simpleTargetClassName]
+                .some(name => name.toLowerCase().includes('junitcore')))
+            .sort((a, b) => a.priority - b.priority)
+            .map(row => [
+                row.simpleSourceClassName + (row.sourceMarked ? ' *' : '') + ' → ' +
+                    row.simpleTargetClassName + (row.targetMarked ? ' *' : '') + ' : ' + row.weight,
+                row.priority, row.cycleCount, row.effortRank,
+                row.alsoRemovesPackageRelationship, row.packageCycleCount,
+            ].map(String));
+        expect(expected.length).toBeGreaterThan(0);
+        const records = lines.slice(1).map(line => line.replace(/\r$/, '').split(',')
+            .map(value => value.replace(/^"|"$/g, '').replace(/""/g, '"')));
+        expect(records).toHaveLength(expected.length);
+        expect(records).toEqual(expected);
         expect(consoleErrors).toEqual([]);
     });
 
@@ -162,9 +171,15 @@ test.describe('report table features', () => {
         await expect(toast).toContainText('Copied to clipboard');
 
         // Keyboard parity: Enter on a copy cell copies too.
-        await page.locator('table[data-rf-table="class-cycles-summary"] tbody td').nth(1).focus();
+        const secondCell = page.locator('table[data-rf-table="class-cycles-summary"] tbody td').nth(1);
+        const copied = [];
+        await page.exposeFunction('recordCopy', value => copied.push(value));
+        await page.evaluate(() => Object.defineProperty(navigator.clipboard, 'writeText', {
+            configurable: true, value: value => window.recordCopy(value),
+        }));
+        await secondCell.focus();
         await page.keyboard.press('Enter');
-        await expect(toast).toContainText('Copied to clipboard');
+        await expect.poll(() => copied).toEqual([(await secondCell.textContent()).trim()]);
         expect(consoleErrors).toEqual([]);
     });
 

@@ -21,13 +21,16 @@
         return window.rfForceGraphReady || Promise.resolve(null);
     }
 
-    async function createForceGraph(popupId, containerName, dot) {
+    async function createForceGraph(popupId, containerName, dot, triggerElement) {
+        const token = window.RF.beginPopupRequest();
+        const trigger = triggerElement || document.activeElement;
         const ForceGraph3D = await loadForceGraph3D();
+        if (!window.RF.isPopupRequestCurrent(token)) return;
         if (!ForceGraph3D) {
             window.RF?.announceWidgetFailure?.('3d-force-graph');
             return;
         }
-        if (!window.RF.openPopup(popupId)) return;
+        if (!window.RF.openPopup(popupId, trigger)) return;
         const container = document.getElementById(containerName);
         if (!container || !window.graphlibDot || typeof dot !== 'string') return;
 
@@ -61,9 +64,10 @@
             });
         });
         const gData = {nodes: nodes, links: links};
+        const nodesById = new Map(nodes.map(node => [node.id, node]));
         gData.links.forEach(link => {
-            const a = gData.nodes.find(node => node.id === link.source);
-            const b = gData.nodes.find(node => node.id === link.target);
+            const a = nodesById.get(link.source);
+            const b = nodesById.get(link.target);
             // Resolved endpoint objects ride on each link so the hover handlers
             // below never depend on force-graph's ingestion-time rewiring.
             link.sourceNode = a;

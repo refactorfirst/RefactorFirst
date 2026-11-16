@@ -133,6 +133,16 @@ function fixtureView() {
             ],
         },
     };
+    function addUrls(value) {
+        if (!value || typeof value !== 'object') return;
+        Object.entries(value).forEach(([key, child]) => {
+            if (typeof child === 'string' && (key === 'path' || key.endsWith('Path'))) {
+                value[key === 'path' ? 'sourceUrl' : key.replace('Path', 'Url')] =
+                    project.repoUrl + child.split('/').map(encodeURIComponent).join('/');
+            } else addUrls(child);
+        });
+    }
+    [classRelationshipsToRemove, disharmonies, classCycles].forEach(addUrls);
     return {
         project,
         classMap,

@@ -57,6 +57,9 @@
 
     // The element focused when the popup opened, restored on close (WCAG 2.4.3).
     let popupTriggerElement = null;
+    let popupRequest = 0;
+    function beginPopupRequest() { return ++popupRequest; }
+    function isPopupRequestCurrent(token) { return token === popupRequest; }
 
     /** Focus-traps Tab inside the given popup (WCAG 2.4.3: focus order). */
     function bindFocusTrap(popup) {
@@ -79,11 +82,11 @@
         });
     }
 
-    function openPopup(popupId) {
+    function openPopup(popupId, triggerElement) {
         const overlay = document.getElementById('overlay');
         const popup = document.getElementById(popupId);
         if (!overlay || !popup) return false;
-        popupTriggerElement = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+        popupTriggerElement = triggerElement || (document.activeElement instanceof HTMLElement ? document.activeElement : null);
         overlay.style.display = 'block';
         popup.style.display = 'block';
         bindFocusTrap(popup);
@@ -106,13 +109,14 @@
     }
 
     function showPopup(popupId, containerName, dot) {
+        beginPopupRequest();
         if (!openPopup(popupId)) return;
         const container = document.getElementById(containerName);
         if (!container) return;
         disposePopupRenderer(container);
         if (window.graphlibDot && window.graphology && window.Sigma) {
             const graph = window.RF.buildGraphologyGraph(dot);
-            const instance = new window.Sigma(graph, document.getElementById(containerName), window.RF.sigmaPopupSettings());
+            const instance = new window.Sigma(graph, document.getElementById(containerName), undefined);
             const themeCleanup = window.RF.bindSigmaHoverHighlight ? window.RF.bindSigmaHoverHighlight(instance, graph) : null;
             retainPopupRenderer(container, () => {
                 if (typeof themeCleanup === 'function') themeCleanup();
@@ -122,6 +126,7 @@
     }
 
     function hidePopup() {
+        beginPopupRequest();
         const overlay = document.getElementById('overlay');
         if (!overlay) return;
         overlay.style.display = 'none';
@@ -153,7 +158,7 @@
                     return;
                 }
                 if (button.hasAttribute('data-popup-3d')) {
-                    window.RF.createForceGraph(popup, container, dot);
+                    window.RF.createForceGraph(popup, container, dot, button);
                 } else {
                     showPopup(popup, container, dot);
                 }
@@ -243,6 +248,8 @@
         sourceUrl: sourceUrl,
         readRfData: readRfData,
         openPopup: openPopup,
+        beginPopupRequest: beginPopupRequest,
+        isPopupRequestCurrent: isPopupRequestCurrent,
         disposePopupRenderer: disposePopupRenderer,
         retainPopupRenderer: retainPopupRenderer,
         showPopup: showPopup,

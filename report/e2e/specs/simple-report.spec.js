@@ -85,6 +85,8 @@ test.describe('simple report', () => {
         await page.waitForTimeout(100);
         const box = await header.boundingBox();
         expect(box.y).toBeLessThanOrEqual(1);
+        expect(box.y).toBeGreaterThanOrEqual(-1);
+        await expect(header).toBeInViewport();
     });
 
     test('narrow populated header clears sticky cells and section anchors', async ({ page }) => {

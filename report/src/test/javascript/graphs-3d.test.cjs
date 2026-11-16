@@ -256,3 +256,46 @@ test('node tooltip treats scanned labels as text', async () => {
     assert.equal(tooltip.tagName, 'SPAN');
     assert.equal(tooltip.textContent, label);
 });
+
+for (const cancel of ['close', 'supersede']) {
+    test(`pending 3D request stays cancelled after ${cancel}`, async () => {
+        // Given: a dependency load which has not resolved.
+        const h = harness();
+        const factory = h.window.ForceGraph3D;
+        delete h.window.ForceGraph3D;
+        let resolveLoad;
+        h.window.rfForceGraphReady = new Promise(resolve => { resolveLoad = resolve; });
+        const creation = loadAndCreate(h, DOT);
+        // When: the user closes or requests another popup before the load ends.
+        if (cancel === 'close') {
+            global.document.getElementsByClassName = () => [];
+            global.document.querySelectorAll = () => [];
+            h.window.RF.hidePopup();
+        } else h.window.RF.beginPopupRequest();
+        resolveLoad(factory);
+        await creation;
+        // Then: no graph is created by the stale request.
+        assert.equal(h.calls.some(call => call[0] === 'constructor'), false);
+    });
+}
+
+test('3D popup restores focus to the trigger captured before loading', async () => {
+    const h = harness();
+    const factory = h.window.ForceGraph3D;
+    delete h.window.ForceGraph3D;
+    let resolveLoad;
+    h.window.rfForceGraphReady = new Promise(resolve => { resolveLoad = resolve; });
+    const creation = loadAndCreate(h, DOT);
+    const trigger = {focus() { this.focused = true; }};
+    // Start a newer request with an explicit activation element.
+    const newer = h.window.RF.createForceGraph('popup-x', 'graph-container-x', DOT, trigger);
+    global.document.activeElement = {focus() { throw new Error('wrong focus target'); }};
+    resolveLoad(factory);
+    h.window.ForceGraph3D = factory;
+    await Promise.all([creation, newer]);
+    global.document.getElementsByClassName = () => [];
+    global.document.querySelectorAll = () => [];
+    global.document.contains = element => element === trigger;
+    h.window.RF.hidePopup();
+    assert.equal(trigger.focused, true);
+});

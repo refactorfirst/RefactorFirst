@@ -86,7 +86,7 @@
             </tr></thead>
             <tbody>
             {{#classRelationshipsToRemove.relationships}}<tr>
-                <td align="left">{{#sourceClassPath}}<a href="{{project.repoUrl}}{{sourceClassPath}}" target="_blank" rel="noopener">{{/sourceClassPath}}{{sourceClass}}{{#sourceClassPath}}</a>{{/sourceClassPath}}{{#sourceMarked}}<strong>*</strong>{{/sourceMarked}} &#8594; {{#targetClassPath}}<a href="{{project.repoUrl}}{{targetClassPath}}" target="_blank" rel="noopener">{{/targetClassPath}}{{targetClass}}{{#targetClassPath}}</a>{{/targetClassPath}}{{#targetMarked}}<strong>*</strong>{{/targetMarked}} : {{weight}}</td>
+                <td align="left">{{#sourceClassPath}}<a href="{{sourceClassUrl}}" target="_blank" rel="noopener">{{/sourceClassPath}}{{sourceClass}}{{#sourceClassPath}}</a>{{/sourceClassPath}}{{#sourceMarked}}<strong>*</strong>{{/sourceMarked}} &#8594; {{#targetClassPath}}<a href="{{targetClassUrl}}" target="_blank" rel="noopener">{{/targetClassPath}}{{targetClass}}{{#targetClassPath}}</a>{{/targetClassPath}}{{#targetMarked}}<strong>*</strong>{{/targetMarked}} : {{weight}}</td>
                 <td align="right">{{priority}}</td>
                 <td align="right">{{cycleCount}}</td>
                 <td align="right">{{effortRank}}</td>
@@ -120,11 +120,11 @@
             </tr></thead>
             <tbody>
             {{#packageRelationshipsToRemove.relationships}}<tr>
-                <td align="left">{{#sourcePackagePath}}<a href="{{project.repoUrl}}{{sourcePackagePath}}" target="_blank" rel="noopener">{{/sourcePackagePath}}{{sourcePackage}}{{#sourcePackagePath}}</a>{{/sourcePackagePath}}{{#sourceMarked}}<strong>*</strong>{{/sourceMarked}} &#8594; {{#targetPackagePath}}<a href="{{project.repoUrl}}{{targetPackagePath}}" target="_blank" rel="noopener">{{/targetPackagePath}}{{targetPackage}}{{#targetPackagePath}}</a>{{/targetPackagePath}}{{#targetMarked}}<strong>*</strong>{{/targetMarked}} : {{weight}}</td>
+                <td align="left">{{#sourcePackagePath}}<a href="{{sourcePackageUrl}}" target="_blank" rel="noopener">{{/sourcePackagePath}}{{sourcePackage}}{{#sourcePackagePath}}</a>{{/sourcePackagePath}}{{#sourceMarked}}<strong>*</strong>{{/sourceMarked}} &#8594; {{#targetPackagePath}}<a href="{{targetPackageUrl}}" target="_blank" rel="noopener">{{/targetPackagePath}}{{targetPackage}}{{#targetPackagePath}}</a>{{/targetPackagePath}}{{#targetMarked}}<strong>*</strong>{{/targetMarked}} : {{weight}}</td>
                 <td align="right">{{priority}}</td>
                 <td align="right">{{cycleCount}}</td>
                 <td align="right">{{effortRank}}</td>
-                <td align="left">{{#classRelationshipsToBreakPackage}}<span class="rf-break-relationship">{{#sourceClassPath}}<a href="{{project.repoUrl}}{{sourceClassPath}}" target="_blank" rel="noopener">{{/sourceClassPath}}{{simpleSourceClassName}}{{#sourceClassPath}}</a>{{/sourceClassPath}}{{#sourceMarked}}<strong>*</strong>{{/sourceMarked}} &#8594; {{#targetClassPath}}<a href="{{project.repoUrl}}{{targetClassPath}}" target="_blank" rel="noopener">{{/targetClassPath}}{{simpleTargetClassName}}{{#targetClassPath}}</a>{{/targetClassPath}}{{#targetMarked}}<strong>*</strong>{{/targetMarked}} : {{weight}}</span>{{/classRelationshipsToBreakPackage}}</td>
+                <td align="left">{{#classRelationshipsToBreakPackage}}<span class="rf-break-relationship">{{#sourceClassPath}}<a href="{{sourceClassUrl}}" target="_blank" rel="noopener">{{/sourceClassPath}}{{simpleSourceClassName}}{{#sourceClassPath}}</a>{{/sourceClassPath}}{{#sourceMarked}}<strong>*</strong>{{/sourceMarked}} &#8594; {{#targetClassPath}}<a href="{{targetClassUrl}}" target="_blank" rel="noopener">{{/targetClassPath}}{{simpleTargetClassName}}{{#targetClassPath}}</a>{{/targetClassPath}}{{#targetMarked}}<strong>*</strong>{{/targetMarked}} : {{weight}}</span>{{/classRelationshipsToBreakPackage}}</td>
             </tr>{{/packageRelationshipsToRemove.relationships}}
             </tbody>
         </table>
@@ -144,7 +144,7 @@
             <caption class="rf-visually-hidden">{{title}} by the numbers</caption>
             <thead><tr>{{#table.headers}}<th scope="col">{{.}}</th>{{/table.headers}}</tr></thead>
             <tbody>
-            {{#table.rows}}<tr>{{#cells}}<td align="{{align}}">{{#path}}<a href="{{project.repoUrl}}{{path}}" target="_blank" rel="noopener">{{/path}}{{{content}}}{{#path}}</a>{{/path}}</td>{{/cells}}</tr>{{/table.rows}}
+            {{#table.rows}}<tr>{{#cells}}<td align="{{align}}">{{#path}}<a href="{{sourceUrl}}" target="_blank" rel="noopener">{{/path}}{{{content}}}{{#path}}</a>{{/path}}</td>{{/cells}}</tr>{{/table.rows}}
             </tbody>
         </table>
         </div>
@@ -189,7 +189,7 @@
             </tr></thead>
             <tbody>
             {{#classCycles.largestCycle.breakdown}}<tr>
-                <td align="left">{{#classPath}}<a href="{{project.repoUrl}}{{classPath}}" target="_blank" rel="noopener">{{/classPath}}{{className}}{{#classPath}}</a>{{/classPath}}{{#marked}}<strong>*</strong>{{/marked}}</td>
+                <td align="left">{{#classPath}}<a href="{{classUrl}}" target="_blank" rel="noopener">{{/classPath}}{{className}}{{#classPath}}</a>{{/classPath}}{{#marked}}<strong>*</strong>{{/marked}}</td>
                 <td align="left">{{{edgesHtml}}}</td>
             </tr>{{/classCycles.largestCycle.breakdown}}
             </tbody>

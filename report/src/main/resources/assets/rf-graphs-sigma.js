@@ -19,12 +19,20 @@
             const visited = {};
 
             function visit(node, level) {
-                if (visited[node]) return;
-                visited[node] = true;
-                nodeLevels[node] = level;
-                if (!layers[level]) layers[level] = [];
-                layers[level].push(node);
-                graph.forEachNeighbor(node, neighbor => visit(neighbor, level + 1));
+                const stack = [{node, level}];
+                while (stack.length) {
+                    const current = stack.pop();
+                    if (visited[current.node]) continue;
+                    visited[current.node] = true;
+                    nodeLevels[current.node] = current.level;
+                    if (!layers[current.level]) layers[current.level] = [];
+                    layers[current.level].push(current.node);
+                    const neighbors = [];
+                    graph.forEachNeighbor(current.node, neighbor => neighbors.push(neighbor));
+                    for (let i = neighbors.length - 1; i >= 0; i--) {
+                        stack.push({node: neighbors[i], level: current.level + 1});
+                    }
+                }
             }
 
             nodes.forEach(node => {
@@ -231,14 +239,16 @@
         const refresh = () => {
             if (typeof sigma.scheduleRefresh === 'function') sigma.scheduleRefresh();
         };
+        const originalLabelColor = sigma.getSetting('labelColor');
+        const originalHoverRenderer = sigma.getSetting('hoverRenderer');
         const applyThemeSettings = () => {
             const settings = sigmaPopupSettings();
             if (settings) {
                 sigma.setSetting('labelColor', settings.labelColor);
                 sigma.setSetting('hoverRenderer', settings.hoverRenderer);
             } else {
-                sigma.setSetting('labelColor', undefined);
-                sigma.setSetting('hoverRenderer', undefined);
+                sigma.setSetting('labelColor', originalLabelColor);
+                sigma.setSetting('hoverRenderer', originalHoverRenderer);
             }
             refresh();
         };

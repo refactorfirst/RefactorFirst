@@ -56,6 +56,21 @@ import org.jgrapht.graph.DefaultWeightedEdge;
  */
 @Slf4j
 public class ReportModelBuilder {
+    /** Encodes each source path segment using the same rules as RF.sourceUrl. */
+    static String sourceUrl(String repoUrl, String path) {
+        if (repoUrl == null || path == null) return null;
+        String relative = path.startsWith("/") ? path.substring(1) : path;
+        String encoded = Arrays.stream(relative.split("/", -1))
+                .map(segment -> java.net.URLEncoder.encode(segment, java.nio.charset.StandardCharsets.UTF_8)
+                        .replace("+", "%20")
+                        .replace("%21", "!")
+                        .replace("%27", "'")
+                        .replace("%28", "(")
+                        .replace("%29", ")")
+                        .replace("%7E", "~"))
+                .collect(Collectors.joining("/"));
+        return (repoUrl.endsWith("/") ? repoUrl : repoUrl + "/") + encoded;
+    }
 
     private Clock clock = Clock.systemDefaultZone();
 

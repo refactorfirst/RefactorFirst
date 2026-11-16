@@ -673,10 +673,8 @@
 
             // Sort buttons: the three-state cycle starting from the effective
             // direction, so clicking the default-sorted column flips it first.
-            if (!config.sorting.enabled) {
-                return;
-            }
-            const buttons = Array.from(root.querySelectorAll('[data-rf-sort="' + tableId + '"]'));
+            const buttons = config.sorting.enabled
+                ? Array.from(root.querySelectorAll('[data-rf-sort="' + tableId + '"]')) : [];
             buttons.forEach(button => {
                 button.addEventListener('click', () => {
                     const sortKey = button.getAttribute('data-sort-key');

@@ -145,10 +145,14 @@ test('sorting disabled keeps sort buttons inert and keeps the default sort unset
         getAttribute: () => 'priority',
         setAttribute: () => {},
     };
+    const pageButton = {listeners: {}, addEventListener(type, handler) { this.listeners[type] = handler; }};
+    const exportButton = {listeners: {}, addEventListener(type, handler) { this.listeners[type] = handler; }};
     const root = {
         querySelectorAll: selector => {
             if (selector === 'table[data-rf-table]') return [table];
             if (selector === '[data-rf-sort="class-relationships"]') return [button];
+            if (selector === '[data-rf-page="class-relationships"]') return [pageButton];
+            if (selector === '[data-rf-export="class-relationships"]') return [exportButton];
             return [];
         },
         querySelector: () => null,
@@ -163,6 +167,8 @@ test('sorting disabled keeps sort buttons inert and keeps the default sort unset
     };
     RF.enhanceTables(root, {data: {classRelationshipsToRemove: {relationships: [{priority: '1'}]}}, config});
     assert.equal(button.listeners.click, undefined, 'click handlers stay disabled while sorting is off');
+    assert.equal(typeof pageButton.listeners.click, 'function');
+    assert.equal(typeof exportButton.listeners.click, 'function');
 });
 
 test('localized date cells sort chronologically across years', () => {

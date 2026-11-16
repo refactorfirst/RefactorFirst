@@ -48,12 +48,14 @@ function harness() {
     }
     const reducers = {};
     const eventHandlers = {};
+    const defaultHover = () => {};
     const settings = {};
     class FakeSigma {
         on(event, handler) {
             eventHandlers[event] = handler;
             return this;
         }
+        getSetting(name) { return settings[name] ?? (name === 'labelColor' ? {color: '#000'} : defaultHover); }
         setSetting(name, value) {
             settings[name] = value;
             return this;
@@ -166,4 +168,37 @@ test('the dark palette swaps the label color and installs the dark hover rendere
         {x: 10, y: 10, size: 5, label: 'NodeA'},
         {labelSize: 12, labelFont: 'sans-serif', labelWeight: '400', labelColor: {color: '#9fb0c0'}});
     assert.ok(fills.includes('#1a2330'), 'the label box paints the dark popup surface');
+});
+
+ test('deep DFS layout does not exhaust the call stack', () => {
+    const h = harness();
+    const ids = Array.from({length: 15000}, (_, i) => i);
+    const levels = new Map();
+    h.window.RF.sugiyamaLayout({
+        nodes: () => ids,
+        forEachNeighbor: (node, callback) => { if (node + 1 < ids.length) callback(node + 1); },
+        setNodeAttribute: (node, key, value) => { if (key === 'y') levels.set(node, value); },
+    });
+    assert.equal(levels.get(14999), -1499900);
+});
+
+test('Sigma theme changes restore the original light settings', () => {
+    const h = harness();
+    const RF = h.window.RF;
+    let change;
+    let dark = false;
+    RF.activeChartTheme = () => dark ? 'dark' : 'light';
+    RF.theme = {onChange(callback) { change = callback; return () => {}; }};
+    const settings = {labelColor: {color: '#123456'}, hoverRenderer: () => {}};
+    const original = {...settings};
+    RF.bindSigmaHoverHighlight({
+        on() {}, kill() {}, scheduleRefresh() {},
+        getSetting: name => settings[name],
+        setSetting: (name, value) => { settings[name] = value; },
+    }, {});
+    dark = true; change();
+    assert.notEqual(settings.hoverRenderer, original.hoverRenderer);
+    dark = false; change();
+    assert.equal(settings.labelColor, original.labelColor);
+    assert.equal(settings.hoverRenderer, original.hoverRenderer);
 });
