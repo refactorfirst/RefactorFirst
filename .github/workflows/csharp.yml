@@ -9,12 +9,16 @@ on:
     paths:
       - 'csharp-fact-extractor/**'
       - 'codebase-graph-builder/**'
+      - 'change-proneness-ranker/**'
+      - 'report/**'
       - '.github/workflows/csharp.yml'
   pull_request:
     branches: [ main ]
     paths:
       - 'csharp-fact-extractor/**'
       - 'codebase-graph-builder/**'
+      - 'change-proneness-ranker/**'
+      - 'report/**'
       - '.github/workflows/csharp.yml'
 
 permissions:
@@ -44,6 +48,7 @@ jobs:
           dotnet restore csharp-fact-extractor/fixtures/TinyGreeter/TinyGreeter.sln
           dotnet restore csharp-fact-extractor/fixtures/TwoProjects/Alpha/Alpha.csproj
           dotnet restore csharp-fact-extractor/fixtures/Shapes/Shapes.csproj
+          dotnet restore csharp-fact-extractor/fixtures/Members/Members.csproj
 
       - name: Test the extractor
         run: dotnet test csharp-fact-extractor/tests/CSharpFactExtractor.Tests.csproj

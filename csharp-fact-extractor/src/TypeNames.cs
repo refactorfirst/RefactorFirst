@@ -51,6 +51,23 @@ public static class TypeNames
     private static readonly SymbolDisplayFormat ParameterFormat = SymbolDisplayFormat.MinimallyQualifiedFormat.WithMiscellaneousOptions(
         SymbolDisplayFormat.MinimallyQualifiedFormat.MiscellaneousOptions & ~SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier);
 
-    public static string Signature(IMethodSymbol method) =>
-        method.Name + "(" + string.Join(",", method.Parameters.Select(p => p.Type.ToDisplayString(ParameterFormat))) + ")";
+    /// Type parameters and ref/out/in are part of the name: Save() and Save<T>(), Add(int) and Add(ref int) are different methods.
+    public static string Signature(IMethodSymbol method)
+    {
+        string typeParameters = method.Arity > 0 ? "<" + string.Join(",", method.TypeParameters.Select(t => t.Name)) + ">" : "";
+        return method.Name + typeParameters + "(" + string.Join(",", method.Parameters.Select(Parameter)) + ")";
+    }
+
+    private static string Parameter(IParameterSymbol parameter)
+    {
+        string passedBy = parameter.RefKind switch
+        {
+            RefKind.Ref => "ref ",
+            RefKind.Out => "out ",
+            RefKind.In => "in ",
+            RefKind.RefReadOnlyParameter => "ref readonly ",
+            _ => "",
+        };
+        return passedBy + parameter.Type.ToDisplayString(ParameterFormat);
+    }
 }

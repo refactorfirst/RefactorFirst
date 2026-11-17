@@ -54,14 +54,15 @@ Rules
 - `dependencies` lists only types declared in the analysed source, never framework or package types, never the type itself.
 - `count` = how many names in the type's code resolve to the other type or to one of its members.
 - `parent` = fqn of the base class if it is in the analysed source, else null.
-- Method `signature` = name + "(" + parameter type names joined by "," + ")".
+- Method `signature` = name + type parameters, if any, as `<T,U>` + "(" + parameter type names joined by "," + ")". A parameter passed by `ref`, `out` or `in` keeps that word before its type. So `Save()` and `Save<T>()`, `Add(int)` and `Add(ref int)`, are four different signatures. A static constructor is `static Name()`, so it does not share the instance constructor's `Name()`.
 - `calledForeignMethods` entries are the callee's type fqn + "." + its signature.
 - `accessedVariables` = names of fields used (own or foreign), own auto-properties used, and locals declared in the method. Cohesion is computed from it.
 - A call to a method of any other type counts as a foreign call, framework types included. Constructor calls do not.
-- An auto-property is one private attribute plus `get_X` / `set_X` accessor methods. Using your own auto-property is using that attribute; using another type's property is a call to its accessor.
+- An auto-property is one private attribute plus `get_X` / `set_X` accessor methods. Using your own auto-property is using that attribute; using another type's property is a call to its accessor: the setter when it is assigned, the getter when it is read, both for `+=` and `++`.
 - Complexity: 1, plus one for each `if`, loop, non-default `case` or switch-expression arm, `catch`, `&&`, `||` and `?:`. Nesting counts `if`, loops and `catch`.
 - `protectedMembers` = how many of the type's own fields, properties and methods are protected. `overriddenMethods` = signatures of its methods marked `override`. `usedParentMembers` = names of its base class's members that it uses. "Base class" means one declared in the analysed source. These feed Refused Parent Bequest and Tradition Breaker.
-- Types declared only in generated files are left out: anything under `obj` or `bin`, and files ending `.g.cs`, `.g.i.cs`, `.Designer.cs` or `.generated.cs`.
+- Types declared only in generated files are left out: anything under `obj` or `bin`, and files ending `.g.cs`, `.g.i.cs`, `.Designer.cs` or `.generated.cs`. They are not listed as dependencies either.
+- A partial method is measured over both of its halves, so its body counts even when it is in another file.
 - The extractor takes one solution, or several project files when the repository has no solution at its root.
 - Test projects are left out unless `--include-tests` is given. A test project is one whose name ends in `Test`, `Tests`, `Spec` or `Specs` (a trailing target framework such as `(net8.0)` is ignored), or that references xUnit, NUnit, MSTest or the .NET test platform.
 - A primary constructor's `loc` is the length of its parameter list, not of the type that declares it.

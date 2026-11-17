@@ -64,4 +64,33 @@ class CSharpSourceFileGraphBuilderTest {
                 java.util.List.of("TinyGreeter.Greeter", "TinyGreeter.MessageStore", "TinyGreeter.Program"), names);
         assertEquals(3, dto.getClassReferencesGraph().edgeSet().size());
     }
+
+    /** A type that exists only in generated code must not come back into the graph as a dependency target. */
+    @Test
+    void givenRealExtractor_whenATypeIsOnlyInGeneratedCode_thenItIsNotInTheGraph() throws Exception {
+        String extractor = System.getenv(CSharpExtractorRunner.EXTRACTOR_ENV);
+        assumeTrue(extractor != null && Files.exists(Path.of(extractor)), "extractor not configured");
+        Path fixture = Path.of("..", "csharp-fact-extractor", "fixtures", "Members")
+                .toAbsolutePath()
+                .normalize();
+        assumeTrue(Files.isDirectory(fixture), "fixture not found");
+
+        CodebaseGraphDTO dto = new CSharpSourceFileGraphBuilder()
+                .buildGraph(fixture.toString(), fixture.toString(), GraphBuilderConfig.defaultConfig());
+
+        var names = dto.getClassReferencesGraph().vertexSet().stream()
+                .map(VertexInfo::getName)
+                .sorted()
+                .toList();
+        assertEquals(
+                java.util.List.of(
+                        "Members.Cache",
+                        "Members.Clerk",
+                        "Members.Order",
+                        "Members.OverloadCaller",
+                        "Members.Overloads",
+                        "Members.UsesGenerated",
+                        "Members.Validator"),
+                names);
+    }
 }

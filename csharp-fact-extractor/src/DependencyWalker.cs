@@ -23,6 +23,8 @@ public static class DependencyWalker
                 ISymbol? symbol = model.GetSymbolInfo(name).Symbol;
                 INamedTypeSymbol? target = symbol as INamedTypeSymbol ?? symbol?.ContainingType;
                 if (target is null || target.TypeKind == TypeKind.Delegate || !TypeNames.IsInSource(target)) continue;
+                // A type that exists only in generated files is not in the type list, so it is not a dependency either.
+                if (TypeNames.IsGeneratedOnly(target.OriginalDefinition)) continue;
                 if (TypeNames.Namespace(target).Length == 0) continue;
                 string fqn = TypeNames.Fqn(target);
                 if (fqn == self) continue;

@@ -85,7 +85,12 @@ public static class MemberWalker
         int loc = 0, statements = 0;
         bool hasBody = false;
 
-        foreach (SyntaxReference reference in TypeNames.SourceReferences(method))
+        // A partial method's declaration has no body; the body is in its other half, possibly in another file.
+        IEnumerable<SyntaxReference> references = method.PartialImplementationPart is { } implementation
+            ? TypeNames.SourceReferences(method).Concat(TypeNames.SourceReferences(implementation))
+            : TypeNames.SourceReferences(method);
+
+        foreach (SyntaxReference reference in references)
         {
             SyntaxNode node = reference.GetSyntax();
             // A primary constructor is declared by the type itself; its length is its parameter list, not the whole type.
@@ -127,13 +132,13 @@ public static class MemberWalker
                         variables.Add(designation.Identifier.ValueText);
                         break;
                     case SimpleNameSyntax name:
-                        Classify(model.GetSymbolInfo(name).Symbol);
+                        Classify(model.GetSymbolInfo(name).Symbol, name);
                         break;
                 }
             }
         }
 
-        void Classify(ISymbol? symbol)
+        void Classify(ISymbol? symbol, SimpleNameSyntax name)
         {
             switch (symbol)
             {
@@ -159,11 +164,14 @@ public static class MemberWalker
                             ownAttributes.Add(property.Name);
                         }
                     }
-                    else if ((property.GetMethod ?? property.SetMethod) is { } accessor)
+                    else
                     {
-                        // Someone else's property is a call to its accessor, as a Java getter is.
-                        foreignMethods.Add(TypeNames.Fqn(owner) + "." + TypeNames.Signature(accessor.OriginalDefinition));
-                        foreignMethodClasses.Add(TypeNames.Fqn(owner));
+                        // Someone else's property is a call to its accessor, as a Java getter or setter is.
+                        foreach (IMethodSymbol accessor in AccessorsUsed(property, name))
+                        {
+                            foreignMethods.Add(TypeNames.Fqn(owner) + "." + TypeNames.Signature(accessor.OriginalDefinition));
+                            foreignMethodClasses.Add(TypeNames.Fqn(owner));
+                        }
                     }
                     break;
 
@@ -203,9 +211,38 @@ public static class MemberWalker
     private static string SignatureOf(IMethodSymbol method, INamedTypeSymbol type)
     {
         string signature = TypeNames.Signature(method);
-        return method.MethodKind is MethodKind.Constructor or MethodKind.StaticConstructor
-            ? type.Name + signature[signature.IndexOf('(')..]
-            : signature;
+        return method.MethodKind switch
+        {
+            MethodKind.Constructor => type.Name + signature[signature.IndexOf('(')..],
+            // Kept apart from the parameterless instance constructor, which is also written "Name()".
+            MethodKind.StaticConstructor => "static " + type.Name + signature[signature.IndexOf('(')..],
+            _ => signature,
+        };
+    }
+
+    /// The setter when the property is assigned, the getter when it is read, both for `+=` and `++`.
+    /// Falls back to whichever accessor exists.
+    private static List<IMethodSymbol> AccessorsUsed(IPropertySymbol property, SimpleNameSyntax name)
+    {
+        // `order.Total` is the expression that is read or written, not the bare name inside it.
+        ExpressionSyntax expression = name.Parent is MemberAccessExpressionSyntax access && access.Name == name ? access : name;
+        bool written = false, read = true;
+        switch (expression.Parent)
+        {
+            case AssignmentExpressionSyntax assignment when assignment.Left == expression:
+                written = true;
+                read = !assignment.IsKind(SyntaxKind.SimpleAssignmentExpression);
+                break;
+            case PrefixUnaryExpressionSyntax prefix when prefix.IsKind(SyntaxKind.PreIncrementExpression) || prefix.IsKind(SyntaxKind.PreDecrementExpression):
+            case PostfixUnaryExpressionSyntax postfix when postfix.IsKind(SyntaxKind.PostIncrementExpression) || postfix.IsKind(SyntaxKind.PostDecrementExpression):
+                written = true;
+                break;
+        }
+        IMethodSymbol? getter = property.GetMethod, setter = property.SetMethod;
+        var used = new List<IMethodSymbol>();
+        if (read && (getter ?? setter) is { } readWith) used.Add(readWith);
+        if (written && (setter ?? getter) is { } writtenWith && !used.Contains(writtenWith, SymbolEqualityComparer.Default)) used.Add(writtenWith);
+        return used;
     }
 
     /// The Java reader's rule: named get/is/set and at most one statement.

@@ -3,13 +3,17 @@ package org.hjug.graphbuilder.graphbuilder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import org.hjug.graphbuilder.GraphDependencyCollector;
 import org.hjug.graphbuilder.VertexInfo;
 import org.hjug.graphbuilder.metrics.ClassMetrics;
@@ -58,6 +62,42 @@ class CSharpFactsReplayerTest {
         assertEquals(2, greet.getCouplingIntensity());
         assertEquals(2, greet.getNumberOfAccessedVariables());
         assertEquals(1, greet.getMaxNestingDepth());
+    }
+
+    /**
+     * End to end through the real .NET extractor: methods are kept one per signature, so overloads
+     * that differ only by a type parameter or by ref/out, and a static constructor beside an instance
+     * one, must each arrive under their own signature. Runs only when the extractor is configured.
+     */
+    @Test
+    void givenRealExtractor_whenOverloadsAreReplayed_thenEveryMethodIsKept() throws Exception {
+        String extractor = System.getenv(CSharpExtractorRunner.EXTRACTOR_ENV);
+        assumeTrue(extractor != null && Files.exists(Path.of(extractor)), "extractor not configured");
+        Path fixture = Path.of("..", "csharp-fact-extractor", "fixtures", "Members")
+                .toAbsolutePath()
+                .normalize();
+        assumeTrue(Files.isDirectory(fixture), "fixture not found");
+
+        Graph<VertexInfo, DefaultWeightedEdge> classGraph =
+                new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        Graph<VertexInfo, DefaultWeightedEdge> packageGraph =
+                new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        GraphDependencyCollector dependencies = new GraphDependencyCollector(classGraph, packageGraph);
+        GraphMetricsCollector metrics = new GraphMetricsCollector(classGraph, packageGraph);
+
+        Path facts = new CSharpExtractorRunner().run(CSharpExtractorRunner.findTargets(fixture), fixture);
+        try (InputStream in = Files.newInputStream(facts)) {
+            CSharpFactsReplayer.replay(CSharpFacts.read(in), dependencies, metrics, new HashMap<>());
+        } finally {
+            Files.deleteIfExists(facts);
+        }
+
+        assertEquals(
+                Set.of("Add(int)", "Add(ref int)", "Read(out int)", "Save()", "Save<T>()"),
+                metrics.getClassMetrics("Members.Overloads").getMethods().keySet());
+        assertEquals(
+                Set.of("Cache()", "static Cache()", "Size()"),
+                metrics.getClassMetrics("Members.Cache").getMethods().keySet());
     }
 
     @Test
