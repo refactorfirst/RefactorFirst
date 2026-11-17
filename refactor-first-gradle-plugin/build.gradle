@@ -6,11 +6,11 @@ plugins {
 }
 
 group = 'org.hjug.refactorfirst.plugin'
-version = '0.7.2-SNAPSHOT'
+version = '0.11.0-SNAPSHOT'
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(11)
+        languageVersion = JavaLanguageVersion.of(17)
     }
 }
 
@@ -22,7 +22,7 @@ repositories {
 
 dependencies {
     compileOnly gradleApi()
-    implementation 'org.hjug.refactorfirst.report:report:0.7.2-SNAPSHOT'
+    implementation 'org.hjug.refactorfirst.report:report:0.11.0-SNAPSHOT'
 }
 
 jar {

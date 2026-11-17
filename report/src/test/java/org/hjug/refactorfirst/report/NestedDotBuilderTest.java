@@ -2,8 +2,13 @@ package org.hjug.refactorfirst.report;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import org.hjug.refactorfirst.report.model.ClassNodeDTO;
 import org.hjug.refactorfirst.report.model.EdgeDTO;
@@ -43,6 +48,33 @@ import org.junit.jupiter.params.provider.CsvSource;
  */
 class NestedDotBuilderTest {
 
+    @ParameterizedTest
+    @CsvSource({
+        "classMap,classMap/hierarchy",
+        "packageMap,packageMap/hierarchy",
+        "cycleMap,classCycles/largestCycle/hierarchy"
+    })
+    void parityFixtureMatchesSharedGoldens(String name, String pointer) throws Exception {
+        // Given: the same hierarchy and repository URL used by the JavaScript parity checks.
+        var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        var fixture = mapper.readTree(getClass().getResourceAsStream("/parity/junit4-report.json"));
+        var hierarchy = mapper.treeToValue(fixture.at("/" + pointer), HierarchyDTO.class);
+        String repoUrl = fixture.path("project").path("repoUrl").asText();
+        // When: Java renders the corresponding class/cycle or package variant with hyperlinks.
+        String dot = name.equals("packageMap")
+                ? NestedDotBuilder.buildPackageDot(hierarchy, repoUrl)
+                : NestedDotBuilder.buildNestedDot(hierarchy, repoUrl, true);
+        // Then: its bytes match the shared golden exactly.
+        try (var in = getClass().getResourceAsStream("/golden/hierarchy-dot/" + name + ".dot")) {
+            assertNotNull(in);
+            org.junit.jupiter.api.Assertions.assertArrayEquals(
+                    new String(in.readAllBytes(), StandardCharsets.UTF_8)
+                            .replace("\r\n", "\n")
+                            .getBytes(StandardCharsets.UTF_8),
+                    dot.getBytes(StandardCharsets.UTF_8));
+        }
+    }
+
     // ------------------------------------------------------------------
     // fixtures
     // ------------------------------------------------------------------
@@ -63,6 +95,30 @@ class NestedDotBuilderTest {
                 .id(HierarchyBuilder.clusterId(name))
                 .needsBreakUp(needsBreakUp)
                 .build();
+    }
+
+    // ------------------------------------------------------------------
+    // fixture goldens
+    // ------------------------------------------------------------------
+
+    /**
+     * Loads a fixture DOT golden from {@code src/test/resources/golden/dot/<name>} — the single
+     * source of truth for the fixture-graph DOT in both the Java and the Node test suites (the
+     * cross-language golden contract, plan T1.4/T7.1). A single trailing line terminator is
+     * tolerated so goldens may be authored with a final newline.
+     */
+    private String golden(String fileName) {
+        try (InputStream in = getClass().getResourceAsStream("/golden/dot/" + fileName)) {
+            assertNotNull(in, "Missing DOT golden resource: /golden/dot/" + fileName);
+            String content = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+            // The working tree uses CRLF line endings (see .gitattributes eol=crlf); the emitted
+            // DOT uses LF, and a single trailing line terminator is tolerated so goldens may end
+            // with one.
+            String normalized = content.replace("\r\n", "\n");
+            return normalized.endsWith("\n") ? normalized.substring(0, normalized.length() - 1) : normalized;
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     // ------------------------------------------------------------------
@@ -106,25 +162,7 @@ class NestedDotBuilderTest {
 
         // Then: clusters come first, classes are ellipses with labels omitted when equal to
         // the id, and edges follow the clusters with the previous emitters' attribute format
-        String expected = "strict digraph G {\n"
-                + "subgraph " + HierarchyBuilder.clusterId("org") + " {\n"
-                + "label=\"org\";\n"
-                + "style=filled fillcolor=white;\n"
-                + "subgraph " + HierarchyBuilder.clusterId("org.a") + " {\n"
-                + "label=\"org.a\";\n"
-                + "style=filled fillcolor=white;\n"
-                + "Alpha [ shape=ellipse];\n"
-                + "}\n"
-                + "subgraph " + HierarchyBuilder.clusterId("org.b") + " {\n"
-                + "label=\"org.b\";\n"
-                + "style=filled fillcolor=white;\n"
-                + "Beta [ shape=ellipse];\n"
-                + "Gamma [ label=\"Gamma Label\" shape=ellipse];\n"
-                + "}\n"
-                + "}\n"
-                + "Alpha -> Beta [ label = \"3\" weight = \"3\" ];\n"
-                + "}";
-        assertEquals(expected, dot);
+        assertEquals(golden("nested-class-map.dot"), dot);
     }
 
     @DisplayName("marked classes stay red and break-up package clusters fill pink")
@@ -148,23 +186,7 @@ class NestedDotBuilderTest {
                 HierarchyDTO.builder().packages(List.of(root)).edges(List.of()).build(), "", true);
 
         // Then: the cluster fills pink while the class removal keeps the red fill
-        String expected = "strict digraph G {\n"
-                + "subgraph " + HierarchyBuilder.clusterId("p") + " {\n"
-                + "label=\"p\";\n"
-                + "style=filled fillcolor=white;\n"
-                + "subgraph " + HierarchyBuilder.clusterId("p.a") + " {\n"
-                + "label=\"p.a\";\n"
-                + "style=filled fillcolor=pink;\n"
-                + "A [ shape=ellipse color=red style=filled];\n"
-                + "B [ shape=ellipse];\n"
-                + "}\n"
-                + "subgraph " + HierarchyBuilder.clusterId("p.b") + " {\n"
-                + "label=\"p.b\";\n"
-                + "style=filled fillcolor=white;\n"
-                + "}\n"
-                + "}\n"
-                + "}";
-        assertEquals(expected, dot);
+        assertEquals(golden("removal-flags.dot"), dot);
     }
 
     // ------------------------------------------------------------------
@@ -223,19 +245,7 @@ class NestedDotBuilderTest {
         // Then: the graph is flat — every participating package renders once as an
         // ellipse (no subgraphs, clusters, or anchors), break-up packages fill red,
         // and the edges carry only the relationship weights with removals in red
-        String expected = "strict digraph G {\n"
-                + hjugNodeId
-                + " [label=\"org.hjug\" shape=ellipse];\n"
-                + cbcNodeId
-                + " [label=\"org.hjug.cbc\" shape=ellipse color=red style=filled];\n"
-                + dsmNodeId
-                + " [label=\"org.hjug.dsm\" shape=ellipse];\n"
-                + hjugNodeId
-                + " -> " + cbcNodeId + " [ label = \"1\" weight = \"1\" ];\n"
-                + cbcNodeId
-                + " -> " + dsmNodeId + " [ label = \"2\" weight = \"2\" color = \"red\" ];\n"
-                + "}";
-        assertEquals(expected, dot);
+        assertEquals(golden("package-map-flat.dot"), dot);
     }
 
     @DisplayName("package graph hyperlinks nodes with a source path when the repository URL resolves to http(s)")
@@ -292,16 +302,15 @@ class NestedDotBuilderTest {
     @Test
     void buildPackageDot_rendersEmptyHierarchyAsBareSkeleton() {
         // Given: an empty and a null hierarchy
-        String bare = "strict digraph G {\n}";
         assertEquals(
-                bare,
+                golden("empty-hierarchy.dot"),
                 NestedDotBuilder.buildPackageDot(
                         HierarchyDTO.builder()
                                 .packages(List.of())
                                 .edges(List.of())
                                 .build(),
                         ""));
-        assertEquals(bare, NestedDotBuilder.buildPackageDot(null, ""));
+        assertEquals(golden("empty-hierarchy.dot"), NestedDotBuilder.buildPackageDot(null, ""));
     }
 
     @ParameterizedTest
@@ -364,29 +373,24 @@ class NestedDotBuilderTest {
 
         // Then: only the class with a path carries the URL attribute, appended after the
         // shape and removal attributes like the package nodes
-        String expectedWithLinks = "strict digraph G {\n"
-                + "subgraph " + HierarchyBuilder.clusterId(HierarchyBuilder.DEFAULT_PACKAGE) + " {\n"
-                + "label=\"(default package)\";\n"
-                + "style=filled fillcolor=white;\n"
-                + "A [ shape=ellipse URL=\"https://github.com/x/y/blob/src/main/java/A.java\" target=\"_blank\"];\n"
-                + "B [ shape=ellipse];\n"
-                + "}\n"
-                + "}";
-        assertEquals(expectedWithLinks, withLinks);
+        assertEquals(golden("class-map-hyperlinks.dot"), withLinks);
 
         // And When: rendered with hyperlinks disabled
         String withoutLinks = NestedDotBuilder.buildNestedDot(hierarchy, "https://github.com/x/y/blob", false);
 
         // Then: no class carries a URL attribute
-        String expectedWithoutLinks = "strict digraph G {\n"
-                + "subgraph " + HierarchyBuilder.clusterId(HierarchyBuilder.DEFAULT_PACKAGE) + " {\n"
-                + "label=\"(default package)\";\n"
-                + "style=filled fillcolor=white;\n"
-                + "A [ shape=ellipse];\n"
-                + "B [ shape=ellipse];\n"
-                + "}\n"
-                + "}";
-        assertEquals(expectedWithoutLinks, withoutLinks);
+        assertEquals(
+                "strict digraph G {\n"
+                        + "subgraph "
+                        + HierarchyBuilder.clusterId(HierarchyBuilder.DEFAULT_PACKAGE)
+                        + " {\n"
+                        + "label=\"(default package)\";\n"
+                        + "style=filled fillcolor=white;\n"
+                        + "A [ shape=ellipse];\n"
+                        + "B [ shape=ellipse];\n"
+                        + "}\n"
+                        + "}",
+                withoutLinks);
 
         // And When: rendered with a non-http(s) repository URL
         String javascriptUrl = NestedDotBuilder.buildNestedDot(hierarchy, "javascript:alert(1)/", true);
@@ -418,15 +422,7 @@ class NestedDotBuilderTest {
                 HierarchyDTO.builder().packages(List.of(pkg)).edges(List.of()).build(), "", true);
 
         // Then: quotes and backslashes are escaped, line breaks become \n, and $ stays literal
-        String expected = "strict digraph G {\n"
-                + "subgraph " + HierarchyBuilder.clusterId("com.\"weird\"\\name") + " {\n"
-                + "label=\"com.\\\"weird\\\"\\\\name\";\n"
-                + "style=filled fillcolor=white;\n"
-                + "Widget_anonymous [ label=\"Widget$anonymous\" shape=ellipse];\n"
-                + "Anon [ label=\"line1\\nline2\" shape=ellipse];\n"
-                + "}\n"
-                + "}";
-        assertEquals(expected, dot);
+        assertEquals(golden("class-map-escaping.dot"), dot);
     }
 
     @DisplayName("edges keep the emitters' exact format, red only when marked for removal")
@@ -459,17 +455,7 @@ class NestedDotBuilderTest {
         String dot = NestedDotBuilder.buildNestedDot(hierarchy, "", true);
 
         // Then: the marked edge is red and the unmarked edge is not
-        String expected = "strict digraph G {\n"
-                + "subgraph " + HierarchyBuilder.clusterId(HierarchyBuilder.DEFAULT_PACKAGE) + " {\n"
-                + "label=\"(default package)\";\n"
-                + "style=filled fillcolor=white;\n"
-                + "A [ shape=ellipse];\n"
-                + "B [ shape=ellipse];\n"
-                + "}\n"
-                + "A -> B [ label = \"2\" weight = \"2\" color = \"red\" ];\n"
-                + "B -> A [ label = \"1\" weight = \"1\" ];\n"
-                + "}";
-        assertEquals(expected, dot);
+        assertEquals(golden("class-map-edges-red.dot"), dot);
     }
 
     @DisplayName("child clusters declare an explicit white fill inside a pink parent cluster")
@@ -556,7 +542,7 @@ class NestedDotBuilderTest {
         String nullDot = NestedDotBuilder.buildNestedDot(null, "", true);
 
         // Then: both produce the bare digraph skeleton
-        assertEquals("strict digraph G {\n}", emptyDot);
-        assertEquals("strict digraph G {\n}", nullDot);
+        assertEquals(golden("empty-hierarchy.dot"), emptyDot);
+        assertEquals(golden("empty-hierarchy.dot"), nullDot);
     }
 }

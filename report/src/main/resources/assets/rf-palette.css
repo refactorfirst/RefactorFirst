@@ -1,0 +1,270 @@
+/* RefactorFirst report palette (Phase P5/T5.5) — port of the page repo's
+   app/globals.css palette blocks, restricted to the palette.json color tokens.
+   The theme is selected purely in CSS: the three radios in the report template
+   are the single source of truth.
+    - explicit "dark" radio  -> :root:has(#rf-theme-dark:checked) below;
+    - "system" radio + dark OS -> the prefers-color-scheme block below;
+    - anything else           -> this light :root palette.
+   :has() blocks (1,2,0) beat mvp.css's later :root (0,1,0); the light mvp
+   overrides therefore need html:root (0,1,1) to survive the load order.
+   The two dark blocks MUST stay byte-identical: PaletteParityTest and
+   palette-parity.test.cjs guard the duplication and the palette.json parity. */
+
+:root {
+  color-scheme: light;
+  --brand-color: #2a6f97;
+  --brand-accent: #1f5273;
+  --link-color: #2a6f97;
+  --on-accent-color: #ffffff;
+  --text-color: #1f2d3d;
+  --muted-color: #5c6b7a;
+  --bg-color: #ffffff;
+  --surface-color: #f5f8fa;
+  --card-bg: #ffffff;
+  --border-color: #dde4ea;
+  --input-border: #c6d2dc;
+  /* vizdom WASM graph edges bake black stroke/fill attributes into the SVG;
+     palette-driven so the dark theme can swap them to a readable tint. */
+  --graph-line: #000000;
+  /* Break-up package clusters: vizdom bakes fillcolor=pink onto the cluster
+     rect with the default black stroke/label glyphs. The light values equal
+     those baked colors, so the re-driving rules below never change the
+     light theme by a pixel; the dark block swaps them for a tuned surface. */
+  --graph-breakup-fill: #ffc0cb;
+  --graph-breakup-line: #000000;
+  /* DOT-graph hover highlights (vizdom SVGs). */
+  --graph-hover-edge: #b45309;
+  --graph-hover-in: #1e8449;
+  --graph-hover-out: #2a6f97;
+  --graph-hover-on: #ffffff;
+  --error-color: #c0392b;
+  --success-color: #1e8449;
+  --popup-border: #cccccc;
+  --popup-close-bg: #c0392b;
+  --popup-close-fg: #ffffff;
+  --toast-bg: #1f2933;
+  --toast-fg: #ffffff;
+  --chart-grid: #e0e0e0;
+  --chart-legend-text: #5c6b7a;
+  --sticky-header-background: #2a6f97;
+  --sticky-header-inset-shadow: #1f5273;
+--scrollbar: #566d8f;
+--dark-dot-edge-font-color: #9fb0c0;
+--sigma-hover-bg: #1a2330;
+--sigma-hover-bg-light: #ffffff;
+--three-dpopup-accent-set: dark;
+}
+
+/* mvp.css re-declares its variables on :root AFTER this bundle loads, so
+   same-specificity overrides lose the cascade. html:root (0,1,1) wins over
+   mvp's :root (0,1,0) and themes every mvp-styled element (inputs, quotes,
+   table headers, zebra rows, scrollbars) via mvp's own variable plumbing. */
+html:root {
+  --color-bg: var(--bg-color);
+  --color-text: var(--text-color);
+  --color-bg-secondary: var(--surface-color);
+  --color-text-secondary: var(--muted-color);
+  --color-link: var(--link-color);
+  --color-secondary: var(--brand-accent);
+  --color-shadow: rgba(0, 0, 0, 0.12);
+  --color-table: var(--brand-color);
+  --color-scrollbar: var(--input-border);
+}
+
+/* Dark palette. The two blocks below MUST stay identical: one applies the
+   explicit dark radio at any OS setting, the other applies the system radio
+   only when the OS prefers dark. PaletteParityTest / palette-parity.test.cjs
+   guard the duplication byte-for-byte. */
+:root:has(#rf-theme-dark:checked) {
+  color-scheme: dark;
+  --brand-color: #2a6f97;
+  --brand-accent: #3178a6;
+  --link-color: #6fb1d9;
+  --on-accent-color: #ffffff;
+  --text-color: #e6edf3;
+  --muted-color: #9fb0c0;
+  --bg-color: #10161d;
+  --surface-color: #1a2330;
+  --card-bg: #1a2330;
+  --border-color: #2c3a4d;
+  --input-border: #5b7396;
+  --graph-line: #9fb0c0;
+  /* Break-up package clusters: the baked pink is a glaring pastel slab on
+     the dark page, so the box drops to a deep rose and a light pink ink
+     carries the boundary and label. */
+  --graph-breakup-fill: #7f3350;
+  --graph-breakup-line: #f2b8cd;
+  /* DOT-graph hover highlights: bright accents that stay distinct from the
+     slate #9fb0c0 edges (hue + width). */
+  --graph-hover-edge: #f0b95a;
+  --graph-hover-in: #7ee2a8;
+  --graph-hover-out: #8ed0fa;
+  /* Label ink on the accent-filled highlighted nodes. */
+  --graph-hover-on: #000000;
+  --error-color: #f0928c;
+  --success-color: #5bbd8b;
+  --popup-border: #3a4b61;
+  --popup-close-bg: #cf4436;
+  --popup-close-fg: #ffffff;
+  --toast-bg: #1f2933;
+  --toast-fg: #ffffff;
+  --chart-grid: #e0e0e0;
+  --chart-legend-text: #9fb0c0;
+  --sticky-header-background: #2a6f97;
+  --sticky-header-inset-shadow: #1f5273;
+  --color-bg: var(--bg-color);
+  --color-text: var(--text-color);
+  --color-bg-secondary: var(--surface-color);
+  --color-text-secondary: var(--muted-color);
+  --color-link: var(--link-color);
+  --color-secondary: var(--link-color);
+  --color-shadow: rgba(0, 0, 0, 0.33);
+  --color-table: var(--link-color);
+  --color-scrollbar: #566d8f;
+  --scrollbar: #566d8f;
+  --dark-dot-edge-font-color: #9fb0c0;
+  --sigma-hover-bg: #1a2330;
+  --sigma-hover-bg-light: #ffffff;
+  --three-dpopup-accent-set: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:has(#rf-theme-system:checked) {
+
+  color-scheme: dark;
+  --brand-color: #2a6f97;
+  --brand-accent: #3178a6;
+  --link-color: #6fb1d9;
+  --on-accent-color: #ffffff;
+  --text-color: #e6edf3;
+  --muted-color: #9fb0c0;
+  --bg-color: #10161d;
+  --surface-color: #1a2330;
+  --card-bg: #1a2330;
+  --border-color: #2c3a4d;
+  --input-border: #5b7396;
+  --graph-line: #9fb0c0;
+  /* Break-up package clusters: the baked pink is a glaring pastel slab on
+     the dark page, so the box drops to a deep rose and a light pink ink
+     carries the boundary and label. */
+  --graph-breakup-fill: #7f3350;
+  --graph-breakup-line: #f2b8cd;
+  /* DOT-graph hover highlights: bright accents that stay distinct from the
+     slate #9fb0c0 edges (hue + width). */
+  --graph-hover-edge: #f0b95a;
+  --graph-hover-in: #7ee2a8;
+  --graph-hover-out: #8ed0fa;
+  /* Label ink on the accent-filled highlighted nodes. */
+  --graph-hover-on: #000000;
+  --error-color: #f0928c;
+  --success-color: #5bbd8b;
+  --popup-border: #3a4b61;
+  --popup-close-bg: #cf4436;
+  --popup-close-fg: #ffffff;
+  --toast-bg: #1f2933;
+  --toast-fg: #ffffff;
+  --chart-grid: #e0e0e0;
+  --chart-legend-text: #9fb0c0;
+  --sticky-header-background: #2a6f97;
+  --sticky-header-inset-shadow: #1f5273;
+  --color-bg: var(--bg-color);
+  --color-text: var(--text-color);
+  --color-bg-secondary: var(--surface-color);
+  --color-text-secondary: var(--muted-color);
+  --color-link: var(--link-color);
+  --color-secondary: var(--link-color);
+  --color-shadow: rgba(0, 0, 0, 0.33);
+  --color-table: var(--link-color);
+  --color-scrollbar: #566d8f;
+  --scrollbar: #566d8f;
+  --dark-dot-edge-font-color: #9fb0c0;
+  --sigma-hover-bg: #1a2330;
+  --sigma-hover-bg-light: #ffffff;
+  --three-dpopup-accent-set: dark;
+
+  }
+}
+
+body {
+  margin: 0;
+  color: var(--text-color);
+  background: var(--bg-color);
+}
+
+/* The radios in the report template are the theme's single source of truth.
+   Each input is visually replaced by its icon pill (appearance: none,
+   absolute, fills the 28px label) but stays keyboard-focusable — the global
+   :focus-visible rule draws the indicator — and the checked pill doubles as
+   the selected state, so no JS is involved in switching. */
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  flex: 0 0 auto;
+  padding: 0.15rem;
+  border: 1px solid var(--input-border);
+  border-radius: 6px;
+  background: var(--surface-color);
+}
+
+/* The report page has no .theme-bar row (the page repo's theme-bar toggle), so
+   the toggle is pinned to the report's top-right. The chip stays palette-driven
+   from the same --surface-color / --input-border / 6px / 0.15rem tokens as the
+   page repo's .theme-toggle, so dark mode renders the identical dark chip — the
+   earlier hardcoded white cover (8px radius, 0.25rem padding) turned it into a
+   light chip that washed the light icons out on the dark page. */
+span.theme-toggle {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  width: fit-content;
+  z-index: 999;
+  background: var(--surface-color);
+  border-radius: 6px;
+  padding: 0.15rem;
+}
+
+.theme-option {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem; /* 28px >= 24px minimum target size (SC 2.5.8) */
+  height: 1.75rem;
+  border-radius: 5px;
+}
+
+.theme-option:hover {
+  background: var(--border-color);
+}
+
+.theme-option-input {
+  appearance: none;
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.theme-option-input:checked {
+  /* The selected pill is a visible selected-state indicator, so it uses the
+     --brand-accent "visible" accent (>= 3:1 against the dark --surface-color and
+     --bg-color, SC 1.4.11 / 2.4.11), not --brand-color (the accent background
+     that only carries its >= 3:1 requirement via the white --on-accent-color
+     text/icon on top of it — ~2.9:1 against the dark --surface-color). */
+  background: var(--brand-accent);
+}
+
+.theme-option-icon {
+  /* Relative so the glyph paints above the checked input's pill. */
+  position: relative;
+  width: 1.15rem;
+  height: 1.15rem;
+  color: var(--text-color);
+  pointer-events: none;
+}
+
+.theme-option-input:checked + .theme-option-icon {
+  color: var(--on-accent-color);
+}

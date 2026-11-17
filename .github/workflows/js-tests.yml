@@ -1,0 +1,29 @@
+name: Report JS Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+jobs:
+  js-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Build With Maven
+        run: mvn -B -pl report -am install -DskipTests
+
+      - name: Run Report JavaScript Tests
+        run: mvn -B -pl report -P js-tests verify

@@ -1,0 +1,272 @@
+/* RefactorFirst interactive report tables (Phase P6/T6.6): the enhanced table
+   chrome — sticky headers, scroll wrappers, toolbars, sort buttons, pagination
+   and copy affordances. Ported from the page repo's report template styles;
+   the .rf-data-table thead th sticky block is verbatim (plan T6.6), including
+   the inset shadow that restores the bottom border border-collapse drops. */
+
+/* mvp.css gives every table overflow-x: auto, which would make the table
+   itself the scroll container and prevent the sticky header from pinning to
+   the viewport while the page scrolls. */
+.rf-data-table {
+    border: 5px solid;
+    border-collapse: collapse;
+    margin: 0 auto;
+    overflow: visible;
+}
+
+.rf-data-table th,
+.rf-data-table td {
+    border: 1px solid;
+    padding: 2px 6px;
+}
+
+.rf-duplicate-partner {
+    white-space: nowrap;
+}
+
+.rf-break-relationship {
+    display: block;
+}
+
+/* Sticky headers pinned to the viewport while their table scrolls, plus
+   sortable-header, toolbar, pagination and copy affordances. */
+.rf-data-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    /* A solid, contrasting background keeps scrolled rows from showing
+       through and keeps the header text readable (the base stylesheet
+       colours table header text near-white); the inset shadow restores
+       the bottom border that border-collapse drops from sticky cells. */
+    background: #2a6f97;
+    color: #fff;
+    box-shadow: inset 0 -1px 0 #1f5273;
+}
+
+.rf-sort-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+}
+
+.rf-sort-btn:hover,
+.rf-sort-btn:focus-visible {
+    text-decoration: underline;
+}
+
+.rf-sort-btn:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+}
+
+.rf-sort-indicator {
+    display: inline-block;
+    min-width: 1em;
+    margin-left: 0.25rem;
+}
+
+/* The block shrink-wraps the table (or clamps to the available width),
+   so the toolbar and pagination align with the table edges. */
+.rf-table-block {
+    width: fit-content;
+    max-width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.rf-table-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0.5rem 0;
+    /* Excluded from the shrink-wrap sizing of .rf-table-block so the
+       toolbar always spans the table's width, never wider. */
+    contain: inline-size;
+}
+
+/* Search + export hug the right edge of the table; status text and the
+   copy hint stay left. */
+.rf-table-actions {
+    margin-left: auto;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+
+/* The outer 5px frame moves from the table to the scroll wrapper: when the
+   table overflows and scrolls horizontally, a border on the table itself
+   would scroll away with the content instead of boxing the visible area.
+   Unwrapped tables (problem/solution) keep their own border.
+   Horizontal scrollbar appears only when the table overflows: adding
+   overflow unconditionally would make the wrapper a scroll container and
+   break the viewport-sticky table header, so rf-tables.js toggles
+   .rf-scroll-x-enabled after measuring — and pins the header of scrolling
+   tables anyway by translating the header cells with the viewport scroll
+   offset. */
+.rf-table-scroll {
+    max-width: 100%;
+    border: 5px solid;
+    box-sizing: border-box;
+}
+
+.rf-table-scroll .rf-data-table {
+    border: none;
+}
+
+.rf-table-scroll.rf-scroll-x-enabled {
+    overflow-x: auto;
+}
+
+.rf-table-toolbar .rf-copy-hint {
+    font-size: 0.85rem;
+    margin: 0;
+}
+
+/* The injected filter label is visually hidden: the visible prompt lives in
+   the input's placeholder. */
+.rf-search-label.rf-visually-hidden,
+.rf-visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* Keep the label, text box and clear button on one centred line — as
+   plain inline siblings their boxes would sit on a shared baseline and
+   visibly misalign vertically. */
+.rf-table-search {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.rf-table-search label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.rf-table-search input {
+    padding: 0.3rem 0.5rem;
+    min-width: 14rem;
+}
+
+.rf-table-search .rf-search-clear {
+    padding: 0.2rem 0.45rem;
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+    font-weight: bold;
+}
+
+.rf-table-match {
+    font-size: 0.9rem;
+}
+
+.rf-export-btn {
+    padding: 0.3rem 0.75rem;
+    border: 1px solid #2a6f97;
+    border-radius: 6px;
+    background: #2a6f97;
+    color: #fff;
+    cursor: pointer;
+}
+
+.rf-export-btn:focus-visible,
+.rf-page-btn:focus-visible {
+    outline: 2px solid #1f5273;
+    outline-offset: 2px;
+}
+
+.rf-table-pagination:not([hidden]) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: center;
+    justify-content: center;
+    margin: 0.75rem 0;
+    contain: inline-size;
+}
+
+.rf-table-pagination[hidden] {
+    display: none;
+}
+
+.rf-page-btn {
+    padding: 0.35rem 0.75rem;
+    /* Explicit colours on both states: the base stylesheet gives plain
+       buttons near-white text, which would be invisible on a white
+       background. */
+    border: 1px solid #2a6f97;
+    border-radius: 6px;
+    background: #fff;
+    color: #1f2937;
+    cursor: pointer;
+}
+
+.rf-page-btn:hover:not([disabled]) {
+    background: #e8f0f6;
+}
+
+.rf-page-btn[disabled] {
+    background: #f3f4f6;
+    border-color: #c6d2dc;
+    color: #6b7280;
+    cursor: default;
+}
+
+/* Copy targets: the whole cell is the affordance; the focus ring floats
+   inside the cell so the ring never escapes the table frame. */
+.rf-data-table td[data-rf-copy] {
+    cursor: copy;
+}
+
+.rf-data-table td[data-rf-copy]:focus-visible {
+    outline: 2px solid #2a6f97;
+    outline-offset: -2px;
+}
+
+/* Copy toast: a small surface chip anchored bottom-centre. */
+.rf-copy-toast {
+    position: fixed;
+    left: 50%;
+    bottom: 1.5rem;
+    transform: translateX(-50%);
+    background: #1f2933;
+    color: #fff;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    z-index: 1200;
+}
+
+@media (max-width: 640px) {
+    .rf-table-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .rf-table-actions {
+        align-self: stretch;
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .rf-table-search input {
+        width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+    }
+}

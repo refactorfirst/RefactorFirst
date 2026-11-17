@@ -1,0 +1,10 @@
+strict digraph G {
+subgraph cluster_08fe06d73182d2aba49f0a3b {
+label="junit.framework";
+style=filled fillcolor=white;
+TestCase [ shape=ellipse URL="https://github.com/junit-team/junit4/blob/300468b1efd48d76fac2f7bd6d576846dcbbf5ed/src/main/java/junit/framework/TestCase.java" target="_blank"];
+TestResult [ shape=ellipse URL="https://github.com/junit-team/junit4/blob/300468b1efd48d76fac2f7bd6d576846dcbbf5ed/src/main/java/junit/framework/TestResult.java" target="_blank"];
+}
+TestCase -> TestResult [ label = "6" weight = "6" ];
+TestResult -> TestCase [ label = "2" weight = "2" color = "red" ];
+}

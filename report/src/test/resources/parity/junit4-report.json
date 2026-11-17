@@ -1,0 +1,4599 @@
+{
+  "project": {
+    "name": "JUnit",
+    "version": "4.13.3-SNAPSHOT",
+    "repoUrl": "https://github.com/junit-team/junit4/blob/300468b1efd48d76fac2f7bd6d576846dcbbf5ed/",
+    "baseDir": "C:\\Code\\junit4",
+    "scanTimestamp": "9/9/26, 8:06\u202fPM",
+    "hasAnyDisharmony": true
+  },
+  "classMap": {
+    "graphId": "classGraph",
+    "classCount": 335,
+    "relationshipCount": 934,
+    "dotThreshold": 4000,
+    "dotThresholdExceeded": false,
+    "hasEdges": false,
+    "hierarchy": {
+      "packages": [
+        {
+          "name": "junit.framework",
+          "id": "cluster_08fe06d73182d2aba49f0a3b",
+          "nodeId": null,
+          "renderAsNode": false,
+          "needsBreakUp": false,
+          "children": [],
+          "classes": [
+            {
+              "fqn": "junit.framework.TestCase",
+              "id": "TestCase",
+              "label": "TestCase",
+              "path": "src/main/java/junit/framework/TestCase.java",
+              "markedForRemoval": false
+            },
+            {
+              "fqn": "junit.framework.TestResult",
+              "id": "TestResult",
+              "label": "TestResult",
+              "path": "src/main/java/junit/framework/TestResult.java",
+              "markedForRemoval": false
+            }
+          ]
+        },
+        {
+          "name": "junit.runner",
+          "id": "cluster_e98a44e5d67bad99f479d7c6",
+          "nodeId": null,
+          "renderAsNode": false,
+          "needsBreakUp": false,
+          "children": [],
+          "classes": [
+            {
+              "fqn": "junit.runner.BaseTestRunner",
+              "id": "BaseTestRunner",
+              "label": "BaseTestRunner",
+              "path": "src/main/java/junit/runner/BaseTestRunner.java",
+              "markedForRemoval": true
+            }
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "source": "TestCase",
+          "target": "TestResult",
+          "weight": 6,
+          "markedForRemoval": false
+        },
+        {
+          "source": "TestResult",
+          "target": "TestCase",
+          "weight": 2,
+          "markedForRemoval": true
+        },
+        {
+          "source": "TestCase",
+          "target": "BaseTestRunner",
+          "weight": 1,
+          "markedForRemoval": false
+        }
+      ]
+    }
+  },
+  "classRelationshipsToRemove": {
+    "cycleCount": 25,
+    "relationshipsToRemoveCount": 47,
+    "hasRelationships": true,
+    "relationships": [
+      {
+        "sourceClass": "org.junit.Assert",
+        "targetClass": "org.junit.ComparisonFailure",
+        "sourceUrl": null,
+        "targetUrl": null,
+        "sourceMarked": false,
+        "targetMarked": false,
+        "weight": 1,
+        "sourceClassPath": "src/main/java/org/junit/Assert.java",
+        "targetClassPath": "src/main/java/org/junit/ComparisonFailure.java",
+        "simpleSourceClassName": "Assert",
+        "simpleTargetClassName": "ComparisonFailure",
+        "priority": 1,
+        "cycleCount": 3,
+        "effortRank": 1,
+        "alsoRemovesPackageRelationship": false,
+        "packageCycleCount": 0
+      },
+      {
+        "sourceClass": "org.junit.Assert",
+        "targetClass": "org.junit.internal.ExactComparisonCriteria",
+        "sourceUrl": null,
+        "targetUrl": null,
+        "sourceMarked": false,
+        "targetMarked": false,
+        "weight": 1,
+        "sourceClassPath": "src/main/java/org/junit/Assert.java",
+        "targetClassPath": "src/main/java/org/junit/internal/ExactComparisonCriteria.java",
+        "simpleSourceClassName": "Assert",
+        "simpleTargetClassName": "ExactComparisonCriteria",
+        "priority": 2,
+        "cycleCount": 2,
+        "effortRank": 1,
+        "alsoRemovesPackageRelationship": false,
+        "packageCycleCount": 3
+      },
+      {
+        "sourceClass": "org.junit.runner.Request",
+        "targetClass": "org.junit.runner.JUnitCore",
+        "sourceUrl": null,
+        "targetUrl": null,
+        "sourceMarked": true,
+        "targetMarked": false,
+        "weight": 1,
+        "sourceClassPath": "src/main/java/org/junit/runner/Request.java",
+        "targetClassPath": "src/main/java/org/junit/runner/JUnitCore.java",
+        "simpleSourceClassName": "Request",
+        "simpleTargetClassName": "JUnitCore",
+        "priority": 3,
+        "cycleCount": 2,
+        "effortRank": 1,
+        "alsoRemovesPackageRelationship": false,
+        "packageCycleCount": 0
+      },
+      {
+        "sourceClass": "org.junit.internal.InexactComparisonCriteria",
+        "targetClass": "org.junit.Assert",
+        "sourceUrl": null,
+        "targetUrl": null,
+        "sourceMarked": false,
+        "targetMarked": false,
+        "weight": 2,
+        "sourceClassPath": "src/main/java/org/junit/internal/InexactComparisonCriteria.java",
+        "targetClassPath": "src/main/java/org/junit/Assert.java",
+        "simpleSourceClassName": "InexactComparisonCriteria",
+        "simpleTargetClassName": "Assert",
+        "priority": 4,
+        "cycleCount": 2,
+        "effortRank": 2,
+        "alsoRemovesPackageRelationship": true,
+        "packageCycleCount": 3
+      },
+      {
+        "sourceClass": "org.junit.ComparisonFailure$ComparisonCompactor$DiffExtractor",
+        "targetClass": "org.junit.ComparisonFailure$ComparisonCompactor",
+        "sourceUrl": null,
+        "targetUrl": null,
+        "sourceMarked": false,
+        "targetMarked": true,
+        "weight": 2,
+        "sourceClassPath": "src/main/java/org/junit/ComparisonFailure.java",
+        "targetClassPath": "src/main/java/org/junit/ComparisonFailure.java",
+        "simpleSourceClassName": "ComparisonFailure$ComparisonCompactor$DiffExtractor",
+        "simpleTargetClassName": "ComparisonFailure$ComparisonCompactor",
+        "priority": 5,
+        "cycleCount": 2,
+        "effortRank": 2,
+        "alsoRemovesPackageRelationship": false,
+        "packageCycleCount": 0
+      },
+      {
+        "sourceClass": "org.junit.internal.ComparisonCriteria",
+        "targetClass": "org.junit.Assert",
+        "sourceUrl": null,
+        "targetUrl": null,
+        "sourceMarked": false,
+        "targetMarked": false,
+        "weight": 3,
+        "sourceClassPath": "src/main/java/org/junit/internal/ComparisonCriteria.java",
+        "targetClassPath": "src/main/java/org/junit/Assert.java",
+        "simpleSourceClassName": "ComparisonCriteria",
+        "simpleTargetClassName": "Assert",
+        "priority": 6,
+        "cycleCount": 2,
+        "effortRank": 3,
+        "alsoRemovesPackageRelationship": true,
+        "packageCycleCount": 3
+      },
+      {
+        "sourceClass": "org.junit.runner.Request",
+        "targetClass": "org.junit.internal.requests.FilterRequest",
+        "sourceUrl": null,
+        "targetUrl": null,
+        "sourceMarked": true,
+        "targetMarked": false,
+        "weight": 1,
+        "sourceClassPath": "src/main/java/org/junit/runner/Request.java",
+        "targetClassPath": "src/main/java/org/junit/internal/requests/FilterRequest.java",
+        "simpleSourceClassName": "Request",
+        "simpleTargetClassName": "FilterRequest",
+        "priority": 7,
+        "cycleCount": 1,
+        "effortRank": 1,
+        "alsoRemovesPackageRelationship": true,
+        "packageCycleCount": 4
+      },
+      {
+        "sourceClass": "org.junit.runner.Request",
+        "targetClass": "org.junit.internal.requests.SortingRequest",
+        "sourceUrl": null,
+        "targetUrl": null,
+        "sourceMarked": true,
+        "targetMarked": false,
+        "weight": 1,
+        "sourceClassPath": "src/main/java/org/junit/runner/Request.java",
+        "targetClassPath": "src/main/java/org/junit/internal/requests/SortingRequest.java",
+        "simpleSourceClassName": "Request",
+        "simpleTargetClassName": "SortingRequest",
+        "priority": 8,
+        "cycleCount": 1,
+        "effortRank": 1,
+        "alsoRemovesPackageRelationship": true,
+        "packageCycleCount": 4
+      },
+      {
+        "sourceClass": "org.junit.runner.notification.RunListener",
+        "targetClass": "org.junit.runner.Result",
+        "sourceUrl": null,
+        "targetUrl": null,
+        "sourceMarked": false,
+        "targetMarked": false,
+        "weight": 1,
+        "sourceClassPath": "src/main/java/org/junit/runner/notification/RunListener.java",
+        "targetClassPath": "src/main/java/org/junit/runner/Result.java",
+        "simpleSourceClassName": "RunListener",
+        "simpleTargetClassName": "Result",
+        "priority": 9,
+        "cycleCount": 1,
+        "effortRank": 1,
+        "alsoRemovesPackageRelationship": true,
+        "packageCycleCount": 3
+      },
+      {
+        "sourceClass": "org.junit.runners.model.MultipleFailureException",
+        "targetClass": "org.junit.internal.runners.model.MultipleFailureException",
+        "sourceUrl": null,
+        "targetUrl": null,
+        "sourceMarked": false,
+        "targetMarked": false,
+        "weight": 1,
+        "sourceClassPath": "src/main/java/org/junit/runners/model/MultipleFailureException.java",
+        "targetClassPath": "src/main/java/org/junit/internal/runners/model/MultipleFailureException.java",
+        "simpleSourceClassName": "MultipleFailureException",
+        "simpleTargetClassName": "MultipleFailureException",
+        "priority": 10,
+        "cycleCount": 1,
+        "effortRank": 1,
+        "alsoRemovesPackageRelationship": true,
+        "packageCycleCount": 3
+      },
+      {
+        "sourceClass": "org.junit.internal.requests.MemoizingRequest",
+        "targetClass": "org.junit.runner.Request",
+        "sourceUrl": null,
+        "targetUrl": null,
+        "sourceMarked": false,
+        "targetMarked": true,
+        "weight": 1,
+        "sourceClassPath": "src/main/java/org/junit/internal/requests/MemoizingRequest.java",
+        "targetClassPath": "src/main/java/org/junit/runner/Request.java",
+        "simpleSourceClassName": "MemoizingRequest",
+        "simpleTargetClassName": "Request",
+        "priority": 11,
+        "cycleCount": 1,
+        "effortRank": 1,
+        "alsoRemovesPackageRelationship": false,
+        "packageCycleCount": 4
+      },
+      {
+        "sourceClass": "junit.framework.Test",
+        "targetClass": "junit.framework.TestResult",
+        "sourceUrl": null,
+        "targetUrl": null,
+        "sourceMarked": true,
+        "targetMarked": false,
+        "weight": 1,
+        "sourceClassPath": "src/main/java/junit/framework/Test.java",
+        "targetClassPath": "src/main/java/junit/framework/TestResult.java",
+        "simpleSourceClassName": "Test",
+        "simpleTargetClassName": "TestResult",
+        "priority": 12,
+        "cycleCount": 1,
+        "effortRank": 1,
+        "alsoRemovesPackageRelationship": false,
+        "packageCycleCount": 0
+      },
+      {
+        "sourceClass": "org.junit.experimental.categories.Categories",
+        "targetClass": "org.junit.experimental.categories.Categories$CategoryFilter",
+        "sourceUrl": null,
+        "targetUrl": null,
+        "sourceMarked": true,
+        "targetMarked": false,
+        "weight": 1,
+        "sourceClassPath": "src/main/java/org/junit/experimental/categories/Categories.java",
+        "targetClassPath": "src/main/java/org/junit/experimental/categories/Categories.java",
+        "simpleSourceClassName": "Categories",
+        "simpleTargetClassName": "Categories$CategoryFilter",
+        "priority": 13,
+        "cycleCount": 1,
+        "effortRank": 1,
+        "alsoRemovesPackageRelationship": false,
+        "packageCycleCount": 0
+      },
+      {
+        "sourceClass": "org.junit.experimental.max.MaxHistory",
+        "targetClass": "org.junit.experimental.max.MaxHistory$TestComparator",
+        "sourceUrl": null,
+        "targetUrl": null,
+        "sourceMarked": true,
+        "targetMarked": false,
+        "weight": 1,
+        "sourceClassPath": "src/main/java/org/junit/experimental/max/MaxHistory.java",
+        "targetClassPath": "src/main/java/org/junit/experimental/max/MaxHistory.java",
+        "simpleSourceClassName": "MaxHistory",
+        "simpleTargetClassName": "MaxHistory$TestComparator",
+        "priority": 14,
+        "cycleCount": 1,
+        "effortRank": 1,
+        "alsoRemovesPackageRelationship": false,
+        "packageCycleCount": 0
+      },
+      {
+        "sourceClass": "org.junit.runner.manipulation.Filter",
+        "targetClass": "org.junit.runner.manipulation.Filter$1",
+        "sourceUrl": null,
+        "targetUrl": null,
+        "sourceMarked": true,
+        "targetMarked": false,
+        "weight": 1,
+        "sourceClassPath": "src/main/java/org/junit/runner/manipulation/Filter.java",
+        "targetClassPath": "src/main/java/org/junit/runner/manipulation/Filter.java",
+        "simpleSourceClassName": "Filter",
+        "simpleTargetClassName": "Filter$1",
+        "priority": 15,
+        "cycleCount": 1,
+        "effortRank": 1,
+        "alsoRemovesPackageRelationship": false,
+        "packageCycleCount": 0
+      },
+      {
+        "sourceClass": "org.junit.experimental.theories.internal.AllMembersSupplier$MethodParameterValue",
+        "targetClass": "org.junit.experimental.theories.internal.AllMembersSupplier",
+        "sourceUrl": null,
+        "targetUrl": null,
+        "sourceMarked": false,
+        "targetMarked": true,
+        "weight": 1,
+        "sourceClassPath": "src/main/java/org/junit/experimental/theories/internal/AllMembersSupplier.java",
+        "targetClassPath": "src/main/java/org/junit/experimental/theories/internal/AllMembersSupplier.java",
+        "simpleSourceClassName": "AllMembersSupplier$MethodParameterValue",
+        "simpleTargetClassName": "AllMembersSupplier",
+        "priority": 16,
+        "cycleCount": 1,
+        "effortRank": 1,
+        "alsoRemovesPackageRelationship": false,
+        "packageCycleCount": 0
+      },
+      {
+        "sourceClass": "org.junit.runner.manipulation.Filterable",
+        "targetClass": "org.junit.runner.manipulation.Filter",
+        "sourceUrl": null,
+        "targetUrl": null,
+        "sourceMarked": false,
+        "targetMarked": true,
+        "weight": 1,
+        "sourceClassPath": "src/main/java/org/junit/runner/manipulation/Filterable.java",
+        "targetClassPath": "src/main/java/org/junit/runner/manipulation/Filter.java",
+        "simpleSourceClassName": "Filterable",
+        "simpleTargetClassName": "Filter",
+        "priority": 17,
+        "cycleCount": 1,
+        "effortRank": 1,
+        "alsoRemovesPackageRelationship": false,
+        "packageCycleCount": 0
+      },
+      {
+        "sourceClass": "org.junit.runner.manipulation.Orderable",
+        "targetClass": "org.junit.runner.manipulation.Orderer",
+        "sourceUrl": null,
+        "targetUrl": null,
+        "sourceMarked": false,
+        "targetMarked": true,
+        "weight": 1,
+        "sourceClassPath": "src/main/java/org/junit/runner/manipulation/Orderable.java",
+        "targetClassPath": "src/main/java/org/junit/runner/manipulation/Orderer.java",
+        "simpleSourceClassName": "Orderable",
+        "simpleTargetClassName": "Orderer",
+        "priority": 18,
+        "cycleCount": 1,
+        "effortRank": 1,
+        "alsoRemovesPackageRelationship": false,
+        "packageCycleCount": 0
+      },
+      {
+        "sourceClass": "org.junit.runner.manipulation.Ordering",
+        "targetClass": "org.junit.runner.manipulation.Orderer",
+        "sourceUrl": null,
+        "targetUrl": null,
+        "sourceMarked": false,
+        "targetMarked": true,
+        "weight": 1,
+        "sourceClassPath": "src/main/java/org/junit/runner/manipulation/Ordering.java",
+        "targetClassPath": "src/main/java/org/junit/runner/manipulation/Orderer.java",
+        "simpleSourceClassName": "Ordering",
+        "simpleTargetClassName": "Orderer",
+        "priority": 19,
+        "cycleCount": 1,
+        "effortRank": 1,
+        "alsoRemovesPackageRelationship": false,
+        "packageCycleCount": 0
+      },
+      {
+        "sourceClass": "org.junit.runner.manipulation.Sortable",
+        "targetClass": "org.junit.runner.manipulation.Sorter",
+        "sourceUrl": null,
+        "targetUrl": null,
+        "sourceMarked": false,
+        "targetMarked": true,
+        "weight": 1,
+        "sourceClassPath": "src/main/java/org/junit/runner/manipulation/Sortable.java",
+        "targetClassPath": "src/main/java/org/junit/runner/manipulation/Sorter.java",
+        "simpleSourceClassName": "Sortable",
+        "simpleTargetClassName": "Sorter",
+        "priority": 20,
+        "cycleCount": 1,
+        "effortRank": 1,
+        "alsoRemovesPackageRelationship": false,
+        "packageCycleCount": 0
+      },
+      {
+        "sourceClass": "org.junit.internal.runners.rules.RuleMemberValidator",
+        "targetClass": "org.junit.internal.runners.rules.RuleMemberValidator$FieldMustBeARule",
+        "sourceUrl": null,
+        "targetUrl": null,
+        "sourceMarked": false,
+        "targetMarked": false,
+        "weight": 1,
+        "sourceClassPath": "src/main/java/org/junit/internal/runners/rules/RuleMemberValidator.java",
+        "targetClassPath": "src/main/java/org/junit/internal/runners/rules/RuleMemberValidator.java",
+        "simpleSourceClassName": "RuleMemberValidator",
+        "simpleTargetClassName": "RuleMemberValidator$FieldMustBeARule",
+        "priority": 21,
+        "cycleCount": 1,
+        "effortRank": 1,
+        "alsoRemovesPackageRelationship": false,
+        "packageCycleCount": 0
+      },
+      {
+        "sourceClass": "org.junit.internal.runners.rules.RuleMemberValidator",
+        "targetClass": "org.junit.internal.runners.rules.RuleMemberValidator$MethodMustBeARule",
+        "sourceUrl": null,
+        "targetUrl": null,
+        "sourceMarked": false,
+        "targetMarked": false,
+        "weight": 1,
+        "sourceClassPath": "src/main/java/org/junit/internal/runners/rules/RuleMemberValidator.java",
+        "targetClassPath": "src/main/java/org/junit/internal/runners/rules/RuleMemberValidator.java",
+        "simpleSourceClassName": "RuleMemberValidator",
+        "simpleTargetClassName": "RuleMemberValidator$MethodMustBeARule",
+        "priority": 22,
+        "cycleCount": 1,
+        "effortRank": 1,
+        "alsoRemovesPackageRelationship": false,
+        "packageCycleCount": 0
+      },
+      {
+        "sourceClass": "org.junit.internal.runners.rules.RuleMemberValidator$MethodMustBeATestRule",
+        "targetClass": "org.junit.internal.runners.rules.RuleMemberValidator",
+        "sourceUrl": null,
+        "targetUrl": null,
+        "sourceMarked": false,
+        "targetMarked": false,
+        "weight": 1,
+        "sourceClassPath": "src/main/java/org/junit/internal/runners/rules/RuleMemberValidator.java",
+        "targetClassPath": "src/main/java/org/junit/internal/runners/rules/RuleMemberValidator.java",
+        "simpleSourceClassName": "RuleMemberValidator$MethodMustBeATestRule",
+        "simpleTargetClassName": "RuleMemberValidator",
+        "priority": 23,
+        "cycleCount": 1,
+        "effortRank": 1,
+        "alsoRemovesPackageRelationship": false,
+        "packageCycleCount": 0
+      },
+      {
+        "sourceClass": "org.junit.internal.runners.rules.RuleMemberValidator$FieldMustBeATestRule",
+        "targetClass": "org.junit.internal.runners.rules.RuleMemberValidator",
+        "sourceUrl": null,
+        "targetUrl": null,
+        "sourceMarked": false,
+        "targetMarked": false,
+        "weight": 1,
+        "sourceClassPath": "src/main/java/org/junit/internal/runners/rules/RuleMemberValidator.java",
+        "targetClassPath": "src/main/java/org/junit/internal/runners/rules/RuleMemberValidator.java",
+        "simpleSourceClassName": "RuleMemberValidator$FieldMustBeATestRule",
+        "simpleTargetClassName": "RuleMemberValidator",
+        "priority": 24,
+        "cycleCount": 1,
+        "effortRank": 1,
+        "alsoRemovesPackageRelationship": false,
+        "packageCycleCount": 0
+      },
+      {
+        "sourceClass": "org.junit.internal.Throwables$State",
+        "targetClass": "org.junit.internal.Throwables$State$1",
+        "sourceUrl": null,
+        "targetUrl": null,
+        "sourceMarked": false,
+        "targetMarked": false,
+        "weight": 1,
+        "sourceClassPath": "src/main/java/org/junit/internal/Throwables.java",
+        "targetClassPath": "src/main/java/org/junit/internal/Throwables.java",
+        "simpleSourceClassName": "Throwables$State",
+        "simpleTargetClassName": "Throwables$State$1",
+        "priority": 25,
+        "cycleCount": 1,
+        "effortRank": 1,
+        "alsoRemovesPackageRelationship": false,
+        "packageCycleCount": 0
+      },
+      {
+        "sourceClass": "org.junit.internal.Throwables$State$2",
+        "targetClass": "org.junit.internal.Throwables$State",
+        "sourceUrl": null,
+        "targetUrl": null,
+        "sourceMarked": false,
+        "targetMarked": false,
+        "weight": 1,
+        "sourceClassPath": "src/main/java/org/junit/internal/Throwables.java",
+        "targetClassPath": "src/main/java/org/junit/internal/Throwables.java",
+        "simpleSourceClassName": "Throwables$State$2",
+        "simpleTargetClassName": "Throwables$State",
+        "priority": 26,
+        "cycleCount": 1,
+        "effortRank": 1,
+        "alsoRemovesPackageRelationship": false,
+        "packageCycleCount": 0
+      },
+      {
+        "sourceClass": "org.junit.internal.Throwables$State$3",
+        "targetClass": "org.junit.internal.Throwables$State",
+        "sourceUrl": null,
+        "targetUrl": null,
+        "sourceMarked": false,
+        "targetMarked": false,
+        "weight": 1,
+        "sourceClassPath": "src/main/java/org/junit/internal/Throwables.java",
+        "targetClassPath": "src/main/java/org/junit/internal/Throwables.java",
+        "simpleSourceClassName": "Throwables$State$3",
+        "simpleTargetClassName": "Throwables$State",
+        "priority": 27,
+        "cycleCount": 1,
+        "effortRank": 1,
+        "alsoRemovesPackageRelationship": false,
+        "packageCycleCount": 0
+      },
+      {
+        "sourceClass": "org.junit.internal.Throwables$State",
+        "targetClass": "org.junit.internal.Throwables$State$4",
+        "sourceUrl": null,
+        "targetUrl": null,
+        "sourceMarked": false,
+        "targetMarked": false,
+        "weight": 1,
+        "sourceClassPath": "src/main/java/org/junit/internal/Throwables.java",
+        "targetClassPath": "src/main/java/org/junit/internal/Throwables.java",
+        "simpleSourceClassName": "Throwables$State",
+        "simpleTargetClassName": "Throwables$State$4",
+        "priority": 28,
+        "cycleCount": 1,
+        "effortRank": 1,
+        "alsoRemovesPackageRelationship": false,
+        "packageCycleCount": 0
+      },
+      {
+        "sourceClass": "org.junit.runner.manipulation.Ordering$Factory",
+        "targetClass": "org.junit.runner.manipulation.Ordering",
+        "sourceUrl": null,
+        "targetUrl": null,
+        "sourceMarked": false,
+        "targetMarked": false,
+        "weight": 1,
+        "sourceClassPath": "src/main/java/org/junit/runner/manipulation/Ordering.java",
+        "targetClassPath": "src/main/java/org/junit/runner/manipulation/Ordering.java",
+        "simpleSourceClassName": "Ordering$Factory",
+        "simpleTargetClassName": "Ordering",
+        "priority": 29,
+        "cycleCount": 1,
+        "effortRank": 1,
+        "alsoRemovesPackageRelationship": false,
+        "packageCycleCount": 0
+      },
+      {
+        "sourceClass": "org.junit.runner.notification.RunNotifier$SafeNotifier",
+        "targetClass": "org.junit.runner.notification.RunNotifier",
+        "sourceUrl": null,
+        "targetUrl": null,
+        "sourceMarked": false,
+        "targetMarked": false,
+        "weight": 1,
+        "sourceClassPath": "src/main/java/org/junit/runner/notification/RunNotifier.java",
+        "targetClassPath": "src/main/java/org/junit/runner/notification/RunNotifier.java",
+        "simpleSourceClassName": "RunNotifier$SafeNotifier",
+        "simpleTargetClassName": "RunNotifier",
+        "priority": 30,
+        "cycleCount": 1,
+        "effortRank": 1,
+        "alsoRemovesPackageRelationship": false,
+        "packageCycleCount": 0
+      },
+      {
+        "sourceClass": "org.junit.runner.Result$Listener",
+        "targetClass": "org.junit.runner.Result",
+        "sourceUrl": null,
+        "targetUrl": null,
+        "sourceMarked": false,
+        "targetMarked": false,
+        "weight": 1,
+        "sourceClassPath": "src/main/java/org/junit/runner/Result.java",
+        "targetClassPath": "src/main/java/org/junit/runner/Result.java",
+        "simpleSourceClassName": "Result$Listener",
+        "simpleTargetClassName": "Result",
+        "priority": 31,
+        "cycleCount": 1,
+        "effortRank": 1,
+        "alsoRemovesPackageRelationship": false,
+        "packageCycleCount": 0
+      },
+      {
+        "sourceClass": "org.junit.experimental.theories.suppliers.TestedOnSupplier",
+        "targetClass": "org.junit.experimental.theories.suppliers.TestedOn",
+        "sourceUrl": null,
+        "targetUrl": null,
+        "sourceMarked": true,
+        "targetMarked": false,
+        "weight": 2,
+        "sourceClassPath": "src/main/java/org/junit/experimental/theories/suppliers/TestedOnSupplier.java",
+        "targetClassPath": "src/main/java/org/junit/experimental/theories/suppliers/TestedOn.java",
+        "simpleSourceClassName": "TestedOnSupplier",
+        "simpleTargetClassName": "TestedOn",
+        "priority": 32,
+        "cycleCount": 1,
+        "effortRank": 2,
+        "alsoRemovesPackageRelationship": false,
+        "packageCycleCount": 0
+      },
+      {
+        "sourceClass": "junit.framework.ComparisonCompactor",
+        "targetClass": "junit.framework.Assert",
+        "sourceUrl": null,
+        "targetUrl": null,
+        "sourceMarked": false,
+        "targetMarked": true,
+        "weight": 2,
+        "sourceClassPath": "src/main/java/junit/framework/ComparisonCompactor.java",
+        "targetClassPath": "src/main/java/junit/framework/Assert.java",
+        "simpleSourceClassName": "ComparisonCompactor",
+        "simpleTargetClassName": "Assert",
+        "priority": 33,
+        "cycleCount": 1,
+        "effortRank": 2,
+        "alsoRemovesPackageRelationship": false,
+        "packageCycleCount": 0
+      },
+      {
+        "sourceClass": "org.junit.internal.runners.statements.FailOnTimeout$Builder",
+        "targetClass": "org.junit.internal.runners.statements.FailOnTimeout",
+        "sourceUrl": null,
+        "targetUrl": null,
+        "sourceMarked": false,
+        "targetMarked": true,
+        "weight": 2,
+        "sourceClassPath": "src/main/java/org/junit/internal/runners/statements/FailOnTimeout.java",
+        "targetClassPath": "src/main/java/org/junit/internal/runners/statements/FailOnTimeout.java",
+        "simpleSourceClassName": "FailOnTimeout$Builder",
+        "simpleTargetClassName": "FailOnTimeout",
+        "priority": 34,
+        "cycleCount": 1,
+        "effortRank": 2,
+        "alsoRemovesPackageRelationship": false,
+        "packageCycleCount": 0
+      },
+      {
+        "sourceClass": "org.junit.internal.runners.rules.RuleMemberValidator$Builder",
+        "targetClass": "org.junit.internal.runners.rules.RuleMemberValidator",
+        "sourceUrl": null,
+        "targetUrl": null,
+        "sourceMarked": false,
+        "targetMarked": false,
+        "weight": 2,
+        "sourceClassPath": "src/main/java/org/junit/internal/runners/rules/RuleMemberValidator.java",
+        "targetClassPath": "src/main/java/org/junit/internal/runners/rules/RuleMemberValidator.java",
+        "simpleSourceClassName": "RuleMemberValidator$Builder",
+        "simpleTargetClassName": "RuleMemberValidator",
+        "priority": 35,
+        "cycleCount": 1,
+        "effortRank": 2,
+        "alsoRemovesPackageRelationship": false,
+        "packageCycleCount": 0
+      },
+      {
+        "sourceClass": "org.junit.internal.runners.rules.RuleMemberValidator$MemberMustBeNonStaticOrAlsoClassRule",
+        "targetClass": "org.junit.internal.runners.rules.RuleMemberValidator",
+        "sourceUrl": null,
+        "targetUrl": null,
+        "sourceMarked": false,
+        "targetMarked": false,
+        "weight": 2,
+        "sourceClassPath": "src/main/java/org/junit/internal/runners/rules/RuleMemberValidator.java",
+        "targetClassPath": "src/main/java/org/junit/internal/runners/rules/RuleMemberValidator.java",
+        "simpleSourceClassName": "RuleMemberValidator$MemberMustBeNonStaticOrAlsoClassRule",
+        "simpleTargetClassName": "RuleMemberValidator",
+        "priority": 36,
+        "cycleCount": 1,
+        "effortRank": 2,
+        "alsoRemovesPackageRelationship": false,
+        "packageCycleCount": 0
+      },
+      {
+        "sourceClass": "org.junit.internal.requests.OrderingRequest",
+        "targetClass": "org.junit.runner.Request",
+        "sourceUrl": null,
+        "targetUrl": null,
+        "sourceMarked": false,
+        "targetMarked": true,
+        "weight": 3,
+        "sourceClassPath": "src/main/java/org/junit/internal/requests/OrderingRequest.java",
+        "targetClassPath": "src/main/java/org/junit/runner/Request.java",
+        "simpleSourceClassName": "OrderingRequest",
+        "simpleTargetClassName": "Request",
+        "priority": 37,
+        "cycleCount": 1,
+        "effortRank": 3,
+        "alsoRemovesPackageRelationship": false,
+        "packageCycleCount": 4
+      },
+      {
+        "sourceClass": "org.junit.rules.TemporaryFolder",
+        "targetClass": "org.junit.rules.TemporaryFolder$Builder",
+        "sourceUrl": null,
+        "targetUrl": null,
+        "sourceMarked": true,
+        "targetMarked": false,
+        "weight": 3,
+        "sourceClassPath": "src/main/java/org/junit/rules/TemporaryFolder.java",
+        "targetClassPath": "src/main/java/org/junit/rules/TemporaryFolder.java",
+        "simpleSourceClassName": "TemporaryFolder",
+        "simpleTargetClassName": "TemporaryFolder$Builder",
+        "priority": 38,
+        "cycleCount": 1,
+        "effortRank": 3,
+        "alsoRemovesPackageRelationship": false,
+        "packageCycleCount": 0
+      },
+      {
+        "sourceClass": "org.junit.experimental.max.MaxHistory$RememberingListener",
+        "targetClass": "org.junit.experimental.max.MaxHistory",
+        "sourceUrl": null,
+        "targetUrl": null,
+        "sourceMarked": false,
+        "targetMarked": true,
+        "weight": 3,
+        "sourceClassPath": "src/main/java/org/junit/experimental/max/MaxHistory.java",
+        "targetClassPath": "src/main/java/org/junit/experimental/max/MaxHistory.java",
+        "simpleSourceClassName": "MaxHistory$RememberingListener",
+        "simpleTargetClassName": "MaxHistory",
+        "priority": 39,
+        "cycleCount": 1,
+        "effortRank": 3,
+        "alsoRemovesPackageRelationship": false,
+        "packageCycleCount": 0
+      },
+      {
+        "sourceClass": "org.junit.rules.ExpectedException$ExpectedExceptionStatement",
+        "targetClass": "org.junit.rules.ExpectedException",
+        "sourceUrl": null,
+        "targetUrl": null,
+        "sourceMarked": false,
+        "targetMarked": true,
+        "weight": 3,
+        "sourceClassPath": "src/main/java/org/junit/rules/ExpectedException.java",
+        "targetClassPath": "src/main/java/org/junit/rules/ExpectedException.java",
+        "simpleSourceClassName": "ExpectedException$ExpectedExceptionStatement",
+        "simpleTargetClassName": "ExpectedException",
+        "priority": 40,
+        "cycleCount": 1,
+        "effortRank": 3,
+        "alsoRemovesPackageRelationship": false,
+        "packageCycleCount": 0
+      },
+      {
+        "sourceClass": "org.junit.experimental.theories.internal.SpecificDataPointsSupplier",
+        "targetClass": "org.junit.experimental.theories.FromDataPoints",
+        "sourceUrl": null,
+        "targetUrl": null,
+        "sourceMarked": true,
+        "targetMarked": false,
+        "weight": 4,
+        "sourceClassPath": "src/main/java/org/junit/experimental/theories/internal/SpecificDataPointsSupplier.java",
+        "targetClassPath": "src/main/java/org/junit/experimental/theories/FromDataPoints.java",
+        "simpleSourceClassName": "SpecificDataPointsSupplier",
+        "simpleTargetClassName": "FromDataPoints",
+        "priority": 41,
+        "cycleCount": 1,
+        "effortRank": 4,
+        "alsoRemovesPackageRelationship": false,
+        "packageCycleCount": 1
+      },
+      {
+        "sourceClass": "junit.framework.JUnit4TestAdapter",
+        "targetClass": "junit.framework.JUnit4TestAdapterCache",
+        "sourceUrl": null,
+        "targetUrl": null,
+        "sourceMarked": true,
+        "targetMarked": false,
+        "weight": 5,
+        "sourceClassPath": "src/main/java/junit/framework/JUnit4TestAdapter.java",
+        "targetClassPath": "src/main/java/junit/framework/JUnit4TestAdapterCache.java",
+        "simpleSourceClassName": "JUnit4TestAdapter",
+        "simpleTargetClassName": "JUnit4TestAdapterCache",
+        "priority": 42,
+        "cycleCount": 1,
+        "effortRank": 5,
+        "alsoRemovesPackageRelationship": false,
+        "packageCycleCount": 0
+      },
+      {
+        "sourceClass": "org.junit.internal.Throwables$State",
+        "targetClass": "org.junit.internal.Throwables",
+        "sourceUrl": null,
+        "targetUrl": null,
+        "sourceMarked": false,
+        "targetMarked": false,
+        "weight": 5,
+        "sourceClassPath": "src/main/java/org/junit/internal/Throwables.java",
+        "targetClassPath": "src/main/java/org/junit/internal/Throwables.java",
+        "simpleSourceClassName": "Throwables$State",
+        "simpleTargetClassName": "Throwables",
+        "priority": 43,
+        "cycleCount": 1,
+        "effortRank": 5,
+        "alsoRemovesPackageRelationship": false,
+        "packageCycleCount": 0
+      },
+      {
+        "sourceClass": "org.junit.rules.Timeout",
+        "targetClass": "org.junit.rules.Timeout$Builder",
+        "sourceUrl": null,
+        "targetUrl": null,
+        "sourceMarked": true,
+        "targetMarked": false,
+        "weight": 6,
+        "sourceClassPath": "src/main/java/org/junit/rules/Timeout.java",
+        "targetClassPath": "src/main/java/org/junit/rules/Timeout.java",
+        "simpleSourceClassName": "Timeout",
+        "simpleTargetClassName": "Timeout$Builder",
+        "priority": 44,
+        "cycleCount": 1,
+        "effortRank": 6,
+        "alsoRemovesPackageRelationship": false,
+        "packageCycleCount": 0
+      },
+      {
+        "sourceClass": "junit.framework.TestCase",
+        "targetClass": "junit.framework.TestResult",
+        "sourceUrl": null,
+        "targetUrl": null,
+        "sourceMarked": false,
+        "targetMarked": false,
+        "weight": 6,
+        "sourceClassPath": "src/main/java/junit/framework/TestCase.java",
+        "targetClassPath": "src/main/java/junit/framework/TestResult.java",
+        "simpleSourceClassName": "TestCase",
+        "simpleTargetClassName": "TestResult",
+        "priority": 45,
+        "cycleCount": 1,
+        "effortRank": 6,
+        "alsoRemovesPackageRelationship": false,
+        "packageCycleCount": 0
+      },
+      {
+        "sourceClass": "org.junit.runner.Result",
+        "targetClass": "org.junit.runner.Result$SerializedForm",
+        "sourceUrl": null,
+        "targetUrl": null,
+        "sourceMarked": false,
+        "targetMarked": false,
+        "weight": 6,
+        "sourceClassPath": "src/main/java/org/junit/runner/Result.java",
+        "targetClassPath": "src/main/java/org/junit/runner/Result.java",
+        "simpleSourceClassName": "Result",
+        "simpleTargetClassName": "Result$SerializedForm",
+        "priority": 46,
+        "cycleCount": 1,
+        "effortRank": 6,
+        "alsoRemovesPackageRelationship": false,
+        "packageCycleCount": 0
+      },
+      {
+        "sourceClass": "org.junit.rules.Stopwatch$InternalWatcher",
+        "targetClass": "org.junit.rules.Stopwatch",
+        "sourceUrl": null,
+        "targetUrl": null,
+        "sourceMarked": false,
+        "targetMarked": true,
+        "weight": 12,
+        "sourceClassPath": "src/main/java/org/junit/rules/Stopwatch.java",
+        "targetClassPath": "src/main/java/org/junit/rules/Stopwatch.java",
+        "simpleSourceClassName": "Stopwatch$InternalWatcher",
+        "simpleTargetClassName": "Stopwatch",
+        "priority": 47,
+        "cycleCount": 1,
+        "effortRank": 12,
+        "alsoRemovesPackageRelationship": false,
+        "packageCycleCount": 0
+      }
+    ]
+  },
+  "packageMap": {
+    "graphId": "packageGraph",
+    "classCount": 32,
+    "relationshipCount": 125,
+    "dotThreshold": 4000,
+    "dotThresholdExceeded": false,
+    "hasEdges": true,
+    "hierarchy": {
+      "packages": [
+        {
+          "name": "junit",
+          "id": "cluster_018bb207e5cea3036e36872e",
+          "nodeId": "package_018bb207e5cea3036e36872e",
+          "renderAsNode": false,
+          "needsBreakUp": false,
+          "children": [
+            {
+              "name": "junit.framework",
+              "id": "cluster_08fe06d73182d2aba49f0a3b",
+              "nodeId": "package_08fe06d73182d2aba49f0a3b",
+              "renderAsNode": true,
+              "needsBreakUp": false,
+              "children": [],
+              "classes": [],
+              "path": "src/main/java/junit/framework/"
+            },
+            {
+              "name": "junit.runner",
+              "id": "cluster_e98a44e5d67bad99f479d7c6",
+              "nodeId": "package_e98a44e5d67bad99f479d7c6",
+              "renderAsNode": true,
+              "needsBreakUp": true,
+              "children": [],
+              "classes": [],
+              "path": "src/main/java/junit/runner/"
+            }
+          ],
+          "classes": [],
+          "path": "src/main/java/junit/"
+        }
+      ],
+      "edges": [
+        {
+          "source": "package_018bb207e5cea3036e36872e",
+          "target": "package_08fe06d73182d2aba49f0a3b",
+          "weight": 2,
+          "markedForRemoval": false
+        },
+        {
+          "source": "package_08fe06d73182d2aba49f0a3b",
+          "target": "package_e98a44e5d67bad99f479d7c6",
+          "weight": 9,
+          "markedForRemoval": false
+        },
+        {
+          "source": "package_e98a44e5d67bad99f479d7c6",
+          "target": "package_08fe06d73182d2aba49f0a3b",
+          "weight": 4,
+          "markedForRemoval": true
+        }
+      ]
+    }
+  },
+  "packageRelationshipsToRemove": {
+    "cycleCount": 5,
+    "relationshipsToRemoveCount": 18,
+    "hasRelationships": true,
+    "relationships": [
+      {
+        "sourcePackage": "org.junit.internal",
+        "targetPackage": "org.junit.runners",
+        "sourceMarked": true,
+        "targetMarked": true,
+        "weight": 1,
+        "sourcePackagePath": "src/main/java/org/junit/internal/",
+        "targetPackagePath": "src/main/java/org/junit/runners/",
+        "priority": 1,
+        "cycleCount": 4,
+        "effortRank": 1,
+        "classRelationshipsToBreakPackage": [
+          {
+            "sourceClass": "org.junit.internal.MethodSorter",
+            "targetClass": "org.junit.runners.MethodSorters",
+            "sourceMarked": false,
+            "targetMarked": false,
+            "weight": 1,
+            "sourceClassPath": "src/main/java/org/junit/internal/MethodSorter.java",
+            "targetClassPath": "src/main/java/org/junit/runners/MethodSorters.java",
+            "simpleSourceClassName": "MethodSorter",
+            "simpleTargetClassName": "MethodSorters",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          }
+        ]
+      },
+      {
+        "sourcePackage": "org.junit.runners",
+        "targetPackage": "org.junit.internal.builders",
+        "sourceMarked": true,
+        "targetMarked": false,
+        "weight": 1,
+        "sourcePackagePath": "src/main/java/org/junit/runners/",
+        "targetPackagePath": "src/main/java/org/junit/internal/builders/",
+        "priority": 2,
+        "cycleCount": 4,
+        "effortRank": 1,
+        "classRelationshipsToBreakPackage": [
+          {
+            "sourceClass": "org.junit.runners.Suite",
+            "targetClass": "org.junit.internal.builders.AllDefaultPossibilitiesBuilder",
+            "sourceMarked": false,
+            "targetMarked": false,
+            "weight": 1,
+            "sourceClassPath": "src/main/java/org/junit/runners/Suite.java",
+            "targetClassPath": "src/main/java/org/junit/internal/builders/AllDefaultPossibilitiesBuilder.java",
+            "simpleSourceClassName": "Suite",
+            "simpleTargetClassName": "AllDefaultPossibilitiesBuilder",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          }
+        ]
+      },
+      {
+        "sourcePackage": "org.junit.runner",
+        "targetPackage": "org.junit.internal.builders",
+        "sourceMarked": false,
+        "targetMarked": false,
+        "weight": 2,
+        "sourcePackagePath": "src/main/java/org/junit/runner/",
+        "targetPackagePath": "src/main/java/org/junit/internal/builders/",
+        "priority": 3,
+        "cycleCount": 4,
+        "effortRank": 2,
+        "classRelationshipsToBreakPackage": [
+          {
+            "sourceClass": "org.junit.runner.Request",
+            "targetClass": "org.junit.internal.builders.AllDefaultPossibilitiesBuilder",
+            "sourceMarked": true,
+            "targetMarked": false,
+            "weight": 2,
+            "sourceClassPath": "src/main/java/org/junit/runner/Request.java",
+            "targetClassPath": "src/main/java/org/junit/internal/builders/AllDefaultPossibilitiesBuilder.java",
+            "simpleSourceClassName": "Request",
+            "simpleTargetClassName": "AllDefaultPossibilitiesBuilder",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          }
+        ]
+      },
+      {
+        "sourcePackage": "org.junit.runner",
+        "targetPackage": "org.junit.internal.requests",
+        "sourceMarked": false,
+        "targetMarked": false,
+        "weight": 5,
+        "sourcePackagePath": "src/main/java/org/junit/runner/",
+        "targetPackagePath": "src/main/java/org/junit/internal/requests/",
+        "priority": 4,
+        "cycleCount": 4,
+        "effortRank": 5,
+        "classRelationshipsToBreakPackage": [
+          {
+            "sourceClass": "org.junit.runner.Request",
+            "targetClass": "org.junit.internal.requests.SortingRequest",
+            "sourceMarked": true,
+            "targetMarked": false,
+            "weight": 1,
+            "sourceClassPath": "src/main/java/org/junit/runner/Request.java",
+            "targetClassPath": "src/main/java/org/junit/internal/requests/SortingRequest.java",
+            "simpleSourceClassName": "Request",
+            "simpleTargetClassName": "SortingRequest",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          },
+          {
+            "sourceClass": "org.junit.runner.Request",
+            "targetClass": "org.junit.internal.requests.ClassRequest",
+            "sourceMarked": true,
+            "targetMarked": false,
+            "weight": 2,
+            "sourceClassPath": "src/main/java/org/junit/runner/Request.java",
+            "targetClassPath": "src/main/java/org/junit/internal/requests/ClassRequest.java",
+            "simpleSourceClassName": "Request",
+            "simpleTargetClassName": "ClassRequest",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          },
+          {
+            "sourceClass": "org.junit.runner.Request",
+            "targetClass": "org.junit.internal.requests.FilterRequest",
+            "sourceMarked": true,
+            "targetMarked": false,
+            "weight": 1,
+            "sourceClassPath": "src/main/java/org/junit/runner/Request.java",
+            "targetClassPath": "src/main/java/org/junit/internal/requests/FilterRequest.java",
+            "simpleSourceClassName": "Request",
+            "simpleTargetClassName": "FilterRequest",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          },
+          {
+            "sourceClass": "org.junit.runner.Request",
+            "targetClass": "org.junit.internal.requests.OrderingRequest",
+            "sourceMarked": true,
+            "targetMarked": false,
+            "weight": 1,
+            "sourceClassPath": "src/main/java/org/junit/runner/Request.java",
+            "targetClassPath": "src/main/java/org/junit/internal/requests/OrderingRequest.java",
+            "simpleSourceClassName": "Request",
+            "simpleTargetClassName": "OrderingRequest",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          }
+        ]
+      },
+      {
+        "sourcePackage": "org.junit.internal",
+        "targetPackage": "org.junit.runner",
+        "sourceMarked": true,
+        "targetMarked": false,
+        "weight": 12,
+        "sourcePackagePath": "src/main/java/org/junit/internal/",
+        "targetPackagePath": "src/main/java/org/junit/runner/",
+        "priority": 5,
+        "cycleCount": 4,
+        "effortRank": 12,
+        "classRelationshipsToBreakPackage": [
+          {
+            "sourceClass": "org.junit.internal.TextListener",
+            "targetClass": "org.junit.runner.Description",
+            "sourceMarked": false,
+            "targetMarked": false,
+            "weight": 2,
+            "sourceClassPath": "src/main/java/org/junit/internal/TextListener.java",
+            "targetClassPath": "src/main/java/org/junit/runner/Description.java",
+            "simpleSourceClassName": "TextListener",
+            "simpleTargetClassName": "Description",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          },
+          {
+            "sourceClass": "org.junit.internal.TextListener",
+            "targetClass": "org.junit.runner.Result",
+            "sourceMarked": false,
+            "targetMarked": false,
+            "weight": 10,
+            "sourceClassPath": "src/main/java/org/junit/internal/TextListener.java",
+            "targetClassPath": "src/main/java/org/junit/runner/Result.java",
+            "simpleSourceClassName": "TextListener",
+            "simpleTargetClassName": "Result",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          }
+        ]
+      },
+      {
+        "sourcePackage": "org.junit",
+        "targetPackage": "org.junit.runners",
+        "sourceMarked": false,
+        "targetMarked": true,
+        "weight": 1,
+        "sourcePackagePath": "src/main/java/org/junit/",
+        "targetPackagePath": "src/main/java/org/junit/runners/",
+        "priority": 6,
+        "cycleCount": 3,
+        "effortRank": 1,
+        "classRelationshipsToBreakPackage": [
+          {
+            "sourceClass": "org.junit.FixMethodOrder",
+            "targetClass": "org.junit.runners.MethodSorters",
+            "sourceMarked": false,
+            "targetMarked": false,
+            "weight": 1,
+            "sourceClassPath": "src/main/java/org/junit/FixMethodOrder.java",
+            "targetClassPath": "src/main/java/org/junit/runners/MethodSorters.java",
+            "simpleSourceClassName": "FixMethodOrder",
+            "simpleTargetClassName": "MethodSorters",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          }
+        ]
+      },
+      {
+        "sourcePackage": "org.junit.runner.notification",
+        "targetPackage": "org.junit.internal",
+        "sourceMarked": true,
+        "targetMarked": true,
+        "weight": 2,
+        "sourcePackagePath": "src/main/java/org/junit/runner/notification/",
+        "targetPackagePath": "src/main/java/org/junit/internal/",
+        "priority": 7,
+        "cycleCount": 3,
+        "effortRank": 2,
+        "classRelationshipsToBreakPackage": [
+          {
+            "sourceClass": "org.junit.runner.notification.Failure",
+            "targetClass": "org.junit.internal.Throwables",
+            "sourceMarked": true,
+            "targetMarked": false,
+            "weight": 2,
+            "sourceClassPath": "src/main/java/org/junit/runner/notification/Failure.java",
+            "targetClassPath": "src/main/java/org/junit/internal/Throwables.java",
+            "simpleSourceClassName": "Failure",
+            "simpleTargetClassName": "Throwables",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          }
+        ]
+      },
+      {
+        "sourcePackage": "org.junit.runners.model",
+        "targetPackage": "org.junit.internal.runners.model",
+        "sourceMarked": false,
+        "targetMarked": false,
+        "weight": 2,
+        "sourcePackagePath": "src/main/java/org/junit/runners/model/",
+        "targetPackagePath": "src/main/java/org/junit/internal/runners/model/",
+        "priority": 8,
+        "cycleCount": 3,
+        "effortRank": 2,
+        "classRelationshipsToBreakPackage": [
+          {
+            "sourceClass": "org.junit.runners.model.FrameworkMethod",
+            "targetClass": "org.junit.internal.runners.model.ReflectiveCallable",
+            "sourceMarked": true,
+            "targetMarked": false,
+            "weight": 1,
+            "sourceClassPath": "src/main/java/org/junit/runners/model/FrameworkMethod.java",
+            "targetClassPath": "src/main/java/org/junit/internal/runners/model/ReflectiveCallable.java",
+            "simpleSourceClassName": "FrameworkMethod",
+            "simpleTargetClassName": "ReflectiveCallable",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          },
+          {
+            "sourceClass": "org.junit.runners.model.MultipleFailureException",
+            "targetClass": "org.junit.internal.runners.model.MultipleFailureException",
+            "sourceMarked": false,
+            "targetMarked": false,
+            "weight": 1,
+            "sourceClassPath": "src/main/java/org/junit/runners/model/MultipleFailureException.java",
+            "targetClassPath": "src/main/java/org/junit/internal/runners/model/MultipleFailureException.java",
+            "simpleSourceClassName": "MultipleFailureException",
+            "simpleTargetClassName": "MultipleFailureException",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          }
+        ]
+      },
+      {
+        "sourcePackage": "org.junit.internal.runners",
+        "targetPackage": "org.junit.runners.model",
+        "sourceMarked": true,
+        "targetMarked": false,
+        "weight": 5,
+        "sourcePackagePath": "src/main/java/org/junit/internal/runners/",
+        "targetPackagePath": "src/main/java/org/junit/runners/model/",
+        "priority": 9,
+        "cycleCount": 3,
+        "effortRank": 5,
+        "classRelationshipsToBreakPackage": [
+          {
+            "sourceClass": "org.junit.internal.runners.ErrorReportingRunner",
+            "targetClass": "org.junit.runners.model.InvalidTestClassError",
+            "sourceMarked": false,
+            "targetMarked": false,
+            "weight": 1,
+            "sourceClassPath": "src/main/java/org/junit/internal/runners/ErrorReportingRunner.java",
+            "targetClassPath": "src/main/java/org/junit/runners/model/InvalidTestClassError.java",
+            "simpleSourceClassName": "ErrorReportingRunner",
+            "simpleTargetClassName": "InvalidTestClassError",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          },
+          {
+            "sourceClass": "org.junit.internal.runners.ErrorReportingRunner",
+            "targetClass": "org.junit.runners.model.InitializationError",
+            "sourceMarked": false,
+            "targetMarked": false,
+            "weight": 3,
+            "sourceClassPath": "src/main/java/org/junit/internal/runners/ErrorReportingRunner.java",
+            "targetClassPath": "src/main/java/org/junit/runners/model/InitializationError.java",
+            "simpleSourceClassName": "ErrorReportingRunner",
+            "simpleTargetClassName": "InitializationError",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          },
+          {
+            "sourceClass": "org.junit.internal.runners.MethodRoadie",
+            "targetClass": "org.junit.runners.model.TestTimedOutException",
+            "sourceMarked": false,
+            "targetMarked": false,
+            "weight": 1,
+            "sourceClassPath": "src/main/java/org/junit/internal/runners/MethodRoadie.java",
+            "targetClassPath": "src/main/java/org/junit/runners/model/TestTimedOutException.java",
+            "simpleSourceClassName": "MethodRoadie",
+            "simpleTargetClassName": "TestTimedOutException",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          }
+        ]
+      },
+      {
+        "sourcePackage": "org.junit.internal",
+        "targetPackage": "org.junit",
+        "sourceMarked": true,
+        "targetMarked": false,
+        "weight": 8,
+        "sourcePackagePath": "src/main/java/org/junit/internal/",
+        "targetPackagePath": "src/main/java/org/junit/",
+        "priority": 10,
+        "cycleCount": 3,
+        "effortRank": 8,
+        "classRelationshipsToBreakPackage": [
+          {
+            "sourceClass": "org.junit.internal.InexactComparisonCriteria",
+            "targetClass": "org.junit.Assert",
+            "sourceMarked": false,
+            "targetMarked": false,
+            "weight": 2,
+            "sourceClassPath": "src/main/java/org/junit/internal/InexactComparisonCriteria.java",
+            "targetClassPath": "src/main/java/org/junit/Assert.java",
+            "simpleSourceClassName": "InexactComparisonCriteria",
+            "simpleTargetClassName": "Assert",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          },
+          {
+            "sourceClass": "org.junit.internal.ExactComparisonCriteria",
+            "targetClass": "org.junit.Assert",
+            "sourceMarked": false,
+            "targetMarked": false,
+            "weight": 1,
+            "sourceClassPath": "src/main/java/org/junit/internal/ExactComparisonCriteria.java",
+            "targetClassPath": "src/main/java/org/junit/Assert.java",
+            "simpleSourceClassName": "ExactComparisonCriteria",
+            "simpleTargetClassName": "Assert",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          },
+          {
+            "sourceClass": "org.junit.internal.ComparisonCriteria",
+            "targetClass": "org.junit.Assert",
+            "sourceMarked": false,
+            "targetMarked": false,
+            "weight": 3,
+            "sourceClassPath": "src/main/java/org/junit/internal/ComparisonCriteria.java",
+            "targetClassPath": "src/main/java/org/junit/Assert.java",
+            "simpleSourceClassName": "ComparisonCriteria",
+            "simpleTargetClassName": "Assert",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          },
+          {
+            "sourceClass": "org.junit.internal.MethodSorter",
+            "targetClass": "org.junit.FixMethodOrder",
+            "sourceMarked": false,
+            "targetMarked": false,
+            "weight": 2,
+            "sourceClassPath": "src/main/java/org/junit/internal/MethodSorter.java",
+            "targetClassPath": "src/main/java/org/junit/FixMethodOrder.java",
+            "simpleSourceClassName": "MethodSorter",
+            "simpleTargetClassName": "FixMethodOrder",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          }
+        ]
+      },
+      {
+        "sourcePackage": "org.junit.runners.model",
+        "targetPackage": "org.junit.runner",
+        "sourceMarked": false,
+        "targetMarked": false,
+        "weight": 15,
+        "sourcePackagePath": "src/main/java/org/junit/runners/model/",
+        "targetPackagePath": "src/main/java/org/junit/runner/",
+        "priority": 11,
+        "cycleCount": 3,
+        "effortRank": 15,
+        "classRelationshipsToBreakPackage": [
+          {
+            "sourceClass": "org.junit.runners.model.RunnerBuilder",
+            "targetClass": "org.junit.runner.Description",
+            "sourceMarked": true,
+            "targetMarked": false,
+            "weight": 2,
+            "sourceClassPath": "src/main/java/org/junit/runners/model/RunnerBuilder.java",
+            "targetClassPath": "src/main/java/org/junit/runner/Description.java",
+            "simpleSourceClassName": "RunnerBuilder",
+            "simpleTargetClassName": "Description",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          },
+          {
+            "sourceClass": "org.junit.runners.model.RunnerBuilder",
+            "targetClass": "org.junit.runner.Runner",
+            "sourceMarked": true,
+            "targetMarked": false,
+            "weight": 11,
+            "sourceClassPath": "src/main/java/org/junit/runners/model/RunnerBuilder.java",
+            "targetClassPath": "src/main/java/org/junit/runner/Runner.java",
+            "simpleSourceClassName": "RunnerBuilder",
+            "simpleTargetClassName": "Runner",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          },
+          {
+            "sourceClass": "org.junit.runners.model.RunnerBuilder",
+            "targetClass": "org.junit.runner.OrderWith",
+            "sourceMarked": true,
+            "targetMarked": false,
+            "weight": 2,
+            "sourceClassPath": "src/main/java/org/junit/runners/model/RunnerBuilder.java",
+            "targetClassPath": "src/main/java/org/junit/runner/OrderWith.java",
+            "simpleSourceClassName": "RunnerBuilder",
+            "simpleTargetClassName": "OrderWith",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          }
+        ]
+      },
+      {
+        "sourcePackage": "org.junit.runners.parameterized",
+        "targetPackage": "org.junit.runners",
+        "sourceMarked": false,
+        "targetMarked": true,
+        "weight": 16,
+        "sourcePackagePath": "src/main/java/org/junit/runners/parameterized/",
+        "targetPackagePath": "src/main/java/org/junit/runners/",
+        "priority": 12,
+        "cycleCount": 3,
+        "effortRank": 16,
+        "classRelationshipsToBreakPackage": [
+          {
+            "sourceClass": "org.junit.runners.parameterized.BlockJUnit4ClassRunnerWithParameters",
+            "targetClass": "org.junit.runners.Parameterized$Parameter",
+            "sourceMarked": false,
+            "targetMarked": false,
+            "weight": 3,
+            "sourceClassPath": "src/main/java/org/junit/runners/parameterized/BlockJUnit4ClassRunnerWithParameters.java",
+            "targetClassPath": "src/main/java/org/junit/runners/Parameterized.java",
+            "simpleSourceClassName": "BlockJUnit4ClassRunnerWithParameters",
+            "simpleTargetClassName": "Parameterized$Parameter",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          },
+          {
+            "sourceClass": "org.junit.runners.parameterized.BlockJUnit4ClassRunnerWithParameters",
+            "targetClass": "org.junit.runners.BlockJUnit4ClassRunner",
+            "sourceMarked": false,
+            "targetMarked": true,
+            "weight": 5,
+            "sourceClassPath": "src/main/java/org/junit/runners/parameterized/BlockJUnit4ClassRunnerWithParameters.java",
+            "targetClassPath": "src/main/java/org/junit/runners/BlockJUnit4ClassRunner.java",
+            "simpleSourceClassName": "BlockJUnit4ClassRunnerWithParameters",
+            "simpleTargetClassName": "BlockJUnit4ClassRunner",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          },
+          {
+            "sourceClass": "org.junit.runners.parameterized.BlockJUnit4ClassRunnerWithParameters",
+            "targetClass": "org.junit.runners.ParentRunner",
+            "sourceMarked": false,
+            "targetMarked": false,
+            "weight": 8,
+            "sourceClassPath": "src/main/java/org/junit/runners/parameterized/BlockJUnit4ClassRunnerWithParameters.java",
+            "targetClassPath": "src/main/java/org/junit/runners/ParentRunner.java",
+            "simpleSourceClassName": "BlockJUnit4ClassRunnerWithParameters",
+            "simpleTargetClassName": "ParentRunner",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          }
+        ]
+      },
+      {
+        "sourcePackage": "org.junit.runner.notification",
+        "targetPackage": "org.junit.runner",
+        "sourceMarked": true,
+        "targetMarked": false,
+        "weight": 25,
+        "sourcePackagePath": "src/main/java/org/junit/runner/notification/",
+        "targetPackagePath": "src/main/java/org/junit/runner/",
+        "priority": 13,
+        "cycleCount": 3,
+        "effortRank": 25,
+        "classRelationshipsToBreakPackage": [
+          {
+            "sourceClass": "org.junit.runner.notification.RunListener",
+            "targetClass": "org.junit.runner.Result",
+            "sourceMarked": false,
+            "targetMarked": false,
+            "weight": 1,
+            "sourceClassPath": "src/main/java/org/junit/runner/notification/RunListener.java",
+            "targetClassPath": "src/main/java/org/junit/runner/Result.java",
+            "simpleSourceClassName": "RunListener",
+            "simpleTargetClassName": "Result",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          },
+          {
+            "sourceClass": "org.junit.runner.notification.RunListener",
+            "targetClass": "org.junit.runner.Description",
+            "sourceMarked": false,
+            "targetMarked": false,
+            "weight": 6,
+            "sourceClassPath": "src/main/java/org/junit/runner/notification/RunListener.java",
+            "targetClassPath": "src/main/java/org/junit/runner/Description.java",
+            "simpleSourceClassName": "RunListener",
+            "simpleTargetClassName": "Description",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          },
+          {
+            "sourceClass": "org.junit.runner.notification.SynchronizedRunListener",
+            "targetClass": "org.junit.runner.Description",
+            "sourceMarked": false,
+            "targetMarked": false,
+            "weight": 6,
+            "sourceClassPath": "src/main/java/org/junit/runner/notification/SynchronizedRunListener.java",
+            "targetClassPath": "src/main/java/org/junit/runner/Description.java",
+            "simpleSourceClassName": "SynchronizedRunListener",
+            "simpleTargetClassName": "Description",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          },
+          {
+            "sourceClass": "org.junit.runner.notification.RunNotifier",
+            "targetClass": "org.junit.runner.Result",
+            "sourceMarked": false,
+            "targetMarked": false,
+            "weight": 1,
+            "sourceClassPath": "src/main/java/org/junit/runner/notification/RunNotifier.java",
+            "targetClassPath": "src/main/java/org/junit/runner/Result.java",
+            "simpleSourceClassName": "RunNotifier",
+            "simpleTargetClassName": "Result",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          },
+          {
+            "sourceClass": "org.junit.runner.notification.Failure",
+            "targetClass": "org.junit.runner.Description",
+            "sourceMarked": true,
+            "targetMarked": false,
+            "weight": 4,
+            "sourceClassPath": "src/main/java/org/junit/runner/notification/Failure.java",
+            "targetClassPath": "src/main/java/org/junit/runner/Description.java",
+            "simpleSourceClassName": "Failure",
+            "simpleTargetClassName": "Description",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          },
+          {
+            "sourceClass": "org.junit.runner.notification.RunNotifier",
+            "targetClass": "org.junit.runner.Description",
+            "sourceMarked": false,
+            "targetMarked": false,
+            "weight": 6,
+            "sourceClassPath": "src/main/java/org/junit/runner/notification/RunNotifier.java",
+            "targetClassPath": "src/main/java/org/junit/runner/Description.java",
+            "simpleSourceClassName": "RunNotifier",
+            "simpleTargetClassName": "Description",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          },
+          {
+            "sourceClass": "org.junit.runner.notification.SynchronizedRunListener",
+            "targetClass": "org.junit.runner.Result",
+            "sourceMarked": false,
+            "targetMarked": false,
+            "weight": 1,
+            "sourceClassPath": "src/main/java/org/junit/runner/notification/SynchronizedRunListener.java",
+            "targetClassPath": "src/main/java/org/junit/runner/Result.java",
+            "simpleSourceClassName": "SynchronizedRunListener",
+            "simpleTargetClassName": "Result",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          }
+        ]
+      },
+      {
+        "sourcePackage": "junit.framework",
+        "targetPackage": "org.junit.runner",
+        "sourceMarked": false,
+        "targetMarked": false,
+        "weight": 39,
+        "sourcePackagePath": "src/main/java/junit/framework/",
+        "targetPackagePath": "src/main/java/org/junit/runner/",
+        "priority": 14,
+        "cycleCount": 3,
+        "effortRank": 39,
+        "classRelationshipsToBreakPackage": [
+          {
+            "sourceClass": "junit.framework.JUnit4TestAdapter",
+            "targetClass": "org.junit.runner.Description",
+            "sourceMarked": true,
+            "targetMarked": false,
+            "weight": 13,
+            "sourceClassPath": "src/main/java/junit/framework/JUnit4TestAdapter.java",
+            "targetClassPath": "src/main/java/org/junit/runner/Description.java",
+            "simpleSourceClassName": "JUnit4TestAdapter",
+            "simpleTargetClassName": "Description",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          },
+          {
+            "sourceClass": "junit.framework.JUnit4TestAdapterCache",
+            "targetClass": "org.junit.runner.Description",
+            "sourceMarked": false,
+            "targetMarked": false,
+            "weight": 14,
+            "sourceClassPath": "src/main/java/junit/framework/JUnit4TestAdapterCache.java",
+            "targetClassPath": "src/main/java/org/junit/runner/Description.java",
+            "simpleSourceClassName": "JUnit4TestAdapterCache",
+            "simpleTargetClassName": "Description",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          },
+          {
+            "sourceClass": "junit.framework.JUnit4TestCaseFacade",
+            "targetClass": "org.junit.runner.Description",
+            "sourceMarked": false,
+            "targetMarked": false,
+            "weight": 4,
+            "sourceClassPath": "src/main/java/junit/framework/JUnit4TestCaseFacade.java",
+            "targetClassPath": "src/main/java/org/junit/runner/Description.java",
+            "simpleSourceClassName": "JUnit4TestCaseFacade",
+            "simpleTargetClassName": "Description",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          },
+          {
+            "sourceClass": "junit.framework.JUnit4TestCaseFacade",
+            "targetClass": "org.junit.runner.Describable",
+            "sourceMarked": false,
+            "targetMarked": false,
+            "weight": 1,
+            "sourceClassPath": "src/main/java/junit/framework/JUnit4TestCaseFacade.java",
+            "targetClassPath": "src/main/java/org/junit/runner/Describable.java",
+            "simpleSourceClassName": "JUnit4TestCaseFacade",
+            "simpleTargetClassName": "Describable",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          },
+          {
+            "sourceClass": "junit.framework.JUnit4TestAdapter",
+            "targetClass": "org.junit.runner.Request",
+            "sourceMarked": true,
+            "targetMarked": true,
+            "weight": 2,
+            "sourceClassPath": "src/main/java/junit/framework/JUnit4TestAdapter.java",
+            "targetClassPath": "src/main/java/org/junit/runner/Request.java",
+            "simpleSourceClassName": "JUnit4TestAdapter",
+            "simpleTargetClassName": "Request",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          },
+          {
+            "sourceClass": "junit.framework.JUnit4TestAdapter",
+            "targetClass": "org.junit.runner.Runner",
+            "sourceMarked": true,
+            "targetMarked": false,
+            "weight": 4,
+            "sourceClassPath": "src/main/java/junit/framework/JUnit4TestAdapter.java",
+            "targetClassPath": "src/main/java/org/junit/runner/Runner.java",
+            "simpleSourceClassName": "JUnit4TestAdapter",
+            "simpleTargetClassName": "Runner",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          },
+          {
+            "sourceClass": "junit.framework.JUnit4TestAdapter",
+            "targetClass": "org.junit.runner.Describable",
+            "sourceMarked": true,
+            "targetMarked": false,
+            "weight": 1,
+            "sourceClassPath": "src/main/java/junit/framework/JUnit4TestAdapter.java",
+            "targetClassPath": "src/main/java/org/junit/runner/Describable.java",
+            "simpleSourceClassName": "JUnit4TestAdapter",
+            "simpleTargetClassName": "Describable",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          }
+        ]
+      },
+      {
+        "sourcePackage": "org.junit.internal.runners",
+        "targetPackage": "org.junit.runner",
+        "sourceMarked": true,
+        "targetMarked": false,
+        "weight": 41,
+        "sourcePackagePath": "src/main/java/org/junit/internal/runners/",
+        "targetPackagePath": "src/main/java/org/junit/runner/",
+        "priority": 15,
+        "cycleCount": 3,
+        "effortRank": 41,
+        "classRelationshipsToBreakPackage": [
+          {
+            "sourceClass": "org.junit.internal.runners.JUnit38ClassRunner$OldTestClassAdaptingListener",
+            "targetClass": "org.junit.runner.Describable",
+            "sourceMarked": false,
+            "targetMarked": false,
+            "weight": 4,
+            "sourceClassPath": "src/main/java/org/junit/internal/runners/JUnit38ClassRunner.java",
+            "targetClassPath": "src/main/java/org/junit/runner/Describable.java",
+            "simpleSourceClassName": "JUnit38ClassRunner$OldTestClassAdaptingListener",
+            "simpleTargetClassName": "Describable",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          },
+          {
+            "sourceClass": "org.junit.internal.runners.ErrorReportingRunner",
+            "targetClass": "org.junit.runner.Runner",
+            "sourceMarked": false,
+            "targetMarked": false,
+            "weight": 1,
+            "sourceClassPath": "src/main/java/org/junit/internal/runners/ErrorReportingRunner.java",
+            "targetClassPath": "src/main/java/org/junit/runner/Runner.java",
+            "simpleSourceClassName": "ErrorReportingRunner",
+            "simpleTargetClassName": "Runner",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          },
+          {
+            "sourceClass": "org.junit.internal.runners.ErrorReportingRunner",
+            "targetClass": "org.junit.runner.Description",
+            "sourceMarked": false,
+            "targetMarked": false,
+            "weight": 7,
+            "sourceClassPath": "src/main/java/org/junit/internal/runners/ErrorReportingRunner.java",
+            "targetClassPath": "src/main/java/org/junit/runner/Description.java",
+            "simpleSourceClassName": "ErrorReportingRunner",
+            "simpleTargetClassName": "Description",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          },
+          {
+            "sourceClass": "org.junit.internal.runners.JUnit38ClassRunner",
+            "targetClass": "org.junit.runner.Describable",
+            "sourceMarked": true,
+            "targetMarked": false,
+            "weight": 4,
+            "sourceClassPath": "src/main/java/org/junit/internal/runners/JUnit38ClassRunner.java",
+            "targetClassPath": "src/main/java/org/junit/runner/Describable.java",
+            "simpleSourceClassName": "JUnit38ClassRunner",
+            "simpleTargetClassName": "Describable",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          },
+          {
+            "sourceClass": "org.junit.internal.runners.JUnit38ClassRunner",
+            "targetClass": "org.junit.runner.Runner",
+            "sourceMarked": true,
+            "targetMarked": false,
+            "weight": 2,
+            "sourceClassPath": "src/main/java/org/junit/internal/runners/JUnit38ClassRunner.java",
+            "targetClassPath": "src/main/java/org/junit/runner/Runner.java",
+            "simpleSourceClassName": "JUnit38ClassRunner",
+            "simpleTargetClassName": "Runner",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          },
+          {
+            "sourceClass": "org.junit.internal.runners.JUnit4ClassRunner",
+            "targetClass": "org.junit.runner.Runner",
+            "sourceMarked": false,
+            "targetMarked": false,
+            "weight": 1,
+            "sourceClassPath": "src/main/java/org/junit/internal/runners/JUnit4ClassRunner.java",
+            "targetClassPath": "src/main/java/org/junit/runner/Runner.java",
+            "simpleSourceClassName": "JUnit4ClassRunner",
+            "simpleTargetClassName": "Runner",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          },
+          {
+            "sourceClass": "org.junit.internal.runners.JUnit38ClassRunner",
+            "targetClass": "org.junit.runner.Description",
+            "sourceMarked": true,
+            "targetMarked": false,
+            "weight": 8,
+            "sourceClassPath": "src/main/java/org/junit/internal/runners/JUnit38ClassRunner.java",
+            "targetClassPath": "src/main/java/org/junit/runner/Description.java",
+            "simpleSourceClassName": "JUnit38ClassRunner",
+            "simpleTargetClassName": "Description",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          },
+          {
+            "sourceClass": "org.junit.internal.runners.JUnit38ClassRunner$OldTestClassAdaptingListener",
+            "targetClass": "org.junit.runner.Description",
+            "sourceMarked": false,
+            "targetMarked": false,
+            "weight": 2,
+            "sourceClassPath": "src/main/java/org/junit/internal/runners/JUnit38ClassRunner.java",
+            "targetClassPath": "src/main/java/org/junit/runner/Description.java",
+            "simpleSourceClassName": "JUnit38ClassRunner$OldTestClassAdaptingListener",
+            "simpleTargetClassName": "Description",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          },
+          {
+            "sourceClass": "org.junit.internal.runners.ClassRoadie",
+            "targetClass": "org.junit.runner.Description",
+            "sourceMarked": false,
+            "targetMarked": false,
+            "weight": 2,
+            "sourceClassPath": "src/main/java/org/junit/internal/runners/ClassRoadie.java",
+            "targetClassPath": "src/main/java/org/junit/runner/Description.java",
+            "simpleSourceClassName": "ClassRoadie",
+            "simpleTargetClassName": "Description",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          },
+          {
+            "sourceClass": "org.junit.internal.runners.JUnit4ClassRunner",
+            "targetClass": "org.junit.runner.Description",
+            "sourceMarked": false,
+            "targetMarked": false,
+            "weight": 8,
+            "sourceClassPath": "src/main/java/org/junit/internal/runners/JUnit4ClassRunner.java",
+            "targetClassPath": "src/main/java/org/junit/runner/Description.java",
+            "simpleSourceClassName": "JUnit4ClassRunner",
+            "simpleTargetClassName": "Description",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          },
+          {
+            "sourceClass": "org.junit.internal.runners.MethodRoadie",
+            "targetClass": "org.junit.runner.Description",
+            "sourceMarked": false,
+            "targetMarked": false,
+            "weight": 2,
+            "sourceClassPath": "src/main/java/org/junit/internal/runners/MethodRoadie.java",
+            "targetClassPath": "src/main/java/org/junit/runner/Description.java",
+            "simpleSourceClassName": "MethodRoadie",
+            "simpleTargetClassName": "Description",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          }
+        ]
+      },
+      {
+        "sourcePackage": "org.junit.validator",
+        "targetPackage": "org.junit.runners.model",
+        "sourceMarked": false,
+        "targetMarked": false,
+        "weight": 31,
+        "sourcePackagePath": "src/main/java/org/junit/validator/",
+        "targetPackagePath": "src/main/java/org/junit/runners/model/",
+        "priority": 16,
+        "cycleCount": 2,
+        "effortRank": 31,
+        "classRelationshipsToBreakPackage": [
+          {
+            "sourceClass": "org.junit.validator.AnnotationsValidator$FieldValidator",
+            "targetClass": "org.junit.runners.model.TestClass",
+            "sourceMarked": false,
+            "targetMarked": true,
+            "weight": 2,
+            "sourceClassPath": "src/main/java/org/junit/validator/AnnotationsValidator.java",
+            "targetClassPath": "src/main/java/org/junit/runners/model/TestClass.java",
+            "simpleSourceClassName": "AnnotationsValidator$FieldValidator",
+            "simpleTargetClassName": "TestClass",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          },
+          {
+            "sourceClass": "org.junit.validator.AnnotationValidator",
+            "targetClass": "org.junit.runners.model.FrameworkMethod",
+            "sourceMarked": false,
+            "targetMarked": true,
+            "weight": 1,
+            "sourceClassPath": "src/main/java/org/junit/validator/AnnotationValidator.java",
+            "targetClassPath": "src/main/java/org/junit/runners/model/FrameworkMethod.java",
+            "simpleSourceClassName": "AnnotationValidator",
+            "simpleTargetClassName": "FrameworkMethod",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          },
+          {
+            "sourceClass": "org.junit.validator.AnnotationsValidator$MethodValidator",
+            "targetClass": "org.junit.runners.model.TestClass",
+            "sourceMarked": false,
+            "targetMarked": true,
+            "weight": 2,
+            "sourceClassPath": "src/main/java/org/junit/validator/AnnotationsValidator.java",
+            "targetClassPath": "src/main/java/org/junit/runners/model/TestClass.java",
+            "simpleSourceClassName": "AnnotationsValidator$MethodValidator",
+            "simpleTargetClassName": "TestClass",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          },
+          {
+            "sourceClass": "org.junit.validator.AnnotationsValidator",
+            "targetClass": "org.junit.runners.model.TestClass",
+            "sourceMarked": false,
+            "targetMarked": true,
+            "weight": 1,
+            "sourceClassPath": "src/main/java/org/junit/validator/AnnotationsValidator.java",
+            "targetClassPath": "src/main/java/org/junit/runners/model/TestClass.java",
+            "simpleSourceClassName": "AnnotationsValidator",
+            "simpleTargetClassName": "TestClass",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          },
+          {
+            "sourceClass": "org.junit.validator.AnnotationsValidator$MethodValidator",
+            "targetClass": "org.junit.runners.model.FrameworkMethod",
+            "sourceMarked": false,
+            "targetMarked": true,
+            "weight": 3,
+            "sourceClassPath": "src/main/java/org/junit/validator/AnnotationsValidator.java",
+            "targetClassPath": "src/main/java/org/junit/runners/model/FrameworkMethod.java",
+            "simpleSourceClassName": "AnnotationsValidator$MethodValidator",
+            "simpleTargetClassName": "FrameworkMethod",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          },
+          {
+            "sourceClass": "org.junit.validator.AnnotationsValidator$AnnotatableValidator",
+            "targetClass": "org.junit.runners.model.Annotatable",
+            "sourceMarked": false,
+            "targetMarked": false,
+            "weight": 7,
+            "sourceClassPath": "src/main/java/org/junit/validator/AnnotationsValidator.java",
+            "targetClassPath": "src/main/java/org/junit/runners/model/Annotatable.java",
+            "simpleSourceClassName": "AnnotationsValidator$AnnotatableValidator",
+            "simpleTargetClassName": "Annotatable",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          },
+          {
+            "sourceClass": "org.junit.validator.AnnotationValidator",
+            "targetClass": "org.junit.runners.model.FrameworkField",
+            "sourceMarked": false,
+            "targetMarked": false,
+            "weight": 1,
+            "sourceClassPath": "src/main/java/org/junit/validator/AnnotationValidator.java",
+            "targetClassPath": "src/main/java/org/junit/runners/model/FrameworkField.java",
+            "simpleSourceClassName": "AnnotationValidator",
+            "simpleTargetClassName": "FrameworkField",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          },
+          {
+            "sourceClass": "org.junit.validator.TestClassValidator",
+            "targetClass": "org.junit.runners.model.TestClass",
+            "sourceMarked": false,
+            "targetMarked": true,
+            "weight": 1,
+            "sourceClassPath": "src/main/java/org/junit/validator/TestClassValidator.java",
+            "targetClassPath": "src/main/java/org/junit/runners/model/TestClass.java",
+            "simpleSourceClassName": "TestClassValidator",
+            "simpleTargetClassName": "TestClass",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          },
+          {
+            "sourceClass": "org.junit.validator.AnnotationsValidator$FieldValidator",
+            "targetClass": "org.junit.runners.model.FrameworkField",
+            "sourceMarked": false,
+            "targetMarked": false,
+            "weight": 3,
+            "sourceClassPath": "src/main/java/org/junit/validator/AnnotationsValidator.java",
+            "targetClassPath": "src/main/java/org/junit/runners/model/FrameworkField.java",
+            "simpleSourceClassName": "AnnotationsValidator$FieldValidator",
+            "simpleTargetClassName": "FrameworkField",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          },
+          {
+            "sourceClass": "org.junit.validator.AnnotationsValidator$ClassValidator",
+            "targetClass": "org.junit.runners.model.TestClass",
+            "sourceMarked": false,
+            "targetMarked": true,
+            "weight": 4,
+            "sourceClassPath": "src/main/java/org/junit/validator/AnnotationsValidator.java",
+            "targetClassPath": "src/main/java/org/junit/runners/model/TestClass.java",
+            "simpleSourceClassName": "AnnotationsValidator$ClassValidator",
+            "simpleTargetClassName": "TestClass",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          },
+          {
+            "sourceClass": "org.junit.validator.AnnotationValidator",
+            "targetClass": "org.junit.runners.model.TestClass",
+            "sourceMarked": false,
+            "targetMarked": true,
+            "weight": 1,
+            "sourceClassPath": "src/main/java/org/junit/validator/AnnotationValidator.java",
+            "targetClassPath": "src/main/java/org/junit/runners/model/TestClass.java",
+            "simpleSourceClassName": "AnnotationValidator",
+            "simpleTargetClassName": "TestClass",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          },
+          {
+            "sourceClass": "org.junit.validator.PublicClassValidator",
+            "targetClass": "org.junit.runners.model.TestClass",
+            "sourceMarked": false,
+            "targetMarked": true,
+            "weight": 3,
+            "sourceClassPath": "src/main/java/org/junit/validator/PublicClassValidator.java",
+            "targetClassPath": "src/main/java/org/junit/runners/model/TestClass.java",
+            "simpleSourceClassName": "PublicClassValidator",
+            "simpleTargetClassName": "TestClass",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          },
+          {
+            "sourceClass": "org.junit.validator.AnnotationsValidator$AnnotatableValidator",
+            "targetClass": "org.junit.runners.model.TestClass",
+            "sourceMarked": false,
+            "targetMarked": true,
+            "weight": 2,
+            "sourceClassPath": "src/main/java/org/junit/validator/AnnotationsValidator.java",
+            "targetClassPath": "src/main/java/org/junit/runners/model/TestClass.java",
+            "simpleSourceClassName": "AnnotationsValidator$AnnotatableValidator",
+            "simpleTargetClassName": "TestClass",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          }
+        ]
+      },
+      {
+        "sourcePackage": "org.junit.experimental.theories",
+        "targetPackage": "org.junit.experimental.theories.internal",
+        "sourceMarked": true,
+        "targetMarked": false,
+        "weight": 13,
+        "sourcePackagePath": "src/main/java/org/junit/experimental/theories/",
+        "targetPackagePath": "src/main/java/org/junit/experimental/theories/internal/",
+        "priority": 17,
+        "cycleCount": 1,
+        "effortRank": 13,
+        "classRelationshipsToBreakPackage": [
+          {
+            "sourceClass": "org.junit.experimental.theories.FromDataPoints",
+            "targetClass": "org.junit.experimental.theories.internal.SpecificDataPointsSupplier",
+            "sourceMarked": false,
+            "targetMarked": true,
+            "weight": 1,
+            "sourceClassPath": "src/main/java/org/junit/experimental/theories/FromDataPoints.java",
+            "targetClassPath": "src/main/java/org/junit/experimental/theories/internal/SpecificDataPointsSupplier.java",
+            "simpleSourceClassName": "FromDataPoints",
+            "simpleTargetClassName": "SpecificDataPointsSupplier",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          },
+          {
+            "sourceClass": "org.junit.experimental.theories.Theories$TheoryAnchor",
+            "targetClass": "org.junit.experimental.theories.internal.Assignments",
+            "sourceMarked": false,
+            "targetMarked": false,
+            "weight": 11,
+            "sourceClassPath": "src/main/java/org/junit/experimental/theories/Theories.java",
+            "targetClassPath": "src/main/java/org/junit/experimental/theories/internal/Assignments.java",
+            "simpleSourceClassName": "Theories$TheoryAnchor",
+            "simpleTargetClassName": "Assignments",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          },
+          {
+            "sourceClass": "org.junit.experimental.theories.Theories$TheoryAnchor",
+            "targetClass": "org.junit.experimental.theories.internal.ParameterizedAssertionError",
+            "sourceMarked": false,
+            "targetMarked": false,
+            "weight": 1,
+            "sourceClassPath": "src/main/java/org/junit/experimental/theories/Theories.java",
+            "targetClassPath": "src/main/java/org/junit/experimental/theories/internal/ParameterizedAssertionError.java",
+            "simpleSourceClassName": "Theories$TheoryAnchor",
+            "simpleTargetClassName": "ParameterizedAssertionError",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          }
+        ]
+      },
+      {
+        "sourcePackage": "org.junit.runner.manipulation",
+        "targetPackage": "org.junit.runner",
+        "sourceMarked": false,
+        "targetMarked": false,
+        "weight": 44,
+        "sourcePackagePath": "src/main/java/org/junit/runner/manipulation/",
+        "targetPackagePath": "src/main/java/org/junit/runner/",
+        "priority": 18,
+        "cycleCount": 1,
+        "effortRank": 44,
+        "classRelationshipsToBreakPackage": [
+          {
+            "sourceClass": "org.junit.runner.manipulation.Ordering$1",
+            "targetClass": "org.junit.runner.Description",
+            "sourceMarked": false,
+            "targetMarked": false,
+            "weight": 1,
+            "sourceClassPath": "src/main/java/org/junit/runner/manipulation/Ordering.java",
+            "targetClassPath": "src/main/java/org/junit/runner/Description.java",
+            "simpleSourceClassName": "Ordering$1",
+            "simpleTargetClassName": "Description",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          },
+          {
+            "sourceClass": "org.junit.runner.manipulation.Ordering",
+            "targetClass": "org.junit.runner.Description",
+            "sourceMarked": false,
+            "targetMarked": false,
+            "weight": 7,
+            "sourceClassPath": "src/main/java/org/junit/runner/manipulation/Ordering.java",
+            "targetClassPath": "src/main/java/org/junit/runner/Description.java",
+            "simpleSourceClassName": "Ordering",
+            "simpleTargetClassName": "Description",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          },
+          {
+            "sourceClass": "org.junit.runner.manipulation.Sorter",
+            "targetClass": "org.junit.runner.Description",
+            "sourceMarked": true,
+            "targetMarked": false,
+            "weight": 11,
+            "sourceClassPath": "src/main/java/org/junit/runner/manipulation/Sorter.java",
+            "targetClassPath": "src/main/java/org/junit/runner/Description.java",
+            "simpleSourceClassName": "Sorter",
+            "simpleTargetClassName": "Description",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          },
+          {
+            "sourceClass": "org.junit.runner.manipulation.Filter",
+            "targetClass": "org.junit.runner.Description",
+            "sourceMarked": true,
+            "targetMarked": false,
+            "weight": 10,
+            "sourceClassPath": "src/main/java/org/junit/runner/manipulation/Filter.java",
+            "targetClassPath": "src/main/java/org/junit/runner/Description.java",
+            "simpleSourceClassName": "Filter",
+            "simpleTargetClassName": "Description",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          },
+          {
+            "sourceClass": "org.junit.runner.manipulation.Orderer",
+            "targetClass": "org.junit.runner.Description",
+            "sourceMarked": true,
+            "targetMarked": false,
+            "weight": 7,
+            "sourceClassPath": "src/main/java/org/junit/runner/manipulation/Orderer.java",
+            "targetClassPath": "src/main/java/org/junit/runner/Description.java",
+            "simpleSourceClassName": "Orderer",
+            "simpleTargetClassName": "Description",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          },
+          {
+            "sourceClass": "org.junit.runner.manipulation.Alphanumeric",
+            "targetClass": "org.junit.runner.Description",
+            "sourceMarked": false,
+            "targetMarked": false,
+            "weight": 5,
+            "sourceClassPath": "src/main/java/org/junit/runner/manipulation/Alphanumeric.java",
+            "targetClassPath": "src/main/java/org/junit/runner/Description.java",
+            "simpleSourceClassName": "Alphanumeric",
+            "simpleTargetClassName": "Description",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          },
+          {
+            "sourceClass": "org.junit.runner.manipulation.Ordering$Context",
+            "targetClass": "org.junit.runner.Description",
+            "sourceMarked": false,
+            "targetMarked": false,
+            "weight": 3,
+            "sourceClassPath": "src/main/java/org/junit/runner/manipulation/Ordering.java",
+            "targetClassPath": "src/main/java/org/junit/runner/Description.java",
+            "simpleSourceClassName": "Ordering$Context",
+            "simpleTargetClassName": "Description",
+            "priority": 0,
+            "cycleCount": 0,
+            "effortRank": 0,
+            "alsoRemovesPackageRelationship": false,
+            "packageCycleCount": 0
+          }
+        ]
+      }
+    ]
+  },
+  "hasDisharmonies": true,
+  "disharmonies": [
+    {
+      "type": "God Class",
+      "anchorId": "GOD",
+      "title": "God Classes",
+      "methodLevel": false,
+      "problem": "God Classes take on too much responsibility,",
+      "solution": "Extract related islands of functionality into separate classes.  Leave God classes that don't change often alone.",
+      "maxPriority": 2,
+      "chart": {
+        "canvasId": "chart_GOD",
+        "bubbles": [
+          {
+            "id": "BlockJUnit4ClassRunner.java",
+            "label": "BlockJUnit4ClassRunner.java",
+            "x": 1,
+            "y": 2,
+            "r": 24,
+            "priority": 1,
+            "effortRank": 1,
+            "changePronenessRank": 2,
+            "color": "rgba(235, 64, 52, 0.75)",
+            "borderColor": "rgb(235, 64, 52)",
+            "path": "src/main/java/org/junit/runners/BlockJUnit4ClassRunner.java"
+          },
+          {
+            "id": "ParentRunner.java",
+            "label": "ParentRunner.java",
+            "x": 2,
+            "y": 1,
+            "r": 6,
+            "priority": 2,
+            "effortRank": 2,
+            "changePronenessRank": 1,
+            "color": "rgba(39, 174, 96, 0.75)",
+            "borderColor": "rgb(39, 174, 96)",
+            "path": "src/main/java/org/junit/runners/ParentRunner.java"
+          }
+        ],
+        "xaxisLabel": "Effort to refactor",
+        "yaxisLabel": "Relative churn (impact)"
+      },
+      "table": {
+        "headers": [
+          "Class",
+          "Priority",
+          "Change Proneness Rank",
+          "Effort Rank",
+          "Most Recent Commit Date",
+          "Commit Count"
+        ],
+        "rows": [
+          {
+            "cells": [
+              {
+                "content": "BlockJUnit4ClassRunner.java",
+                "align": "left",
+                "path": "src/main/java/org/junit/runners/BlockJUnit4ClassRunner.java"
+              },
+              {
+                "content": "1",
+                "align": "right"
+              },
+              {
+                "content": "2",
+                "align": "right"
+              },
+              {
+                "content": "1",
+                "align": "right"
+              },
+              {
+                "content": "3/14/19, 9:06\u202fAM",
+                "align": "right"
+              },
+              {
+                "content": "104",
+                "align": "right"
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": "ParentRunner.java",
+                "align": "left",
+                "path": "src/main/java/org/junit/runners/ParentRunner.java"
+              },
+              {
+                "content": "2",
+                "align": "right"
+              },
+              {
+                "content": "1",
+                "align": "right"
+              },
+              {
+                "content": "2",
+                "align": "right"
+              },
+              {
+                "content": "11/27/19, 1:46\u202fPM",
+                "align": "right"
+              },
+              {
+                "content": "97",
+                "align": "right"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "type": "Data Class",
+      "anchorId": "DATA_CLASS",
+      "title": "Data Classes",
+      "methodLevel": false,
+      "problem": "Data Classes are dumb data holders that other classes rely on.",
+      "solution": "Move the data/variable(s) to the same class as the operation.",
+      "maxPriority": 2,
+      "chart": {
+        "canvasId": "chart_DATA_CLASS",
+        "bubbles": [
+          {
+            "id": "Failure.java",
+            "label": "Failure.java",
+            "x": 1,
+            "y": 1,
+            "r": 24,
+            "priority": 1,
+            "effortRank": 1,
+            "changePronenessRank": 1,
+            "color": "rgba(235, 64, 52, 0.75)",
+            "borderColor": "rgb(235, 64, 52)",
+            "path": "src/main/java/org/junit/runner/notification/Failure.java"
+          },
+          {
+            "id": "FrameworkField.java",
+            "label": "FrameworkField.java",
+            "x": 2,
+            "y": 2,
+            "r": 6,
+            "priority": 2,
+            "effortRank": 2,
+            "changePronenessRank": 2,
+            "color": "rgba(39, 174, 96, 0.75)",
+            "borderColor": "rgb(39, 174, 96)",
+            "path": "src/main/java/org/junit/runners/model/FrameworkField.java"
+          }
+        ],
+        "xaxisLabel": "Effort to refactor",
+        "yaxisLabel": "Relative churn (impact)"
+      },
+      "table": {
+        "headers": [
+          "Class",
+          "Priority",
+          "Change Proneness Rank",
+          "Effort Rank",
+          "Most Recent Commit Date",
+          "Commit Count"
+        ],
+        "rows": [
+          {
+            "cells": [
+              {
+                "content": "Failure.java",
+                "align": "left",
+                "path": "src/main/java/org/junit/runner/notification/Failure.java"
+              },
+              {
+                "content": "1",
+                "align": "right"
+              },
+              {
+                "content": "1",
+                "align": "right"
+              },
+              {
+                "content": "1",
+                "align": "right"
+              },
+              {
+                "content": "2/5/17, 6:35\u202fPM",
+                "align": "right"
+              },
+              {
+                "content": "13",
+                "align": "right"
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": "FrameworkField.java",
+                "align": "left",
+                "path": "src/main/java/org/junit/runners/model/FrameworkField.java"
+              },
+              {
+                "content": "2",
+                "align": "right"
+              },
+              {
+                "content": "2",
+                "align": "right"
+              },
+              {
+                "content": "2",
+                "align": "right"
+              },
+              {
+                "content": "1/4/21, 4:01\u202fPM",
+                "align": "right"
+              },
+              {
+                "content": "27",
+                "align": "right"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "type": "Refused Parent Bequest",
+      "anchorId": "RPB",
+      "title": "Refused Parent Bequest",
+      "methodLevel": false,
+      "problem": "Child class is large and often complex, but doesn't override or use many of the parent class's methods",
+      "solution": "Do one or more of the following:<br>- Extract the child class into a separate class.  Move the methods that are used from the parent class into the child class.<br>- Make unused protected members private in the parent class.<br>- If a parent class has multiple children, move methods not used by all descendants to another class.",
+      "maxPriority": 14,
+      "chart": {
+        "canvasId": "chart_RPB",
+        "bubbles": [
+          {
+            "id": "Theories.java",
+            "label": "Theories.java",
+            "x": 5,
+            "y": 12,
+            "r": 24,
+            "priority": 1,
+            "effortRank": 5,
+            "changePronenessRank": 12,
+            "color": "rgba(235, 64, 52, 0.75)",
+            "borderColor": "rgb(235, 64, 52)",
+            "path": "src/main/java/org/junit/experimental/theories/Theories.java"
+          },
+          {
+            "id": "BlockJUnit4ClassRunner.java",
+            "label": "BlockJUnit4ClassRunner.java",
+            "x": 8,
+            "y": 14,
+            "r": 23,
+            "priority": 2,
+            "effortRank": 8,
+            "changePronenessRank": 14,
+            "color": "rgba(220, 72, 55, 0.75)",
+            "borderColor": "rgb(220, 72, 55)",
+            "path": "src/main/java/org/junit/runners/BlockJUnit4ClassRunner.java"
+          },
+          {
+            "id": "ErrorReportingRunner.java",
+            "label": "ErrorReportingRunner.java",
+            "x": 1,
+            "y": 6,
+            "r": 21,
+            "priority": 3,
+            "effortRank": 1,
+            "changePronenessRank": 6,
+            "color": "rgba(205, 81, 59, 0.75)",
+            "borderColor": "rgb(205, 81, 59)",
+            "path": "src/main/java/org/junit/internal/runners/ErrorReportingRunner.java"
+          },
+          {
+            "id": "Categories.java",
+            "label": "Categories.java",
+            "x": 6,
+            "y": 11,
+            "r": 20,
+            "priority": 4,
+            "effortRank": 6,
+            "changePronenessRank": 11,
+            "color": "rgba(190, 89, 62, 0.75)",
+            "borderColor": "rgb(190, 89, 62)",
+            "path": "src/main/java/org/junit/experimental/categories/Categories.java"
+          },
+          {
+            "id": "Categories.java",
+            "label": "Categories.java",
+            "x": 9,
+            "y": 11,
+            "r": 18,
+            "priority": 5,
+            "effortRank": 9,
+            "changePronenessRank": 11,
+            "color": "rgba(175, 98, 66, 0.75)",
+            "borderColor": "rgb(175, 98, 66)",
+            "path": "src/main/java/org/junit/experimental/categories/Categories.java"
+          },
+          {
+            "id": "TestRunner.java",
+            "label": "TestRunner.java",
+            "x": 2,
+            "y": 2,
+            "r": 17,
+            "priority": 6,
+            "effortRank": 2,
+            "changePronenessRank": 2,
+            "color": "rgba(160, 106, 69, 0.75)",
+            "borderColor": "rgb(160, 106, 69)",
+            "path": "src/main/java/junit/textui/TestRunner.java"
+          },
+          {
+            "id": "JUnit4ClassRunner.java",
+            "label": "JUnit4ClassRunner.java",
+            "x": 3,
+            "y": 3,
+            "r": 16,
+            "priority": 7,
+            "effortRank": 3,
+            "changePronenessRank": 3,
+            "color": "rgba(145, 115, 72, 0.75)",
+            "borderColor": "rgb(145, 115, 72)",
+            "path": "src/main/java/org/junit/internal/runners/JUnit4ClassRunner.java"
+          },
+          {
+            "id": "JUnit38ClassRunner.java",
+            "label": "JUnit38ClassRunner.java",
+            "x": 4,
+            "y": 4,
+            "r": 14,
+            "priority": 8,
+            "effortRank": 4,
+            "changePronenessRank": 4,
+            "color": "rgba(129, 123, 76, 0.75)",
+            "borderColor": "rgb(129, 123, 76)",
+            "path": "src/main/java/org/junit/internal/runners/JUnit38ClassRunner.java"
+          },
+          {
+            "id": "ParentRunner.java",
+            "label": "ParentRunner.java",
+            "x": 13,
+            "y": 13,
+            "r": 13,
+            "priority": 9,
+            "effortRank": 13,
+            "changePronenessRank": 13,
+            "color": "rgba(114, 132, 79, 0.75)",
+            "borderColor": "rgb(114, 132, 79)",
+            "path": "src/main/java/org/junit/runners/ParentRunner.java"
+          },
+          {
+            "id": "FailOnTimeout.java",
+            "label": "FailOnTimeout.java",
+            "x": 10,
+            "y": 9,
+            "r": 12,
+            "priority": 10,
+            "effortRank": 10,
+            "changePronenessRank": 9,
+            "color": "rgba(99, 140, 82, 0.75)",
+            "borderColor": "rgb(99, 140, 82)",
+            "path": "src/main/java/org/junit/internal/runners/statements/FailOnTimeout.java"
+          },
+          {
+            "id": "BlockJUnit4ClassRunnerWithParameters.java",
+            "label": "BlockJUnit4ClassRunnerWithParameters.java",
+            "x": 7,
+            "y": 5,
+            "r": 10,
+            "priority": 11,
+            "effortRank": 7,
+            "changePronenessRank": 5,
+            "color": "rgba(84, 149, 86, 0.75)",
+            "borderColor": "rgb(84, 149, 86)",
+            "path": "src/main/java/org/junit/runners/parameterized/BlockJUnit4ClassRunnerWithParameters.java"
+          },
+          {
+            "id": "TemporaryFolder.java",
+            "label": "TemporaryFolder.java",
+            "x": 11,
+            "y": 8,
+            "r": 9,
+            "priority": 12,
+            "effortRank": 11,
+            "changePronenessRank": 8,
+            "color": "rgba(69, 157, 89, 0.75)",
+            "borderColor": "rgb(69, 157, 89)",
+            "path": "src/main/java/org/junit/rules/TemporaryFolder.java"
+          },
+          {
+            "id": "AllMembersSupplier.java",
+            "label": "AllMembersSupplier.java",
+            "x": 12,
+            "y": 7,
+            "r": 7,
+            "priority": 13,
+            "effortRank": 12,
+            "changePronenessRank": 7,
+            "color": "rgba(54, 166, 93, 0.75)",
+            "borderColor": "rgb(54, 166, 93)",
+            "path": "src/main/java/org/junit/experimental/theories/internal/AllMembersSupplier.java"
+          },
+          {
+            "id": "TestCase.java",
+            "label": "TestCase.java",
+            "x": 10,
+            "y": 1,
+            "r": 6,
+            "priority": 14,
+            "effortRank": 10,
+            "changePronenessRank": 1,
+            "color": "rgba(39, 174, 96, 0.75)",
+            "borderColor": "rgb(39, 174, 96)",
+            "path": "src/main/java/junit/framework/TestCase.java"
+          }
+        ],
+        "xaxisLabel": "Effort to refactor",
+        "yaxisLabel": "Relative churn (impact)"
+      },
+      "table": {
+        "headers": [
+          "Class",
+          "Priority",
+          "Change Proneness Rank",
+          "Effort Rank",
+          "Most Recent Commit Date",
+          "Commit Count"
+        ],
+        "rows": [
+          {
+            "cells": [
+              {
+                "content": "Theories.java",
+                "align": "left",
+                "path": "src/main/java/org/junit/experimental/theories/Theories.java"
+              },
+              {
+                "content": "1",
+                "align": "right"
+              },
+              {
+                "content": "12",
+                "align": "right"
+              },
+              {
+                "content": "5",
+                "align": "right"
+              },
+              {
+                "content": "5/25/17, 11:19\u202fAM",
+                "align": "right"
+              },
+              {
+                "content": "46",
+                "align": "right"
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": "BlockJUnit4ClassRunner.java",
+                "align": "left",
+                "path": "src/main/java/org/junit/runners/BlockJUnit4ClassRunner.java"
+              },
+              {
+                "content": "2",
+                "align": "right"
+              },
+              {
+                "content": "14",
+                "align": "right"
+              },
+              {
+                "content": "8",
+                "align": "right"
+              },
+              {
+                "content": "3/14/19, 9:06\u202fAM",
+                "align": "right"
+              },
+              {
+                "content": "104",
+                "align": "right"
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": "ErrorReportingRunner.java",
+                "align": "left",
+                "path": "src/main/java/org/junit/internal/runners/ErrorReportingRunner.java"
+              },
+              {
+                "content": "3",
+                "align": "right"
+              },
+              {
+                "content": "6",
+                "align": "right"
+              },
+              {
+                "content": "1",
+                "align": "right"
+              },
+              {
+                "content": "10/10/22, 3:22\u202fPM",
+                "align": "right"
+              },
+              {
+                "content": "28",
+                "align": "right"
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": "Categories.java",
+                "align": "left",
+                "path": "src/main/java/org/junit/experimental/categories/Categories.java"
+              },
+              {
+                "content": "4",
+                "align": "right"
+              },
+              {
+                "content": "11",
+                "align": "right"
+              },
+              {
+                "content": "6",
+                "align": "right"
+              },
+              {
+                "content": "1/9/17, 9:18\u202fPM",
+                "align": "right"
+              },
+              {
+                "content": "39",
+                "align": "right"
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": "Categories.java",
+                "align": "left",
+                "path": "src/main/java/org/junit/experimental/categories/Categories.java"
+              },
+              {
+                "content": "5",
+                "align": "right"
+              },
+              {
+                "content": "11",
+                "align": "right"
+              },
+              {
+                "content": "9",
+                "align": "right"
+              },
+              {
+                "content": "1/9/17, 9:18\u202fPM",
+                "align": "right"
+              },
+              {
+                "content": "39",
+                "align": "right"
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": "TestRunner.java",
+                "align": "left",
+                "path": "src/main/java/junit/textui/TestRunner.java"
+              },
+              {
+                "content": "6",
+                "align": "right"
+              },
+              {
+                "content": "2",
+                "align": "right"
+              },
+              {
+                "content": "2",
+                "align": "right"
+              },
+              {
+                "content": "3/29/15, 4:17\u202fPM",
+                "align": "right"
+              },
+              {
+                "content": "6",
+                "align": "right"
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": "JUnit4ClassRunner.java",
+                "align": "left",
+                "path": "src/main/java/org/junit/internal/runners/JUnit4ClassRunner.java"
+              },
+              {
+                "content": "7",
+                "align": "right"
+              },
+              {
+                "content": "3",
+                "align": "right"
+              },
+              {
+                "content": "3",
+                "align": "right"
+              },
+              {
+                "content": "9/12/14, 3:18\u202fPM",
+                "align": "right"
+              },
+              {
+                "content": "16",
+                "align": "right"
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": "JUnit38ClassRunner.java",
+                "align": "left",
+                "path": "src/main/java/org/junit/internal/runners/JUnit38ClassRunner.java"
+              },
+              {
+                "content": "8",
+                "align": "right"
+              },
+              {
+                "content": "4",
+                "align": "right"
+              },
+              {
+                "content": "4",
+                "align": "right"
+              },
+              {
+                "content": "7/30/18, 12:07\u202fPM",
+                "align": "right"
+              },
+              {
+                "content": "23",
+                "align": "right"
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": "ParentRunner.java",
+                "align": "left",
+                "path": "src/main/java/org/junit/runners/ParentRunner.java"
+              },
+              {
+                "content": "9",
+                "align": "right"
+              },
+              {
+                "content": "13",
+                "align": "right"
+              },
+              {
+                "content": "13",
+                "align": "right"
+              },
+              {
+                "content": "11/27/19, 1:46\u202fPM",
+                "align": "right"
+              },
+              {
+                "content": "97",
+                "align": "right"
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": "FailOnTimeout.java",
+                "align": "left",
+                "path": "src/main/java/org/junit/internal/runners/statements/FailOnTimeout.java"
+              },
+              {
+                "content": "10",
+                "align": "right"
+              },
+              {
+                "content": "9",
+                "align": "right"
+              },
+              {
+                "content": "10",
+                "align": "right"
+              },
+              {
+                "content": "12/30/21, 2:49\u202fAM",
+                "align": "right"
+              },
+              {
+                "content": "40",
+                "align": "right"
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": "BlockJUnit4ClassRunnerWithParameters.java",
+                "align": "left",
+                "path": "src/main/java/org/junit/runners/parameterized/BlockJUnit4ClassRunnerWithParameters.java"
+              },
+              {
+                "content": "11",
+                "align": "right"
+              },
+              {
+                "content": "5",
+                "align": "right"
+              },
+              {
+                "content": "7",
+                "align": "right"
+              },
+              {
+                "content": "6/23/17, 4:16\u202fPM",
+                "align": "right"
+              },
+              {
+                "content": "7",
+                "align": "right"
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": "TemporaryFolder.java",
+                "align": "left",
+                "path": "src/main/java/org/junit/rules/TemporaryFolder.java"
+              },
+              {
+                "content": "12",
+                "align": "right"
+              },
+              {
+                "content": "8",
+                "align": "right"
+              },
+              {
+                "content": "11",
+                "align": "right"
+              },
+              {
+                "content": "10/11/20, 9:56\u202fAM",
+                "align": "right"
+              },
+              {
+                "content": "34",
+                "align": "right"
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": "AllMembersSupplier.java",
+                "align": "left",
+                "path": "src/main/java/org/junit/experimental/theories/internal/AllMembersSupplier.java"
+              },
+              {
+                "content": "13",
+                "align": "right"
+              },
+              {
+                "content": "7",
+                "align": "right"
+              },
+              {
+                "content": "12",
+                "align": "right"
+              },
+              {
+                "content": "6/18/14, 1:42\u202fAM",
+                "align": "right"
+              },
+              {
+                "content": "33",
+                "align": "right"
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": "TestCase.java",
+                "align": "left",
+                "path": "src/main/java/junit/framework/TestCase.java"
+              },
+              {
+                "content": "14",
+                "align": "right"
+              },
+              {
+                "content": "1",
+                "align": "right"
+              },
+              {
+                "content": "10",
+                "align": "right"
+              },
+              {
+                "content": "10/28/16, 3:01\u202fPM",
+                "align": "right"
+              },
+              {
+                "content": "5",
+                "align": "right"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "type": "Intensive Coupling",
+      "anchorId": "INTENSIVE_COUPLING",
+      "title": "Intensive Coupling",
+      "methodLevel": true,
+      "problem": "Method calls too many methods from a few unrelated classes (often in a separate package).",
+      "solution": "Move the calling method to a class more closely related to the other classes that the original method can call.",
+      "maxPriority": 4,
+      "chart": {
+        "canvasId": "chart_INTENSIVE_COUPLING",
+        "bubbles": [
+          {
+            "id": "ParentRunner.java",
+            "label": "ParentRunner.java",
+            "x": 1,
+            "y": 4,
+            "r": 24,
+            "priority": 1,
+            "effortRank": 1,
+            "changePronenessRank": 4,
+            "color": "rgba(235, 64, 52, 0.75)",
+            "borderColor": "rgb(235, 64, 52)",
+            "path": "src/main/java/org/junit/runners/ParentRunner.java"
+          },
+          {
+            "id": "Theories.java",
+            "label": "Theories.java",
+            "x": 2,
+            "y": 3,
+            "r": 18,
+            "priority": 2,
+            "effortRank": 2,
+            "changePronenessRank": 3,
+            "color": "rgba(170, 101, 67, 0.75)",
+            "borderColor": "rgb(170, 101, 67)",
+            "path": "src/main/java/org/junit/experimental/theories/Theories.java"
+          },
+          {
+            "id": "MethodValidator.java",
+            "label": "MethodValidator.java",
+            "x": 1,
+            "y": 1,
+            "r": 12,
+            "priority": 3,
+            "effortRank": 1,
+            "changePronenessRank": 1,
+            "color": "rgba(104, 137, 81, 0.75)",
+            "borderColor": "rgb(104, 137, 81)",
+            "path": "src/main/java/org/junit/internal/runners/MethodValidator.java"
+          },
+          {
+            "id": "AllMembersSupplier.java",
+            "label": "AllMembersSupplier.java",
+            "x": 3,
+            "y": 2,
+            "r": 6,
+            "priority": 4,
+            "effortRank": 3,
+            "changePronenessRank": 2,
+            "color": "rgba(39, 174, 96, 0.75)",
+            "borderColor": "rgb(39, 174, 96)",
+            "path": "src/main/java/org/junit/experimental/theories/internal/AllMembersSupplier.java"
+          }
+        ],
+        "xaxisLabel": "Effort to refactor",
+        "yaxisLabel": "Relative churn (impact)"
+      },
+      "table": {
+        "headers": [
+          "Class",
+          "Method",
+          "Priority",
+          "Change Proneness Rank",
+          "Effort Rank",
+          "Most Recent Commit Date",
+          "Commit Count"
+        ],
+        "rows": [
+          {
+            "cells": [
+              {
+                "content": "ParentRunner.java",
+                "align": "left",
+                "path": "src/main/java/org/junit/runners/ParentRunner.java"
+              },
+              {
+                "content": "order(Orderer)",
+                "align": "left"
+              },
+              {
+                "content": "1",
+                "align": "right"
+              },
+              {
+                "content": "4",
+                "align": "right"
+              },
+              {
+                "content": "1",
+                "align": "right"
+              },
+              {
+                "content": "11/27/19, 1:46\u202fPM",
+                "align": "right"
+              },
+              {
+                "content": "97",
+                "align": "right"
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": "Theories.java",
+                "align": "left",
+                "path": "src/main/java/org/junit/experimental/theories/Theories.java"
+              },
+              {
+                "content": "validateTestMethods(List&lt;Throwable&gt;)",
+                "align": "left"
+              },
+              {
+                "content": "2",
+                "align": "right"
+              },
+              {
+                "content": "3",
+                "align": "right"
+              },
+              {
+                "content": "2",
+                "align": "right"
+              },
+              {
+                "content": "5/25/17, 11:19\u202fAM",
+                "align": "right"
+              },
+              {
+                "content": "46",
+                "align": "right"
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": "MethodValidator.java",
+                "align": "left",
+                "path": "src/main/java/org/junit/internal/runners/MethodValidator.java"
+              },
+              {
+                "content": "validateTestMethods(Class&lt;?&gt;,boolean)",
+                "align": "left"
+              },
+              {
+                "content": "3",
+                "align": "right"
+              },
+              {
+                "content": "1",
+                "align": "right"
+              },
+              {
+                "content": "1",
+                "align": "right"
+              },
+              {
+                "content": "6/4/15, 11:26\u202fPM",
+                "align": "right"
+              },
+              {
+                "content": "6",
+                "align": "right"
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": "AllMembersSupplier.java",
+                "align": "left",
+                "path": "src/main/java/org/junit/experimental/theories/internal/AllMembersSupplier.java"
+              },
+              {
+                "content": "addMultiPointMethods(ParameterSignature,List&lt;PotentialAssignment&gt;)",
+                "align": "left"
+              },
+              {
+                "content": "4",
+                "align": "right"
+              },
+              {
+                "content": "2",
+                "align": "right"
+              },
+              {
+                "content": "3",
+                "align": "right"
+              },
+              {
+                "content": "6/18/14, 1:42\u202fAM",
+                "align": "right"
+              },
+              {
+                "content": "33",
+                "align": "right"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "type": "Dispersed Coupling",
+      "anchorId": "DISPERSED_COUPLING",
+      "title": "Dispersed Coupling",
+      "methodLevel": true,
+      "problem": "Method calls a few methods in many classes",
+      "solution": "Reduce the size of the calling method.  Extract methods from the calling method into the target classes.",
+      "maxPriority": 14,
+      "chart": {
+        "canvasId": "chart_DISPERSED_COUPLING",
+        "bubbles": [
+          {
+            "id": "ParentRunner.java",
+            "label": "ParentRunner.java",
+            "x": 1,
+            "y": 14,
+            "r": 24,
+            "priority": 1,
+            "effortRank": 1,
+            "changePronenessRank": 14,
+            "color": "rgba(235, 64, 52, 0.75)",
+            "borderColor": "rgb(235, 64, 52)",
+            "path": "src/main/java/org/junit/runners/ParentRunner.java"
+          },
+          {
+            "id": "Theories.java",
+            "label": "Theories.java",
+            "x": 3,
+            "y": 12,
+            "r": 23,
+            "priority": 2,
+            "effortRank": 3,
+            "changePronenessRank": 12,
+            "color": "rgba(220, 72, 55, 0.75)",
+            "borderColor": "rgb(220, 72, 55)",
+            "path": "src/main/java/org/junit/experimental/theories/Theories.java"
+          },
+          {
+            "id": "Theories.java",
+            "label": "Theories.java",
+            "x": 3,
+            "y": 12,
+            "r": 21,
+            "priority": 3,
+            "effortRank": 3,
+            "changePronenessRank": 12,
+            "color": "rgba(205, 81, 59, 0.75)",
+            "borderColor": "rgb(205, 81, 59)",
+            "path": "src/main/java/org/junit/experimental/theories/Theories.java"
+          },
+          {
+            "id": "Throwables.java",
+            "label": "Throwables.java",
+            "x": 2,
+            "y": 9,
+            "r": 20,
+            "priority": 4,
+            "effortRank": 2,
+            "changePronenessRank": 9,
+            "color": "rgba(190, 89, 62, 0.75)",
+            "borderColor": "rgb(190, 89, 62)",
+            "path": "src/main/java/org/junit/internal/Throwables.java"
+          },
+          {
+            "id": "Assert.java",
+            "label": "Assert.java",
+            "x": 6,
+            "y": 13,
+            "r": 18,
+            "priority": 5,
+            "effortRank": 6,
+            "changePronenessRank": 13,
+            "color": "rgba(175, 98, 66, 0.75)",
+            "borderColor": "rgb(175, 98, 66)",
+            "path": "src/main/java/org/junit/Assert.java"
+          },
+          {
+            "id": "Throwables.java",
+            "label": "Throwables.java",
+            "x": 3,
+            "y": 9,
+            "r": 17,
+            "priority": 6,
+            "effortRank": 3,
+            "changePronenessRank": 9,
+            "color": "rgba(160, 106, 69, 0.75)",
+            "borderColor": "rgb(160, 106, 69)",
+            "path": "src/main/java/org/junit/internal/Throwables.java"
+          },
+          {
+            "id": "TestRunner.java",
+            "label": "TestRunner.java",
+            "x": 1,
+            "y": 5,
+            "r": 16,
+            "priority": 7,
+            "effortRank": 1,
+            "changePronenessRank": 5,
+            "color": "rgba(145, 115, 72, 0.75)",
+            "borderColor": "rgb(145, 115, 72)",
+            "path": "src/main/java/junit/textui/TestRunner.java"
+          },
+          {
+            "id": "BlockJUnit4ClassRunnerWithParameters.java",
+            "label": "BlockJUnit4ClassRunnerWithParameters.java",
+            "x": 7,
+            "y": 10,
+            "r": 14,
+            "priority": 8,
+            "effortRank": 7,
+            "changePronenessRank": 10,
+            "color": "rgba(129, 123, 76, 0.75)",
+            "borderColor": "rgb(129, 123, 76)",
+            "path": "src/main/java/org/junit/runners/parameterized/BlockJUnit4ClassRunnerWithParameters.java"
+          },
+          {
+            "id": "BaseTestRunner.java",
+            "label": "BaseTestRunner.java",
+            "x": 4,
+            "y": 6,
+            "r": 13,
+            "priority": 9,
+            "effortRank": 4,
+            "changePronenessRank": 6,
+            "color": "rgba(114, 132, 79, 0.75)",
+            "borderColor": "rgb(114, 132, 79)",
+            "path": "src/main/java/junit/runner/BaseTestRunner.java"
+          },
+          {
+            "id": "JUnit38ClassRunner.java",
+            "label": "JUnit38ClassRunner.java",
+            "x": 5,
+            "y": 7,
+            "r": 12,
+            "priority": 10,
+            "effortRank": 5,
+            "changePronenessRank": 7,
+            "color": "rgba(99, 140, 82, 0.75)",
+            "borderColor": "rgb(99, 140, 82)",
+            "path": "src/main/java/org/junit/internal/runners/JUnit38ClassRunner.java"
+          },
+          {
+            "id": "SpecificDataPointsSupplier.java",
+            "label": "SpecificDataPointsSupplier.java",
+            "x": 5,
+            "y": 4,
+            "r": 10,
+            "priority": 11,
+            "effortRank": 5,
+            "changePronenessRank": 4,
+            "color": "rgba(84, 149, 86, 0.75)",
+            "borderColor": "rgb(84, 149, 86)",
+            "path": "src/main/java/org/junit/experimental/theories/internal/SpecificDataPointsSupplier.java"
+          },
+          {
+            "id": "SpecificDataPointsSupplier.java",
+            "label": "SpecificDataPointsSupplier.java",
+            "x": 5,
+            "y": 4,
+            "r": 9,
+            "priority": 12,
+            "effortRank": 5,
+            "changePronenessRank": 4,
+            "color": "rgba(69, 157, 89, 0.75)",
+            "borderColor": "rgb(69, 157, 89)",
+            "path": "src/main/java/org/junit/experimental/theories/internal/SpecificDataPointsSupplier.java"
+          },
+          {
+            "id": "SpecificDataPointsSupplier.java",
+            "label": "SpecificDataPointsSupplier.java",
+            "x": 5,
+            "y": 4,
+            "r": 7,
+            "priority": 13,
+            "effortRank": 5,
+            "changePronenessRank": 4,
+            "color": "rgba(54, 166, 93, 0.75)",
+            "borderColor": "rgb(54, 166, 93)",
+            "path": "src/main/java/org/junit/experimental/theories/internal/SpecificDataPointsSupplier.java"
+          },
+          {
+            "id": "SpecificDataPointsSupplier.java",
+            "label": "SpecificDataPointsSupplier.java",
+            "x": 5,
+            "y": 4,
+            "r": 6,
+            "priority": 14,
+            "effortRank": 5,
+            "changePronenessRank": 4,
+            "color": "rgba(39, 174, 96, 0.75)",
+            "borderColor": "rgb(39, 174, 96)",
+            "path": "src/main/java/org/junit/experimental/theories/internal/SpecificDataPointsSupplier.java"
+          }
+        ],
+        "xaxisLabel": "Effort to refactor",
+        "yaxisLabel": "Relative churn (impact)"
+      },
+      "table": {
+        "headers": [
+          "Class",
+          "Method",
+          "Priority",
+          "Change Proneness Rank",
+          "Effort Rank",
+          "Most Recent Commit Date",
+          "Commit Count"
+        ],
+        "rows": [
+          {
+            "cells": [
+              {
+                "content": "ParentRunner.java",
+                "align": "left",
+                "path": "src/main/java/org/junit/runners/ParentRunner.java"
+              },
+              {
+                "content": "filter(Filter)",
+                "align": "left"
+              },
+              {
+                "content": "1",
+                "align": "right"
+              },
+              {
+                "content": "14",
+                "align": "right"
+              },
+              {
+                "content": "1",
+                "align": "right"
+              },
+              {
+                "content": "11/27/19, 1:46\u202fPM",
+                "align": "right"
+              },
+              {
+                "content": "97",
+                "align": "right"
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": "Theories.java",
+                "align": "left",
+                "path": "src/main/java/org/junit/experimental/theories/Theories.java"
+              },
+              {
+                "content": "validateDataPointMethods(List&lt;Throwable&gt;)",
+                "align": "left"
+              },
+              {
+                "content": "2",
+                "align": "right"
+              },
+              {
+                "content": "12",
+                "align": "right"
+              },
+              {
+                "content": "3",
+                "align": "right"
+              },
+              {
+                "content": "5/25/17, 11:19\u202fAM",
+                "align": "right"
+              },
+              {
+                "content": "46",
+                "align": "right"
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": "Theories.java",
+                "align": "left",
+                "path": "src/main/java/org/junit/experimental/theories/Theories.java"
+              },
+              {
+                "content": "validateDataPointFields(List&lt;Throwable&gt;)",
+                "align": "left"
+              },
+              {
+                "content": "3",
+                "align": "right"
+              },
+              {
+                "content": "12",
+                "align": "right"
+              },
+              {
+                "content": "3",
+                "align": "right"
+              },
+              {
+                "content": "5/25/17, 11:19\u202fAM",
+                "align": "right"
+              },
+              {
+                "content": "46",
+                "align": "right"
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": "Throwables.java",
+                "align": "left",
+                "path": "src/main/java/org/junit/internal/Throwables.java"
+              },
+              {
+                "content": "getCauseStackTraceLines(Throwable)",
+                "align": "left"
+              },
+              {
+                "content": "4",
+                "align": "right"
+              },
+              {
+                "content": "9",
+                "align": "right"
+              },
+              {
+                "content": "2",
+                "align": "right"
+              },
+              {
+                "content": "1/4/21, 4:25\u202fPM",
+                "align": "right"
+              },
+              {
+                "content": "8",
+                "align": "right"
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": "Assert.java",
+                "align": "left",
+                "path": "src/main/java/org/junit/Assert.java"
+              },
+              {
+                "content": "assertThrows(String,Class&lt;T&gt;,ThrowingRunnable)",
+                "align": "left"
+              },
+              {
+                "content": "5",
+                "align": "right"
+              },
+              {
+                "content": "13",
+                "align": "right"
+              },
+              {
+                "content": "6",
+                "align": "right"
+              },
+              {
+                "content": "9/6/20, 12:53\u202fPM",
+                "align": "right"
+              },
+              {
+                "content": "62",
+                "align": "right"
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": "Throwables.java",
+                "align": "left",
+                "path": "src/main/java/org/junit/internal/Throwables.java"
+              },
+              {
+                "content": "getTrimmedStackTraceLines(Throwable)",
+                "align": "left"
+              },
+              {
+                "content": "6",
+                "align": "right"
+              },
+              {
+                "content": "9",
+                "align": "right"
+              },
+              {
+                "content": "3",
+                "align": "right"
+              },
+              {
+                "content": "1/4/21, 4:25\u202fPM",
+                "align": "right"
+              },
+              {
+                "content": "8",
+                "align": "right"
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": "TestRunner.java",
+                "align": "left",
+                "path": "src/main/java/junit/textui/TestRunner.java"
+              },
+              {
+                "content": "start(String[])",
+                "align": "left"
+              },
+              {
+                "content": "7",
+                "align": "right"
+              },
+              {
+                "content": "5",
+                "align": "right"
+              },
+              {
+                "content": "1",
+                "align": "right"
+              },
+              {
+                "content": "3/29/15, 4:17\u202fPM",
+                "align": "right"
+              },
+              {
+                "content": "6",
+                "align": "right"
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": "BlockJUnit4ClassRunnerWithParameters.java",
+                "align": "left",
+                "path": "src/main/java/org/junit/runners/parameterized/BlockJUnit4ClassRunnerWithParameters.java"
+              },
+              {
+                "content": "createTestUsingFieldInjection()",
+                "align": "left"
+              },
+              {
+                "content": "8",
+                "align": "right"
+              },
+              {
+                "content": "10",
+                "align": "right"
+              },
+              {
+                "content": "7",
+                "align": "right"
+              },
+              {
+                "content": "6/23/17, 4:16\u202fPM",
+                "align": "right"
+              },
+              {
+                "content": "7",
+                "align": "right"
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": "BaseTestRunner.java",
+                "align": "left",
+                "path": "src/main/java/junit/runner/BaseTestRunner.java"
+              },
+              {
+                "content": "getTest(String)",
+                "align": "left"
+              },
+              {
+                "content": "9",
+                "align": "right"
+              },
+              {
+                "content": "6",
+                "align": "right"
+              },
+              {
+                "content": "4",
+                "align": "right"
+              },
+              {
+                "content": "10/14/16, 5:19\u202fPM",
+                "align": "right"
+              },
+              {
+                "content": "9",
+                "align": "right"
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": "JUnit38ClassRunner.java",
+                "align": "left",
+                "path": "src/main/java/org/junit/internal/runners/JUnit38ClassRunner.java"
+              },
+              {
+                "content": "makeDescription(Test)",
+                "align": "left"
+              },
+              {
+                "content": "10",
+                "align": "right"
+              },
+              {
+                "content": "7",
+                "align": "right"
+              },
+              {
+                "content": "5",
+                "align": "right"
+              },
+              {
+                "content": "7/30/18, 12:07\u202fPM",
+                "align": "right"
+              },
+              {
+                "content": "23",
+                "align": "right"
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": "SpecificDataPointsSupplier.java",
+                "align": "left",
+                "path": "src/main/java/org/junit/experimental/theories/internal/SpecificDataPointsSupplier.java"
+              },
+              {
+                "content": "getDataPointsMethods(ParameterSignature)",
+                "align": "left"
+              },
+              {
+                "content": "11",
+                "align": "right"
+              },
+              {
+                "content": "4",
+                "align": "right"
+              },
+              {
+                "content": "5",
+                "align": "right"
+              },
+              {
+                "content": "3/16/13, 7:30\u202fPM",
+                "align": "right"
+              },
+              {
+                "content": "2",
+                "align": "right"
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": "SpecificDataPointsSupplier.java",
+                "align": "left",
+                "path": "src/main/java/org/junit/experimental/theories/internal/SpecificDataPointsSupplier.java"
+              },
+              {
+                "content": "getDataPointsFields(ParameterSignature)",
+                "align": "left"
+              },
+              {
+                "content": "12",
+                "align": "right"
+              },
+              {
+                "content": "4",
+                "align": "right"
+              },
+              {
+                "content": "5",
+                "align": "right"
+              },
+              {
+                "content": "3/16/13, 7:30\u202fPM",
+                "align": "right"
+              },
+              {
+                "content": "2",
+                "align": "right"
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": "SpecificDataPointsSupplier.java",
+                "align": "left",
+                "path": "src/main/java/org/junit/experimental/theories/internal/SpecificDataPointsSupplier.java"
+              },
+              {
+                "content": "getSingleDataPointMethods(ParameterSignature)",
+                "align": "left"
+              },
+              {
+                "content": "13",
+                "align": "right"
+              },
+              {
+                "content": "4",
+                "align": "right"
+              },
+              {
+                "content": "5",
+                "align": "right"
+              },
+              {
+                "content": "3/16/13, 7:30\u202fPM",
+                "align": "right"
+              },
+              {
+                "content": "2",
+                "align": "right"
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": "SpecificDataPointsSupplier.java",
+                "align": "left",
+                "path": "src/main/java/org/junit/experimental/theories/internal/SpecificDataPointsSupplier.java"
+              },
+              {
+                "content": "getSingleDataPointFields(ParameterSignature)",
+                "align": "left"
+              },
+              {
+                "content": "14",
+                "align": "right"
+              },
+              {
+                "content": "4",
+                "align": "right"
+              },
+              {
+                "content": "5",
+                "align": "right"
+              },
+              {
+                "content": "3/16/13, 7:30\u202fPM",
+                "align": "right"
+              },
+              {
+                "content": "2",
+                "align": "right"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "type": "Shotgun Surgery",
+      "anchorId": "SHOTGUN_SURGERY",
+      "title": "Shotgun Surgery",
+      "methodLevel": true,
+      "problem": "Method is called by many methods in many classes",
+      "solution": "- Move the method closer to the calling classes (move the behavior closer to the data) if it is small.<br>- If it is a large method, treat it as a Brain Method and decompose it into two or more smaller methods.",
+      "maxPriority": 3,
+      "chart": {
+        "canvasId": "chart_SHOTGUN_SURGERY",
+        "bubbles": [
+          {
+            "id": "FrameworkMethod.java",
+            "label": "FrameworkMethod.java",
+            "x": 1,
+            "y": 2,
+            "r": 24,
+            "priority": 1,
+            "effortRank": 1,
+            "changePronenessRank": 2,
+            "color": "rgba(235, 64, 52, 0.75)",
+            "borderColor": "rgb(235, 64, 52)",
+            "path": "src/main/java/org/junit/runners/model/FrameworkMethod.java"
+          },
+          {
+            "id": "TestClass.java",
+            "label": "TestClass.java",
+            "x": 2,
+            "y": 3,
+            "r": 15,
+            "priority": 2,
+            "effortRank": 2,
+            "changePronenessRank": 3,
+            "color": "rgba(137, 119, 74, 0.75)",
+            "borderColor": "rgb(137, 119, 74)",
+            "path": "src/main/java/org/junit/runners/model/TestClass.java"
+          },
+          {
+            "id": "Statement.java",
+            "label": "Statement.java",
+            "x": 3,
+            "y": 1,
+            "r": 6,
+            "priority": 3,
+            "effortRank": 3,
+            "changePronenessRank": 1,
+            "color": "rgba(39, 174, 96, 0.75)",
+            "borderColor": "rgb(39, 174, 96)",
+            "path": "src/main/java/org/junit/runners/model/Statement.java"
+          }
+        ],
+        "xaxisLabel": "Effort to refactor",
+        "yaxisLabel": "Relative churn (impact)"
+      },
+      "table": {
+        "headers": [
+          "Class",
+          "Method",
+          "Priority",
+          "Change Proneness Rank",
+          "Effort Rank",
+          "Most Recent Commit Date",
+          "Commit Count"
+        ],
+        "rows": [
+          {
+            "cells": [
+              {
+                "content": "FrameworkMethod.java",
+                "align": "left",
+                "path": "src/main/java/org/junit/runners/model/FrameworkMethod.java"
+              },
+              {
+                "content": "getName()",
+                "align": "left"
+              },
+              {
+                "content": "1",
+                "align": "right"
+              },
+              {
+                "content": "2",
+                "align": "right"
+              },
+              {
+                "content": "1",
+                "align": "right"
+              },
+              {
+                "content": "4/3/18, 9:57\u202fPM",
+                "align": "right"
+              },
+              {
+                "content": "34",
+                "align": "right"
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": "TestClass.java",
+                "align": "left",
+                "path": "src/main/java/org/junit/runners/model/TestClass.java"
+              },
+              {
+                "content": "getAnnotatedMethods(Class&lt;?&gt;)",
+                "align": "left"
+              },
+              {
+                "content": "2",
+                "align": "right"
+              },
+              {
+                "content": "3",
+                "align": "right"
+              },
+              {
+                "content": "2",
+                "align": "right"
+              },
+              {
+                "content": "4/13/19, 5:49\u202fPM",
+                "align": "right"
+              },
+              {
+                "content": "51",
+                "align": "right"
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": "Statement.java",
+                "align": "left",
+                "path": "src/main/java/org/junit/runners/model/Statement.java"
+              },
+              {
+                "content": "evaluate()",
+                "align": "left"
+              },
+              {
+                "content": "3",
+                "align": "right"
+              },
+              {
+                "content": "1",
+                "align": "right"
+              },
+              {
+                "content": "3",
+                "align": "right"
+              },
+              {
+                "content": "10/4/12, 3:16\u202fPM",
+                "align": "right"
+              },
+              {
+                "content": "5",
+                "align": "right"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "classCycles": {
+    "hasCycles": true,
+    "summary": [
+      {
+        "cycleName": "JUnitCore",
+        "priority": 1,
+        "classCount": 9,
+        "relationshipCount": 16
+      },
+      {
+        "cycleName": "InexactComparisonCriteria",
+        "priority": 2,
+        "classCount": 7,
+        "relationshipCount": 13
+      },
+      {
+        "cycleName": "RuleMemberValidator$MethodMustBeARule",
+        "priority": 3,
+        "classCount": 7,
+        "relationshipCount": 12
+      },
+      {
+        "cycleName": "Ordering",
+        "priority": 4,
+        "classCount": 6,
+        "relationshipCount": 11
+      },
+      {
+        "cycleName": "Throwables",
+        "priority": 5,
+        "classCount": 6,
+        "relationshipCount": 10
+      },
+      {
+        "cycleName": "ComparisonFailure",
+        "priority": 6,
+        "classCount": 6,
+        "relationshipCount": 11
+      },
+      {
+        "cycleName": "TestResult",
+        "priority": 7,
+        "classCount": 5,
+        "relationshipCount": 9
+      },
+      {
+        "cycleName": "Result",
+        "priority": 8,
+        "classCount": 4,
+        "relationshipCount": 7
+      },
+      {
+        "cycleName": "FilterFactories",
+        "priority": 9,
+        "classCount": 4,
+        "relationshipCount": 6
+      },
+      {
+        "cycleName": "ComparisonFailure$ComparisonCompactor",
+        "priority": 10,
+        "classCount": 4,
+        "relationshipCount": 5
+      },
+      {
+        "cycleName": "MaxHistory",
+        "priority": 11,
+        "classCount": 3,
+        "relationshipCount": 4
+      },
+      {
+        "cycleName": "ComparisonCompactor",
+        "priority": 12,
+        "classCount": 3,
+        "relationshipCount": 3
+      },
+      {
+        "cycleName": "Filterable",
+        "priority": 13,
+        "classCount": 3,
+        "relationshipCount": 4
+      },
+      {
+        "cycleName": "Timeout$Builder",
+        "priority": 14,
+        "classCount": 2,
+        "relationshipCount": 2
+      },
+      {
+        "cycleName": "Stopwatch$InternalWatcher",
+        "priority": 15,
+        "classCount": 2,
+        "relationshipCount": 2
+      },
+      {
+        "cycleName": "JUnit4TestAdapter",
+        "priority": 16,
+        "classCount": 2,
+        "relationshipCount": 2
+      },
+      {
+        "cycleName": "MultipleFailureException",
+        "priority": 17,
+        "classCount": 2,
+        "relationshipCount": 2
+      },
+      {
+        "cycleName": "ExpectedException$ExpectedExceptionStatement",
+        "priority": 18,
+        "classCount": 2,
+        "relationshipCount": 2
+      },
+      {
+        "cycleName": "TemporaryFolder$Builder",
+        "priority": 19,
+        "classCount": 2,
+        "relationshipCount": 2
+      },
+      {
+        "cycleName": "RunNotifier$SafeNotifier",
+        "priority": 20,
+        "classCount": 2,
+        "relationshipCount": 2
+      },
+      {
+        "cycleName": "AllMembersSupplier",
+        "priority": 21,
+        "classCount": 2,
+        "relationshipCount": 2
+      },
+      {
+        "cycleName": "FromDataPoints",
+        "priority": 22,
+        "classCount": 2,
+        "relationshipCount": 2
+      },
+      {
+        "cycleName": "TestedOn",
+        "priority": 23,
+        "classCount": 2,
+        "relationshipCount": 2
+      },
+      {
+        "cycleName": "FailOnTimeout",
+        "priority": 24,
+        "classCount": 2,
+        "relationshipCount": 2
+      },
+      {
+        "cycleName": "Categories",
+        "priority": 25,
+        "classCount": 2,
+        "relationshipCount": 2
+      }
+    ],
+    "largestCycle": {
+      "hasCycleMap": true,
+      "cycleName": "JUnitCore",
+      "cycleIdentifier": "graph_JUnitCore_1l7a2el",
+      "classCount": 9,
+      "relationshipCount": 16,
+      "dotThresholdExceeded": false,
+      "breakdown": [
+        {
+          "className": "JUnitCore",
+          "edgesHtml": "JUnitCore &#8594; JUnitCommandLineParseResult : 3<br/>\nJUnitCore &#8594; Request : 3<br/>\n",
+          "classPath": "src/main/java/org/junit/runner/JUnitCore.java",
+          "marked": false
+        },
+        {
+          "className": "Request",
+          "edgesHtml": "<strong>Request &#8594; JUnitCore : 1<strong>*</strong></strong><br/>\nRequest &#8594; ClassRequest : 2<br/>\n<strong>Request &#8594; FilterRequest : 1<strong>*</strong></strong><br/>\n<strong>Request &#8594; SortingRequest : 1<strong>*</strong></strong><br/>\nRequest &#8594; OrderingRequest : 1<br/>\n",
+          "classPath": "src/main/java/org/junit/runner/Request.java",
+          "marked": true
+        },
+        {
+          "className": "OrderingRequest",
+          "edgesHtml": "<strong>OrderingRequest &#8594; Request : 3<strong>*</strong></strong><br/>\nOrderingRequest &#8594; MemoizingRequest : 1<br/>\n",
+          "classPath": "src/main/java/org/junit/internal/requests/OrderingRequest.java",
+          "marked": false
+        },
+        {
+          "className": "MemoizingRequest",
+          "edgesHtml": "<strong>MemoizingRequest &#8594; Request : 1<strong>*</strong></strong><br/>\n",
+          "classPath": "src/main/java/org/junit/internal/requests/MemoizingRequest.java",
+          "marked": false
+        },
+        {
+          "className": "SortingRequest",
+          "edgesHtml": "SortingRequest &#8594; Request : 4<br/>\n",
+          "classPath": "src/main/java/org/junit/internal/requests/SortingRequest.java",
+          "marked": false
+        },
+        {
+          "className": "FilterRequest",
+          "edgesHtml": "FilterRequest &#8594; Request : 4<br/>\n",
+          "classPath": "src/main/java/org/junit/internal/requests/FilterRequest.java",
+          "marked": false
+        },
+        {
+          "className": "ClassRequest",
+          "edgesHtml": "ClassRequest &#8594; MemoizingRequest : 1<br/>\n",
+          "classPath": "src/main/java/org/junit/internal/requests/ClassRequest.java",
+          "marked": false
+        },
+        {
+          "className": "JUnitCommandLineParseResult",
+          "edgesHtml": "JUnitCommandLineParseResult &#8594; Request : 8<br/>\nJUnitCommandLineParseResult &#8594; FilterFactories : 1<br/>\n",
+          "classPath": "src/main/java/org/junit/runner/JUnitCommandLineParseResult.java",
+          "marked": false
+        },
+        {
+          "className": "FilterFactories",
+          "edgesHtml": "FilterFactories &#8594; Request : 2<br/>\n",
+          "classPath": "src/main/java/org/junit/runner/FilterFactories.java",
+          "marked": false
+        }
+      ],
+      "hierarchy": {
+        "packages": [
+          {
+            "name": "junit.framework",
+            "id": "cluster_08fe06d73182d2aba49f0a3b",
+            "nodeId": null,
+            "renderAsNode": false,
+            "needsBreakUp": false,
+            "children": [],
+            "classes": [
+              {
+                "fqn": "junit.framework.TestCase",
+                "id": "TestCase",
+                "label": "TestCase",
+                "path": "src/main/java/junit/framework/TestCase.java",
+                "markedForRemoval": false
+              },
+              {
+                "fqn": "junit.framework.TestResult",
+                "id": "TestResult",
+                "label": "TestResult",
+                "path": "src/main/java/junit/framework/TestResult.java",
+                "markedForRemoval": false
+              }
+            ]
+          }
+        ],
+        "edges": [
+          {
+            "source": "TestCase",
+            "target": "TestResult",
+            "weight": 6,
+            "markedForRemoval": false
+          },
+          {
+            "source": "TestResult",
+            "target": "TestCase",
+            "weight": 2,
+            "markedForRemoval": true
+          }
+        ]
+      }
+    }
+  }
+}

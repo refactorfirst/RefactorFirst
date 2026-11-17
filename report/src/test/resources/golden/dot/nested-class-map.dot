@@ -1,0 +1,18 @@
+strict digraph G {
+subgraph cluster_e87cb45c05ad389d58904ea3 {
+label="org";
+style=filled fillcolor=white;
+subgraph cluster_604d51c3b9713bdd228e4ebb {
+label="org.a";
+style=filled fillcolor=white;
+Alpha [ shape=ellipse];
+}
+subgraph cluster_0211ff7e1f50637bc324381b {
+label="org.b";
+style=filled fillcolor=white;
+Beta [ shape=ellipse];
+Gamma [ label="Gamma Label" shape=ellipse];
+}
+}
+Alpha -> Beta [ label = "3" weight = "3" ];
+}

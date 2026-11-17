@@ -30,9 +30,64 @@
         <dependency>
             <groupId>com.github.spullara.mustache.java</groupId>
             <artifactId>compiler</artifactId>
-            <version>0.9.10</version>
-            <scope>test</scope>
+            <version>0.9.14</version>
         </dependency>
     </dependencies>
+
+    <profiles>
+        <profile>
+            <id>e2e-fixture-selection</id>
+            <activation>
+                <property>
+                    <name>test</name>
+                    <value>SampleReportGenerationTest</value>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <!-- Keep fixture generation mandatory in the module that owns the test. -->
+                            <failIfNoSpecifiedTests>true</failIfNoSpecifiedTests>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <!-- Phase P0/T0.2: runs the Node built-in test suite for the report
+             JavaScript feature files (rf-*.js unit tests) via vm sandboxing.
+             Inactive by default so contributors without Node can still run
+             `mvn verify`; activated with `mvn -P js-tests verify`. -->
+        <profile>
+            <id>js-tests</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>3.6.3</version>
+                        <executions>
+                            <execution>
+                                <id>run-js-tests</id>
+                                <phase>test</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>node</executable>
+                                    <arguments>
+                                        <argument>--test</argument>
+                                        <argument>src/test/javascript/*.test.cjs</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
 </project>

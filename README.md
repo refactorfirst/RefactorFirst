@@ -11,6 +11,16 @@ It scans your Git repository and generates a single page application by running:
 Code map viewers are powered by [3D Force Graph](https://vasturiano.github.io/3d-force-graph), [sigma.js](https://www.sigmajs.org/), and [GraphViz DOT](https://graphviz.org/docs/layouts/dot/) using [Vizdom](https://github.com/vizdom-dev/vizdom) to render the DOT graph.
 <br>If there are more than 4000 classes + relationships, a simplified 3D viewer will be available to avoid page load slowdowns.  Features will be toggleable in the 3D UI in a future release.
 
+### Report features
+The generated `refactor-first-report.html` is a **single self-contained file** — open it directly from disk (`file://`), no server needed. It includes:
+- **Light / dark / system theme** (system is the default) with pure-CSS switching and persistence
+- **Chart.js bubble charts** (priority vs. effort per disharmony; click a bubble to open the source file)
+- **Table toolkit**: sticky headers, filtering with a live match count, three-state column sorting, pagination for long tables, CSV export (RFC 4180 + formula-injection neutralization), and click-to-copy cells with keyboard support
+- **Colored graph hover model**: hovering an edge/node highlights its neighborhood (amber/green/blue by direction) in the SVG maps, the Sigma 2D popup and the 3D popup; keyboard focus reproduces the pointer hover
+- **WCAG 2.2 AA conformance** — see the accessibility statement below
+
+**Accessibility statement (WCAG 2.2 AA):** the generated reports target WCAG 2.2 Level AA and are continuously tested for it (structure, contrast, keyboard operation, and axe-core scans on every fixture — see `report/e2e/specs/wcag-axe.spec.js`). Known limitations: the 3D graph canvas has a text alternative via the tables and the 2D map rather than within the canvas, and third-party CDN widgets (Chart.js, sigma.js, 3d-force-graph, vizdom) are outside this report's control; the report degrades gracefully to readable tables when they are unavailable.
+
 ## How to Use RefactorFirst Quickly
 Run the command below in your Java project's top-level directory.  You'll need Git, Java 17 (or newer) and Maven 3 installed.  This command will analyze Maven and non-Maven projects:
 ```bash
@@ -112,7 +122,7 @@ Specify with -D if running on the command line.  e.g. ```-DbackEdgeAnalysisCount
 |showDetails|Shows God Class metrics| false                                                     |
 |backEdgeAnalysisCount|Number of back edges in a cycle to analyze.  <br>If total number of back edges is greater than the value specified, it analyzes the number of minimum weight edges specified.<br>**If 0 is specified, all back edges will be analyzed**| 50                                                        |
 |analyzeCycles|Analyzes the 10 largest cycles (will be configurable in the future)| true                                                      |
-|minifyHtml|Minifies the generated HTML report.  Only available on ```htmlReport``` and ```simpleHtmlReport``` goals.  May cause issues with large reports.| false                                                     |
+|minifyHtml|Minifies the generated HTML report with [minify-html](https://github.com/wilsonzlin/minify-html).  Only available on ```htmlReport``` and ```simpleHtmlReport``` goals.  Both reports are verified to stay fully functional after minification (round-trip tested in CI and E2E).  May cause issues with very large reports.| false                                                     |
 |excludeTests|Exclude test classes from analysis| true                                                      |
 |testSrcDirectory|Excludes classes containing this pattern from analysis| ```src/test```                         |
 |projectName|The name of your project to be displayed on the report| Your Maven project name                                   |

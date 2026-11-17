@@ -1,0 +1,7 @@
+language: en-US
+
+reviews:
+  profile: chill
+  path_filters:
+    - "!junit4-report.html"
+    - "!fxgl-report.html"

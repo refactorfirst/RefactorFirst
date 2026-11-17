@@ -1,597 +1,172 @@
 package org.hjug.refactorfirst.report;
 
+import static org.hjug.refactorfirst.report.ReportWriter.writeReportToDisk;
+
+import java.io.File;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.hjug.cbc.RankedCycle;
-import org.hjug.cbc.RankedDisharmony;
-import org.hjug.gdg.GraphDataGenerator;
+import org.hjug.git.GitLogReader;
 import org.hjug.graphbuilder.CodebaseGraphDTO;
 import org.hjug.graphbuilder.VertexInfo;
 import org.hjug.refactorfirst.report.model.HierarchyDTO;
+import org.hjug.refactorfirst.report.model.RefactorFirstReportDTO;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultWeightedEdge;
 
+/**
+ * The single-file interactive report page (Phase P4). Renders from
+ * {@code templates/refactor-first-report.mustache} with all data embedded as the rf-data JSON
+ * payload, all classpath assets inlined by {@link AssetInliner}, Chart.js bubble charts and
+ * pinned CDN widgets. Google Charts is gone.
+ */
 @Slf4j
 public class HtmlReport extends SimpleHtmlReport {
 
-    int dotGraphThreshold = 4000;
-
-    // use Files.readString(Path.of(file))
-    // Created by generative AI and modified slightly
-    public static final String SUGIYAMA_SIGMA_GRAPH =
-            """
-            <script>
-            function sugiyamaLayout(graph) {
-                var layers = [];
-                var nodeLevels = {};
-                var nodes = graph.nodes();
-                //var edges = graph.edges();
-
-                // Step 1: Assign levels to nodes
-                function assignLevels() {
-                    var visited = {};
-                    var stack = [];
-
-                    function visit(node, level) {
-                        if (visited[node]) return;
-                        visited[node] = true;
-                        nodeLevels[node] = level;
-                        if (!layers[level]) layers[level] = [];
-                        layers[level].push(node);
-                        stack.push(node);
-                        graph.forEachNeighbor(node, function (neighbor) {
-                            visit(neighbor, level + 1);
-                        });
-                    }
-
-                    nodes.forEach(function (node) {
-                        if (!visited[node]) visit(node, 0);
-                    });
-                }
-
-                // Step 2: Reduce edge crossings
-                function reduceCrossings() {
-                    for (var i = 0; i < layers.length - 1; i++) {
-                        var layer = layers[i];
-                        var nextLayer = layers[i + 1];
-                        var positions = {};
-
-                        nextLayer.forEach(function (node, index) {
-                            positions[node] = index;
-                        });
-
-                        layer.sort(function (a, b) {
-                            var aPos = 0, bPos = 0;
-                            graph.forEachNeighbor(a, function (neighbor) {
-                                aPos += positions[neighbor] || 0;
-                            });
-                            graph.forEachNeighbor(b, function (neighbor) {
-                                bPos += positions[neighbor] || 0;
-                            });
-                            return aPos - bPos;
-                        });
-                    }
-                }
-
-                // Step 3: Assign positions to nodes
-                function assignPositions() {
-                    var yStep = 100;
-                    var xStep = 2000;
-
-                    layers.forEach(function (layer, level) {
-                        var layerWidth = layer.length * xStep;
-                        var offsetX = ((screen.width - 200) - layerWidth) / 2; // Centering the nodes
-
-                        layer.forEach(function (node, index) {
-                            graph.setNodeAttribute(node, 'x', offsetX + index * xStep);
-                            graph.setNodeAttribute(node, 'y', -level * yStep);
-                        });
-                    });
-                }
-
-                assignLevels();
-                reduceCrossings();
-                assignPositions();
-            }
-
-            function renderGraph(dot) {
-                // Parse the DOT graph using graphlib-dot
-                const graphlibGraph = graphlibDot.read(dot);
-
-                // Convert graphlib graph to graphology graph
-                const graphologyGraph = new graphology.Graph();
-                // graphlib-dot creates a node for every named subgraph and
-                // parents the nodes it contains to it (empty subgraphs are
-                // removed): in the class map that is one cluster node per
-                // package, labelled with the package name. Packages are noise
-                // in the popups, so drop the subgraph nodes — identified by
-                // their children, never by the cluster_ id prefix, which real
-                // class ids like cluster_Helper can share — while keeping
-                // every node the clusters contained and the edges between
-                // them.
-                const droppedClusters = new Set();
-                graphlibGraph.nodes().forEach(node => {
-                    if (graphlibGraph.children(node).length > 0) {
-                        droppedClusters.add(node);
-                        return;
-                    }
-                    const attrs = graphlibGraph.node(node);
-                    graphologyGraph.addNode(node, {
-                        label: attrs.label || node,
-                        color: attrs.color,
-                        size: 5,
-                    });
-                });
-
-                graphlibGraph.edges().forEach(edge => {
-                    if (droppedClusters.has(edge.v) || droppedClusters.has(edge.w)) return;
-                    const attrs = graphlibGraph.edge(edge);
-                    graphologyGraph.addEdge(edge.v, edge.w, {
-                        color: attrs.color,
-                        size: 1,
-                        type: 'arrow',
-                    });
-                });
-
-                sugiyamaLayout(graphologyGraph)
-
-                return graphologyGraph;
-            }
-            </script>""";
-
-    public static final String FORCE_3D_GRAPH =
-            """
-            <script type="module">
-            // SpriteText will only work as import
-                    // this script block requires type=module since we are using an import
-                    import SpriteText from "https://esm.sh/three-spritetext";
-
-                    function createForceGraph(popupId, containerName, dot) {
-                        // Add event listener for Escape key to close the popup
-                        document.addEventListener('keydown', function (event) {
-                            if (event.key === 'Escape') {
-                                hidePopup();
-                            }
-                        });
-
-                        document.getElementById('overlay').style.display = 'block';
-                        document.getElementById(popupId).style.display = 'block';
-                        var container = document.getElementById(containerName);
-
-                        // Parse the DOT graph using graphlib-dot
-                        const graphlibGraph = graphlibDot.read(dot);
-
-                        var nodes = [];
-                        var links = [];
-
-                        // Packages are noise in the popups: drop the subgraph
-                        // nodes graphlib-dot creates per named subgraph —
-                        // identified by their children, never by the cluster_
-                        // id prefix, which real class ids like cluster_Helper
-                        // can share — keeping every node they contained and
-                        // the edges between the kept nodes.
-                        var droppedClusters = new Set();
-                        graphlibGraph.nodes().forEach(function (node) {
-                            if (graphlibGraph.children(node).length > 0) {
-                                droppedClusters.add(node);
-                                return;
-                            }
-                            var nodeData = graphlibGraph.node(node);
-                            nodes.push({
-                                id: node,
-                                label: graphlibGraph.node(node).label || node,
-                                color: nodeData.color || 'white',
-                            });
-                        });
-
-                        graphlibGraph.edges().forEach(function (edge) {
-                            if (droppedClusters.has(edge.v) || droppedClusters.has(edge.w)) return;
-                            links.push({
-                                source: edge.v,
-                                target: edge.w,
-                                color: graphlibGraph.edge(edge).color || 'white',
-                                weight: graphlibGraph.edge(edge).weight,
-                            });
-                        });
-
-                        const gData = {
-                            nodes: nodes,
-                            links: links
-                        };
-
-                        // cross-link node objects
-                        gData.links.forEach(link => {
-                            const a = gData.nodes.find(node => node.id === link.source);
-                            const b = gData.nodes.find(node => node.id === link.target);
-                            !a.neighbors && (a.neighbors = []);
-                            !b.neighbors && (b.neighbors = []);
-                            a.neighbors.push(b);
-                            b.neighbors.push(a);
-
-                            !a.links && (a.links = []);
-                            !b.links && (b.links = []);
-                            a.links.push(link);
-                            b.links.push(link);
-                        });
-
-                        const Graph = new ForceGraph3D(container)
-                            .graphData(gData)
-                            .nodeLabel('label')
-                            .width(container.clientWidth)
-                            .height(container.clientHeight);
-
-                        if(gData.links.length + gData.nodes.length < 4000) {
-                            console.log(gData.links.length + gData.nodes.length);
-
-
-                            // use node labels instead of spheres
-                            Graph.nodeThreeObject(node => {
-                                const sprite = new SpriteText(node.label);
-                                sprite.material.depthWrite = false; // make sprite background transparent
-                                sprite.color = node.color;
-                                sprite.textHeight = 4;
-                                return sprite;
-                            });
-
-                            // code to display weight as link text
-                            // may be too much for browsers to handle
-                            // Graph
-                            //     .linkThreeObjectExtend(true)
-                            //     .linkThreeObject(link => {
-                            //         // extend link with text sprite
-                            //         const sprite = new SpriteText(`${link.weight}`);
-                            //         sprite.color = 'lightgrey';
-                            //         sprite.textHeight = 3;
-                            //         return sprite;
-                            //     })
-                            //     .linkPositionUpdate((sprite, {start, end}) => {
-                            //         const middlePos = Object.assign(...['x', 'y', 'z'].map(c => ({
-                            //             [c]: start[c] + (end[c] - start[c]) / 2 // calc middle point
-                            //         })));
-                            //
-                            //         // Position sprite
-                            //         Object.assign(sprite.position, middlePos);
-                            //     });
-
-
-                            // code to highlight nodes & links
-                            // TODO: enable via control - see Manipulate Link Force Distance for example
-                            const highlightNodes = new Set();
-                            const highlightLinks = new Set();
-                            let hoverNode = null;
-                            Graph
-                                .nodeColor(node => highlightNodes.has(node) ? node === hoverNode ? 'rgb(255,0,0,1)' : 'rgba(255,160,0,0.8)' : 'rgba(0,255,255,0.6)')
-                                .linkWidth(link => highlightLinks.has(link) ? 4 : 1)
-                                .linkDirectionalParticles(link => highlightLinks.has(link) ? 4 : 0)
-                                .linkDirectionalParticleWidth(4)
-                                .onNodeHover(node => {
-                                    // no state change
-                                    if ((!node && !highlightNodes.size) || (node && hoverNode === node)) return;
-
-                                    highlightNodes.clear();
-                                    highlightLinks.clear();
-                                    if (node) {
-                                        highlightNodes.add(node);
-                                        node.neighbors.forEach(neighbor => highlightNodes.add(neighbor));
-                                        node.links.forEach(link => highlightLinks.add(link));
-                                    }
-
-                                    hoverNode = node || null;
-
-                                    updateHighlight(Graph);
-                                })
-                                .onLinkHover(link => {
-                                    highlightNodes.clear();
-                                    highlightLinks.clear();
-
-                                    if (link) {
-                                        highlightLinks.add(link);
-                                        highlightNodes.add(link.source);
-                                        highlightNodes.add(link.target);
-                                    }
-
-                                    updateHighlight(Graph);
-                                });
-
-                        }
-                    }
-
-                    // used by highlighting functionality
-                    function updateHighlight(Graph) {
-                        // trigger update of highlighted objects in scene
-                        Graph
-                            .nodeColor(Graph.nodeColor())
-                            .linkWidth(Graph.linkWidth())
-                            .linkDirectionalParticles(Graph.linkDirectionalParticles());
-                    }
-
-                    // needed to allow the button to open the graph
-                    window.createForceGraph = createForceGraph;\
-                </script>""";
-
-    // Created by generative AI and modified
-    public static final String POPUP_STYLE =
-            """
-            <style>
-                main {
-                    max-width: 100vw;/*3840px;*/
-                    width: 100vw;   /* or 100vw for viewport width */
-                    padding: 0px 0px; /* 0px top & bottom, 40px left & right */
-                }
-
-                nav {
-                    justify-content: center; /* Center horizontally */
-                    padding: 0px 40px; /* 0px top & bottom, 40px left & right */
-                    margin: 0px auto;
-                }
-
-                header {
-                    padding: 0px 40px; /* 0px top & bottom, 40px left & right */
-                }
-
-                /* Scale the SVG to fill the screen */
-                .fullscreen-svg {
-                    width: 100%;
-                    height: 100%;
-                }\
-                    /* Popup container */
-                    .popup {
-                        position: fixed;
-                        display: none;
-                        width: 95%;
-                        height: 95%;
-                        background-color: white;
-                        border: 1px solid #ccc;
-                        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-                        top: 50%;
-                        left: 50%;
-                        transform: translate(-50%, -50%);
-                        z-index: 1000;
-                        padding: 20px;
-                        box-sizing: border-box;
-                    }
-
-                    /* Popup overlay */
-                    .overlay {
-                        position: fixed;
-                        display: none;
-                        width: 100%;
-                        height: 100%;
-                        top: 0;
-                        left: 0;
-                        background: rgba(0, 0, 0, 0.5);
-                        z-index: 999;
-                    }
-
-                    /* Close button */
-                    .close-btn {
-                        position: absolute;
-                        top: 10px;
-                        right: 10px;
-                        cursor: pointer;
-                    }
-                </style>""";
-
-    // Created by generative AI and modified
-    public static final String POPUP_FUNCTIONS =
-            """
-            <script>
-                function showPopup(popupId, containerName, dot) {
-                    // Add event listener for Escape key to close the popup
-                    document.addEventListener('keydown', function (event) {
-                        if (event.key === 'Escape') {
-                            hidePopup();
-                        }
-                    });\
-                    \
-                    document.getElementById('overlay').style.display = 'block';
-                    document.getElementById(popupId).style.display = 'block';
-
-                    var graph = renderGraph(dot);
-                    var container = document.getElementById(containerName);
-
-                    // Render with Sigma.js
-                    new Sigma(graph, container);
-                }
-
-                function hidePopup() {
-                    document.getElementById('overlay').style.display = 'none';
-                    var popups = document.getElementsByClassName('popup');
-                    for (var i = 0; i < popups.length; i++) {
-                        popups[i].style.display = 'none';
-                    }
-
-                    // Clear the graph containers to remove the previous graphs
-                    var containers = document.querySelectorAll('[id^="graph-container"]');
-                    containers.forEach(function(container) {
-                        while (container.firstChild) {
-                            container.removeChild(container.firstChild);
-                        }
-                    });
-            // Remove the Escape key event listener
-                        document.removeEventListener('keydown', function (event) {
-                            if (event.key === 'Escape') {
-                                hidePopup();
-                            }
-                        });\
-                }
-            </script>""";
-
+    /**
+     * Generates the interactive HTML report and writes it to {@code outputDirectory}.
+     *
+     * <p>Phase P4/T4.6: the page renders from the mustache template through the shared
+     * {@link ReportModelBuilder} + {@link ViewModelFactory} pipeline, embeds the rf-data JSON
+     * payload and inlines the classpath assets. A missing Git repository writes the strictly-HTML
+     * message page; an analysis failure throws as before.
+     */
     @Override
-    public String printHead() {
-        // !Remember to update RefactorFirstMavenReport if this is modified
-        return // GH Buttons import
-        "<script async defer src=\"https://buttons.github.io/buttons.js\"></script>\n"
-                // google chart import
-                + "<script type=\"text/javascript\" src=\"https://www.gstatic.com/charts/loader.js\"></script>\n"
-                // graphing imports - sigma, graphology, vizdom
-                + "<script src=\"https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js\"></script>"
-                + "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/sigma.js/2.4.0/sigma.min.js\"></script>\n"
-                + "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/graphology/0.25.4/graphology.umd.min.js\"></script>\n"
-                + "<script src=\"https://cdn.jsdelivr.net/npm/graphlib-dot@0.6.4/dist/graphlib-dot.min.js\"></script>\n"
-                + "<script src=\"https://cdn.jsdelivr.net/npm/3d-force-graph\"></script>\n"
-                + "<script type=\"module\" src=\"https://cdn.jsdelivr.net/npm/@vizdom/vizdom-ts-web@0.1.19/vizdom_ts.min.js\"></script>\n"
-                // Make the output look decent.  Don't use in RefactorFirstMavenReport.
-                + "<link rel=\"stylesheet\" href=\"https://unpkg.com/mvp.css\">\n";
+    @SneakyThrows
+    public void execute(
+            int edgeAnalysisCount,
+            boolean analyzeCycles,
+            boolean showDetails,
+            boolean minifyHtml,
+            boolean excludeTests,
+            String testSourceDirectory,
+            String projectName,
+            String projectVersion,
+            File baseDir,
+            String outputDirectory) {
+
+        String filename = getOutputName() + ".html";
+        log.info("Generating {} for {} - {}", filename, projectName, projectVersion);
+
+        File effectiveBaseDir = baseDir != null
+                ? baseDir
+                : new File(Path.of("").toAbsolutePath().toString());
+        String reportHtml;
+        if (!hasGitHistory(effectiveBaseDir)) {
+            log.info(
+                    "Done! No Git repository found!  Please initialize a Git repository and perform an initial commit.");
+            reportHtml = new TemplateEngine()
+                    .render(
+                            "templates/refactor-first-simple-report.mustache",
+                            noGitViewModel(projectName, projectVersion, effectiveBaseDir));
+        } else {
+            reportHtml = renderInteractivePage(
+                    showDetails,
+                    edgeAnalysisCount,
+                    analyzeCycles,
+                    excludeTests,
+                    testSourceDirectory,
+                    projectName,
+                    projectVersion,
+                    baseDir);
+        }
+
+        writeReportToDisk(outputDirectory, filename, maybeMinifyHtml(reportHtml, minifyHtml));
+        log.info("Done! View the report at target/site/{}", filename);
     }
 
-    String printScripts() {
-        return SUGIYAMA_SIGMA_GRAPH + FORCE_3D_GRAPH + POPUP_FUNCTIONS + POPUP_STYLE;
+    /**
+     * Renders the complete interactive report page: the model builder analyzes the project, the
+     * view model factory translates the DTO, the Java-built graph DOT strings join the rf-data
+     * JSON payload (the P4 parity bridge), the template engine renders the page and the asset
+     * inliner embeds the classpath CSS/JS. Used by {@link #execute} and the Doxia site report.
+     *
+     * <p>A missing Git repository renders the strictly-HTML message page instead of surfacing the
+     * analysis-failed state: the no-Git result must reach this renderer as the message page rather
+     * than tripping the analysis-failed guard below.
+     */
+    public String renderInteractivePage(
+            boolean showDetails,
+            int edgeAnalysisCount,
+            boolean analyzeCycles,
+            boolean excludeTests,
+            String testSourceDirectory,
+            String projectName,
+            String projectVersion,
+            File baseDir)
+            throws Exception {
+
+        File effectiveBaseDir = baseDir != null
+                ? baseDir
+                : new File(Path.of("").toAbsolutePath().toString());
+        if (!hasGitHistory(effectiveBaseDir)) {
+            log.info(
+                    "Done! No Git repository found!  Please initialize a Git repository and perform an initial commit.");
+            return new TemplateEngine()
+                    .render(
+                            "templates/refactor-first-simple-report.mustache",
+                            noGitViewModel(projectName, projectVersion, effectiveBaseDir));
+        }
+
+        ReportModelBuilder modelBuilder = new ReportModelBuilder();
+        RefactorFirstReportDTO reportDTO = modelBuilder.build(
+                showDetails,
+                edgeAnalysisCount,
+                analyzeCycles,
+                excludeTests,
+                testSourceDirectory,
+                projectName,
+                projectVersion,
+                baseDir);
+
+        if (reportDTO.getProject() != null && reportDTO.getProject().isAnalysisFailed()) {
+            throw new RuntimeException("Report analysis failed");
+        }
+
+        return renderInteractiveReport(reportDTO, modelBuilder);
     }
 
-    @Override
-    public String printOpenBodyTag() {
-        return "  <body class=\"composite\">\n" + printOverlay();
+    private static boolean hasGitHistory(File baseDir) throws Exception {
+        if (GitLogReader.getGitDir(baseDir) == null) {
+            return false;
+        }
+        try (GitLogReader gitLogReader = new GitLogReader(baseDir)) {
+            return gitLogReader.getCurrentCommitHash() != null;
+        }
     }
 
-    private String printOverlay() {
-        return "<div class=\"overlay\" id=\"overlay\" onclick=\"hidePopup()\"></div>";
-    }
+    /**
+     * Renders the complete interactive report page from an already-built report DTO: the view
+     * model factory translates the DTO, the template engine renders the page (the rf-data
+     * payload drives every widget — graphs synthesize client-side from the inline hierarchy
+     * payloads since P7) and the asset inliner embeds the classpath CSS/JS.
+     */
+    public String renderInteractiveReport(RefactorFirstReportDTO reportDTO, ReportModelBuilder modelBuilder)
+            throws Exception {
 
-    @Override
-    public String printTitle(String projectName, String projectVersion) {
-        return "<title>Refactor First Report for " + projectName + " " + projectVersion + " </title>\n";
-    }
+        // modelBuilder carries no render-time state since P7: the graphs
+        // synthesize client-side from the DTO's inline hierarchy payloads.
+        if (reportDTO.getProject() != null && reportDTO.getProject().isAnalysisFailed()) {
+            throw new RuntimeException("Report analysis failed");
+        }
 
-    void renderClassMapMenu(StringBuilder stringBuilder) {
-        stringBuilder.append("<li><a href=\"#CLASSMAP\">Class Map</a></li>\n");
-    }
-
-    void renderPackageMapMenu(StringBuilder stringBuilder) {
-        stringBuilder.append("<li><a href=\"#PACKAGEMAP\">Package Map</a></li>\n");
-    }
-
-    @Override
-    String renderGithubButtons() {
-        return """
-                <div align="center">
-                <h2>Show RefactorFirst some &#10084;&#65039;</h2>
-                <a class="github-button" href="https://github.com/refactorfirst/refactorfirst" data-icon="octicon-star" data-size="large" data-show-count="true" aria-label="Star refactorfirst/refactorfirst on GitHub">Star</a>
-                <a class="github-button" href="https://github.com/refactorfirst/refactorfirst/fork" data-icon="octicon-repo-forked" data-size="large" data-show-count="true" aria-label="Fork refactorfirst/refactorfirst on GitHub">Fork</a>
-                <a class="github-button" href="https://github.com/refactorfirst/refactorfirst/subscription" data-icon="octicon-eye" data-size="large" data-show-count="true" aria-label="Watch refactorfirst/refactorfirst on GitHub">Watch</a>
-                <a class="github-button" href="https://github.com/refactorfirst/refactorfirst/issues" data-icon="octicon-issue-opened" data-size="large" data-show-count="false" aria-label="Issue refactorfirst/refactorfirst on GitHub">Issue</a>
-                <a class="github-button" href="https://github.com/sponsors/jimbethancourt" data-icon="octicon-heart" data-size="large" aria-label="Sponsor @jimbethancourt on GitHub">Sponsor</a>
-                </div>""";
+        Map<String, Object> view = new ViewModelFactory().createViewModel(reportDTO);
+        view.put("rfDataBlock", new RfDataBlock().build(reportDTO));
+        return new TemplateEngine().renderWithAssets("templates/refactor-first-report.mustache", view);
     }
 
     public String getName(Locale locale) {
-        // Name of the report when listed in the project-reports.html page of a project
         return "Refactor First Report";
     }
 
     public String getDescription(Locale locale) {
-        // Description of the report when listed in the project-reports.html page of a project
         return "Ranks the disharmonies in a codebase.  The classes that should be refactored first "
                 + " have the highest priority values.";
-    }
-
-    @Override
-    String renderDisharmonyChart(String anchorId, String title, List<RankedDisharmony> ranked, int maxPriority) {
-        String slug = anchorId.toLowerCase().replaceAll("[^a-z0-9]", "_");
-        String funcName = "draw_" + slug;
-        String dataVar = "data_" + slug;
-        String chartVar = "chart_" + slug;
-        String divId = "chart_div_" + slug;
-
-        GraphDataGenerator gen = new GraphDataGenerator();
-        String script = gen.getDisharmonyScriptStart(funcName, dataVar)
-                + gen.generateBubbleChartData(ranked, maxPriority - 1, "Effort")
-                + gen.getDisharmonyScriptEnd(
-                        funcName, chartVar, divId, dataVar, "Priority Ranking for Refactoring " + title, "Effort");
-
-        return "<div id=\"" + divId + "\" align=\"center\"><script>" + script + "</script></div>\n"
-                + "<h2>" + title + " Chart Legend:</h2>"
-                + "<table border=\"5px\"><tbody>"
-                + "<tr><td><strong>X-Axis:</strong> Effort to refactor</td></tr>"
-                + "<tr><td><strong>Y-Axis:</strong> Relative churn</td></tr>"
-                + "<tr><td><strong>Color:</strong> Priority of what to fix first</td></tr>"
-                + "<tr><td><strong>Circle size:</strong> Priority (Visual) of what to fix first</td></tr>"
-                + "</tbody></table><br/>";
-    }
-
-    @Override
-    public String renderClassGraphVisuals(String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
-        String dot = buildClassGraphDot(classGraph, repoUrl, codebaseGraphDTO);
-        String classGraphName = "classGraph";
-
-        StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append("<h1 align=\"center\"><a id=\"CLASSMAP\">Class Map</a></h1>");
-        stringBuilder.append(generateGraphButtons(classGraphName, classGraphName, dot));
-
-        stringBuilder.append(
-                "<div align=\"center\">Clicking on a node in the DOT graph (if present below) will open its source file in the repo.  Right/Alt click to open in a new browser tab.<br>Excludes classes that have no incoming and outgoing edges<br></div>");
-
-        int classCount = classGraph.vertexSet().size();
-        int relationshipCount = classGraph.edgeSet().size();
-        stringBuilder
-                .append("<div align=\"center\">Number of classes: ")
-                .append(classCount)
-                .append("  Number of relationships: ")
-                .append(relationshipCount)
-                .append("<br></div>");
-        if (classCount + relationshipCount < dotGraphThreshold) {
-            stringBuilder.append(generateDotImage(classGraphName));
-        } else {
-            // revisit and add DOT SVG popup button
-            stringBuilder.append("<div align=\"center\">\nSVG is too big to render quickly</div>\n");
-        }
-
-        return stringBuilder.toString();
-    }
-
-    private StringBuilder generateGraphButtons(String graphIdentifier, String displayName, String dot) {
-        StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append("<script>\n");
-        stringBuilder
-                .append("const ")
-                .append(graphIdentifier)
-                .append("_dot = ")
-                .append(dot)
-                .append("\n");
-        stringBuilder.append("</script>\n");
-        stringBuilder.append(generateForce3DPopup(graphIdentifier, displayName));
-        stringBuilder.append(generate2DPopup(graphIdentifier, displayName));
-        stringBuilder.append(generateHidePopup(graphIdentifier));
-
-        stringBuilder.append("<div align=\"center\">\nRed lines represent relationships to remove.<br>\n");
-        stringBuilder.append("Red nodes represent classes to remove.<br>\n");
-        stringBuilder.append("Zoom in / out with your mouse wheel and click/move to drag the image.<br>\n");
-        stringBuilder.append("</div>\n");
-        return stringBuilder;
-    }
-
-    private static String generateDotImage(String graphName) {
-        // revisit and add D3 popup button as well
-        return "<div id=\"" + graphName
-                + "\" style=\"width: 95%; height: 70vh; margin: auto; border: thin solid black\"></div>\n"
-                + "<script type=\"module\">\n"
-                + "import init, { DotParser } from \"https://cdn.jsdelivr.net/npm/@vizdom/vizdom-ts-web@0.1.19/vizdom_ts.min.js\";\n"
-                + "    if(DotParser) {\n"
-                + "        // Wait for the WASM binary to be compiled and the 'wasm' object to be populated\n"
-                + "        await init();\n"
-                + "        // Create a new Dot Parser\n"
-                + "        const parser = new DotParser();\n"
-                + "        const dotGraph = parser.parse("
-                + graphName + "_dot);\n" + "        const directedGraph = dotGraph.to_directed();\n"
-                + "        const positioned = directedGraph.layout();\n"
-                + "        let svg = positioned.to_svg().to_string();\n"
-                + "        // vizdom drops the target attribute on hyperlinked nodes; restore new-tab\n"
-                + "        // behavior on every anchor (a graph hyperlinks many nodes)\n"
-                + "        svg = svg.replace(/<a href=/g, '<a target=\\\"_blank\\\" href=');\n"
-                + "        // Modify the SVG string to include width and height attributes\n"
-                + "        svg = svg.replace('<svg ', `<svg class=\"fullscreen-svg\"`);\n"
-                + "\n"
-                + "        document.getElementById(\""
-                + graphName + "\").innerHTML = svg;\n" + "\n"
-                + "        // Make the SVG zoomable\n"
-                + "        svgPanZoom('#"
-                + graphName + " svg', {\n" + "            zoomEnabled: true,\n"
-                + "            controlIconsEnabled: true\n"
-                + "        });\n"
-                + "    }\n" + "</script>\n";
     }
 
     /**
@@ -603,12 +178,6 @@ public class HtmlReport extends SimpleHtmlReport {
         HierarchyDTO hierarchy = HierarchyBuilder.buildClassHierarchy(
                 classGraph, codebaseGraphDTO, classesToRemove, packagesToRemove, classRelationshipsToRemove);
         return NestedDotBuilder.buildNestedDot(hierarchy, repoUrl, true);
-    }
-
-    /** Builds escaped class-graph DOT suitable for a JavaScript template literal. */
-    String buildClassGraphDot(
-            Graph<VertexInfo, DefaultWeightedEdge> classGraph, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
-        return toJavaScriptTemplateLiteral(buildRawClassGraphDot(classGraph, repoUrl, codebaseGraphDTO));
     }
 
     /**
@@ -764,33 +333,6 @@ public class HtmlReport extends SimpleHtmlReport {
         return dollar >= 0 ? afterDot.substring(dollar + 1) : afterDot;
     }
 
-    @Override
-    public String renderClassCycleVisuals(RankedCycle cycle, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
-        String dot = buildClassCycleDot(classGraph, cycle, repoUrl, codebaseGraphDTO);
-
-        String cycleName = getClassName(cycle.getCycleName());
-        String cycleIdentifier = graphIdentifier(cycleName);
-
-        StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append("<h1 align=\"center\">Cycle Map</h1>");
-        stringBuilder.append(generateGraphButtons(cycleIdentifier, cycleName, dot));
-
-        stringBuilder.append(
-                "<div align=\"center\">Clicking on a node in the DOT graph (if present below) will open its source file in the repo.  Right/Alt click to open in a new browser tab.<br></div>");
-
-        if (cycle.getCycleNodes().size() + cycle.getEdgeSet().size() < dotGraphThreshold) {
-            stringBuilder.append(generateDotImage(cycleIdentifier));
-        } else {
-            // revisit and add DOT SVG popup button
-            stringBuilder.append("<div align=\"center\">\nSVG is too big to render quickly</div>\n");
-        }
-
-        stringBuilder.append("<br/>\n");
-        stringBuilder.append("<br/>\n");
-
-        return stringBuilder.toString();
-    }
-
     /**
      * Builds raw DOT source for a ranked class cycle as nested package clusters, consulting the
      * full class graph for the cycle members' node ids.
@@ -803,49 +345,6 @@ public class HtmlReport extends SimpleHtmlReport {
         HierarchyDTO hierarchy = HierarchyBuilder.buildCycleHierarchy(
                 classGraph, codebaseGraphDTO, classesToRemove, packagesToRemove, classRelationshipsToRemove, cycle);
         return NestedDotBuilder.buildNestedDot(hierarchy, repoUrl, true);
-    }
-
-    /** Builds escaped class-cycle DOT suitable for a JavaScript template literal. */
-    String buildClassCycleDot(
-            Graph<VertexInfo, DefaultWeightedEdge> classGraph,
-            RankedCycle cycle,
-            String repoUrl,
-            CodebaseGraphDTO codebaseGraphDTO) {
-        return toJavaScriptTemplateLiteral(buildRawClassCycleDot(classGraph, cycle, repoUrl, codebaseGraphDTO));
-    }
-
-    @Override
-    public String renderPackageGraphVisuals(String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
-        if (packageGraph.edgeSet().isEmpty()) {
-            return "";
-        }
-
-        String dot = buildPackageGraphDot(packageGraph, repoUrl, codebaseGraphDTO);
-        String packageGraphName = "packageGraph";
-
-        StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append("<h1 align=\"center\"><a id=\"PACKAGEMAP\">Package Map</a></h1>");
-        stringBuilder.append(generateGraphButtons(packageGraphName, packageGraphName, dot));
-
-        stringBuilder.append(
-                "<div align=\"center\">Excludes packages that have no incoming and outgoing edges<br></div>");
-
-        int packageCount = packageGraph.vertexSet().size();
-        int relationshipCount = packageGraph.edgeSet().size();
-        stringBuilder
-                .append("<div align=\"center\">Number of packages: ")
-                .append(packageCount)
-                .append("  Number of relationships: ")
-                .append(relationshipCount)
-                .append("<br></div>");
-        if (packageCount + relationshipCount < dotGraphThreshold) {
-            stringBuilder.append(generateDotImage(packageGraphName));
-        } else {
-            // revisit and add DOT SVG popup button
-            stringBuilder.append("<div align=\"center\">\nSVG is too big to render quickly</div>\n");
-        }
-
-        return stringBuilder.toString();
     }
 
     /**
@@ -862,97 +361,41 @@ public class HtmlReport extends SimpleHtmlReport {
         return NestedDotBuilder.buildPackageDot(hierarchy, repoUrl);
     }
 
-    /** Builds escaped package-graph DOT suitable for a JavaScript template literal. */
-    String buildPackageGraphDot(
-            Graph<VertexInfo, DefaultWeightedEdge> packageGraph, String repoUrl, CodebaseGraphDTO codebaseGraphDTO) {
-        return toJavaScriptTemplateLiteral(buildRawPackageGraphDot(packageGraph, repoUrl, codebaseGraphDTO));
-    }
-
     static String renderSafePackageNodeId(String packageName) {
         try {
             byte[] digest = MessageDigest.getInstance("SHA-256").digest(packageName.getBytes(StandardCharsets.UTF_8));
             return "package_" + HexFormat.of().formatHex(digest, 0, 12);
         } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("SHA-256 is required by the Java runtime", e);
+            throw new IllegalStateException("SHA-256 digest unavailable", e);
         }
     }
 
+    /** Escapes a value for a DOT quoted string (quotes, backslashes, line breaks). */
     static String escapeDotQuoted(String value) {
         if (value == null) {
             return "";
         }
-        StringBuilder escaped = new StringBuilder(value.length());
-        for (int i = 0; i < value.length(); i++) {
-            char current = value.charAt(i);
-            switch (current) {
+        StringBuilder escaped = new StringBuilder();
+        for (char c : value.toCharArray()) {
+            switch (c) {
                 case '\\' -> escaped.append("\\\\");
                 case '"' -> escaped.append("\\\"");
                 case '\n' -> escaped.append("\\n");
                 case '\r' -> escaped.append("\\r");
                 case '\t' -> escaped.append("\\t");
-                default -> escaped.append(current);
+                default -> escaped.append(c);
             }
         }
         return escaped.toString();
     }
 
-    private static String toJavaScriptTemplateLiteral(String dot) {
-        String escaped = dot.replace("\\", "\\\\")
-                .replace("`", "\\`")
-                .replace("$", "\\$")
-                .replace("<", "\\u003C")
-                .replace(">", "\\u003E");
-        return "`" + escaped + "`;";
-    }
-
-    private static String graphIdentifier(String value) {
+    /** Slugifies a cycle name into the graph identifier used by rf-data and popup buttons. */
+    static String graphIdentifier(String value) {
         String original = value == null ? "" : value;
         String sanitized = original.replaceAll("[^A-Za-z0-9_]", "_");
         if (sanitized.isEmpty()) {
             sanitized = "cycle";
         }
         return "graph_" + sanitized + "_" + Integer.toUnsignedString(original.hashCode(), 36);
-    }
-
-    private static String escapeHtml(String value) {
-        if (value == null) {
-            return "";
-        }
-        return value.replace("&", "&amp;")
-                .replace("<", "&lt;")
-                .replace(">", "&gt;")
-                .replace("\"", "&quot;")
-                .replace("'", "&#39;");
-    }
-
-    String generate2DPopup(String cycleName) {
-        return generate2DPopup(cycleName, cycleName);
-    }
-
-    private String generate2DPopup(String cycleIdentifier, String displayName) {
-        // Created by generative AI and modified
-        return "<button style=\"display: block; margin: 0 auto;\" onclick=\"showPopup('popup-" + cycleIdentifier
-                + "', 'graph-container-" + cycleIdentifier + "', " + cycleIdentifier + "_dot )\">Show "
-                + escapeHtml(displayName)
-                + " 2D Popup</button>\n";
-    }
-
-    String generateForce3DPopup(String cycleName) {
-        return generateForce3DPopup(cycleName, cycleName);
-    }
-
-    private String generateForce3DPopup(String cycleIdentifier, String displayName) {
-        // Created by generative AI and modified
-        return "<button style=\"display: block; margin: 0 auto;\" onclick=\"createForceGraph('popup-"
-                + cycleIdentifier + "', 'graph-container-" + cycleIdentifier + "', " + cycleIdentifier
-                + "_dot )\">Show " + escapeHtml(displayName)
-                + " 3D Popup</button>\n";
-    }
-
-    String generateHidePopup(String cycleName) {
-        return "<div class=\"popup\" id=\"popup-" + cycleName + "\">\n"
-                + "<span class=\"close-btn\" onclick=\"hidePopup()\">×</span>\n"
-                + "    <div id=\"graph-container-" + cycleName + "\" style=\"width: 100%; height: 100%;\"></div>"
-                + "\n</div>\n";
     }
 }

@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Refactor First Report for {{project.name}} {{project.version}}</title>
+    <style>
+        :root { --rf-header-height: 10rem; }
+        body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; margin: 0; }
+        .rf-header { box-sizing: border-box; max-height: var(--rf-header-height); overflow: auto; position: sticky; top: 0; z-index: 10; background: #ffffff; border-bottom: 1px solid #cccccc; padding: 0.5rem 1rem; }
+        .rf-header h1 { margin: 0 0 0.25rem 0; font-size: 1.25rem; text-align: center; }
+        nav ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 0.25rem 1rem; }
+        nav li { display: inline-block; }
+        section[id], h2[id], h3[id] { scroll-margin-top: var(--rf-header-height); }
+        main { padding: 1rem; }
+        table { border-collapse: collapse; margin: 0.75rem auto; }
+        th, td { border: 2px solid #555555; padding: 0.3rem 0.6rem; }
+        thead th { top: var(--rf-header-height); position: sticky; background: #f2f2f2; }
+        @media (max-width: 40rem) {
+            .rf-header { position: static; max-height: none; overflow: visible; }
+            thead th { top: 0; }
+            section[id], h2[id], h3[id] { scroll-margin-top: 0; }
+        }
+        .rf-visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; border: 0; }
+        a:focus-visible { outline: 3px solid #b34700; outline-offset: 2px; }
+        .rf-congratulations { text-align: center; font-size: 1.15rem; }
+        .rf-guidance { text-align: center; }
+        .rf-break-relationship { display: block; }
+        .rf-duplicate-partner { white-space: nowrap; }
+        footer { text-align: center; padding: 1rem; border-top: 1px solid #cccccc; }
+    </style>
+</head>
+<body>
+<header class="rf-header">
+    <h1><a href="https://github.com/refactorfirst/refactorfirst" title="Learn about RefactorFirst">RefactorFirst</a> Report for <a href="{{project.repoUrl}}">{{project.name}} {{project.version}}</a></h1>
+    {{#project.hasAnyDisharmony}}
+    <nav aria-label="Report sections">
+        <ul>
+            {{#classRelationshipsToRemove.hasRelationships}}<li><a href="#">Classes</a><ul><li><a href="#CLASSEDGES">Class Relationships To Remove</a></li></ul></li>{{/classRelationshipsToRemove.hasRelationships}}
+            {{#packageRelationshipsToRemove.hasRelationships}}<li><a href="#">Packages</a><ul><li><a href="#PACKAGEEDGES">Package Relationships To Remove</a></li></ul></li>{{/packageRelationshipsToRemove.hasRelationships}}
+            <li><a href="#">Disharmonies</a><ul>
+            {{#disharmonies}}<li><a href="#{{anchorId}}">{{title}}</a></li>{{/disharmonies}}
+            </ul></li>
+            {{#classCycles.hasCycles}}<li><a href="#">Cycles</a><ul><li><a href="#CYCLES">Class Cycles</a></li>{{#classCycles.largestCycle.hasCycleMap}}<li><a href="#CYCLEMAP">Cycle Map</a></li>{{/classCycles.largestCycle.hasCycleMap}}</ul></li>{{/classCycles.hasCycles}}
+        </ul>
+    </nav>
+    {{/project.hasAnyDisharmony}}
+</header>
+<main>
+{{#project.analysisFailed}}
+    <p class="rf-congratulations">Analysis incomplete: RefactorFirst could not finish scanning this project. The absence of findings below does not mean the project is clean.</p>
+{{/project.analysisFailed}}
+{{^project.hasAnyDisharmony}}
+    {{^project.analysisFailed}}{{^noGitRepository}}<p class="rf-congratulations">Congratulations!  {{project.name}} {{project.version}} has no Cycles or Disharmonies!</p>{{/noGitRepository}}{{/project.analysisFailed}}
+    {{#noGitRepository}}<p class="rf-congratulations">No Git repository found in project {{project.name}} {{project.version}}.  Please initialize a Git repository and perform an initial commit.</p>{{/noGitRepository}}
+{{/project.hasAnyDisharmony}}
+{{#project.hasAnyDisharmony}}
+    <div align="center">
+    <h2>Show RefactorFirst some &#10084;&#65039;</h2>
+    <a href="https://github.com/refactorfirst/refactorfirst" aria-label="Star refactorfirst/refactorfirst on GitHub">Star</a>
+    <a href="https://github.com/refactorfirst/refactorfirst/fork" aria-label="Fork refactorfirst/refactorfirst on GitHub">Fork</a>
+    <a href="https://github.com/refactorfirst/refactorfirst/subscription" aria-label="Watch refactorfirst/refactorfirst on GitHub">Watch</a>
+    <a href="https://github.com/refactorfirst/refactorfirst/issues" aria-label="Issue refactorfirst/refactorfirst on GitHub">Issue</a>
+    <a href="https://github.com/sponsors/jimbethancourt" aria-label="Sponsor @jimbethancourt on GitHub">Sponsor</a>
+    </div>
+    {{#classRelationshipsToRemove.hasRelationships}}
+    <section id="CLASSEDGES" aria-labelledby="CLASSEDGES-title">
+        <h2 id="CLASSEDGES-title" align="center">Class Relationship Removal Priority</h2>
+        <h3 align="center">Refactor Starting with Priority 1</h3>
+        <div style="text-align: center;">
+        Current Class Cycle Count: {{classRelationshipsToRemove.cycleCount}}<br>
+        Number of Class Relationships to Remove: {{classRelationshipsToRemove.relationshipsToRemoveCount}}<br>
+        Classes with <strong>*</strong> should be broken apart<br>
+        Removing class relationships below will eliminate class cycles
+        </div>
+        <div align="center">
+        <table align="center" border="5px">
+            <caption class="rf-visually-hidden">Class relationships to remove to break class cycles</caption>
+            <thead><tr>
+            <th scope="col">Class Relationship</th>
+            <th scope="col">Priority</th>
+            <th scope="col">In Class<br>Cycles</th>
+            <th scope="col">Relationship<br>Strength</th>
+            <th scope="col">Also Removes Pkg<br>Cycle Relationship</th>
+            <th scope="col">In Package<br>Cycles</th>
+            </tr></thead>
+            <tbody>
+            {{#classRelationshipsToRemove.relationships}}<tr>
+                <td align="left">{{#sourceClassPath}}<a href="{{sourceClassUrl}}" target="_blank" rel="noopener">{{/sourceClassPath}}{{sourceClass}}{{#sourceClassPath}}</a>{{/sourceClassPath}}{{#sourceMarked}}<strong>*</strong>{{/sourceMarked}} &#8594; {{#targetClassPath}}<a href="{{targetClassUrl}}" target="_blank" rel="noopener">{{/targetClassPath}}{{targetClass}}{{#targetClassPath}}</a>{{/targetClassPath}}{{#targetMarked}}<strong>*</strong>{{/targetMarked}} : {{weight}}</td>
+                <td align="right">{{priority}}</td>
+                <td align="right">{{cycleCount}}</td>
+                <td align="right">{{effortRank}}</td>
+                <td align="left">{{#alsoRemovesPackageRelationship}}<strong>true</strong>{{/alsoRemovesPackageRelationship}}{{^alsoRemovesPackageRelationship}}false{{/alsoRemovesPackageRelationship}}</td>
+                <td align="right">{{packageCycleCount}}</td>
+            </tr>{{/classRelationshipsToRemove.relationships}}
+            </tbody>
+        </table>
+        </div>
+    </section>
+    {{/classRelationshipsToRemove.hasRelationships}}
+    {{#packageRelationshipsToRemove.hasRelationships}}
+    <section id="PACKAGEEDGES" aria-labelledby="PACKAGEEDGES-title">
+        <h2 id="PACKAGEEDGES-title" align="center">Package Relationship Removal Priority</h2>
+        <h3 align="center">Refactor Starting with Priority 1</h3>
+        <div style="text-align: center;">
+        Current Package Cycle Count: {{packageRelationshipsToRemove.cycleCount}}<br>
+        Number of Package Relationships to Remove: {{packageRelationshipsToRemove.relationshipsToRemoveCount}}<br>
+        Packages and classes with <strong>*</strong> should be broken apart<br>
+        Removing package relationships below will eliminate package cycles
+        </div>
+        <div align="center">
+        <table align="center" border="5px">
+            <caption class="rf-visually-hidden">Package relationships to remove to break package cycles</caption>
+            <thead><tr>
+            <th scope="col">Package Relationship</th>
+            <th scope="col">Priority</th>
+            <th scope="col">In Pkg<br>Cycles</th>
+            <th scope="col">Relationship<br>Strength</th>
+            <th scope="col">Class Relationships to Remove<br>To Break Package Relationship</th>
+            </tr></thead>
+            <tbody>
+            {{#packageRelationshipsToRemove.relationships}}<tr>
+                <td align="left">{{#sourcePackagePath}}<a href="{{sourcePackageUrl}}" target="_blank" rel="noopener">{{/sourcePackagePath}}{{sourcePackage}}{{#sourcePackagePath}}</a>{{/sourcePackagePath}}{{#sourceMarked}}<strong>*</strong>{{/sourceMarked}} &#8594; {{#targetPackagePath}}<a href="{{targetPackageUrl}}" target="_blank" rel="noopener">{{/targetPackagePath}}{{targetPackage}}{{#targetPackagePath}}</a>{{/targetPackagePath}}{{#targetMarked}}<strong>*</strong>{{/targetMarked}} : {{weight}}</td>
+                <td align="right">{{priority}}</td>
+                <td align="right">{{cycleCount}}</td>
+                <td align="right">{{effortRank}}</td>
+                <td align="left">{{#classRelationshipsToBreakPackage}}<span class="rf-break-relationship">{{#sourceClassPath}}<a href="{{sourceClassUrl}}" target="_blank" rel="noopener">{{/sourceClassPath}}{{simpleSourceClassName}}{{#sourceClassPath}}</a>{{/sourceClassPath}}{{#sourceMarked}}<strong>*</strong>{{/sourceMarked}} &#8594; {{#targetClassPath}}<a href="{{targetClassUrl}}" target="_blank" rel="noopener">{{/targetClassPath}}{{simpleTargetClassName}}{{#targetClassPath}}</a>{{/targetClassPath}}{{#targetMarked}}<strong>*</strong>{{/targetMarked}} : {{weight}}</span>{{/classRelationshipsToBreakPackage}}</td>
+            </tr>{{/packageRelationshipsToRemove.relationships}}
+            </tbody>
+        </table>
+        </div>
+    </section>
+    {{/packageRelationshipsToRemove.hasRelationships}}
+    {{#disharmonies}}
+    <section id="{{anchorId}}" aria-labelledby="{{anchorId}}-title">
+        <h2 id="{{anchorId}}-title" align="center">{{title}}</h2>
+        <div class="rf-guidance" align="center">
+        <p><strong>Problem:</strong> {{problem}}</p>
+        <p><strong>Solution:</strong> {{{solution}}}</p>
+        </div>
+        <h2 align="center">{{title}} by the numbers: (Refactor Starting with Priority 1)</h2>
+        <div align="center">
+        <table align="center" border="5px">
+            <caption class="rf-visually-hidden">{{title}} by the numbers</caption>
+            <thead><tr>{{#table.headers}}<th scope="col">{{.}}</th>{{/table.headers}}</tr></thead>
+            <tbody>
+            {{#table.rows}}<tr>{{#cells}}<td align="{{align}}">{{#path}}<a href="{{sourceUrl}}" target="_blank" rel="noopener">{{/path}}{{{content}}}{{#path}}</a>{{/path}}</td>{{/cells}}</tr>{{/table.rows}}
+            </tbody>
+        </table>
+        </div>
+    </section>
+    {{/disharmonies}}
+    {{#classCycles.hasCycles}}
+    <section id="CYCLES" aria-labelledby="CYCLES-title">
+        <h2 id="CYCLES-title" align="center">Class Cycles</h2>
+        <h3 align="center">Class Cycles by the numbers:</h3>
+        <div align="center">
+        <table align="center" border="5px">
+            <caption class="rf-visually-hidden">Class cycles by the numbers</caption>
+            <thead><tr>
+            <th scope="col">Cycle Name</th>
+            <th scope="col">Priority</th>
+            <th scope="col">Class Count</th>
+            <th scope="col">Relationship Count</th>
+            </tr></thead>
+            <tbody>
+            {{#classCycles.summary}}<tr>
+                <td align="left">{{cycleName}}</td>
+                <td align="right">{{priority}}</td>
+                <td align="right">{{classCount}}</td>
+                <td align="right">{{relationshipCount}}</td>
+            </tr>{{/classCycles.summary}}
+            </tbody>
+        </table>
+        </div>
+    </section>
+    {{#classCycles.largestCycle.hasCycleMap}}
+    <section id="CYCLEMAP" aria-labelledby="CYCLEMAP-title">
+        <h2 id="CYCLEMAP-title" align="center">Largest Class Cycle : {{classCycles.largestCycle.cycleName}}</h2>
+        <h3 align="center">Limiting number of cycles displayed to 1 to keep page load time fast</h3>
+        <div align="center">
+        <strong>* indicates class to remove, bold text indicates relationships to remove to decompose cycle</strong>
+        <div align="center">Number of classes: {{classCycles.largestCycle.classCount}}  Number of relationships: {{classCycles.largestCycle.relationshipCount}}<br></div>
+        <table align="center" border="5px">
+            <caption class="rf-visually-hidden">Largest class cycle breakdown</caption>
+            <thead><tr>
+            <th scope="col">Classes</th>
+            <th scope="col">Relationships</th>
+            </tr></thead>
+            <tbody>
+            {{#classCycles.largestCycle.breakdown}}<tr>
+                <td align="left">{{#classPath}}<a href="{{classUrl}}" target="_blank" rel="noopener">{{/classPath}}{{className}}{{#classPath}}</a>{{/classPath}}{{#marked}}<strong>*</strong>{{/marked}}</td>
+                <td align="left">{{{edgesHtml}}}</td>
+            </tr>{{/classCycles.largestCycle.breakdown}}
+            </tbody>
+        </table>
+        </div>
+    </section>
+    {{/classCycles.largestCycle.hasCycleMap}}
+    {{/classCycles.hasCycles}}
+{{/project.hasAnyDisharmony}}
+</main>
+<footer>
+    <div class="clear"><hr/></div>
+    <p>Last Published: {{project.scanTimestamp}}</p>
+</footer>
+</body>
+</html>

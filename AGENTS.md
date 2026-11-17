@@ -93,14 +93,14 @@ package/class hierarchy. The pipeline is single-sourced:
   render) and flagged packages survive pruning and single-child collapse. The
   Cycle Map stays cycle-scoped: it flags only the break-up packages inside the
   displayed cycle.
-- **Three synthesis implementations must stay byte-identical** (their goldens
-  mirror each other): Java `NestedDotBuilder` (`NestedDotBuilderTest`), the
-  inline copy in `report/src/main/resources/viewer/index.html` (self-contained
-  standalone viewer; pinned by `ViewerScriptTest`), and the report page's
-  `lib/hierarchy-dot.js` (refactorfirst-page repo, pinned by
-  `tests/unit/hierarchy-dot.test.js`) — each in both the class/cycle mode
+- **Two synthesis implementations must stay byte-identical**: Java
+  `NestedDotBuilder` (`NestedDotBuilderTest`) and `rf-hierarchy-dot.js`
+  (cross-pinned by `hierarchy-dot.test.cjs` against the
+  `golden/hierarchy-dot/*.dot` goldens) — each in both the class/cycle mode
   (`buildNestedDot`/`hierarchyToDot`) and the package mode
-  (`buildPackageDot`/`packageHierarchyToDot`). The page copies add an
+  (`buildPackageDot`/`packageHierarchyToDot`). The standalone viewer
+  (`viewer/index.html`, `ViewerScriptTest`) migrates to `rf-hierarchy-dot.js`
+  post-release. The page copies add an
   `edgeFontColor` option: vizdom bakes label `fontcolor` into fill-only
   glyph paths at parse time, so the dark palette re-synthesizes with
   `fontcolor = "#9fb0c0"` on edges. Node and cluster labels sit on vizdom's
@@ -209,6 +209,73 @@ graph and merges them. A Kotlin build *failure* (parse error, IO, etc.) falls
 back to returning the Java-only DTO with a `log.warn`
 (`"Kotlin analysis failed; falling back to Java-only graph"`). This fallback
 is for build failures, not for "Kotlin is absent".
+
+## Report architecture (templates + assets pipeline)
+
+Both HTML reports render from Mustache templates through a shared pipeline:
+`ReportModelBuilder` → `RefactorFirstReportDTO` → `ViewModelFactory` → `TemplateEngine`
+(`com.github.mustachejava`, 0.9.14) → `MinifyHtml` (optional) → `ReportWriter`.
+
+- **`templates/refactor-first-report.mustache`** (interactive) and
+  **`templates/refactor-first-simple-report.mustache`** (strictly HTML, no scripts —
+  for `$GITHUB_STEP_SUMMARY`) live in `report/src/main/resources/templates/`. The allowed
+  Mustache subset (no lambdas, no client-side partials) and engine-parity rules are
+  documented in `templates/README.md`; `DualEngineGoldenTest` +
+  `mustache.dual-engine.test.cjs` pin Java mustache.java and vendored mustache.js to the
+  same bytes for the fixture view model (golden:
+  `src/test/resources/golden/mustache/`).
+- **`assets/`** carries the classpath JS/CSS the interactive report embeds:
+  `AssetInliner` injects them at the `<!-- rf:inlined-css -->` / `<!-- rf:inlined-js -->`
+  template markers in a deterministic order (CSS: palette → tables → graphs → report;
+  JS: core → theme → hierarchy-dot → tables → csv → copy → charts → graphs → main), each
+  block marked with an `rf:asset:<name>` id comment. Nothing is ever loaded via a local
+  `src=`/`href=` — the report is a single self-contained file that opens via `file://`.
+- **`rf-data` payload**: `RfDataBlock` embeds the serialized DTO as
+  `<script type="application/json" id="rf-data">` (escaped by `DataEmbedder`: `</` →
+  `<\/`, U+2028/U+2029 escaped). Every widget reads this payload through
+  `window.RF` (`rf-core.js`); no data is baked into JS template literals.
+- **Theming**: `rf-palette.css` is the palette source of truth — `PaletteParityTest` +
+  `palette-parity.test.cjs` pin every token to `palette.json` and the two duplicated dark
+  blocks byte-identical. Theme switching is pure CSS (`:has(#rf-theme-…:checked)` +
+  `prefers-color-scheme`); `rf-theme.js` only persists `localStorage['rf-theme']` and
+  republishes changes (never touches styles). Canvas-drawn colors re-resolve via the
+  `RF.theme` pub-sub (`redrawCharts`/`redrawGraphs`).
+- **WCAG 2.2 AA is continuously tested**: `WcagStructureTest` (structure/landmarks/
+  focus contract), `TableControlsWcagTest` (table control names/live regions/target
+  sizes), `ThemeWcagTest` (radio pills), `SimpleReportWcagTest`,
+  `StrictHtmlComplianceTest` (no scripts/handlers/iframes/javascript: URIs on the simple
+  report — permanent gate), `contrast.test.cjs` (contrast math from the palette),
+  `keyboard-parity.test.cjs`, and the `wcag-axe.spec.js` E2E (zero violations, both
+  reports, light + dark, before/after interaction).
+- **E2E** (`report/e2e/`, Playwright chromium): fixture reports are generated into
+  `report/target/e2e/` by `SampleReportGenerationTest` (interactive unminified/minified,
+  Kotlin-disharmony legs, junit4-fixture leg, simple leg) and opened via `file://`.
+
+## Graphs: client-side synthesis + hover model (two implementations)
+
+The interactive report's Class/Package/Cycle maps and popups render from the rf-data
+payload's inline **hierarchy** trees. DOT synthesis has exactly two implementations that
+must stay byte-identical (cross-pinned):
+
+- Java **`NestedDotBuilder`** (the golden; pinned by `NestedDotBuilderTest`), and
+- JS **`rf-hierarchy-dot.js`** (pinned by `hierarchy-dot.test.cjs` against
+  `src/test/resources/golden/hierarchy-dot/*.dot` generated from the parity fixture).
+
+The standalone viewer (`viewer/index.html`) still carries its own inline copy, pinned by
+`ViewerScriptTest`; it migrates to `rf-hierarchy-dot.js` post-release (§12.3 follow-up).
+Both palettes synthesize from the same bytes — dark mode adds only
+`fontcolor = "#9fb0c0"` edge labels (vizdom bakes label color into fill-only glyph
+paths); break-up cluster colors are re-driven by CSS (`rf-graphs.css`), never baked.
+
+Hover highlights: `rf-graphs-vizdom.js` derives the neighborhood from the vizdom
+`<title>` texts and toggles `rf-hover-*` classes (amber edge/focus, green in, blue out,
+mutual partners amber; `focusin`/`focusout` keyboard parity), styled by `rf-graphs.css`
+from the palette; Sigma 2D mirrors the model via node/edge reducers
+(`rf-graphs-sigma.js`, dark hover renderer `#1a2330` label box); the 3D popup
+(`rf-graphs-3d.js`) always uses the dark accent set (its WebGL canvas paints its own
+background) with O(changed) sprite recolors and the `<4000` threshold guard. Failed CDN
+widgets surface a visible aria-live notice (`announceWidgetFailure`) instead of silent
+breakage.
 
 ## Testing Notes
 - **TDD is required when implementing code.** Write tests before production code using the red-green-refactor cycle. Use the Given-When-Then format for test structure.

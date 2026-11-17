@@ -1,0 +1,16 @@
+strict digraph G {
+subgraph cluster_148de9c5a7a44d19e56cd9ae {
+label="p";
+style=filled fillcolor=white;
+subgraph cluster_b16a1e9fde6c87820c0eab07 {
+label="p.a";
+style=filled fillcolor=pink;
+A [ shape=ellipse color=red style=filled];
+B [ shape=ellipse];
+}
+subgraph cluster_54ee1f426d64b30f01f88f30 {
+label="p.b";
+style=filled fillcolor=white;
+}
+}
+}
