@@ -58,7 +58,7 @@ Rules
 - `calledForeignMethods` entries are the callee's type fqn + "." + its signature.
 - `accessedVariables` = names of fields used (own or foreign), own auto-properties used, and locals declared in the method. Cohesion is computed from it.
 - A call to a method of any other type counts as a foreign call, framework types included. Constructor calls do not.
-- An auto-property is one private attribute plus `get_X` / `set_X` accessor methods. Using your own auto-property is using that attribute; using another type's property is a call to its accessor: the setter when it is assigned, the getter when it is read, both for `+=` and `++`.
+- An auto-property is one private attribute plus `get_X` / `set_X` accessor methods. Using your own auto-property is using that attribute; using another type's property is a call to its accessor: the setter when it is assigned, the getter when it is read, both for `+=` and `++`. In an object initializer, `Child = { ... }` is a read: the existing value is filled, not replaced.
 - Complexity: 1, plus one for each `if`, loop, non-default `case` or switch-expression arm, `catch`, `&&`, `||` and `?:`. Nesting counts `if`, loops and `catch`.
 - `protectedMembers` = how many of the type's own fields, properties and methods are protected. `overriddenMethods` = signatures of its methods marked `override`. `usedParentMembers` = names of its base class's members that it uses. "Base class" means one declared in the analysed source. These feed Refused Parent Bequest and Tradition Breaker.
 - Types declared only in generated files are left out: anything under `obj` or `bin`, and files ending `.g.cs`, `.g.i.cs`, `.Designer.cs` or `.generated.cs`. They are not listed as dependencies either.

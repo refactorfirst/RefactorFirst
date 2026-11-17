@@ -86,6 +86,9 @@ class CSharpSourceFileGraphBuilderTest {
                 java.util.List.of(
                         "Members.Cache",
                         "Members.Clerk",
+                        "Members.Holder",
+                        "Members.Nester",
+                        "Members.Node",
                         "Members.Order",
                         "Members.OverloadCaller",
                         "Members.Overloads",

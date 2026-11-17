@@ -221,6 +221,7 @@ public static class MemberWalker
     }
 
     /// The setter when the property is assigned, the getter when it is read, both for `+=` and `++`.
+    /// In an object initializer, `Child = { ... }` reads the property and fills what it returns; it is not replaced.
     /// Falls back to whichever accessor exists.
     private static List<IMethodSymbol> AccessorsUsed(IPropertySymbol property, SimpleNameSyntax name)
     {
@@ -229,6 +230,8 @@ public static class MemberWalker
         bool written = false, read = true;
         switch (expression.Parent)
         {
+            case AssignmentExpressionSyntax { Right: InitializerExpressionSyntax } nested when nested.Left == expression:
+                break;
             case AssignmentExpressionSyntax assignment when assignment.Left == expression:
                 written = true;
                 read = !assignment.IsKind(SyntaxKind.SimpleAssignmentExpression);

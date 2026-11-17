@@ -53,6 +53,18 @@ public class MemberIdentityTests
         Assert.Equal(expected, clerk.Methods.Single(m => m.Name == method).CalledForeignMethods);
     }
 
+    /// `Child = { Value = 1 }` and `Items = { 1, 2 }` read the property; only `Child = new Node()` replaces it.
+    [Theory]
+    [InlineData("Nested", new[] { "Members.Holder.get_Child()", "Members.Node.set_Value(int)" })]
+    [InlineData("Replaced", new[] { "Members.Holder.set_Child(Node)" })]
+    [InlineData("Filled", new[] { "Members.Holder.get_Items()" })]
+    public async Task Given_APropertyInAnObjectInitializer_When_NestedOrReplaced_Then_TheMatchingAccessorIsCalled(string method, string[] expected)
+    {
+        TypeFacts nester = await TypeNamed("Nester");
+
+        Assert.Equal(expected, nester.Methods.Single(m => m.Name == method).CalledForeignMethods);
+    }
+
     /// A partial method's declaration has no body; the body is in its other half.
     [Fact]
     public async Task Given_APartialMethod_When_Extracted_Then_ItsBodyIsMeasured()
