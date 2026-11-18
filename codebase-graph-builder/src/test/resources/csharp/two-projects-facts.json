@@ -1,0 +1,251 @@
+{
+  "schemaVersion": 1,
+  "root": ".",
+  "namespaces": [
+    "Alpha",
+    "Beta"
+  ],
+  "types": [
+    {
+      "fqn": "Alpha.AlphaService",
+      "namespace": "Alpha",
+      "name": "AlphaService",
+      "sourceFile": "Alpha/AlphaService.cs",
+      "loc": 6,
+      "parent": null,
+      "attributes": [
+        {
+          "name": "_store",
+          "isPublic": false
+        }
+      ],
+      "dependencies": [
+        {
+          "to": "Beta.BetaStore",
+          "count": 3
+        }
+      ],
+      "methods": [
+        {
+          "name": "Count",
+          "signature": "Count()",
+          "loc": 1,
+          "cyclo": 1,
+          "maxNesting": 0,
+          "parameters": 0,
+          "isAccessor": false,
+          "isConstructor": false,
+          "accessedVariables": [
+            "_store"
+          ],
+          "accessedOwnAttributes": [
+            "_store"
+          ],
+          "accessedForeignAttributes": [],
+          "accessedForeignClasses": [],
+          "calledForeignMethods": [
+            "Beta.BetaStore.get_Size()"
+          ],
+          "calledForeignMethodClasses": [
+            "Beta.BetaStore"
+          ]
+        }
+      ],
+      "protectedMembers": 0,
+      "overriddenMethods": [],
+      "usedParentMembers": []
+    },
+    {
+      "fqn": "Beta.BaseStore",
+      "namespace": "Beta",
+      "name": "BaseStore",
+      "sourceFile": "Beta/BaseStore.cs",
+      "loc": 13,
+      "parent": null,
+      "attributes": [
+        {
+          "name": "Capacity",
+          "isPublic": false
+        }
+      ],
+      "dependencies": [],
+      "methods": [
+        {
+          "name": "Describe",
+          "signature": "Describe()",
+          "loc": 1,
+          "cyclo": 1,
+          "maxNesting": 0,
+          "parameters": 0,
+          "isAccessor": false,
+          "isConstructor": false,
+          "accessedVariables": [],
+          "accessedOwnAttributes": [],
+          "accessedForeignAttributes": [],
+          "accessedForeignClasses": [],
+          "calledForeignMethods": [],
+          "calledForeignMethodClasses": []
+        },
+        {
+          "name": "Limit",
+          "signature": "Limit()",
+          "loc": 1,
+          "cyclo": 1,
+          "maxNesting": 0,
+          "parameters": 0,
+          "isAccessor": false,
+          "isConstructor": false,
+          "accessedVariables": [
+            "Capacity"
+          ],
+          "accessedOwnAttributes": [
+            "Capacity"
+          ],
+          "accessedForeignAttributes": [],
+          "accessedForeignClasses": [],
+          "calledForeignMethods": [],
+          "calledForeignMethodClasses": []
+        },
+        {
+          "name": "Reset",
+          "signature": "Reset()",
+          "loc": 4,
+          "cyclo": 1,
+          "maxNesting": 0,
+          "parameters": 0,
+          "isAccessor": false,
+          "isConstructor": false,
+          "accessedVariables": [
+            "Capacity"
+          ],
+          "accessedOwnAttributes": [
+            "Capacity"
+          ],
+          "accessedForeignAttributes": [],
+          "accessedForeignClasses": [],
+          "calledForeignMethods": [],
+          "calledForeignMethodClasses": []
+        }
+      ],
+      "protectedMembers": 3,
+      "overriddenMethods": [],
+      "usedParentMembers": []
+    },
+    {
+      "fqn": "Beta.BetaStore",
+      "namespace": "Beta",
+      "name": "BetaStore",
+      "sourceFile": "Beta/BetaStore.cs",
+      "loc": 12,
+      "parent": "Beta.BaseStore",
+      "attributes": [
+        {
+          "name": "Size",
+          "isPublic": false
+        }
+      ],
+      "dependencies": [
+        {
+          "to": "Beta.BaseStore",
+          "count": 3
+        }
+      ],
+      "methods": [
+        {
+          "name": "Clear",
+          "signature": "Clear()",
+          "loc": 5,
+          "cyclo": 1,
+          "maxNesting": 0,
+          "parameters": 0,
+          "isAccessor": false,
+          "isConstructor": false,
+          "accessedVariables": [
+            "Size"
+          ],
+          "accessedOwnAttributes": [
+            "Size"
+          ],
+          "accessedForeignAttributes": [],
+          "accessedForeignClasses": [],
+          "calledForeignMethods": [
+            "Beta.BaseStore.Reset()"
+          ],
+          "calledForeignMethodClasses": [
+            "Beta.BaseStore"
+          ]
+        },
+        {
+          "name": "Limit",
+          "signature": "Limit()",
+          "loc": 1,
+          "cyclo": 1,
+          "maxNesting": 0,
+          "parameters": 0,
+          "isAccessor": false,
+          "isConstructor": false,
+          "accessedVariables": [
+            "Capacity"
+          ],
+          "accessedOwnAttributes": [],
+          "accessedForeignAttributes": [
+            "Beta.BaseStore.Capacity"
+          ],
+          "accessedForeignClasses": [
+            "Beta.BaseStore"
+          ],
+          "calledForeignMethods": [],
+          "calledForeignMethodClasses": []
+        },
+        {
+          "name": "get_Size",
+          "signature": "get_Size()",
+          "loc": 1,
+          "cyclo": 1,
+          "maxNesting": 0,
+          "parameters": 0,
+          "isAccessor": true,
+          "isConstructor": false,
+          "accessedVariables": [
+            "Size"
+          ],
+          "accessedOwnAttributes": [
+            "Size"
+          ],
+          "accessedForeignAttributes": [],
+          "accessedForeignClasses": [],
+          "calledForeignMethods": [],
+          "calledForeignMethodClasses": []
+        },
+        {
+          "name": "set_Size",
+          "signature": "set_Size(int)",
+          "loc": 1,
+          "cyclo": 1,
+          "maxNesting": 0,
+          "parameters": 1,
+          "isAccessor": true,
+          "isConstructor": false,
+          "accessedVariables": [
+            "Size"
+          ],
+          "accessedOwnAttributes": [
+            "Size"
+          ],
+          "accessedForeignAttributes": [],
+          "accessedForeignClasses": [],
+          "calledForeignMethods": [],
+          "calledForeignMethodClasses": []
+        }
+      ],
+      "protectedMembers": 0,
+      "overriddenMethods": [
+        "Limit()"
+      ],
+      "usedParentMembers": [
+        "Capacity",
+        "Reset"
+      ]
+    }
+  ]
+}

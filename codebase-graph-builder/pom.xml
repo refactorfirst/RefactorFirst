@@ -35,6 +35,11 @@
             <artifactId>jgrapht-core</artifactId>
         </dependency>
         <dependency>
+            <!-- Reads the facts JSON written by csharp-fact-extractor. Already on the classpath through OpenRewrite. -->
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-core</artifactId>
         </dependency>

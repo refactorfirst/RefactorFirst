@@ -113,6 +113,52 @@ A RefactorFirst report will show up in the site report when you run ```mvn site`
 </reporting>
 ```
 
+## Analysing C# code (experimental)
+RefactorFirst can also analyse C#.  A small .NET program, `csharp-fact-extractor`, reads the code with Roslyn and hands the facts to RefactorFirst, which applies the same metrics and thresholds it uses for Java and Kotlin.
+
+C# analysis is **off unless you configure it**.  The normal build and a normal run need no .NET.
+
+### Security: only analyse C# code you trust
+To read a solution, the extractor asks MSBuild to load its project files.  Loading a project file can run build logic that the project (or a package it imports) defines.  **Treat a C# run like building the code: only point it at repositories you trust.**  If you set the extractor path once in your shell profile, it applies to every folder you analyse afterwards that contains a `.sln`, `.slnx` or `.csproj`.
+
+### Setup
+1. Install the .NET 10 SDK.
+2. Build the extractor once, from the root of this repository:
+   ```
+   dotnet publish csharp-fact-extractor/src -c Release -o csharp-fact-extractor/publish
+   ```
+3. Run `dotnet restore` on the solution you want to analyse.  Without restored packages many types do not resolve and results are incomplete.
+4. Tell RefactorFirst where the extractor is (settings below).
+5. Run the usual command from the root of the C# repository.  No `pom.xml` is needed there, only Maven and Java 17 or newer:
+   ```bash
+   mvn org.hjug.refactorfirst.plugin:refactor-first-maven-plugin:0.11.0:htmlReport
+   ```
+   Use a RefactorFirst version that includes C# support.  To try it before that version is released, run `mvn install -DskipTests` in this repository first and use the version it prints (for example `0.11.0-SNAPSHOT`).
+
+   In a folder with no `pom.xml` the report is currently written to a folder literally named `${project.basedir}/target/site`.  The last line of the run prints the full path.
+
+|Setting|Environment variable|System property|
+|------|------|------|
+|Path to `CSharpFactExtractor.dll` (required)|```REFACTORFIRST_CSHARP_EXTRACTOR```|```-Drefactorfirst.csharp.extractor```|
+|Which `dotnet` to launch, if the first one on the PATH has no .NET 10 runtime (optional)|```REFACTORFIRST_DOTNET```|```-Drefactorfirst.dotnet```|
+
+### What gets analysed
+* The `.sln` or `.slnx` in the folder being analysed.  If there are several, the first by name is used and a warning names the others.
+* If there is no solution there, every `.csproj` found up to six folders deep, outside `bin`, `obj`, `node_modules` and `.git`.
+* Test projects are left out when ```excludeTests``` is true (the default).  A project counts as a test project if its name ends in `Test`, `Tests`, `Spec` or `Specs`, or it references xUnit, NUnit, MSTest or the .NET test platform.
+* Generated code is left out: anything under `obj` or `bin`, and files ending `.g.cs`, `.g.i.cs`, `.Designer.cs` or `.generated.cs`.
+* If C# analysis fails for any reason, a warning is logged and the Java and Kotlin results are still reported.
+
+### Known gaps
+* The CSV and JSON report types carry no C# results.
+* No coupling (CBO) table and no Significant Duplication detection for C#.
+* Types outside any namespace are left out.
+* `.cs` files count toward change history whenever a repository contains them, whether or not C# analysis is configured.
+* The same full type name declared in two projects is analysed once; the run prints a warning.
+* A run stops after 30 minutes.
+
+The JSON the extractor writes is described in [csharp-fact-extractor/docs/facts-contract.md](csharp-fact-extractor/docs/facts-contract.md).
+
 ## Configuration Options
 Care has been taken to use sensible defaults, though if you wish to override these defaults you can specify the following parameters.
 Specify with -D if running on the command line.  e.g. ```-DbackEdgeAnalysisCount=0 `DanalyzeCycles=false``` or in the configuration section (as in the above examples) if including in a Maven build.

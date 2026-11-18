@@ -1,0 +1,231 @@
+{
+  "schemaVersion": 1,
+  "root": ".",
+  "namespaces": [
+    "TinyGreeter"
+  ],
+  "types": [
+    {
+      "fqn": "TinyGreeter.Greeter",
+      "namespace": "TinyGreeter",
+      "name": "Greeter",
+      "sourceFile": "Greeter.cs",
+      "loc": 20,
+      "parent": null,
+      "attributes": [
+        {
+          "name": "Punctuation",
+          "isPublic": false
+        },
+        {
+          "name": "_store",
+          "isPublic": false
+        }
+      ],
+      "dependencies": [
+        {
+          "to": "TinyGreeter.MessageStore",
+          "count": 4
+        }
+      ],
+      "methods": [
+        {
+          "name": "Greet",
+          "signature": "Greet(string)",
+          "loc": 8,
+          "cyclo": 2,
+          "maxNesting": 1,
+          "parameters": 1,
+          "isAccessor": false,
+          "isConstructor": false,
+          "accessedVariables": [
+            "Punctuation",
+            "_store"
+          ],
+          "accessedOwnAttributes": [
+            "Punctuation",
+            "_store"
+          ],
+          "accessedForeignAttributes": [],
+          "accessedForeignClasses": [],
+          "calledForeignMethods": [
+            "System.String.IsNullOrEmpty(string)",
+            "TinyGreeter.MessageStore.Find(string)"
+          ],
+          "calledForeignMethodClasses": [
+            "System.String",
+            "TinyGreeter.MessageStore"
+          ]
+        },
+        {
+          "name": "Greeter",
+          "signature": "Greeter()",
+          "loc": 4,
+          "cyclo": 1,
+          "maxNesting": 0,
+          "parameters": 0,
+          "isAccessor": false,
+          "isConstructor": true,
+          "accessedVariables": [
+            "_store"
+          ],
+          "accessedOwnAttributes": [
+            "_store"
+          ],
+          "accessedForeignAttributes": [],
+          "accessedForeignClasses": [],
+          "calledForeignMethods": [],
+          "calledForeignMethodClasses": []
+        },
+        {
+          "name": "get_Punctuation",
+          "signature": "get_Punctuation()",
+          "loc": 1,
+          "cyclo": 1,
+          "maxNesting": 0,
+          "parameters": 0,
+          "isAccessor": true,
+          "isConstructor": false,
+          "accessedVariables": [
+            "Punctuation"
+          ],
+          "accessedOwnAttributes": [
+            "Punctuation"
+          ],
+          "accessedForeignAttributes": [],
+          "accessedForeignClasses": [],
+          "calledForeignMethods": [],
+          "calledForeignMethodClasses": []
+        },
+        {
+          "name": "set_Punctuation",
+          "signature": "set_Punctuation(string)",
+          "loc": 1,
+          "cyclo": 1,
+          "maxNesting": 0,
+          "parameters": 1,
+          "isAccessor": true,
+          "isConstructor": false,
+          "accessedVariables": [
+            "Punctuation"
+          ],
+          "accessedOwnAttributes": [
+            "Punctuation"
+          ],
+          "accessedForeignAttributes": [],
+          "accessedForeignClasses": [],
+          "calledForeignMethods": [],
+          "calledForeignMethodClasses": []
+        }
+      ],
+      "protectedMembers": 0,
+      "overriddenMethods": [],
+      "usedParentMembers": []
+    },
+    {
+      "fqn": "TinyGreeter.MessageStore",
+      "namespace": "TinyGreeter",
+      "name": "MessageStore",
+      "sourceFile": "MessageStore.cs",
+      "loc": 14,
+      "parent": null,
+      "attributes": [
+        {
+          "name": "_owner",
+          "isPublic": false
+        }
+      ],
+      "dependencies": [
+        {
+          "to": "TinyGreeter.Greeter",
+          "count": 2
+        }
+      ],
+      "methods": [
+        {
+          "name": "Find",
+          "signature": "Find(string)",
+          "loc": 4,
+          "cyclo": 2,
+          "maxNesting": 0,
+          "parameters": 1,
+          "isAccessor": false,
+          "isConstructor": false,
+          "accessedVariables": [],
+          "accessedOwnAttributes": [],
+          "accessedForeignAttributes": [],
+          "accessedForeignClasses": [],
+          "calledForeignMethods": [],
+          "calledForeignMethodClasses": []
+        },
+        {
+          "name": "MessageStore",
+          "signature": "MessageStore(Greeter)",
+          "loc": 4,
+          "cyclo": 1,
+          "maxNesting": 0,
+          "parameters": 1,
+          "isAccessor": false,
+          "isConstructor": true,
+          "accessedVariables": [
+            "_owner"
+          ],
+          "accessedOwnAttributes": [
+            "_owner"
+          ],
+          "accessedForeignAttributes": [],
+          "accessedForeignClasses": [],
+          "calledForeignMethods": [],
+          "calledForeignMethodClasses": []
+        }
+      ],
+      "protectedMembers": 0,
+      "overriddenMethods": [],
+      "usedParentMembers": []
+    },
+    {
+      "fqn": "TinyGreeter.Program",
+      "namespace": "TinyGreeter",
+      "name": "Program",
+      "sourceFile": "Program.cs",
+      "loc": 8,
+      "parent": null,
+      "attributes": [],
+      "dependencies": [
+        {
+          "to": "TinyGreeter.Greeter",
+          "count": 3
+        }
+      ],
+      "methods": [
+        {
+          "name": "Main",
+          "signature": "Main(string[])",
+          "loc": 5,
+          "cyclo": 1,
+          "maxNesting": 0,
+          "parameters": 1,
+          "isAccessor": false,
+          "isConstructor": false,
+          "accessedVariables": [
+            "greeter"
+          ],
+          "accessedOwnAttributes": [],
+          "accessedForeignAttributes": [],
+          "accessedForeignClasses": [],
+          "calledForeignMethods": [
+            "System.Console.WriteLine(string)",
+            "TinyGreeter.Greeter.Greet(string)"
+          ],
+          "calledForeignMethodClasses": [
+            "System.Console",
+            "TinyGreeter.Greeter"
+          ]
+        }
+      ],
+      "protectedMembers": 0,
+      "overriddenMethods": [],
+      "usedParentMembers": []
+    }
+  ]
+}
