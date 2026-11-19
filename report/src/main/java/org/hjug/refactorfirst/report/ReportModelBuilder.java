@@ -634,11 +634,10 @@ public class ReportModelBuilder {
         // Chart
         List<ChartJsBubbleDTO> bubbles = new ArrayList<>();
         for (RankedDisharmony rd : ranked) {
-            String label = rd.getFileName() != null
-                    ? rd.getFileName()
-                    : rd.getRawPriority().toString();
+            String name = displayName(rd);
+            String label = name != null ? name : rd.getRawPriority().toString();
             bubbles.add(createBubble(
-                    rd.getFileName(),
+                    name,
                     label,
                     rd.getEffortRank(),
                     rd.getChangePronenessRank(),
@@ -688,10 +687,11 @@ public class ReportModelBuilder {
         for (RankedDisharmony rd : ranked) {
             List<DisharmonyTableCellDTO> cells = new ArrayList<>();
 
-            // Class link: the cell carries the plain file name and the source path
-            // relative to the project root; viewers build the URL from project.repoUrl
+            // Class link: the cell carries the plain file name (the class name for C#)
+            // and the source path relative to the project root; viewers build the URL
+            // from project.repoUrl
             cells.add(DisharmonyTableCellDTO.builder()
-                    .content(SimpleHtmlReport.escapeHtmlLabel(rd.getFileName()))
+                    .content(SimpleHtmlReport.escapeHtmlLabel(displayName(rd)))
                     .path(rd.getPath())
                     .align("left")
                     .build());
@@ -983,6 +983,18 @@ public class ReportModelBuilder {
                         + SimpleHtmlReport.escapeHtmlLabel(getClassName(endVertex)) + " : "
                         + (int) classGraph.getEdgeWeight(edge))
                 .toString();
+    }
+
+    /**
+     * The name a finding is shown under: its file name, except for C#, where one file often
+     * holds several classes and the class name is what tells the rows apart.
+     */
+    static String displayName(RankedDisharmony rd) {
+        String path = rd.getPath();
+        if (path != null && path.endsWith(".cs") && rd.getClassName() != null) {
+            return getClassName(rd.getClassName());
+        }
+        return rd.getFileName();
     }
 
     /** Returns the simple class name from a fully qualified class name. */
