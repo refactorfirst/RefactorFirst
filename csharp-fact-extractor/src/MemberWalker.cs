@@ -1,6 +1,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Operations;
 
 namespace CSharpFactExtractor;
 
@@ -28,7 +29,7 @@ public static class MemberWalker
             foreach (ISymbol member in type.GetMembers())
             {
                 if (TypeNames.IsGeneratedOnly(member)) continue;
-                if (IsProtected(member) && member is IFieldSymbol { IsImplicitlyDeclared: false } or IPropertySymbol) protectedMembers++;
+                if (IsProtected(member) && member is IFieldSymbol { IsImplicitlyDeclared: false } or IPropertySymbol { IsImplicitlyDeclared: false }) protectedMembers++;
                 switch (member)
                 {
                     // An auto-property is a private attribute plus its accessor methods, as a Java field with getter and setter.
@@ -43,9 +44,13 @@ public static class MemberWalker
             }
         }
 
-        foreach (IMethodSymbol method in type.GetMembers().OfType<IMethodSymbol>())
+        // The members of an `extension(...) { }` block belong to the static class around it.
+        var members = type.GetMembers().Concat(type.GetTypeMembers().Where(t => t.IsExtension).SelectMany(t => t.GetMembers()));
+        foreach (IMethodSymbol method in members.OfType<IMethodSymbol>())
         {
-            if (method.IsImplicitlyDeclared && method.AssociatedSymbol is not IPropertySymbol) continue;
+            // The accessors of an auto-property are compiler-made but count; those of a property nobody wrote
+            // (a record's EqualityContract) do not.
+            if (method.IsImplicitlyDeclared && method.AssociatedSymbol is not IPropertySymbol { IsImplicitlyDeclared: false }) continue;
             if (!IsCounted(method.MethodKind)) continue;
             if (TypeNames.IsGeneratedOnly(method)) continue;
             if (method.MethodKind == MethodKind.Ordinary && IsProtected(method)) protectedMembers++;
@@ -113,9 +118,13 @@ public static class MemberWalker
 
             SemanticModel model = compilation.GetSemanticModel(node.SyntaxTree);
             // A constructor's `: base(...)` / `: this(...)` call is part of what it runs.
+            // `nameof(order.Total)` is the text "Total"; nothing inside it is used when the program runs.
+            bool NotNameof(SyntaxNode inner) =>
+                inner is not InvocationExpressionSyntax { Expression: IdentifierNameSyntax { Identifier.ValueText: "nameof" } } invocation ||
+                model.GetOperation(invocation) is not INameOfOperation;
             IEnumerable<SyntaxNode> scope = node is ConstructorDeclarationSyntax { Initializer: { } initializer }
-                ? body.DescendantNodesAndSelf().Concat(initializer.DescendantNodesAndSelf())
-                : body.DescendantNodesAndSelf();
+                ? body.DescendantNodesAndSelf(NotNameof).Concat(initializer.DescendantNodesAndSelf(NotNameof))
+                : body.DescendantNodesAndSelf(NotNameof);
 
             foreach (SyntaxNode n in scope)
             {
@@ -134,11 +143,20 @@ public static class MemberWalker
                     case SimpleNameSyntax name:
                         Classify(model.GetSymbolInfo(name).Symbol, name);
                         break;
+                    // An indexer is a property without a name: `grid[0]`, `grid?[0]` and `new Grid { [0] = 1 }`.
+                    case ElementAccessExpressionSyntax or ElementBindingExpressionSyntax or ImplicitElementAccessSyntax:
+                        if (model.GetSymbolInfo(n).Symbol is IPropertySymbol indexer) Classify(indexer, (ExpressionSyntax)n);
+                        break;
+                    // `field` inside an accessor is the attribute behind the property.
+                    case FieldExpressionSyntax when model.GetSymbolInfo(n).Symbol is IFieldSymbol { AssociatedSymbol: IPropertySymbol backed }:
+                        variables.Add(backed.Name);
+                        ownAttributes.Add(backed.Name);
+                        break;
                 }
             }
         }
 
-        void Classify(ISymbol? symbol, SimpleNameSyntax name)
+        void Classify(ISymbol? symbol, ExpressionSyntax name)
         {
             switch (symbol)
             {
@@ -200,7 +218,8 @@ public static class MemberWalker
             Math.Max(loc, 1),
             complexity.Cyclomatic,
             complexity.MaxNesting,
-            method.Parameters.Length,
+            // The receiver of an extension-block member counts, as the `this` parameter of a classic extension method does.
+            (method.AssociatedExtensionImplementation ?? method).Parameters.Length,
             isPropertyAccessor || LooksLikeAnAccessor(method.Name, hasBody, statements),
             method.MethodKind is MethodKind.Constructor or MethodKind.StaticConstructor,
             variables.ToList(), ownAttributes.ToList(), foreignAttributes.ToList(), foreignClasses.ToList(),
@@ -223,10 +242,18 @@ public static class MemberWalker
     /// The setter when the property is assigned, the getter when it is read, both for `+=` and `++`.
     /// In an object initializer, `Child = { ... }` reads the property and fills what it returns; it is not replaced.
     /// Falls back to whichever accessor exists.
-    private static List<IMethodSymbol> AccessorsUsed(IPropertySymbol property, SimpleNameSyntax name)
+    private static List<IMethodSymbol> AccessorsUsed(IPropertySymbol property, ExpressionSyntax name)
     {
-        // `order.Total` is the expression that is read or written, not the bare name inside it.
-        ExpressionSyntax expression = name.Parent is MemberAccessExpressionSyntax access && access.Name == name ? access : name;
+        // `order.Total` (or `.Total` after `?.`) is the expression that is read or written, not the bare name inside it.
+        ExpressionSyntax expression = name.Parent switch
+        {
+            MemberAccessExpressionSyntax access when access.Name == name => access,
+            MemberBindingExpressionSyntax binding when binding.Name == name => binding,
+            _ => name,
+        };
+        // `(order.Total) = 5` and `(a.Total, b.Total) = (1, 2)` assign through parentheses or a tuple.
+        while (expression.Parent is ParenthesizedExpressionSyntax or ArgumentSyntax { Parent: TupleExpressionSyntax })
+            expression = expression.Parent as ExpressionSyntax ?? (ExpressionSyntax)expression.Parent.Parent!;
         bool written = false, read = true;
         switch (expression.Parent)
         {

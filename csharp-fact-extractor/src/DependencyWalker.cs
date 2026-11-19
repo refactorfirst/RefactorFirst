@@ -15,8 +15,9 @@ public static class DependencyWalker
             SyntaxNode declaration = reference.GetSyntax();
             SemanticModel model = compilation.GetSemanticModel(reference.SyntaxTree);
             // Stay out of nested type declarations: their names belong to the nested type, not this one.
+            // An `extension(...) { }` block is not a type of its own, so its names stay with this one.
             var names = declaration
-                .DescendantNodes(node => node == declaration || node is not BaseTypeDeclarationSyntax)
+                .DescendantNodes(node => node == declaration || node is not BaseTypeDeclarationSyntax || node is ExtensionBlockDeclarationSyntax)
                 .OfType<SimpleNameSyntax>();
             foreach (SimpleNameSyntax name in names)
             {
