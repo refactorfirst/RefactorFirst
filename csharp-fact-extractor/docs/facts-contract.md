@@ -49,6 +49,8 @@ which is the extractor's real output for `fixtures/TinyGreeter`.
 
 Rules
 - `fqn` = namespace + "." + name. Nested types: `Outer$Inner`. Generic arity is dropped (`Box<T>` is `Box`), unless a type with the same name is declared beside it in the same project: then the generic one is named the .NET way, so `Result` and `Result<T>` are `Result` and ``Result`1``.
+- Two `file` types with one name in two files of a project are told apart by the file: `Helper@FirstFile` and `Helper@SecondFile`. `name` stays `Helper`.
+- An `extension(...) { }` block is not a type: its members, calls and dependencies belong to the static class around it.
 - A full name declared in more than one project appears once (the first project wins) and the extractor prints a warning.
 - Types outside any namespace are left out, and so are delegates.
 - `dependencies` lists only types declared in the analysed source, never framework or package types, never the type itself.
@@ -59,6 +61,11 @@ Rules
 - `accessedVariables` = names of fields used (own or foreign), own auto-properties used, and locals declared in the method. Cohesion is computed from it.
 - A call to a method of any other type counts as a foreign call, framework types included. Constructor calls do not.
 - An auto-property is one private attribute plus `get_X` / `set_X` accessor methods. Using your own auto-property is using that attribute; using another type's property is a call to its accessor: the setter when it is assigned, the getter when it is read, both for `+=` and `++`. In an object initializer, `Child = { ... }` is a read: the existing value is filled, not replaced.
+- An assignment through parentheses, a tuple or `?.` is still a write: `(a.Total, b.Total) = (1, 2)` and `a?.Total = 5` call the setter.
+- An indexer is a property without a name: `grid[0]` calls `get_Item(int)`, `grid[0] = 1` calls `set_Item(int,int)`.
+- A property that uses the `field` keyword is one private attribute, as an auto-property is; `field` in its accessors is a use of that attribute.
+- Nothing inside `nameof(...)` counts as a use or a call.
+- A record's methods are the ones written for it, plus the accessors of its positional properties. The compiler's `EqualityContract` is left out.
 - Complexity: 1, plus one for each `if`, loop, non-default `case` or switch-expression arm, `catch`, `&&`, `||` and `?:`. Nesting counts `if`, loops and `catch`.
 - `protectedMembers` = how many of the type's own fields, properties and methods are protected. `overriddenMethods` = signatures of its methods marked `override`. `usedParentMembers` = names of its base class's members that it uses. "Base class" means one declared in the analysed source. These feed Refused Parent Bequest and Tradition Breaker.
 - Types declared only in generated files are left out: anything under `obj` or `bin`, and files ending `.g.cs`, `.g.i.cs`, `.Designer.cs` or `.generated.cs`. They are not listed as dependencies either.

@@ -11,7 +11,14 @@ public static class TypeNames
     {
         var names = new Stack<string>();
         for (INamedTypeSymbol? t = type.OriginalDefinition; t != null; t = t.ContainingType)
-            names.Push(t.Arity > 0 && HasNamesake(t) ? t.Name + "`" + t.Arity : t.Name);
+        {
+            // An `extension(...) { }` block is not a type of its own: what is in it belongs to the class around it.
+            if (t.IsExtension) continue;
+            // Two `file class Helper` in two files are two types, told apart by the file: "Helper@FirstFile".
+            if (t.IsFileLocal && HasNamesake(t))
+                names.Push(t.Name + "@" + Path.GetFileNameWithoutExtension(t.Locations.First(l => l.IsInSource).SourceTree!.FilePath));
+            else names.Push(t.Arity > 0 && HasNamesake(t) ? t.Name + "`" + t.Arity : t.Name);
+        }
         var ns = Namespace(type);
         return (ns.Length == 0 ? "" : ns + ".") + string.Join("$", names);
     }

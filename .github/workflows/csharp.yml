@@ -49,6 +49,7 @@ jobs:
           dotnet restore csharp-fact-extractor/fixtures/TwoProjects/Alpha/Alpha.csproj
           dotnet restore csharp-fact-extractor/fixtures/Shapes/Shapes.csproj
           dotnet restore csharp-fact-extractor/fixtures/Members/Members.csproj
+          dotnet restore csharp-fact-extractor/fixtures/Syntax/Syntax.csproj
 
       - name: Test the extractor
         run: dotnet test csharp-fact-extractor/tests/CSharpFactExtractor.Tests.csproj

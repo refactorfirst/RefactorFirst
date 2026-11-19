@@ -90,7 +90,7 @@ public static class Extractor
 
     private static IEnumerable<INamedTypeSymbol> WithNested(INamedTypeSymbol t)
     {
-        if (!TypeNames.IsInSource(t) || t.IsImplicitlyDeclared) yield break;
+        if (!TypeNames.IsInSource(t) || t.IsImplicitlyDeclared || t.IsExtension) yield break;
         // A type that exists only in generated files is left out, along with anything nested in it.
         if (!TypeNames.SourceReferences(t).Any()) yield break;
         yield return t;
