@@ -25,17 +25,27 @@ public static class TypeNames
 
     /// The file a file-local type is in, without its extension: just the file's name when that is enough,
     /// with as many folders as it takes when its namesakes sit in files of the same name ("A_Helpers", "B_Helpers").
-    /// Dots and slashes become "_" so the name still ends at the last dot.
+    /// Dots and slashes become "_" so the name still ends at the last dot. Files that read the same after that
+    /// ("Dotted.Part" and "Dotted_Part") are numbered in path order: the second is "Dotted_Part~2".
     private static string FileTag(INamedTypeSymbol type)
     {
         static string[] Parts(INamedTypeSymbol t) =>
             Path.ChangeExtension(t.Locations.First(l => l.IsInSource).SourceTree!.FilePath, null).Split('/', '\\');
         string[] own = Parts(type);
-        var others = ((INamespaceOrTypeSymbol?)type.ContainingType ?? type.ContainingNamespace).GetTypeMembers(type.Name)
-            .Where(t => t.IsFileLocal && IsInSource(t)).Select(Parts).Where(p => !p.SequenceEqual(own)).ToList();
-        int take = 1;
-        while (take < own.Length && others.Any(p => p.TakeLast(take).SequenceEqual(own.TakeLast(take)))) take++;
-        return string.Join("_", own.TakeLast(take)).Replace('.', '_');
+        var all = ((INamespaceOrTypeSymbol?)type.ContainingType ?? type.ContainingNamespace).GetTypeMembers(type.Name)
+            .Where(t => t.IsFileLocal && IsInSource(t)).Select(Parts).ToList();
+
+        string Tag(string[] file)
+        {
+            int take = 1;
+            while (take < file.Length && all.Any(p => !p.SequenceEqual(file) && p.TakeLast(take).SequenceEqual(file.TakeLast(take)))) take++;
+            return string.Join("_", file.TakeLast(take)).Replace('.', '_');
+        }
+
+        string tag = Tag(own), path = string.Join("/", own);
+        int earlier = all.Select(p => string.Join("/", p)).Distinct()
+            .Count(other => string.CompareOrdinal(other, path) < 0 && Tag(other.Split('/')) == tag);
+        return earlier == 0 ? tag : tag + "~" + (earlier + 1);
     }
 
     /// True when another type with the same name is declared in the same namespace or outer type of the same project.

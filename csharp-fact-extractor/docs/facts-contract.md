@@ -49,7 +49,7 @@ which is the extractor's real output for `fixtures/TinyGreeter`.
 
 Rules
 - `fqn` = namespace + "." + name. Nested types: `Outer$Inner`. Generic arity is dropped (`Box<T>` is `Box`), unless a type with the same name is declared beside it in the same project: then the generic one is named the .NET way, so `Result` and `Result<T>` are `Result` and ``Result`1``.
-- A `file` type keeps its plain name unless another type with the same name sits beside it; then the file it is in is added after `@`: `Helper@FirstFile` and `Helper@SecondFile`. When the files also share a name, folders are added until they differ: `Helper@A_Helpers` and `Helper@B_Helpers`. Dots and slashes in that part become `_`, so the fqn still ends at its last dot. `name` stays `Helper`.
+- A `file` type keeps its plain name unless another type with the same name sits beside it; then the file it is in is added after `@`: `Helper@FirstFile` and `Helper@SecondFile`. When the files also share a name, folders are added until they differ: `Helper@A_Helpers` and `Helper@B_Helpers`. Dots and slashes in that part become `_`, so the fqn still ends at its last dot. Files that read the same after that (`Dotted.Part.cs` and `Dotted_Part.cs`) are numbered in path order: the second is `Helper@Dotted_Part~2`. `name` stays `Helper`.
 - An `extension(...) { }` block is not a type: its members, calls and dependencies belong to the static class around it. A member is signed with its receiver first, as the static method it compiles to and as a classic `this` extension method is: `Twice(Order)`, `get_Doubled(Order)`.
 - A full name declared in more than one project appears once (the first project wins) and the extractor prints a warning.
 - Types outside any namespace are left out, and so are delegates.

@@ -92,10 +92,18 @@ public class SyntaxGapTests
         Facts facts = await Extracted.Value;
 
         Assert.Equal(
-            new[] { "Syntax.Tool@A_Helpers", "Syntax.Tool@B_Helpers", "Syntax.Tool@Dotted_Part" },
+            new[] { "Syntax.Tool@A_Helpers", "Syntax.Tool@B_Helpers", "Syntax.Tool@Dotted_Part", "Syntax.Tool@Dotted_Part~2" },
             facts.Types.Where(t => t.Name == "Tool").Select(t => t.Fqn));
         Assert.Equal(new[] { "Syntax.Tool@A_Helpers.RunA()" }, (await Method("UsesA", "Go")).CalledForeignMethods);
         Assert.Equal(new[] { "Syntax.Tool@B_Helpers.RunB()" }, (await Method("UsesB", "Go")).CalledForeignMethods);
+    }
+
+    /// `Dotted.Part.cs` and `Dotted_Part.cs` read the same once the dot is replaced; the second one in path order is numbered.
+    [Fact]
+    public async Task Given_FileLocalTypesInFilesThatDifferOnlyByDotAndUnderscore_When_Extracted_Then_BothAreKept()
+    {
+        Assert.Equal(new[] { "Syntax.Tool@Dotted_Part~2.RunUnderscore()" }, (await Method("UsesUnderscore", "Go")).CalledForeignMethods);
+        Assert.Contains("Syntax.Tool@Dotted_Part.RunDotted()", (await Method("UsesDotted", "Go")).CalledForeignMethods);
     }
 
     /// `file class Gen` and `file class Gen<T>` in one file are two types.
