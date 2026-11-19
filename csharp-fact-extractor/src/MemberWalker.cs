@@ -29,7 +29,7 @@ public static class MemberWalker
             foreach (ISymbol member in type.GetMembers())
             {
                 if (TypeNames.IsGeneratedOnly(member)) continue;
-                if (IsProtected(member) && member is IFieldSymbol { IsImplicitlyDeclared: false } or IPropertySymbol) protectedMembers++;
+                if (IsProtected(member) && member is IFieldSymbol { IsImplicitlyDeclared: false } or IPropertySymbol { IsImplicitlyDeclared: false }) protectedMembers++;
                 switch (member)
                 {
                     // An auto-property is a private attribute plus its accessor methods, as a Java field with getter and setter.
@@ -119,7 +119,9 @@ public static class MemberWalker
             SemanticModel model = compilation.GetSemanticModel(node.SyntaxTree);
             // A constructor's `: base(...)` / `: this(...)` call is part of what it runs.
             // `nameof(order.Total)` is the text "Total"; nothing inside it is used when the program runs.
-            bool NotNameof(SyntaxNode inner) => inner is not InvocationExpressionSyntax invocation || model.GetOperation(invocation) is not INameOfOperation;
+            bool NotNameof(SyntaxNode inner) =>
+                inner is not InvocationExpressionSyntax { Expression: IdentifierNameSyntax { Identifier.ValueText: "nameof" } } invocation ||
+                model.GetOperation(invocation) is not INameOfOperation;
             IEnumerable<SyntaxNode> scope = node is ConstructorDeclarationSyntax { Initializer: { } initializer }
                 ? body.DescendantNodesAndSelf(NotNameof).Concat(initializer.DescendantNodesAndSelf(NotNameof))
                 : body.DescendantNodesAndSelf(NotNameof);
@@ -141,8 +143,8 @@ public static class MemberWalker
                     case SimpleNameSyntax name:
                         Classify(model.GetSymbolInfo(name).Symbol, name);
                         break;
-                    // An indexer is a property without a name: `grid[0]` and `grid?[0]`.
-                    case ElementAccessExpressionSyntax or ElementBindingExpressionSyntax:
+                    // An indexer is a property without a name: `grid[0]`, `grid?[0]` and `new Grid { [0] = 1 }`.
+                    case ElementAccessExpressionSyntax or ElementBindingExpressionSyntax or ImplicitElementAccessSyntax:
                         if (model.GetSymbolInfo(n).Symbol is IPropertySymbol indexer) Classify(indexer, (ExpressionSyntax)n);
                         break;
                     // `field` inside an accessor is the attribute behind the property.
@@ -216,7 +218,8 @@ public static class MemberWalker
             Math.Max(loc, 1),
             complexity.Cyclomatic,
             complexity.MaxNesting,
-            method.Parameters.Length,
+            // The receiver of an extension-block member counts, as the `this` parameter of a classic extension method does.
+            (method.AssociatedExtensionImplementation ?? method).Parameters.Length,
             isPropertyAccessor || LooksLikeAnAccessor(method.Name, hasBody, statements),
             method.MethodKind is MethodKind.Constructor or MethodKind.StaticConstructor,
             variables.ToList(), ownAttributes.ToList(), foreignAttributes.ToList(), foreignClasses.ToList(),

@@ -20,4 +20,6 @@ public class GridUser
     public void Bump(Grid grid) { grid[0] += 1; }
 
     public int? ReadIfAny(Grid? grid) { return grid?[0]; }
+
+    public Grid Create() { return new Grid { [0] = 1 }; }
 }

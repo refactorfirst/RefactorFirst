@@ -27,5 +27,9 @@ public class Writer
 
     public int? NullConditionalRead(Order? a) { return a?.Total; }
 
+    public void NestedTuple(Order a, Order b, Order c) { (a.Total, (b.Total, c.Total)) = (1, (2, 3)); }
+
+    public void NullConditionalBump(Order? a) { a?.Total += 1; }
+
     public string NameOf(Order a) { return nameof(a.Total); }
 }
